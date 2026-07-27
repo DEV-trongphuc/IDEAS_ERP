@@ -230,15 +230,15 @@ export default function MyPayslips() {
   };
 
   return (
-    <div style={{ padding: '2rem 3rem', width: '100%', maxWidth: '1000px', margin: '0 auto' }}>
+    <div>
       
       {/* Title */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div className="page-header" style={{ marginBottom: '1.5rem' }}>
         <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800 }}>
+          <h1 className="page-title">
             {t('Cổng Nhân sự Cá nhân (My HR)')}
           </h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
+          <p className="page-subtitle">
             {t('Tra cứu phiếu lương, đăng ký lịch nghỉ phép và tạm ứng thu nhập nhanh chóng.')}
           </p>
         </div>
@@ -257,18 +257,23 @@ export default function MyPayslips() {
       </div>
 
       {/* Sub Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: 'var(--color-bg)', padding: '0.375rem', borderRadius: 'var(--radius-lg)', width: 'fit-content' }}>
         <button
           onClick={() => setActiveSubTab('payslip')}
           style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            background: activeSubTab === 'payslip' ? 'var(--color-primary-light)' : 'transparent',
-            color: activeSubTab === 'payslip' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 1.125rem',
+            borderRadius: '8px',
             fontWeight: 600,
-            fontSize: '0.85rem',
-            cursor: 'pointer'
+            fontSize: '0.875rem',
+            background: activeSubTab === 'payslip' ? 'var(--color-surface)' : 'transparent',
+            color: activeSubTab === 'payslip' ? 'var(--color-text)' : 'var(--color-text-light)',
+            boxShadow: activeSubTab === 'payslip' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
           }}
         >
           {t('Phiếu lương cá nhân')}
@@ -276,14 +281,19 @@ export default function MyPayslips() {
         <button
           onClick={() => setActiveSubTab('leaves')}
           style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            background: activeSubTab === 'leaves' ? 'var(--color-primary-light)' : 'transparent',
-            color: activeSubTab === 'leaves' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 1.125rem',
+            borderRadius: '8px',
             fontWeight: 600,
-            fontSize: '0.85rem',
-            cursor: 'pointer'
+            fontSize: '0.875rem',
+            background: activeSubTab === 'leaves' ? 'var(--color-surface)' : 'transparent',
+            color: activeSubTab === 'leaves' ? 'var(--color-text)' : 'var(--color-text-light)',
+            boxShadow: activeSubTab === 'leaves' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
           }}
         >
           {t('Đăng ký Nghỉ phép')}
@@ -291,14 +301,19 @@ export default function MyPayslips() {
         <button
           onClick={() => setActiveSubTab('advances')}
           style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            background: activeSubTab === 'advances' ? 'var(--color-primary-light)' : 'transparent',
-            color: activeSubTab === 'advances' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.5rem 1.125rem',
+            borderRadius: '8px',
             fontWeight: 600,
-            fontSize: '0.85rem',
-            cursor: 'pointer'
+            fontSize: '0.875rem',
+            background: activeSubTab === 'advances' ? 'var(--color-surface)' : 'transparent',
+            color: activeSubTab === 'advances' ? 'var(--color-text)' : 'var(--color-text-light)',
+            boxShadow: activeSubTab === 'advances' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
           }}
         >
           {t('Đề xuất Tạm ứng')}

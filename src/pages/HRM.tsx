@@ -196,21 +196,21 @@ export default function HRM() {
   };
 
   return (
-    <div style={{ padding: '2rem 3rem', width: '100%' }}>
+    <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div className="page-header" style={{ marginBottom: '1.5rem' }}>
         <div>
-          <h1 className="page-title" style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800 }}>
+          <h1 className="page-title">
             {t('Hệ thống Quản lý Nhân sự & Bảng Lương (HRMS)')}
           </h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
+          <p className="page-subtitle">
             {t('Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.')}
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: 'var(--color-bg)', padding: '0.375rem', borderRadius: 'var(--radius-lg)', width: 'fit-content' }}>
         {[
           { id: 'profiles', label: t('Hồ sơ lương nhân viên'), icon: Users },
           { id: 'leaves', label: t('Phê duyệt Nghỉ Phép'), icon: Calendar },
@@ -226,14 +226,15 @@ export default function HRM() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                padding: '10px 16px',
+                gap: '0.5rem',
+                padding: '0.5rem 1.125rem',
                 borderRadius: '8px',
-                border: 'none',
-                background: isActive ? 'var(--color-primary-light)' : 'transparent',
-                color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
                 fontWeight: 600,
                 fontSize: '0.875rem',
+                background: isActive ? 'var(--color-surface)' : 'transparent',
+                color: isActive ? 'var(--color-text)' : 'var(--color-text-light)',
+                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}

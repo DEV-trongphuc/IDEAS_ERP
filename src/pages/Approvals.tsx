@@ -155,41 +155,41 @@ export default function Approvals() {
   };
 
   return (
-    <div style={{ padding: '2rem 3rem', width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
+    <div>
       
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 className="page-title" style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800 }}>
-          {t('Trung tâm Phê duyệt Quy trình (Workflow Hub)')}
-        </h1>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
-          {t('Quản lý tập trung các quy trình đề xuất nghỉ phép, tạm ứng lương, chi phí hành chính và giải trình đi trễ.')}
-        </p>
+      <div className="page-header" style={{ marginBottom: '1.5rem' }}>
+        <div>
+          <h1 className="page-title">{t('Trung tâm Phê duyệt Quy trình (Workflow Hub)')}</h1>
+          <p className="page-subtitle">{t('Quản lý tập trung các quy trình đề xuất nghỉ phép, tạm ứng lương, chi phí hành chính và giải trình đi trễ.')}</p>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: 'var(--color-bg)', padding: '0.375rem', borderRadius: 'var(--radius-lg)', width: 'fit-content' }}>
         {isAdmin && (
           <button
             onClick={() => setActiveTab('pending')}
             style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: 'none',
-              background: activeTab === 'pending' ? 'var(--color-primary-light)' : 'transparent',
-              color: activeTab === 'pending' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
-              gap: 6
+              gap: '0.5rem',
+              padding: '0.5rem 1.125rem',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              background: activeTab === 'pending' ? 'var(--color-surface)' : 'transparent',
+              color: activeTab === 'pending' ? 'var(--color-text)' : 'var(--color-text-light)',
+              boxShadow: activeTab === 'pending' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
             }}
           >
             <Activity size={15} />
             {t('Yêu cầu chờ duyệt')}
             {pendingList.length > 0 && (
-              <span style={{ fontSize: '0.725rem', background: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: 99, fontWeight: 700 }}>
+              <span style={{ fontSize: '0.725rem', background: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: 99, fontWeight: 700, marginLeft: 4 }}>
                 {pendingList.length}
               </span>
             )}
@@ -198,17 +198,19 @@ export default function Approvals() {
         <button
           onClick={() => setActiveTab('my_requests')}
           style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            background: activeTab === 'my_requests' ? 'var(--color-primary-light)' : 'transparent',
-            color: activeTab === 'my_requests' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            display: 'inline-flex',
+            display: 'flex',
             alignItems: 'center',
-            gap: 6
+            gap: '0.5rem',
+            padding: '0.5rem 1.125rem',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '0.875rem',
+            background: activeTab === 'my_requests' ? 'var(--color-surface)' : 'transparent',
+            color: activeTab === 'my_requests' ? 'var(--color-text)' : 'var(--color-text-light)',
+            boxShadow: activeTab === 'my_requests' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
           }}
         >
           <User size={15} />
