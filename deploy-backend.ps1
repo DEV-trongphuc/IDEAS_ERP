@@ -8,8 +8,11 @@ $tempBackend = "richland_backend.tar.gz"
 Write-Host "1. Compressing backend files to system temp directory..." -ForegroundColor Yellow
 tar -czf "$tempBackend" -C backend .
 
-Write-Host "2. Uploading backend archive and applying remote migrations in a single session..." -ForegroundColor Yellow
-cmd /c "ssh -4 -p 2210 -o StrictHostKeyChecking=no vhvxoigh@chiefaiofficer.vn ""tar -xzf - -C open.domation.net/ideas/ && php open.domation.net/ideas/run_migrations.php --apply"" < ""$tempBackend"""
+Write-Host "2. Uploading backend archive using scp..." -ForegroundColor Yellow
+scp -P 2210 -o StrictHostKeyChecking=no "$tempBackend" vhvxoigh@chiefaiofficer.vn:open.domation.net/ideas/
+
+Write-Host "3. Extracting archive and applying migrations on remote server..." -ForegroundColor Yellow
+ssh -4 -p 2210 -o StrictHostKeyChecking=no vhvxoigh@chiefaiofficer.vn "tar -xzf open.domation.net/ideas/$tempBackend -C open.domation.net/ideas/ && rm open.domation.net/ideas/$tempBackend && php open.domation.net/ideas/run_migrations.php --apply"
 
 $sshExit = $LASTEXITCODE
 
