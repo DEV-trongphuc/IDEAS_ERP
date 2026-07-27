@@ -105,6 +105,11 @@ class ActivityController {
             return true;
         }
 
+        // General workspace tasks (not linked to private CRM entities contact, company, deal) are accessible to all tenant members
+        if (empty($activity['related_type']) || in_array($activity['related_type'], ['project', 'campaign', 'team'], true)) {
+            return true;
+        }
+
         // Project / Campaign roster checks for sales, managers, and directors
         if (!empty($activity['related_type']) && in_array($activity['related_type'], ['project', 'campaign'], true)) {
             if (in_array($auth['role'], ['sale', 'sales', 'manager', 'director'], true)) {
