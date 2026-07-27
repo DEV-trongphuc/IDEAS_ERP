@@ -189,8 +189,8 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
           // Fetch pending approvals for admin/manager/assistant
           try {
             const resApps = await fetchAPI('hrm/approvals/pending');
-            if (Array.isArray(resApps)) {
-              setPendingApprovalsCount(resApps.length);
+            if (resApps && resApps.success && Array.isArray(resApps.data)) {
+              setPendingApprovalsCount(resApps.data.length);
             } else {
               setPendingApprovalsCount(0);
             }

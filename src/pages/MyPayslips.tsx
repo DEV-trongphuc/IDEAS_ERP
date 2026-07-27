@@ -45,9 +45,9 @@ export default function MyPayslips() {
 
   const loadPayslip = async () => {
     try {
-      const data = await fetchAPI(`hrm/payroll?month_year=${selectedMonth}`);
-      if (data && data.length > 0) {
-        setPayslip(data[0]);
+      const res = await fetchAPI(`hrm/payroll?month_year=${selectedMonth}`);
+      if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+        setPayslip(res.data[0]);
       } else {
         setPayslip(null);
       }
@@ -58,8 +58,8 @@ export default function MyPayslips() {
 
   const loadLeaves = async () => {
     try {
-      const data = await fetchAPI('hrm/leaves');
-      setLeavesList(data || []);
+      const res = await fetchAPI('hrm/leaves');
+      setLeavesList(res?.data || []);
     } catch (err: any) {
       setLeavesList([]);
     }
@@ -67,8 +67,8 @@ export default function MyPayslips() {
 
   const loadAdvances = async () => {
     try {
-      const data = await fetchAPI('hrm/advances');
-      setAdvancesList(data || []);
+      const res = await fetchAPI('hrm/advances');
+      setAdvancesList(res?.data || []);
     } catch (err: any) {
       setAdvancesList([]);
     }

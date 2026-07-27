@@ -42,10 +42,10 @@ export default function Approvals() {
     try {
       if (activeTab === 'pending' && isAdmin) {
         const res = await fetchAPI('hrm/approvals/pending');
-        setPendingList(res || []);
+        setPendingList(res?.data || []);
       } else {
         const res = await fetchAPI('hrm/approvals/my-requests');
-        setMyRequestsList(res || []);
+        setMyRequestsList(res?.data || []);
       }
     } catch (err: any) {
       toast.error(t('Lỗi tải dữ liệu quy trình'));

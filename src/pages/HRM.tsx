@@ -40,14 +40,14 @@ export default function HRM() {
   const loadData = async () => {
     try {
       if (activeTab === 'profiles') {
-        const data = await fetchAPI('hrm/profiles');
-        setProfiles(data || []);
+        const res = await fetchAPI('hrm/profiles');
+        setProfiles(res?.data || []);
       } else if (activeTab === 'leaves') {
-        const data = await fetchAPI('hrm/leaves');
-        setLeaves(data || []);
+        const res = await fetchAPI('hrm/leaves');
+        setLeaves(res?.data || []);
       } else if (activeTab === 'advances') {
-        const data = await fetchAPI('hrm/advances');
-        setAdvances(data || []);
+        const res = await fetchAPI('hrm/advances');
+        setAdvances(res?.data || []);
       } else if (activeTab === 'payroll') {
         loadPayslips();
       }
@@ -58,8 +58,8 @@ export default function HRM() {
 
   const loadPayslips = async () => {
     try {
-      const data = await fetchAPI(`hrm/payroll?month_year=${payrollMonth}`);
-      setPayslips(data || []);
+      const res = await fetchAPI(`hrm/payroll?month_year=${payrollMonth}`);
+      setPayslips(res?.data || []);
     } catch (err: any) {
       setPayslips([]);
     }
