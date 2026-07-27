@@ -383,8 +383,108 @@ try {
         $logMsg("Đã bổ sung các cột phân cấp đại lý (tier, parent_id, commission_rate, focus_markets, agent_count) vào bảng companies.", "success");
     }
 
-    // 9. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '191') ON DUPLICATE KEY UPDATE setting_value = '191'");
+    // 9. Create HRM and Payroll tables
+    $conn->query("CREATE TABLE IF NOT EXISTS `hrm_profiles` (
+        `user_id` INT PRIMARY KEY,
+        `joined_date` DATE NOT NULL,
+        `base_salary` DECIMAL(15,2) DEFAULT 0.00,
+        `deal_salary` DECIMAL(15,2) DEFAULT 0.00,
+        `has_insurance` TINYINT(1) DEFAULT 1,
+        `allowance_meal` DECIMAL(15,2) DEFAULT 0.00,
+        `allowance_travel` DECIMAL(15,2) DEFAULT 0.00,
+        `allowance_phone` DECIMAL(15,2) DEFAULT 0.00,
+        `kpi_target` DECIMAL(15,2) DEFAULT 0.00,
+        `kpi_multiplier_rules` TEXT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `hrm_contracts` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `contract_code` VARCHAR(50) NOT NULL,
+        `contract_type` VARCHAR(30) DEFAULT 'probation',
+        `salary_base` DECIMAL(15,2) DEFAULT 0.00,
+        `salary_deal` DECIMAL(15,2) DEFAULT 0.00,
+        `salary_type` VARCHAR(10) DEFAULT 'net',
+        `probation_rate` DECIMAL(5,2) DEFAULT 85.00,
+        `start_date` DATE NOT NULL,
+        `end_date` DATE NULL,
+        `status` VARCHAR(20) DEFAULT 'active',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        KEY `idx_hrm_contracts_user` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `hrm_salary_advances` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `amount` DECIMAL(15,2) DEFAULT 0.00,
+        `request_date` DATE NOT NULL,
+        `reason` TEXT NULL,
+        `status` VARCHAR(20) DEFAULT 'pending',
+        `deducted_payslip_id` INT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        KEY `idx_hrm_advances_user` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `hrm_leave_requests` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `leave_type` VARCHAR(30) DEFAULT 'annual',
+        `start_date` DATETIME NOT NULL,
+        `end_date` DATETIME NOT NULL,
+        `total_days` DECIMAL(3,1) DEFAULT 1.0,
+        `reason` TEXT NULL,
+        `status` VARCHAR(20) DEFAULT 'pending',
+        `approved_by` INT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        KEY `idx_hrm_leaves_user` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `hrm_assets` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `asset_name` VARCHAR(255) NOT NULL,
+        `asset_code` VARCHAR(100) NOT NULL,
+        `given_date` DATE NOT NULL,
+        `returned_date` DATE NULL,
+        `condition_note` TEXT NULL,
+        `status` VARCHAR(20) DEFAULT 'assigned',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        KEY `idx_hrm_assets_user` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS `monthly_payslips` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `month_year` VARCHAR(7) NOT NULL,
+        `work_days_required` INT DEFAULT 26,
+        `work_days_actual` DECIMAL(4,1) DEFAULT 0.0,
+        `lateness_minutes` INT DEFAULT 0,
+        `lateness_penalty` DECIMAL(15,2) DEFAULT 0.00,
+        `salary_basic_calculated` DECIMAL(15,2) DEFAULT 0.00,
+        `allowance_total` DECIMAL(15,2) DEFAULT 0.00,
+        `kpi_bonus` DECIMAL(15,2) DEFAULT 0.00,
+        `insurance_bhxh` DECIMAL(15,2) DEFAULT 0.00,
+        `insurance_bhyt` DECIMAL(15,2) DEFAULT 0.00,
+        `insurance_bhtn` DECIMAL(15,2) DEFAULT 0.00,
+        `tax_pit` DECIMAL(15,2) DEFAULT 0.00,
+        `advance_deduction` DECIMAL(15,2) DEFAULT 0.00,
+        `net_salary` DECIMAL(15,2) DEFAULT 0.00,
+        `status` VARCHAR(20) DEFAULT 'draft',
+        `signature_url` TEXT NULL,
+        `confirmed_at` DATETIME NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY `uk_user_month` (`user_id`, `month_year`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // 10. Update DB version in system_settings
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '192') ON DUPLICATE KEY UPDATE setting_value = '192'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

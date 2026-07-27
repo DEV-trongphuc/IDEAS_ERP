@@ -377,6 +377,7 @@ require_once __DIR__ . '/controllers/ActivityController.php';
 require_once __DIR__ . '/controllers/ProductController.php';
 require_once __DIR__ . '/controllers/QuoteController.php';
 require_once __DIR__ . '/controllers/UserController.php';
+require_once __DIR__ . '/controllers/HRMController.php';
 require_once __DIR__ . '/controllers/NotificationController.php';
 require_once __DIR__ . '/controllers/ReportController.php';
 require_once __DIR__ . '/controllers/NoteController.php';
@@ -690,6 +691,26 @@ switch ($resource) {
         elseif ($resourceId  && $method === 'GET')    $ctrl->show($auth, (int)$resourceId);
         elseif ($resourceId  && ($method === 'PUT' || $method === 'PATCH'))    $ctrl->update($auth, (int)$resourceId);
         elseif ($resourceId  && $method === 'DELETE') { requireRole($auth, ['admin', 'super_admin', 'director']); $ctrl->destroy($auth, (int)$resourceId); }
+        else respond(404, null, 'Route không tồn tại', false);
+        break;
+
+    // HRM & PAYROLL
+    case 'hrm':
+        $auth = requireAuth();
+        $ctrl = new HRMController($db);
+        if     ($resourceId === 'profiles' && $method === 'GET') $ctrl->indexProfiles($auth);
+        elseif ($resourceId === 'profiles' && $method === 'POST') $ctrl->saveProfile($auth);
+        elseif ($resourceId === 'leaves' && $method === 'GET') $ctrl->indexLeaves($auth);
+        elseif ($resourceId === 'leaves' && $method === 'POST') $ctrl->createLeave($auth);
+        elseif ($resourceId === 'leaves' && $method === 'PUT') $ctrl->approveLeave($auth);
+        elseif ($resourceId === 'advances' && $method === 'GET') $ctrl->indexAdvances($auth);
+        elseif ($resourceId === 'advances' && $method === 'POST') $ctrl->createAdvance($auth);
+        elseif ($resourceId === 'advances' && $method === 'PUT') $ctrl->approveAdvance($auth);
+        elseif ($resourceId === 'payroll' && $method === 'GET') $ctrl->indexPayslips($auth);
+        elseif ($resourceId === 'payroll' && $method === 'POST') $ctrl->calculatePayroll($auth);
+        elseif ($resourceId === 'payroll' && $method === 'PUT') $ctrl->lockPayroll($auth);
+        elseif ($resourceId === 'payroll' && $subResource === 'send' && $method === 'POST') $ctrl->sendPayslips($auth);
+        elseif ($resourceId === 'payroll' && $subResource === 'confirm' && $method === 'POST') $ctrl->confirmPayslip($auth);
         else respond(404, null, 'Route không tồn tại', false);
         break;
 
