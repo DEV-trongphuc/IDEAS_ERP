@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 196;
+$targetVersion = 197;
 $currentVersion = 186;
 
 // Query current DB version
@@ -673,8 +673,106 @@ try {
         $logMsg("Nâng cấp lên phiên bản 196 hoàn tất.", "success");
     }
 
+    // 9.10. Seed cohesive relational demo data (Version 197)
+    if ($currentVersion < 197 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 197 (Khởi tạo chuỗi dữ liệu Demo liên kết chặt chẽ)...", "info");
+
+        // 1. Projects & Units
+        $conn->query("DELETE FROM `projects` WHERE name = 'Vinhomes Grand Park'");
+        
+        // Ensure we have sale_agent and sale_manager users
+        $chkAgent = $conn->query("SELECT id FROM users WHERE email = 'agent@ideas.test' LIMIT 1");
+        $agentRow = $chkAgent ? $chkAgent->fetch_assoc() : null;
+        if (!$agentRow) {
+            $hash = password_hash('agent123', PASSWORD_BCRYPT);
+            $conn->query("INSERT INTO users (tenant_id, username, email, password_hash, full_name, role, is_active, status) VALUES (1, 'sale_agent_demo', 'agent@ideas.test', '$hash', 'Sale Agent Demo', 'sale', 1, 'active')");
+            $agentId = (int)$conn->insert_id;
+        } else {
+            $agentId = (int)$agentRow['id'];
+        }
+
+        $chkMgr = $conn->query("SELECT id FROM users WHERE email = 'manager@ideas.test' LIMIT 1");
+        $mgrRow = $chkMgr ? $chkMgr->fetch_assoc() : null;
+        if (!$mgrRow) {
+            $hash = password_hash('manager123', PASSWORD_BCRYPT);
+            $conn->query("INSERT INTO users (tenant_id, username, email, password_hash, full_name, role, is_active, status) VALUES (1, 'sale_manager_demo', 'manager@ideas.test', '$hash', 'Sale Manager Demo', 'manager', 1, 'active')");
+            $managerId = (int)$conn->insert_id;
+        } else {
+            $managerId = (int)$mgrRow['id'];
+        }
+
+        // Link them to 'Phòng Kinh doanh'
+        $tQ = $conn->query("SELECT id FROM teams WHERE name = 'Phòng Kinh doanh' LIMIT 1");
+        $tRow = $tQ ? $tQ->fetch_assoc() : null;
+        if ($tRow) {
+            $teamId = (int)$tRow['id'];
+            $conn->query("UPDATE users SET team_id = $teamId WHERE id IN ($agentId, $managerId)");
+        }
+
+        $conn->query("INSERT INTO `projects` (tenant_id, name, code, status, description, created_by) VALUES (1, 'Vinhomes Grand Park', 'VHGP', 'active', 'Dự án căn hộ mẫu', $managerId)");
+        $projectId = (int)$conn->insert_id;
+        $logMsg("Đã khởi tạo dự án Vinhomes Grand Park (ID: $projectId).", "success");
+
+        // 2. Marketing Campaign & Leads
+        $conn->query("DELETE FROM `marketing_campaigns` WHERE name = 'Mở bán phân khu The Beverly'");
+        $conn->query("INSERT INTO `marketing_campaigns` (tenant_id, name, status) VALUES (1, 'Mở bán phân khu The Beverly', 'active')");
+        $campaignId = (int)$conn->insert_id;
+
+        // Get first stage ID from pipeline_stages
+        $stQ = $conn->query("SELECT id FROM pipeline_stages WHERE tenant_id = 1 ORDER BY order_index LIMIT 1");
+        $stRow = $stQ ? $stQ->fetch_assoc() : null;
+        $stageId = $stRow ? (int)$stRow['id'] : 1;
+
+        // Create Lead Nguyễn Văn A
+        $conn->query("DELETE FROM `contacts` WHERE phone = '0909123456'");
+        $conn->query("INSERT INTO `contacts` (tenant_id, first_name, last_name, phone, mobile, email, source, status, owner_id, created_by, stage_id) VALUES (1, 'Nguyễn Văn', 'A', '0909123456', '0909123456', 'nguyenvana@ideas.test', 'Mở bán phân khu The Beverly', 'customer', $agentId, $agentId, $stageId)");
+        $contactId = (int)$conn->insert_id;
+        $logMsg("Đã khởi tạo Lead Nguyễn Văn A (ID: $contactId) thuộc chiến dịch The Beverly.", "success");
+
+        // 3. CRM Activity & Deal
+        $conn->query("DELETE FROM `deals` WHERE contact_id = $contactId");
+        $conn->query("INSERT INTO `deals` (tenant_id, stage_id, contact_id, owner_id, created_by, title, description, value) VALUES (1, $stageId, $contactId, $agentId, $agentId, 'Mua căn hộ S10.05-201', 'Khách hàng quan tâm căn 2PN', 3500000000.00)");
+        $dealId = (int)$conn->insert_id;
+
+        $conn->query("DELETE FROM `activities` WHERE contact_id = $contactId");
+        $conn->query("INSERT INTO `activities` (tenant_id, contact_id, user_id, type, subject, body, status) VALUES (1, $contactId, $agentId, 'call', 'Cuộc gọi tư vấn', 'Gọi điện tư vấn căn hộ mẫu S10.05-201', 'completed')");
+
+        // 4. Deposits, Cooperation Slips, Invoices & Expenses
+        $conn->query("DELETE FROM `deposits` WHERE contact_id = $contactId");
+        $conn->query("INSERT INTO `deposits` (contact_id, project_id, unit_code, price, expected_commission, status, created_by) VALUES ($contactId, $projectId, 'S10.05-201', 3500000000.00, 105000000.00, 'approved', $agentId)");
+        $depositId = (int)$conn->insert_id;
+
+        $conn->query("DELETE FROM `deposit_milestones` WHERE deposit_id = $depositId");
+        $conn->query("INSERT INTO `deposit_milestones` (deposit_id, milestone_name, expected_amount, status) VALUES ($depositId, 'Đợt 1', 50000000.00, 'approved')");
+        $milestoneId = (int)$conn->insert_id;
+
+        $conn->query("DELETE FROM `cooperation_slips` WHERE contact_id = $contactId");
+        $sharesJson = json_encode([$agentId => 80, $managerId => 20]);
+        $conn->query("INSERT INTO `cooperation_slips` (contact_id, deposit_slip_id, version, total_percentage, shares_json, status, created_by) VALUES ($contactId, $depositId, 1, 100, '$sharesJson', 'approved', $agentId)");
+
+        $conn->query("DELETE FROM `invoices` WHERE contact_id = $contactId");
+        $conn->query("INSERT INTO `invoices` (tenant_id, contact_id, created_by, invoice_number, title, status, subtotal, total, paid_at) VALUES (1, $contactId, $agentId, 'INV-2026-0001', 'Hóa đơn đặt cọc căn hộ S10.05-201', 'paid', 50000000.00, 50000000.00, NOW())");
+
+        // Marketing Campaign Expense
+        $conn->query("DELETE FROM `expenses` WHERE title LIKE '%quảng cáo Facebook%'");
+        $conn->query("INSERT INTO `expenses` (tenant_id, created_by, title, category, amount, date, status, notes) VALUES (1, $managerId, 'Chi phí chạy quảng cáo Facebook tháng 7', 'Marketing', 15000000.00, CURDATE(), 'approved', 'Chi phí được phê duyệt bởi Kế toán')");
+
+        $logMsg("Đã khởi tạo phiếu cọc, phân chia hoa hồng 80-20, hóa đơn đã đóng và chi phí marketing.", "success");
+
+        // 5. HRM Profiles for Agent
+        $conn->query("DELETE FROM `hrm_profiles` WHERE user_id = $agentId");
+        $customAllowancesJson = json_encode([
+            ['name' => 'Phụ cấp đi lại', 'value' => 500000.00],
+            ['name' => 'Thưởng dự án mẫu', 'value' => 1000000.00]
+        ]);
+        $conn->query("INSERT INTO `hrm_profiles` (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, custom_fields_json) VALUES ($agentId, '2026-01-01', 10000000.00, 8000000.00, 1, 650000.00, '$customAllowancesJson')");
+
+        $logMsg("Đã khởi tạo hồ sơ lương và phụ cấp động cho nhân viên Sale Agent.", "success");
+        $logMsg("Nâng cấp lên phiên bản 197 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '196') ON DUPLICATE KEY UPDATE setting_value = '196'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '197') ON DUPLICATE KEY UPDATE setting_value = '197'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
