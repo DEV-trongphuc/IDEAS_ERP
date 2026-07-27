@@ -43,22 +43,21 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     ]
   },
   {
-    title: 'DỰ ÁN & SẢN PHẨM',
+    title: 'SẢN PHẨM & KHO HÀNG',
     items: [
-      { name: 'Dự án', href: '/projects', icon: Building2 },
-      { name: 'Giỏ hàng', href: '/inventory', icon: Boxes },
-      { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers },
+      { name: 'Sản phẩm & Dịch vụ', href: '/products', icon: Package },
+      { name: 'Kho hàng hóa', href: '/inventory', icon: Boxes },
       { name: 'Tài liệu', href: '/files', icon: File },
-      { name: 'Đối tác', href: '/companies', icon: Building2 },
-      { name: 'Chủ đầu tư', href: '/suppliers', icon: Truck }
+      { name: 'Đối tác kinh doanh', href: '/companies', icon: Building2 },
+      { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
     ]
   },
   {
     title: 'TÀI CHÍNH',
     items: [
       { name: 'Báo giá', href: '/quotes', icon: FileText, hideForRoles: ['viewer'] },
-      { name: 'Phiếu đặt cọc', href: '/deposits', icon: Receipt, hideForRoles: ['viewer'], badgeKey: 'pendingDeposits' },
-      { name: 'Chi phí', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer'], badgeKey: 'pendingExpenses' }
+      { name: 'Đơn đặt hàng', href: '/deposits', icon: Receipt, hideForRoles: ['viewer'], badgeKey: 'pendingDeposits' },
+      { name: 'Chi phí chi tiêu', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer'], badgeKey: 'pendingExpenses' }
     ]
   },
   {

@@ -4176,7 +4176,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
     // Require UNC proof for milestone 1
     if (!depositUncFile) {
-      addToast('Vui lòng tải lên minh chứng chuyển khoản (UNC) Đợt 1 để tạo phiếu cọc.', 'error');
+      addToast('Vui lòng tải lên minh chứng chuyển khoản (UNC) Đợt 1 để tạo đơn hàng.', 'error');
       return;
     }
 
@@ -4265,9 +4265,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       }
 
       if (hasCoopSalesCheck && createCoopSlipChoice) {
-        addToast('Tạo phiếu cọc và tự động khởi tạo Phiếu hợp tác phân chia hoa hồng thành công!', 'success');
+        addToast('Tạo đơn hàng và tự động khởi tạo Hợp đồng đối tác phân chia hoa hồng thành công!', 'success');
       } else {
-        addToast('Tạo phiếu cọc và tải lên UNC thành công!', 'success');
+        addToast('Tạo đơn hàng và tải lên UNC thành công!', 'success');
       }
 
       triggerFullConfetti();
@@ -4288,7 +4288,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         setActiveTab('cooperation');
       }
     } catch (e: any) {
-      addToast(e?.response?.data?.message || e.message || 'Lỗi khi tạo phiếu cọc', 'error');
+      addToast(e?.response?.data?.message || e.message || 'Lỗi khi tạo đơn hàng', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -4296,9 +4296,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
   const handleCancelDeposit = (depositId: number) => {
     showConfirm({
-      title: 'Báo cáo bể cọc / Hủy đặt cọc',
-      message: 'Vui lòng nhập lý do hủy đặt cọc / bể cọc của khách hàng:',
-      confirmText: 'Báo cáo bể cọc',
+      title: 'Hủy đơn hàng / Báo cáo bể giao dịch',
+      message: 'Vui lòng nhập lý do hủy đơn hàng / bể giao dịch của khách hàng:',
+      confirmText: 'Xác nhận hủy đơn',
       cancelText: 'Hủy',
       isDanger: true,
       requirePromptInput: true,
@@ -4311,11 +4311,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         try {
           const res = await api.post(`/deposits/${depositId}/cancel`, { reason });
           if (res.data.success || res.data) {
-            addToast("Đã hủy đặt cọc thành công", "success");
+            addToast("Đã hủy đơn hàng thành công", "success");
             fetchData();
           }
         } catch (e: any) {
-          addToast(e?.response?.data?.message || "Không thể hủy đặt cọc", "error");
+          addToast(e?.response?.data?.message || "Không thể hủy đơn hàng", "error");
         }
       }
     });
@@ -11650,14 +11650,14 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           onClick={() => handleSaveDeposit(true)} 
                           disabled={isSubmitting}
                         >
-                          {isSubmitting ? 'Đang lưu...' : 'Tạo cọc & Tạo Phiếu Hợp tác'}
+                          {isSubmitting ? 'Đang lưu...' : 'Tạo Đơn hàng & Hợp đồng đối tác'}
                         </button>
                       </>
                     );
                   }
                   return (
                     <button className="btn primary" onClick={() => handleSaveDeposit(false)} disabled={isSubmitting}>
-                      {isSubmitting ? 'Đang tạo...' : 'Tạo phiếu cọc'}
+                      {isSubmitting ? 'Đang tạo...' : 'Tạo đơn đặt hàng'}
                     </button>
                   );
                 })()}

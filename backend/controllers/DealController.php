@@ -590,7 +590,7 @@ class DealController {
                 if ($oldDep) {
                     // Mark old deposit as cancelled/switched
                     $stmtCancelDep = $this->db->prepare("UPDATE deposits SET status = 'cancelled', cancelled_reason = ? WHERE id = ?");
-                    $stmtCancelDep->execute(["Đổi sang căn mới $newUnitCode (Deal ID: $newDealId)", $oldDep['id']]);
+                    $stmtCancelDep->execute(["Đổi sang sản phẩm mới $newUnitCode (Deal ID: $newDealId)", $oldDep['id']]);
 
                     // Insert new deposit
                     $targetProjId = $newProjectId ?: $oldDep['project_id'];
@@ -612,18 +612,18 @@ class DealController {
                     $newDepId = (int)$this->db->lastInsertId();
 
                     // Create first milestone for the new deposit
-                    $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, status) VALUES (?, 'Đợt 1 - Cọc giữ chỗ (Đổi căn)', ?, 'pending')")
+                    $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, status) VALUES (?, 'Đợt 1 - Đặt giữ chỗ (Đổi sản phẩm)', ?, 'pending')")
                              ->execute([$newDepId, $newPrice]);
                 }
             }
 
             $this->db->commit();
-            logInteraction($this->db, $auth['tenant_id'], $auth['user_id'], 'note', 'Đổi căn hộ', "Đã đổi từ deal $id sang deal $newDealId cho căn hộ mới $newUnitCode.", 'deal', $newDealId);
+            logInteraction($this->db, $auth['tenant_id'], $auth['user_id'], 'note', 'Đổi sản phẩm', "Đã đổi từ deal $id sang deal $newDealId cho sản phẩm mới $newUnitCode.", 'deal', $newDealId);
             logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'SWITCH_UNIT', 'deal', $id, json_encode(['old_deal_id' => $id, 'new_deal_id' => $newDealId, 'new_unit_code' => $newUnitCode, 'reason' => $reason]));
-            respond(200, ['new_deal_id' => $newDealId], 'Đổi căn hộ thành công, hệ thống đã đóng deal cũ và tạo deal mới lưu vết kiểm toán.');
+            respond(200, ['new_deal_id' => $newDealId], 'Đổi sản phẩm thành công, hệ thống đã đóng deal cũ và tạo deal mới lưu vết kiểm toán.');
         } catch (Exception $e) {
             $this->db->rollBack();
-            respond(500, null, 'Lỗi đổi căn: ' . $e->getMessage(), false);
+            respond(500, null, 'Lỗi đổi sản phẩm: ' . $e->getMessage(), false);
         }
     }
 

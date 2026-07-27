@@ -5047,7 +5047,7 @@ function doPost(e) {
                           width="100%"
                         />
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
-                          {t('Trạng thái đích mặc định của khách hàng khi hủy phiếu cọc trước khi phát sinh doanh thu (ví dụ: Đã Gặp).')}
+                          {t('Trạng thái đích mặc định của khách hàng khi hủy đơn đặt hàng trước khi phát sinh doanh thu (ví dụ: Đã Gặp).')}
                         </span>
                       </div>
 
@@ -6063,9 +6063,9 @@ function doPost(e) {
                       { key: 'attendance', title: t('1. Chấm công, Đi trễ & Làm bổ sung'), desc: t('Duyệt lý do đi trễ, làm bù và cập nhật bổ sung chấm công'), icon: <Clock size={16} /> },
                       { key: 'leave', title: t('2. Xin nghỉ phép cá nhân'), desc: t('Duyệt đơn xin nghỉ phép, tạm ngưng hoạt động của Sale'), icon: <Calendar size={16} /> },
                       { key: 'shift_registration', title: t('3. Đăng ký Ca trực (Đêm, Cuối tuần & Lễ)'), desc: t('Phê duyệt ca trực nhận data ngày nghỉ, đêm và dịp lễ/Tết'), icon: <Zap size={16} /> },
-                      { key: 'cooperation', title: t('4. Phiếu Hợp tác & Chia hoa hồng'), desc: t('Duyệt phiếu chia tỷ lệ phần trăm hoa hồng và hợp tác chéo'), icon: <Users size={16} /> },
-                      { key: 'expense', title: t('5. Đề xuất Chi phí & Thu chi'), desc: t('Duyệt đề xuất chi phí dự án, mua sắm phân tầng theo số tiền tùy chỉnh'), icon: <DollarSign size={16} />, isExpense: true },
-                      { key: 'deposit', title: t('6. Duyệt Phiếu Đặt cọc & Giao dịch'), desc: t('Xác nhận thông tin đặt cọc giữ chỗ, đổi căn và phiếu cọc'), icon: <FileText size={16} /> },
+                      { key: 'cooperation', title: t('4. Hợp đồng Đối tác & Chia hoa hồng'), desc: t('Duyệt tỷ lệ phần trăm phân chia doanh thu/chiết khấu đối tác'), icon: <Users size={16} /> },
+                      { key: 'expense', title: t('5. Đề xuất Chi phí & Thu chi'), desc: t('Duyệt đề xuất chi phí hoạt động, mua sắm phân tầng theo số tiền tùy chỉnh'), icon: <DollarSign size={16} />, isExpense: true },
+                      { key: 'deposit', title: t('6. Duyệt Đơn đặt hàng & Giao dịch'), desc: t('Xác nhận thông tin đơn đặt hàng, đổi sản phẩm và thanh toán'), icon: <FileText size={16} /> },
                       { key: 'ticket', title: t('7. Ticket Bù data & Yêu cầu Hỗ trợ'), desc: t('Duyệt ticket khiếu nại data lỗi và cấp bù lượt nhận lead'), icon: <LifeBuoy size={16} /> },
                       { key: 'lead_transfer', title: t('8. Yêu cầu Nhả Data / Chuyển chủ lead'), desc: t('Duyệt nhả khách hàng về Kho chung hoặc điều chuyển chủ sở hữu'), icon: <RefreshCw size={16} /> },
                       { key: 'quote_invoice', title: t('9. Báo giá & Hóa đơn giá trị lớn'), desc: t('Duyệt tạo báo giá đặc biệt hoặc hóa đơn điều chỉnh'), icon: <FileSpreadsheet size={16} /> }

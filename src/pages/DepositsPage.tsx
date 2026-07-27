@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { fetchAPI } from '../utils/api';
 import { compressToWebP } from '../utils/imageCompress';
 import { useAuth } from '../contexts/AuthContext';
@@ -380,7 +380,7 @@ export default function DepositsPage() {
       });
 
       if (res.success) {
-        addToast('Tạo phiếu cọc và lịch thanh toán thành công!', 'success');
+        addToast('Tạo đơn đặt hàng và lịch thanh toán thành công!', 'success');
         setIsCreateOpen(false);
         // Reset Form
         setSelectedContactId('');
@@ -394,7 +394,7 @@ export default function DepositsPage() {
         setCollaboratorShares({});
         loadData();
       } else {
-        addToast(res.message || 'Lỗi tạo phiếu cọc', 'error');
+        addToast(res.message || 'Lỗi tạo đơn đặt hàng', 'error');
       }
     } catch (e: any) {
       addToast(e.message || 'Lỗi kết nối', 'error');
@@ -694,7 +694,7 @@ export default function DepositsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {t("Quản Lý Đặt Cọc & Tiến Độ")}
+            {t("Quản Lý Đơn Đặt Hàng (Sales Orders)")}
             <button
               onClick={() => setShowInfoModal(true)}
               style={{
@@ -720,13 +720,13 @@ export default function DepositsPage() {
                 e.currentTarget.style.borderColor = 'var(--color-border)';
                 e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
               }}
-              title={t("Xem hướng dẫn quy tắc đặt cọc & đổi căn")}
+              title={t("Xem hướng dẫn quy tắc đặt hàng & đổi sản phẩm")}
             >
               <Info size={12} />
               <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>
             </button>
           </h1>
-          <p className="page-subtitle">{t("Theo dõi phiếu cọc, tiến độ thanh toán căn hộ và duyệt UNC")}</p>
+          <p className="page-subtitle">{t("Theo dõi đơn hàng, tiến độ thanh toán và duyệt UNC")}</p>
         </div>
         {!isViewer && (
           <button
@@ -735,7 +735,7 @@ export default function DepositsPage() {
             style={{ height: '38px' }}
           >
             <Plus size={16} />
-            Tạo phiếu cọc mới
+            Tạo đơn hàng mới
           </button>
         )}
       </div>
@@ -747,8 +747,8 @@ export default function DepositsPage() {
         <EmptyCard
           icon={<CreditCard />}
           title="Chưa có phiếu cọc nào"
-          description="Theo dõi phiếu cọc, tiến độ thanh toán căn hộ và duyệt UNC."
-          actionText={isViewer ? undefined : "Tạo phiếu cọc mới"}
+          description="Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC)."
+          actionText={isViewer ? undefined : "Tạo đơn hàng mới"}
           onAction={isViewer ? undefined : () => setIsCreateOpen(true)}
         />
       ) : (
@@ -757,8 +757,8 @@ export default function DepositsPage() {
             <table className="w-full text-left" style={{ borderCollapse: 'collapse', minWidth: 900 }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '110px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Căn hộ</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Dự án & Khách hàng</th>
+                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '110px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã sản phẩm / SKU</th>
+                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chiến dịch & Khách hàng</th>
                   <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
                   <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
                   <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
@@ -1066,7 +1066,7 @@ export default function DepositsPage() {
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Dự án</label>
+                <label className="form-label">Chiến dịch / Nhóm</label>
                 <CustomSelect
                   options={projects.map(p => ({
                     value: String(p.id),
@@ -1074,7 +1074,7 @@ export default function DepositsPage() {
                   }))}
                   value={selectedProjectId}
                   onChange={val => setSelectedProjectId(val.toString())}
-                  placeholder="-- Chọn dự án --"
+                  placeholder="-- Chọn chiến dịch/nhóm --"
                   searchable
                 />
               </div>
@@ -1082,11 +1082,11 @@ export default function DepositsPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Mã căn hộ</label>
+                <label className="form-label">Mã sản phẩm / SKU</label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: A-12.05"
+                  placeholder="VD: SKU-10023"
                   value={unitCode}
                   onChange={e => setUnitCode(e.target.value.toUpperCase())}
                   className="form-input"
@@ -1418,16 +1418,16 @@ export default function DepositsPage() {
               <Calendar size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
                 <h5 style={{ fontSize: '0.875rem', fontWeight: 800, margin: '0 0 4px 0', color: 'var(--color-text)' }}>
-                  {t("3. Cơ chế Đổi căn / Đổi dự án (Unit Switching)")}
+                  {t("3. Cơ chế Đổi Sản phẩm / Chiến dịch (Product Switching)")}
                 </h5>
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-                  {t("Khi khách hàng muốn chuyển sang căn hộ hoặc dự án giao dịch khác, bắt buộc thực hiện theo đúng vết kiểm toán (audit trail):")}
+                  {t("Khi khách hàng muốn đổi sản phẩm hoặc chiến dịch giao dịch khác, bắt buộc thực hiện theo đúng vết kiểm toán (audit trail):")}
                   <br />
-                  {t("• Đóng deal/phiếu cọc cũ lại (đánh dấu thất bại hoặc đã đổi).")}
+                  {t("• Đóng đơn hàng cũ lại (đánh dấu thất bại hoặc đã đổi).")}
                   <br />
-                  {t("• Tạo một deal/phiếu cọc mới hoàn toàn.")}
+                  {t("• Tạo một đơn hàng mới hoàn toàn.")}
                   <br />
-                  {t("• Gắn liên kết ghi rõ \"Đổi từ căn [Mã Căn Cũ]\" ở deal mới để lưu trọn vẹn lịch sử phí môi giới.")}
+                  {t("• Gắn liên kết ghi rõ \"Đổi từ sản phẩm [Mã SKU Cũ]\" ở đơn mới để lưu trọn vẹn lịch sử doanh thu.")}
                 </p>
               </div>
             </div>
@@ -1591,17 +1591,17 @@ export default function DepositsPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Dự án & Căn hộ</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{selectedDepForManage.project_name} - Căn {selectedDepForManage.unit_code}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Chiến dịch & Mã sản phẩm</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{selectedDepForManage.project_name} - {selectedDepForManage.unit_code}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Thời gian tạo phiếu</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Thời gian tạo đơn</span>
                     <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
                       {new Date(selectedDepForManage.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Tổng giá trị căn hộ</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Tổng giá trị đơn hàng</span>
                     <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1rem' }}>{formatMoney(selectedDepForManage.price)}</span>
                   </div>
                   <div>

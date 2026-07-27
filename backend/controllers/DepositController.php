@@ -118,7 +118,7 @@ class DepositController {
             }
         }
 
-        respond(200, $deposits, 'Lấy danh sách phiếu cọc thành công');
+        respond(200, $deposits, 'Lấy danh sách đơn đặt hàng thành công');
     }
 
     public function store(array $auth): void {
@@ -132,7 +132,7 @@ class DepositController {
         $milestones = $b['milestones'] ?? []; // Array of { name, amount }
 
         if (!$contactId || !$projectId || !$unitCode || $price <= 0) {
-            respond(422, null, 'Thiếu thông tin bắt buộc để tạo phiếu cọc (khách hàng, dự án, căn hộ, giá bán)', false);
+            respond(422, null, 'Thiếu thông tin bắt buộc để tạo đơn đặt hàng (khách hàng, chiến dịch, mã sản phẩm, giá bán)', false);
         }
 
         $this->db->beginTransaction();
@@ -147,7 +147,7 @@ class DepositController {
 
             if ($auth['role'] === 'sales' || $auth['role'] === 'sale') {
                 if ($contact['owner_id'] != $auth['user_id']) {
-                    respond(403, null, 'Bạn không thể tạo cọc cho khách hàng của người khác', false);
+                    respond(403, null, 'Bạn không thể tạo đơn hàng cho khách hàng của người khác', false);
                 }
             } else if ($auth['role'] === 'manager') {
                 $stmtUserTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
@@ -159,7 +159,7 @@ class DepositController {
                 $isTeamMember = $stmtLead->fetch();
 
                 if ($contact['owner_id'] != $auth['user_id'] && !$isTeamMember) {
-                    respond(403, null, 'Bạn không thể tạo cọc cho khách hàng thuộc quản lý của nhóm khác', false);
+                    respond(403, null, 'Bạn không thể tạo đơn hàng cho khách hàng thuộc quản lý của nhóm khác', false);
                 }
             }
 
@@ -173,7 +173,7 @@ class DepositController {
 
             // Insert milestones (default to Đợt 1 if empty)
             if (empty($milestones)) {
-                $milestones = [['name' => 'Đợt cọc lần 1', 'amount' => $price]];
+                $milestones = [['name' => 'Thanh toán đợt 1', 'amount' => $price]];
             }
 
             $stmtM = $this->db->prepare("
@@ -300,14 +300,14 @@ class DepositController {
             require_once __DIR__ . '/../config/CapiHelper.php';
             CapiHelper::sendEvent($this->db, $contactId, 'Purchase', $price);
 
-            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE_DEPOSIT', 'deposit', $depositId, "Tạo cọc căn $unitCode cho khách hàng " . $contact['first_name'] . " " . $contact['last_name']);
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE_DEPOSIT', 'deposit', $depositId, "Tạo đơn hàng sản phẩm $unitCode cho khách hàng " . $contact['first_name'] . " " . $contact['last_name']);
             respond(200, [
                 'id' => $depositId,
                 'milestones' => $createdMilestones
-            ], 'Tạo phiếu cọc và khởi tạo lịch thanh toán thành công');
+            ], 'Tạo đơn đặt hàng và khởi tạo lịch thanh toán thành công');
         } catch (Exception $e) {
             $this->db->rollBack();
-            respond(500, null, 'Lỗi lưu phiếu cọc: ' . $e->getMessage(), false);
+            respond(500, null, 'Lỗi lưu đơn đặt hàng: ' . $e->getMessage(), false);
         }
     }
 
@@ -331,11 +331,11 @@ class DepositController {
         ");
         $stmtDep->execute([$id, $auth['tenant_id']]);
         $dep = $stmtDep->fetch();
-        if (!$dep) respond(404, null, 'Phiếu cọc không tồn tại', false);
+        if (!$dep) respond(404, null, 'Đơn hàng không tồn tại', false);
 
         if ($auth['role'] === 'sales' || $auth['role'] === 'sale') {
             if ($dep['owner_id'] != $auth['user_id']) {
-                respond(403, null, 'Bạn không có quyền cập nhật phiếu cọc của người khác', false);
+                respond(403, null, 'Bạn không có quyền cập nhật đơn hàng của người khác', false);
             }
         } else if ($auth['role'] === 'manager') {
             $stmtUserTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
@@ -347,7 +347,7 @@ class DepositController {
             $isTeamMember = $stmtLead->fetch();
 
             if ($dep['owner_id'] != $auth['user_id'] && !$isTeamMember) {
-                respond(403, null, 'Bạn không có quyền cập nhật phiếu cọc thuộc quản lý của nhóm khác', false);
+                respond(403, null, 'Bạn không có quyền cập nhật đơn hàng thuộc quản lý của nhóm khác', false);
             }
         }
 
@@ -374,7 +374,7 @@ class DepositController {
             ");
             $stmt->execute([$relPath, $milestoneId, $id]);
 
-            // Automatically save UNC deposit proof file into Customer Documents ("Hồ sơ & Tài liệu") under folder "Đặt cọc"
+            // Automatically save UNC deposit proof file into Customer Documents ("Hồ sơ & Tài liệu") under folder "Đơn hàng"
             try {
                 $fileSize = file_exists($destPath) ? filesize($destPath) : ($file['size'] ?? 0);
                 $fileExt = strtolower(pathinfo($savedName, PATHINFO_EXTENSION));
@@ -386,12 +386,12 @@ class DepositController {
                 if (!$stmtCheckCF->fetch()) {
                     $stmtInsCloud = $this->db->prepare("
                         INSERT INTO cloud_files (tenant_id, contact_id, name, file_path, file_size, mime_type, category, visibility, uploaded_by, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, 'Đặt cọc', 'shared', ?, NOW())
+                        VALUES (?, ?, ?, ?, ?, ?, 'Đơn hàng', 'shared', ?, NOW())
                     ");
                     $stmtInsCloud->execute([
                         $auth['tenant_id'] ?? 1,
                         $dep['contact_id'],
-                        'UNC_DatCoc_' . $milestoneId . '_' . $fileName,
+                        'UNC_DonHang_' . $milestoneId . '_' . $fileName,
                         $relPath,
                         $fileSize,
                         $mimeType,
@@ -460,7 +460,7 @@ class DepositController {
                     $title,
                     $total,
                     $total,
-                    "Tự động tạo từ đợt UNC đặt cọc được duyệt. Mã phiếu cọc: #" . $id
+                    "Tự động tạo từ đợt UNC đơn hàng được duyệt. Mã đơn hàng: #" . $id
                 ]);
             }
 
@@ -524,7 +524,7 @@ class DepositController {
 
 
 
-            respond(200, null, 'Phê duyệt đợt thanh toán cọc thành công');
+            respond(200, null, 'Phê duyệt đợt thanh toán đơn hàng thành công');
         } catch (Exception $e) {
             $this->db->rollBack();
             respond(500, null, 'Lỗi duyệt đợt tiền: ' . $e->getMessage(), false);
@@ -627,7 +627,7 @@ class DepositController {
             ");
             $stmtDep->execute([$id, $auth['tenant_id']]);
             $dep = $stmtDep->fetch();
-            if (!$dep) respond(404, null, 'Phiếu cọc không tồn tại hoặc bạn không có quyền', false);
+            if (!$dep) respond(404, null, 'Đơn đặt hàng không tồn tại hoặc bạn không có quyền', false);
 
             if ($auth['role'] === 'manager') {
                 $stmtUserTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
@@ -639,7 +639,7 @@ class DepositController {
                 $isTeamMember = $stmtLead->fetch();
 
                 if ($dep['owner_id'] != $auth['user_id'] && !$isTeamMember) {
-                    respond(403, null, 'Bạn không thể hủy cọc cho khách hàng thuộc quản lý của nhóm khác', false);
+                    respond(403, null, 'Bạn không thể hủy đơn hàng cho khách hàng thuộc quản lý của nhóm khác', false);
                 }
             }
 
@@ -739,19 +739,19 @@ class DepositController {
             
             require_once __DIR__ . '/../mailer.php';
             if ($ownerRow && !empty($ownerRow['email'])) {
-                $emailSubject = "[IDEAS] Báo cáo hủy cọc / Bể cọc khách hàng: " . $ownerRow['contact_name'];
-                $emailTitle = "BÁO CÁO HỦY CỌC / BỂ CỌC";
+                $emailSubject = "[IDEAS] Báo cáo hủy đơn hàng / Bể giao dịch khách hàng: " . $ownerRow['contact_name'];
+                $emailTitle = "BÁO CÁO HỦY ĐƠN HÀNG / BỂ GIAO DỊCH";
                 $emailContent = "Chào <strong>" . htmlspecialchars($ownerRow['full_name']) . "</strong>,<br/><br/>" .
-                                "Phiếu đặt cọc của khách hàng <strong>" . htmlspecialchars($ownerRow['contact_name']) . "</strong> (Phiếu cọc #" . $id . ") đã bị hủy.<br/>" .
+                                "Đơn hàng của khách hàng <strong>" . htmlspecialchars($ownerRow['contact_name']) . "</strong> (Đơn hàng #" . $id . ") đã bị hủy.<br/>" .
                                 "Lý do: <em>" . htmlspecialchars($reason) . "</em>.<br/>" .
-                                "Trạng thái khách hàng đã được " . ($approvedCount === 0 ? "hạ về <strong>Đặt chỗ (Booking)</strong>" : "giữ nguyên <strong>Đặt cọc (Customer)</strong> do đã phát sinh doanh thu thực tế") . ".<br/>" .
+                                "Trạng thái khách hàng đã được " . ($approvedCount === 0 ? "hạ về <strong>Đăng ký dịch vụ (Booking)</strong>" : "giữ nguyên <strong>Hợp đồng (Customer)</strong> do đã phát sinh doanh thu thực tế") . ".<br/>" .
                                 "Vui lòng kiểm tra trên IDEAS CRM.";
                 sendEmailNotification($ownerRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
             }
 
             $this->db->commit();
-            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CANCEL_DEPOSIT', 'deposit', $id, "Hủy cọc/Bể cọc. Lý do: $reason");
-            respond(200, null, 'Báo cáo hủy cọc và cập nhật trạng thái khách hàng thành công');
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CANCEL_DEPOSIT', 'deposit', $id, "Hủy đơn hàng/Bể giao dịch. Lý do: $reason");
+            respond(200, null, 'Báo cáo hủy đơn hàng và cập nhật trạng thái khách hàng thành công');
         } catch (Exception $e) {
             $this->db->rollBack();
             respond(500, null, 'Lỗi báo hủy cọc: ' . $e->getMessage(), false);
