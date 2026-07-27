@@ -16,6 +16,24 @@ try {
     // Enable error reporting
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+    // Reset passwords for the demo accounts to make sure they match quick logins
+    $pwdUpdates = [
+        'turniodev@gmail.com' => 'pass123',
+        'director@Ideas.test' => 'director123',
+        'manager@Ideas.test' => 'manager123',
+        'dom.marketing.vn@gmail.com' => '123456',
+        'hr@Ideas.test' => 'hr123',
+        'accountant@Ideas.test' => 'accountant123',
+        'marketing@Ideas.test' => 'marketing123'
+    ];
+
+    foreach ($pwdUpdates as $email => $plainPassword) {
+        $hash = password_hash($plainPassword, PASSWORD_BCRYPT);
+        $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE email = ?");
+        $stmt->execute([$hash, $email]);
+        $stmt->close();
+    }
+
     // Disable foreign key checks temporarily to clean up
     $conn->query("SET FOREIGN_KEY_CHECKS = 0");
 
