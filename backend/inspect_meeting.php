@@ -1,0 +1,2 @@
+<?php
+// Diagnostic file cleared.
