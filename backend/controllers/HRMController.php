@@ -109,6 +109,26 @@ class HRMController {
             $b['reason'] ?? ''
         ]);
 
+        // Dispatch Notification
+        try {
+            $stmtUser = $this->db->prepare("SELECT full_name FROM users WHERE id = ?");
+            $stmtUser->execute([$auth['user_id']]);
+            $userName = $stmtUser->fetchColumn() ?: 'Nhân viên';
+
+            $leaveTypeText = $b['leave_type'] === 'annual' ? 'Phép năm' : ($b['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($b['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($b['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')));
+
+            require_once __DIR__ . '/../NotificationService.php';
+            NotificationService::send($this->db, $auth['tenant_id'], 'HRM_LEAVE_REQUEST', [
+                'user_name' => $userName,
+                'leave_type_text' => $leaveTypeText,
+                'start_date' => $b['start_date'],
+                'end_date' => $b['end_date'],
+                'total_days' => (float)($b['total_days'] ?? 1.0),
+                'reason' => $b['reason'] ?? '',
+                'date' => date('Y-m-d')
+            ]);
+        } catch (\Throwable $e) {}
+
         respond(200, ['success' => true]);
     }
 
@@ -121,6 +141,28 @@ class HRMController {
 
         $stmt = $this->db->prepare("UPDATE hrm_leave_requests SET status = ?, approved_by = ? WHERE id = ?");
         $stmt->execute([$b['status'], $auth['user_id'], (int)$b['id']]);
+
+        // Dispatch Notification
+        try {
+            $stmtL = $this->db->prepare("SELECT l.*, u.full_name FROM hrm_leave_requests l JOIN users u ON l.user_id = u.id WHERE l.id = ?");
+            $stmtL->execute([(int)$b['id']]);
+            $leaveRow = $stmtL->fetch(PDO::FETCH_ASSOC);
+            if ($leaveRow) {
+                $leaveTypeText = $leaveRow['leave_type'] === 'annual' ? 'Phép năm' : ($leaveRow['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($leaveRow['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($leaveRow['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')));
+                $statusText = $b['status'] === 'approved' ? 'Phê duyệt' : 'Từ chối';
+
+                require_once __DIR__ . '/../NotificationService.php';
+                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_LEAVE_APPROVAL', [
+                    'user_id' => $leaveRow['user_id'],
+                    'user_name' => $leaveRow['full_name'],
+                    'leave_type_text' => $leaveTypeText,
+                    'start_date' => $leaveRow['start_date'],
+                    'end_date' => $leaveRow['end_date'],
+                    'status_text' => $statusText,
+                    'reason' => $b['reason'] ?? 'Không có ghi chú thêm'
+                ]);
+            }
+        } catch (\Throwable $e) {}
 
         respond(200, ['success' => true]);
     }
@@ -166,6 +208,21 @@ class HRMController {
             $b['reason'] ?? ''
         ]);
 
+        // Dispatch Notification
+        try {
+            $stmtUser = $this->db->prepare("SELECT full_name FROM users WHERE id = ?");
+            $stmtUser->execute([$auth['user_id']]);
+            $userName = $stmtUser->fetchColumn() ?: 'Nhân viên';
+
+            require_once __DIR__ . '/../NotificationService.php';
+            NotificationService::send($this->db, $auth['tenant_id'], 'HRM_ADVANCE_REQUEST', [
+                'user_name' => $userName,
+                'amount' => (float)$b['amount'],
+                'reason' => $b['reason'] ?? '',
+                'date' => date('Y-m-d')
+            ]);
+        } catch (\Throwable $e) {}
+
         respond(200, ['success' => true]);
     }
 
@@ -178,6 +235,25 @@ class HRMController {
 
         $stmt = $this->db->prepare("UPDATE hrm_salary_advances SET status = ? WHERE id = ?");
         $stmt->execute([$b['status'], (int)$b['id']]);
+
+        // Dispatch Notification
+        try {
+            $stmtA = $this->db->prepare("SELECT a.*, u.full_name FROM hrm_salary_advances a JOIN users u ON a.user_id = u.id WHERE a.id = ?");
+            $stmtA->execute([(int)$b['id']]);
+            $advRow = $stmtA->fetch(PDO::FETCH_ASSOC);
+            if ($advRow) {
+                $statusText = $b['status'] === 'approved' ? 'Phê duyệt giải ngân' : 'Từ chối';
+
+                require_once __DIR__ . '/../NotificationService.php';
+                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_ADVANCE_APPROVAL', [
+                    'user_id' => $advRow['user_id'],
+                    'user_name' => $advRow['full_name'],
+                    'amount' => (float)$advRow['amount'],
+                    'status_text' => $statusText,
+                    'reason' => $b['reason'] ?? 'Không có ghi chú thêm'
+                ]);
+            }
+        } catch (\Throwable $e) {}
 
         respond(200, ['success' => true]);
     }
@@ -470,8 +546,29 @@ class HRMController {
         $monthYear = $b['month_year'] ?? '';
         if (empty($monthYear)) respond(400, null, 'Thiếu tháng gửi phiếu lương', false);
 
+        // Fetch users who have draft payslips in this month to notify them
+        $stmtUsers = $this->db->prepare("SELECT DISTINCT user_id FROM monthly_payslips WHERE month_year = ? AND status = 'draft'");
+        $stmtUsers->execute([$monthYear]);
+        $userIds = $stmtUsers->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
         $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'sent' WHERE month_year = ? AND status = 'draft'");
         $stmt->execute([$monthYear]);
+
+        // Dispatch Notifications
+        try {
+            require_once __DIR__ . '/../NotificationService.php';
+            foreach ($userIds as $uid) {
+                $stmtU = $this->db->prepare("SELECT full_name FROM users WHERE id = ?");
+                $stmtU->execute([$uid]);
+                $uName = $stmtU->fetchColumn() ?: 'Nhân viên';
+
+                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_PUBLISHED', [
+                    'user_id' => $uid,
+                    'user_name' => $uName,
+                    'month_year' => $monthYear
+                ]);
+            }
+        } catch (\Throwable $e) {}
 
         respond(200, ['success' => true]);
     }
@@ -485,6 +582,20 @@ class HRMController {
 
         $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'confirmed', signature_url = ?, confirmed_at = NOW() WHERE id = ? AND user_id = ? AND status = 'sent'");
         $stmt->execute([$signatureUrl, $id, $auth['user_id']]);
+
+        // Dispatch Notification
+        try {
+            $stmtP = $this->db->prepare("SELECT p.*, u.full_name FROM monthly_payslips p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
+            $stmtP->execute([$id]);
+            $psRow = $stmtP->fetch(PDO::FETCH_ASSOC);
+            if ($psRow) {
+                require_once __DIR__ . '/../NotificationService.php';
+                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_CONFIRMED', [
+                    'user_name' => $psRow['full_name'],
+                    'month_year' => $psRow['month_year']
+                ]);
+            }
+        } catch (\Throwable $e) {}
 
         respond(200, ['success' => true]);
     }

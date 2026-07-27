@@ -935,6 +935,151 @@ class NotificationService {
                                     "Chúc toàn thể nhân viên kỳ nghỉ vui vẻ!"
                 ];
 
+            case 'HRM_LEAVE_REQUEST':
+                $recipients = self::getAdminsAndManagers($db, $tenantId);
+                $leaveType = $payload['leave_type_text'] ?? 'Nghỉ phép';
+                $leaveDays = $payload['total_days'] ?? 1;
+                $leavePeriod = ($payload['start_date'] ?? '') . ' -> ' . ($payload['end_date'] ?? '');
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Đơn xin nghỉ phép mới ($leaveType)",
+                    'body' => "Nhân viên $userName vừa gửi đơn xin nghỉ $leaveType từ $leavePeriod ($leaveDays ngày). Lý do: \"$reason\"",
+                    'type' => "leave",
+                    'link' => "/hrm?tab=leaves",
+                    'zalo_msg' => "🏖️ [ ĐƠN XIN NGHỈ PHÉP MỚI - $leaveType ]\n\n"
+                        . "Nhân viên: $userName\n"
+                        . "Thời gian: $leavePeriod ($leaveDays ngày)\n"
+                        . "Lý do: \"$reason\"\n\nVui lòng truy cập trang Quản lý nhân sự để phê duyệt.",
+                    'tg_msg' => "🏖️ <b>[ ĐƠN XIN NGHỈ PHÉP MỚI - $leaveType ]</b>\n\n"
+                        . "Nhân viên: <b>$userName</b>\n"
+                        . "Thời gian: <code>$leavePeriod</code> ($leaveDays ngày)\n"
+                        . "Lý do: <i>\"$reason\"</i>\n\nVui lòng truy cập trang Quản lý nhân sự để phê duyệt.",
+                    'email_subject' => "[IDEAS] Đơn xin nghỉ $leaveType mới - $userName",
+                    'email_title' => "YÊU CẦU DUYỆT NGHỈ PHÉP",
+                    'email_content' => "Chào quản trị viên,<br/><br/>" .
+                                    "Nhân viên <strong>$userName</strong> vừa gửi đơn xin nghỉ <strong>$leaveType</strong> từ $leavePeriod ($leaveDays ngày).<br/>" .
+                                    "Lý do: <em>\"$reason\"</em>.<br/>" .
+                                    "Vui lòng truy cập trang Quản lý nhân sự trên CRM để phê duyệt."
+                ];
+
+            case 'HRM_LEAVE_APPROVAL':
+                $recipients = self::getRecipientById($db, $payload['user_id'] ?? 0);
+                $leaveType = $payload['leave_type_text'] ?? 'Nghỉ phép';
+                $statusText = $payload['status_text'] ?? 'được cập nhật';
+                $leavePeriod = ($payload['start_date'] ?? '') . ' -> ' . ($payload['end_date'] ?? '');
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Kết quả duyệt nghỉ phép ($leaveType)",
+                    'body' => "Đơn xin nghỉ $leaveType từ $leavePeriod của bạn đã được $statusText. Ghi chú: \"$reason\"",
+                    'type' => "leave",
+                    'link' => "/my-payslips",
+                    'zalo_msg' => "✅ [ KẾT QUẢ DUYỆT NGHỈ PHÉP ]\n\n"
+                        . "Đơn xin nghỉ $leaveType ($leavePeriod) của bạn đã được $statusText.\n"
+                        . "Ghi chú: \"$reason\"",
+                    'tg_msg' => "✅ <b>[ KẾT QUẢ DUYỆT NGHỈ PHÉP ]</b>\n\n"
+                        . "Đơn xin nghỉ $leaveType (<code>$leavePeriod</code>) của bạn đã được <b>$statusText</b>.\n"
+                        . "Ghi chú: <i>\"$reason\"</i>",
+                    'email_subject' => "[IDEAS] Kết quả duyệt đơn nghỉ $leaveType của bạn",
+                    'email_title' => "KẾT QUẢ DUYỆT NGHỈ PHÉP",
+                    'email_content' => "Chào <strong>$userName</strong>,<br/><br/>" .
+                                    "Đơn xin nghỉ <strong>$leaveType</strong> từ $leavePeriod của bạn đã được <strong>$statusText</strong> bởi quản lý.<br/>" .
+                                    "Ghi chú/lý do: <em>\"$reason\"</em>."
+                ];
+
+            case 'HRM_ADVANCE_REQUEST':
+                $recipients = self::getAdminsAndManagers($db, $tenantId);
+                $amountText = number_format((float)($payload['amount'] ?? 0), 0, ',', '.') . 'đ';
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Yêu cầu tạm ứng lương mới",
+                    'body' => "Nhân viên $userName đề xuất tạm ứng số tiền $amountText. Lý do: \"$reason\"",
+                    'type' => "expense",
+                    'link' => "/hrm?tab=advances",
+                    'zalo_msg' => "💸 [ YÊU CẦU TẠM ỨNG LƯƠNG MỚI ]\n\n"
+                        . "Nhân viên: $userName\n"
+                        . "Số tiền đề xuất: $amountText\n"
+                        . "Lý do: \"$reason\"\n\nVui lòng truy cập trang Quản lý nhân sự để phê duyệt.",
+                    'tg_msg' => "💸 <b>[ YÊU CẦU TẠM ỨNG LƯƠNG MỚI ]</b>\n\n"
+                        . "Nhân viên: <b>$userName</b>\n"
+                        . "Số tiền đề xuất: <b>$amountText</b>\n"
+                        . "Lý do: <i>\"$reason\"</i>\n\nVui lòng truy cập trang Quản lý nhân sự để phê duyệt.",
+                    'email_subject' => "[IDEAS] Yêu cầu tạm ứng lương mới - $userName",
+                    'email_title' => "YÊU CẦU DUYỆT TẠM ỨNG LƯƠNG",
+                    'email_content' => "Chào quản trị viên,<br/><br/>" .
+                                    "Nhân viên <strong>$userName</strong> vừa gửi đề xuất tạm ứng lương số tiền <strong>$amountText</strong>.<br/>" .
+                                    "Lý do: <em>\"$reason\"</em>.<br/>" .
+                                    "Vui lòng truy cập trang Quản lý nhân sự trên CRM để phê duyệt."
+                ];
+
+            case 'HRM_ADVANCE_APPROVAL':
+                $recipients = self::getRecipientById($db, $payload['user_id'] ?? 0);
+                $amountText = number_format((float)($payload['amount'] ?? 0), 0, ',', '.') . 'đ';
+                $statusText = $payload['status_text'] ?? 'được cập nhật';
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Kết quả duyệt tạm ứng lương",
+                    'body' => "Đề xuất tạm ứng $amountText của bạn đã được $statusText. Ghi chú: \"$reason\"",
+                    'type' => "expense",
+                    'link' => "/my-payslips",
+                    'zalo_msg' => "✅ [ KẾT QUẢ DUYỆT TẠM ỨNG LƯƠNG ]\n\n"
+                        . "Đề xuất tạm ứng $amountText của bạn đã được $statusText.\n"
+                        . "Ghi chú: \"$reason\"",
+                    'tg_msg' => "✅ <b>[ KẾT QUẢ DUYỆT TẠM ỨNG LƯƠNG ]</b>\n\n"
+                        . "Đề xuất tạm ứng <b>$amountText</b> của bạn đã được <b>$statusText</b>.\n"
+                        . "Ghi chú: <i>\"$reason\"</i>",
+                    'email_subject' => "[IDEAS] Kết quả duyệt tạm ứng lương của bạn",
+                    'email_title' => "KẾT QUẢ DUYỆT TẠM ỨNG LƯƠNG",
+                    'email_content' => "Chào <strong>$userName</strong>,<br/><br/>" .
+                                    "Yêu cầu tạm ứng số tiền <strong>$amountText</strong> của bạn đã được <strong>$statusText</strong> bởi quản lý.<br/>" .
+                                    "Ghi chú/lý do: <em>\"$reason\"</em>."
+                ];
+
+            case 'HRM_PAYSLIP_PUBLISHED':
+                $recipients = self::getRecipientById($db, $payload['user_id'] ?? 0);
+                $monthYear = $payload['month_year'] ?? '';
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Phiếu lương tháng $monthYear đã phát hành",
+                    'body' => "Phiếu lương tháng $monthYear của bạn đã được phát hành. Vui lòng truy cập Cổng nhân sự để ký nhận.",
+                    'type' => "account",
+                    'link' => "/my-payslips",
+                    'zalo_msg' => "📊 [ PHÁT HÀNH PHIẾU LƯƠNG THÁNG $monthYear ]\n\n"
+                        . "Phiếu lương tháng $monthYear của bạn đã được phát hành.\n"
+                        . "Vui lòng truy cập Cổng nhân sự cá nhân (My HR) để ký xác nhận trực tuyến.",
+                    'tg_msg' => "📊 <b>[ PHÁT HÀNH PHIẾU LƯƠNG THÁNG $monthYear ]</b>\n\n"
+                        . "Phiếu lương tháng $monthYear của bạn đã được phát hành.\n"
+                        . "Vui lòng truy cập Cổng nhân sự cá nhân (My HR) để ký xác nhận trực tuyến.",
+                    'email_subject' => "[IDEAS] Thông báo phát hành Phiếu lương tháng $monthYear",
+                    'email_title' => "PHÁT HÀNH PHIẾU LƯƠNG",
+                    'email_content' => "Chào <strong>$userName</strong>,<br/><br/>" .
+                                    "Phiếu lương tháng $monthYear của bạn đã được phát hành trên hệ thống.<br/>" .
+                                    "Vui lòng đăng nhập CRM và vào mục <strong>Phiếu lương cá nhân (My HR)</strong> để ký xác nhận trực tuyến."
+                ];
+
+            case 'HRM_PAYSLIP_CONFIRMED':
+                $recipients = self::getAdminsAndManagers($db, $tenantId);
+                $monthYear = $payload['month_year'] ?? '';
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Xác nhận ký nhận phiếu lương tháng $monthYear",
+                    'body' => "Nhân viên $userName đã ký xác nhận phiếu lương tháng $monthYear thành công.",
+                    'type' => "account",
+                    'link' => "/hrm?tab=payroll",
+                    'zalo_msg' => "✍️ [ XÁC NHẬN KÝ NHẬN PHIẾU LƯƠNG ]\n\n"
+                        . "Nhân viên: $userName\n"
+                        . "Nội dung: Đã ký xác nhận phiếu lương tháng $monthYear.\n"
+                        . "Trạng thái: Hoàn tất ký nhận trực tuyến.",
+                    'tg_msg' => "✍️ <b>[ XÁC NHẬN KÝ NHẬN PHIẾU LƯƠNG ]</b>\n\n"
+                        . "Nhân viên: <b>$userName</b>\n"
+                        . "Nội dung: Đã ký xác nhận phiếu lương tháng <b>$monthYear</b>.\n"
+                        . "Trạng thái: <b>Hoàn tất ký nhận trực tuyến</b>.",
+                    'email_subject' => "[IDEAS] Nhân viên $userName đã ký nhận phiếu lương tháng $monthYear",
+                    'email_title' => "NHÂN VIÊN KÝ NHẬN PHIẾU LƯƠNG",
+                    'email_content' => "Chào quản trị viên,<br/><br/>" .
+                                    "Nhân viên <strong>$userName</strong> đã hoàn tất ký số trực tuyến xác nhận phiếu lương tháng $monthYear.<br/>" .
+                                    "Vui lòng kiểm tra lịch sử ký trên hệ thống CRM."
+                ];
+
             default:
                 return null;
         }
