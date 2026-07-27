@@ -150,6 +150,10 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   const isAdmin = currentUser?.role === 'admin' || isSuperAdmin;
   const isViewingOtherUser = Boolean(account && currentUser && String(account.id) !== String(currentUser.id));
   const effectiveReadOnly = readOnly || (isViewingOtherUser && !isAdmin && !isSuperAdmin);
+  const isOwnProfile = account && currentUser && String(account.id) === String(currentUser.id);
+  const isHRorAdmin = currentUser && ['hr', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(currentUser.role).toLowerCase());
+  const showSalaryTab = isOwnProfile || isHRorAdmin;
+  const canEditSalary = isHRorAdmin;
 
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -176,7 +180,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'personal' | 'erp' | 'assets' | 'account' | 'bank' | 'emergency' | 'schedule' | 'documents' | 'certificates' | 'hr_records' | ''>(() => window.innerWidth <= 1024 ? '' : 'personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'erp' | 'assets' | 'account' | 'bank' | 'emergency' | 'schedule' | 'documents' | 'certificates' | 'hr_records' | 'salary' | ''>(() => window.innerWidth <= 1024 ? '' : 'personal');
   const [addressTemporary, setAddressTemporary] = useState('');
   const [certificates, setCertificates] = useState<{ id: string, name: string, code: string, issuer: string, link: string, image: string, issuedDate: string, expiryDate: string }[]>([]);
   const [hrRecords, setHrRecords] = useState<{ id: string, type: 'award' | 'warning' | 'discipline', title: string, date: string, amount: string, reason: string, decisionNumber: string, documentLink: string }[]>([]);
@@ -186,6 +190,14 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   const [activeHRSubTab, setActiveHRSubTab] = useState<'award' | 'warning' | 'discipline'>('award');
   const [hoveredImgIndex, setHoveredImgIndex] = useState<number | null>(null);
   const [assignedAssets, setAssignedAssets] = useState<AssignedAsset[]>([]);
+  // Salary contract states
+  const [baseSalary, setBaseSalary] = useState(0);
+  const [dealSalary, setDealSalary] = useState(0);
+  const [hasInsurance, setHasInsurance] = useState(false);
+  const [allowanceMeal, setAllowanceMeal] = useState(0);
+  const [allowanceTravel, setAllowanceTravel] = useState(0);
+  const [allowancePhone, setAllowancePhone] = useState(0);
+  const [kpiTarget, setKpiTarget] = useState(0);
 
   // Collapsible sections
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -525,7 +537,32 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
         }
       };
 
+      const fetchHrmProfile = async () => {
+        try {
+          const isMgmt = currentUser && ['hr', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(currentUser.role).toLowerCase());
+          const isOwn = account && currentUser && String(account.id) === String(currentUser.id);
+          if (isMgmt || isOwn) {
+            const res = await fetchAPI('hrm/profiles');
+            if (res && Array.isArray(res)) {
+              const found = res.find((p: any) => String(p.id) === String(account.id));
+              if (found) {
+                setBaseSalary(Number(found.base_salary || 0));
+                setDealSalary(Number(found.deal_salary || 0));
+                setHasInsurance(found.has_insurance !== 0 && found.has_insurance !== '0' && found.has_insurance !== false);
+                setAllowanceMeal(Number(found.allowance_meal || 0));
+                setAllowanceTravel(Number(found.allowance_travel || 0));
+                setAllowancePhone(Number(found.allowance_phone || 0));
+                setKpiTarget(Number(found.kpi_target || 0));
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load hrm profile in drawer:", e);
+        }
+      };
+
       fetchFullDetails();
+      fetchHrmProfile();
       fetchDocuments();
     } else {
       // Clear fields for new account creation
@@ -995,6 +1032,26 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
 
       if (!resProfile.success) {
         throw new Error(resProfile.message || t('Lỗi lưu thông tin hồ sơ chi tiết.'));
+      }
+
+      // 4. Save HRM Profile (salary contract info) if user has HR or Admin role
+      const isHRorAdmin = currentUser && ['hr', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(currentUser.role).toLowerCase());
+      if (isHRorAdmin && savedUserId) {
+        await fetchAPI('hrm/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: savedUserId,
+            joined_date: dateJoined || new Date().toISOString().substring(0, 10),
+            base_salary: baseSalary,
+            deal_salary: dealSalary,
+            has_insurance: hasInsurance ? 1 : 0,
+            allowance_meal: allowanceMeal,
+            allowance_travel: allowanceTravel,
+            allowance_phone: allowancePhone,
+            kpi_target: kpiTarget
+          })
+        });
       }
 
       if (account && String(account.id) === String(currentUser?.id)) {
@@ -1556,6 +1613,18 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         {renderColoredIcon(Paperclip, '#8e8e93')}
                         <span style={{ whiteSpace: 'nowrap' }}>{t('Lưu trữ tài liệu')}</span>
                       </button>
+
+                      {showSalaryTab && (
+                        <button
+                          type="button"
+                          className={`${styles.sidebarTabBtn} ${activeTab === 'salary' ? styles.sidebarTabActive : ''}`}
+                          onClick={() => setActiveTab('salary')}
+                          style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'salary' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'salary' ? 700 : 500 }}
+                        >
+                          {renderColoredIcon(Award, '#ff2d55')}
+                          <span style={{ whiteSpace: 'nowrap' }}>{t('Lương & Bảo hiểm')}</span>
+                        </button>
+                      )}
 
                       <div style={{ height: '1px', backgroundColor: 'var(--color-border-light)', margin: '6px 0.5rem' }} />
 
@@ -3986,6 +4055,120 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                     </div>
                   </div>
                 )}
+
+              {showSalaryTab && activeTab === 'salary' && (
+                <div style={{
+                  background: 'var(--color-surface)',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div 
+                    style={{
+                      padding: '1rem 1.25rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderBottom: '1px solid var(--color-border)',
+                      backgroundColor: 'var(--color-bg-light)',
+                      borderTopLeftRadius: '15px',
+                      borderTopRightRadius: '15px'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text)' }}>
+                      <Award size={14} style={{ color: 'var(--color-primary)' }} /> {t('HỒ SƠ LƯƠNG & BẢO HIỂM')}
+                    </span>
+                    {!canEditSalary && (
+                      <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                        {t('Chỉ xem')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">{t('Lương Net thực tế')}</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={dealSalary}
+                          onChange={e => setDealSalary(Number(e.target.value))}
+                          disabled={!canEditSalary}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t('Lương đóng BHXH')}</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={baseSalary}
+                          onChange={e => setBaseSalary(Number(e.target.value))}
+                          disabled={!canEditSalary}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">{t('Phụ cấp ăn trưa')}</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={allowanceMeal}
+                          onChange={e => setAllowanceMeal(Number(e.target.value))}
+                          disabled={!canEditSalary}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t('Phụ cấp xăng xe')}</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={allowanceTravel}
+                          onChange={e => setAllowanceTravel(Number(e.target.value))}
+                          disabled={!canEditSalary}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">{t('Phụ cấp điện thoại')}</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={allowancePhone}
+                          onChange={e => setAllowancePhone(Number(e.target.value))}
+                          disabled={!canEditSalary}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">{t('Chỉ tiêu doanh số KPI tối thiểu')}</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={kpiTarget}
+                        onChange={e => setKpiTarget(Number(e.target.value))}
+                        disabled={!canEditSalary}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0' }}>
+                      <input
+                        type="checkbox"
+                        id="drawer_has_insurance"
+                        checked={hasInsurance}
+                        onChange={e => setHasInsurance(e.target.checked)}
+                        disabled={!canEditSalary}
+                        style={{ width: '16px', height: '16px', cursor: canEditSalary ? 'pointer' : 'default' }}
+                      />
+                      <label htmlFor="drawer_has_insurance" style={{ fontWeight: 600, fontSize: '0.85rem', cursor: canEditSalary ? 'pointer' : 'default', color: 'var(--color-text)' }}>
+                        {t('Đóng bảo hiểm xã hội bắt buộc')}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
                     </fieldset>
                   </form>
