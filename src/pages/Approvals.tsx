@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server,
-  FileCheck, Settings, ArrowLeft, X, Save
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -24,6 +24,8 @@ const workflowList = [
   { id: 'expense_claim', name: 'Đề xuất chi phí', description: 'Yêu cầu hoàn trả chi phí tiếp khách, đi lại, văn phòng phẩm.', category: 'finance', icon: Receipt, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
   { id: 'client_meeting', name: 'Đề xuất tiếp khách', description: 'Chi phí tiếp đãi khách hàng, đối tác quan trọng.', category: 'finance', icon: Briefcase, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
   { id: 'business_trip', name: 'Đăng ký công tác', description: 'Yêu cầu công tác, tạm ứng công tác phí và phương tiện.', category: 'finance', icon: Briefcase, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
+  { id: 'phased_payment', name: 'Thanh toán theo đợt', description: 'Đề xuất thanh toán chia nhiều đợt theo tiến độ hợp đồng.', category: 'finance', icon: GitBranch, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
+  { id: 'recurring_payment', name: 'Thanh toán định kỳ', description: 'Đề xuất thanh toán định kỳ hàng tháng/quý (tiền nhà, internet, phí dịch vụ).', category: 'finance', icon: Clock3, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
 
   { id: 'leave_late', name: 'Đề nghị nghỉ phép', description: 'Yêu cầu nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản.', category: 'hr', icon: Calendar, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
   { id: 'checkin_explain', name: 'Giải trình chấm công', description: 'Giải trình đi trễ, về sớm hoặc quên chấm công.', category: 'hr', icon: Clock, bg: 'rgba(236, 72, 153, 0.08)', color: '#ec4899' },
@@ -98,6 +100,22 @@ export default function Approvals() {
   const [newCreateComment, setNewCreateComment] = useState('');
   const [createCommentAttachments, setCreateCommentAttachments] = useState<any[]>([]);
   const [createUploadingFile, setCreateUploadingFile] = useState(false);
+
+  // Phased payment states
+  const [isPhasedPayment, setIsPhasedPayment] = useState(false);
+  const [installments, setInstallments] = useState<any[]>([
+    { id: Date.now(), title: 'Đợt 1', amount: 0, dueDate: '' }
+  ]);
+
+  // Recurring proposal states
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState('monthly');
+  const [recurringEndDate, setRecurringEndDate] = useState('');
+
+  // Main list filters
+  const [listSearchText, setListSearchText] = useState('');
+  const [listCategoryFilter, setListCategoryFilter] = useState('all');
+  const [listStatusFilter, setListStatusFilter] = useState('all');
 
   // CC list / related users state
   const [relatedUsers, setRelatedUsers] = useState<string[]>([]);
@@ -217,6 +235,30 @@ export default function Approvals() {
     }
   };
 
+  const handleDuplicate = (item: ApprovalItem) => {
+    setSelectedTimelineItem(null);
+    setSelectedItem(null);
+    
+    const matchingDef = workflowList.find(w => w.id === item.type) || workflowList[0];
+    setSelectedWorkflowDef(matchingDef);
+    
+    if (item.type === 'leave') {
+      setFormType('leave');
+    } else if (item.type === 'advance') {
+      setFormType('advance');
+    } else if (matchingDef.category === 'finance' || item.type === 'expense') {
+      setFormType('expense');
+    } else {
+      setFormType('general');
+    }
+    
+    setExpenseTitle(`${t('Nhân bản')} - ${item.title}`);
+    setPaymentDetails(item.description || '');
+    
+    setShowCreateModal(true);
+    toast.success(t('Đã nhân bản thông tin đề xuất! Vui lòng kiểm tra và gửi.'));
+  };
+
   const formatBadge = (status: string) => {
     const s = status ? status.toLowerCase() : 'pending';
     if (s === 'approved' || s === 'confirmed') {
@@ -256,6 +298,27 @@ export default function Approvals() {
       default: return <Clipboard size={16} />;
     }
   };
+
+  // Filter logic for main lists
+  const filterList = (list: ApprovalItem[]) => {
+    return list.filter(item => {
+      const matchesSearch = listSearchText === '' ||
+        (item.title && item.title.toLowerCase().includes(listSearchText.toLowerCase())) ||
+        (item.description && item.description.toLowerCase().includes(listSearchText.toLowerCase()));
+      
+      const matchingDef = workflowList.find(w => w.id === item.type);
+      const itemCategory = matchingDef ? matchingDef.category : 'finance';
+      const matchesCategory = listCategoryFilter === 'all' || itemCategory === listCategoryFilter;
+      
+      const matchesStatus = listStatusFilter === 'all' || 
+        (item.status || 'pending').toLowerCase() === listStatusFilter.toLowerCase();
+      
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  };
+
+  const filteredPendingList = filterList(pendingList);
+  const filteredMyRequestsList = filterList(myRequestsList);
 
   return (
     <div>
@@ -329,6 +392,85 @@ export default function Approvals() {
         </button>
       </div>
 
+      {/* Search and Filters Bar */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '1rem',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border-light)',
+        borderRadius: '16px',
+        padding: '1rem 1.25rem',
+        marginBottom: '1.5rem',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)'
+      }}>
+        {/* Search Field */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '0 10px', height: '36px', width: isMobile ? '100%' : '300px' }}>
+          <Search size={16} style={{ color: 'var(--color-text-muted)' }} />
+          <input
+            type="text"
+            placeholder={t('Tìm kiếm đề xuất...')}
+            value={listSearchText}
+            onChange={e => setListSearchText(e.target.value)}
+            style={{ border: 'none', background: 'transparent', width: '100%', fontSize: '0.85rem', outline: 'none', color: 'var(--color-text)' }}
+          />
+          {listSearchText && (
+            <button onClick={() => setListSearchText('')} style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={14} style={{ color: 'var(--color-text-muted)' }} />
+            </button>
+          )}
+        </div>
+
+        {/* Filters Group */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', width: isMobile ? '100%' : 'auto' }}>
+          {/* Category Pills */}
+          <div style={{ display: 'flex', gap: '6px', background: 'var(--color-bg-secondary)', padding: '4px', borderRadius: '8px' }}>
+            {[
+              { id: 'all', label: t('Tất cả') },
+              { id: 'finance', label: t('Tài chính') },
+              { id: 'hr', label: t('Nhân sự') },
+              { id: 'admin', label: t('Hành chính') }
+            ].map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setListCategoryFilter(cat.id)}
+                style={{
+                  border: 'none',
+                  background: listCategoryFilter === cat.id ? 'var(--color-surface)' : 'transparent',
+                  color: listCategoryFilter === cat.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  fontSize: '0.8rem',
+                  fontWeight: listCategoryFilter === cat.id ? 700 : 500,
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  boxShadow: listCategoryFilter === cat.id ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Status Dropdown */}
+          <div style={{ width: isMobile ? '100%' : '150px' }}>
+            <CustomSelect
+              value={listStatusFilter}
+              onChange={val => setListStatusFilter(val)}
+              options={[
+                { value: 'all', label: t('Trạng thái: Tất cả') },
+                { value: 'pending', label: t('Đang chờ duyệt') },
+                { value: 'approved', label: t('Đã duyệt') },
+                { value: 'rejected', label: t('Từ chối') }
+              ]}
+              width="100%"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>
@@ -336,7 +478,7 @@ export default function Approvals() {
         </div>
       ) : activeTab === 'pending' && isAdmin ? (
         /* ADMIN PENDING LIST */
-        pendingList.length === 0 ? (
+        filteredPendingList.length === 0 ? (
           <EmptyCard
             icon={<ShieldCheck />}
             title={t('Không có yêu cầu phê duyệt')}
@@ -344,7 +486,7 @@ export default function Approvals() {
           />
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {pendingList.map(item => (
+            {filteredPendingList.map(item => (
               <div 
                 key={`${item.type}-${item.id}`} 
                 className="card hover-lift" 
@@ -412,7 +554,7 @@ export default function Approvals() {
         )
       ) : (
         /* MY REQUESTS LIST */
-        myRequestsList.length === 0 ? (
+        filteredMyRequestsList.length === 0 ? (
           <EmptyCard
             icon={<Clipboard />}
             title={t('Không tìm thấy yêu cầu')}
@@ -420,7 +562,7 @@ export default function Approvals() {
           />
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            {myRequestsList.map(item => (
+            {filteredMyRequestsList.map(item => (
               <div 
                 key={`${item.type}-${item.id}`} 
                 className="card hover-lift" 
@@ -463,7 +605,23 @@ export default function Approvals() {
                     </div>
                   </div>
                 </div>
-                <div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleDuplicate(item)}
+                    className="btn secondary"
+                    style={{
+                      height: '28px',
+                      padding: '0 10px',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <Copy size={12} />
+                    {t('Nhân bản')}
+                  </button>
                   {formatBadge(item.status || 'pending')}
                 </div>
               </div>
@@ -524,6 +682,7 @@ export default function Approvals() {
           onApprove={handleApprove}
           onReject={openRejectModal}
           isAdmin={isAdmin && activeTab === 'pending'}
+          onDuplicate={handleDuplicate}
         />
       )}
 
@@ -938,39 +1097,59 @@ export default function Approvals() {
                           setSubmitting(true);
                           try {
                             if (formType === 'leave') {
+                              let leaveReasonStr = leaveReason;
+                              if (isRecurring) {
+                                leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
+                              }
                               await fetchAPI('hrm/leaves', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                   leave_type: leaveType,
-                                  reason: leaveReason,
+                                  reason: leaveReasonStr,
                                   from_date: leaveFrom,
                                   to_date: leaveTo,
                                   approver_id: customApprover1?.id || users.find(u => String(u.role).toLowerCase() === 'manager')?.id || 1003
                                 })
                               });
                             } else if (formType === 'advance') {
+                              let advReasonStr = leaveReason || 'Tạm ứng';
+                              if (isRecurring) {
+                                advReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
+                              }
                               await fetchAPI('hrm/advances', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                   amount: Number(paymentDetails) || 0,
-                                  reason: leaveReason || 'Tạm ứng',
+                                  reason: advReasonStr,
                                   approver_id: customApprover1?.id || users.find(u => String(u.role).toLowerCase() === 'manager')?.id || 1003
                                 })
                               });
                             } else if (formType === 'general') {
+                              let generalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
+                              if (isRecurring) {
+                                generalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
+                              }
                               await api.post('/expenses', {
                                 title: expenseTitle || selectedWorkflowDef.name,
-                                description: `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`,
+                                description: generalDesc,
                                 amount: 0,
                                 status: 'pending',
                                 approver_id: customApprover3?.id || customApprover1?.id || 1003
                               });
                             } else {
+                              let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
+                              if (isPhasedPayment) {
+                                const instStr = installments.map(i => `${i.title}: ${Number(i.amount).toLocaleString()}đ (Hạn: ${i.dueDate || 'Chưa chọn'})`).join('; ');
+                                finalDesc += `\n[Thanh toán theo đợt]: ${instStr}`;
+                              }
+                              if (isRecurring) {
+                                finalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
+                              }
                               await api.post('/expenses', {
                                 title: expenseTitle || selectedWorkflowDef.name,
-                                description: `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`,
+                                description: finalDesc,
                                 amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
                                 status: 'pending',
                                 approver_id: customApprover3?.id || customApprover1?.id || 1003
@@ -1191,13 +1370,20 @@ export default function Approvals() {
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Bộ phận / Phòng ban')}</label>
-                                <input
-                                  type="text"
-                                  className="form-input"
+                                <CustomSelect
                                   value={departmentName}
-                                  onChange={e => setDepartmentName(e.target.value)}
-                                  placeholder={t('Ví dụ: Phòng Kinh doanh / Phòng IT')}
-                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  onChange={val => setDepartmentName(val)}
+                                  options={[
+                                    { value: 'Ban Giám đốc', label: t('Ban Giám đốc') },
+                                    { value: 'Phòng Kinh doanh', label: t('Phòng Kinh doanh (Sales)') },
+                                    { value: 'Phòng Marketing', label: t('Phòng Marketing') },
+                                    { value: 'Phòng Kế toán', label: t('Phòng Kế toán - Tài chính') },
+                                    { value: 'Phòng Nhân sự', label: t('Phòng Nhân sự (HR)') },
+                                    { value: 'Phòng IT', label: t('Phòng IT / Kỹ thuật') },
+                                    { value: 'Bộ phận Vận hành', label: t('Bộ phận Vận hành') }
+                                  ]}
+                                  placeholder={t('Chọn phòng ban / bộ phận...')}
+                                  width="100%"
                                 />
                               </div>
                             </div>
@@ -1244,14 +1430,20 @@ export default function Approvals() {
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Bộ phận / Phòng ban')}</label>
-                                <input
-                                  type="text"
-                                  className="form-input"
+                                <CustomSelect
                                   value={departmentName}
-                                  onChange={e => setDepartmentName(e.target.value)}
-                                  placeholder={t('Ví dụ: Phòng Kế toán / Phòng Sale')}
-                                  style={{ height: '36px', fontSize: '0.8rem' }}
-                                  required
+                                  onChange={val => setDepartmentName(val)}
+                                  options={[
+                                    { value: 'Ban Giám đốc', label: t('Ban Giám đốc') },
+                                    { value: 'Phòng Kinh doanh', label: t('Phòng Kinh doanh (Sales)') },
+                                    { value: 'Phòng Marketing', label: t('Phòng Marketing') },
+                                    { value: 'Phòng Kế toán', label: t('Phòng Kế toán - Tài chính') },
+                                    { value: 'Phòng Nhân sự', label: t('Phòng Nhân sự (HR)') },
+                                    { value: 'Phòng IT', label: t('Phòng IT / Kỹ thuật') },
+                                    { value: 'Bộ phận Vận hành', label: t('Bộ phận Vận hành') }
+                                  ]}
+                                  placeholder={t('Chọn phòng ban / bộ phận...')}
+                                  width="100%"
                                 />
                               </div>
                             </div>
@@ -1320,6 +1512,143 @@ export default function Approvals() {
                             </div>
                           </div>
                         )}
+                        {/* 1. Phased payment settings (only for finance/expense) */}
+                        {formType === 'expense' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input
+                                type="checkbox"
+                                id="isPhasedPayment"
+                                checked={isPhasedPayment}
+                                onChange={e => setIsPhasedPayment(e.target.checked)}
+                                style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+                              />
+                              <label htmlFor="isPhasedPayment" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)', cursor: 'pointer' }}>
+                                {t('Thanh toán chia nhiều đợt (Installment/Phased Payment)')}
+                              </label>
+                            </div>
+
+                            {isPhasedPayment && (
+                              <div style={{ marginTop: '8px', border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '1.25rem', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    {t('Danh sách đợt thanh toán')}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setInstallments([...installments, { id: Date.now(), title: `Đợt ${installments.length + 1}`, amount: 0, dueDate: '' }])}
+                                    className="btn secondary"
+                                    style={{ height: '26px', padding: '0 8px', fontSize: '0.7rem', color: 'var(--color-primary)' }}
+                                  >
+                                    + {t('Thêm đợt')}
+                                  </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                  {installments.map((inst, index) => (
+                                    <div key={inst.id} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1.5fr 1.5fr auto', gap: '10px', alignItems: 'center' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <input
+                                          type="text"
+                                          className="form-input"
+                                          value={inst.title}
+                                          onChange={e => {
+                                            const list = [...installments];
+                                            list[index].title = e.target.value;
+                                            setInstallments(list);
+                                          }}
+                                          placeholder={t('Tên đợt (ví dụ: Đợt 1)')}
+                                          style={{ height: '32px', fontSize: '0.75rem' }}
+                                        />
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <input
+                                          type="number"
+                                          className="form-input"
+                                          value={inst.amount === 0 ? '' : inst.amount}
+                                          onChange={e => {
+                                            const list = [...installments];
+                                            list[index].amount = Number(e.target.value);
+                                            setInstallments(list);
+                                          }}
+                                          placeholder={t('Số tiền (VND)')}
+                                          style={{ height: '32px', fontSize: '0.75rem' }}
+                                        />
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <input
+                                          type="date"
+                                          className="form-input"
+                                          value={inst.dueDate}
+                                          onChange={e => {
+                                            const list = [...installments];
+                                            list[index].dueDate = e.target.value;
+                                            setInstallments(list);
+                                          }}
+                                          style={{ height: '32px', fontSize: '0.75rem' }}
+                                        />
+                                      </div>
+                                      {installments.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setInstallments(installments.filter(x => x.id !== inst.id))}
+                                          style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '4px' }}
+                                        >
+                                          {t('Xóa')}
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 2. Recurring settings (for all workflows) */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input
+                              type="checkbox"
+                              id="isRecurring"
+                              checked={isRecurring}
+                              onChange={e => setIsRecurring(e.target.checked)}
+                              style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+                            />
+                            <label htmlFor="isRecurring" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)', cursor: 'pointer' }}>
+                              {t('Thiết lập lặp lại tự động (Recurring Proposal)')}
+                            </label>
+                          </div>
+
+                          {isRecurring && (
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginTop: '8px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Tần suất lặp lại')}</label>
+                                <CustomSelect
+                                  value={recurringFrequency}
+                                  onChange={val => setRecurringFrequency(val)}
+                                  options={[
+                                    { value: 'daily', label: t('Hàng ngày') },
+                                    { value: 'weekly', label: t('Hàng tuần') },
+                                    { value: 'monthly', label: t('Hàng tháng') },
+                                    { value: 'quarterly', label: t('Hàng quý') },
+                                    { value: 'yearly', label: t('Hàng năm') }
+                                  ]}
+                                  width="100%"
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày kết thúc lặp lại')}</label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={recurringEndDate}
+                                  onChange={e => setRecurringEndDate(e.target.value)}
+                                  style={{ height: '32px', fontSize: '0.75rem' }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Card 3: Bảng chi tiết thanh toán (only for expense/payment) */}
@@ -1864,7 +2193,7 @@ export default function Approvals() {
 }
 
 // Side-Drawer Component detailing step-by-step progress
-function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, isAdmin }: {
+function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, isAdmin, onDuplicate }: {
   item: ApprovalItem;
   onClose: () => void;
   users: any[];
@@ -1872,6 +2201,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
   onApprove: (item: ApprovalItem) => Promise<void>;
   onReject: (item: ApprovalItem) => void;
   isAdmin: boolean;
+  onDuplicate?: (item: ApprovalItem) => void;
 }) {
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -2230,25 +2560,47 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
           <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase' }}>
             {t('Chi tiết tiến trình')}
           </h3>
-          <button 
-            onClick={onClose} 
-            className="hover-lift"
-            style={{
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-              padding: '8px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              color: 'var(--color-text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '36px',
-              width: '36px'
-            }}
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {onDuplicate && (
+              <button
+                onClick={() => {
+                  onDuplicate(item);
+                }}
+                className="btn secondary hover-lift"
+                style={{
+                  height: '36px',
+                  padding: '0 12px',
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderRadius: '8px'
+                }}
+              >
+                <Copy size={14} />
+                {t('Nhân bản đề xuất')}
+              </button>
+            )}
+            <button 
+              onClick={onClose} 
+              className="hover-lift"
+              style={{
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                padding: '8px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '36px',
+                width: '36px'
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Drawer Body */}

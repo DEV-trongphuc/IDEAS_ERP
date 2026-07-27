@@ -817,7 +817,7 @@ class FinanceController
     {
         if ($auth['role'] === 'viewer') respond(403, null, 'Bạn không có quyền tạo chi phí', false);
         $data = getBody();
-        if (empty($data['title']) || empty($data['amount']))
+        if (empty($data['title']) || (!isset($data['amount']) || $data['amount'] === ''))
             respond(400, null, 'Thiếu tiêu đề hoặc số tiền', false);
 
         $totalAmount = (float) $data['amount'];
