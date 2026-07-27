@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { EmptyCard } from '../components/ui/EmptyCard';
 
 export default function MyPayslips() {
   const { t } = useLanguage();
@@ -378,10 +379,11 @@ export default function MyPayslips() {
       {activeSubTab === 'payslip' && (
         <div>
           {!payslip ? (
-            <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-              <FileText size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-              {t('Chưa có phiếu lương được phát hành cho tháng này.')}
-            </div>
+            <EmptyCard
+              icon={<FileText />}
+              title={t('Chưa có phiếu lương')}
+              description={t('Chưa có phiếu lương được phát hành cho tháng này.')}
+            />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
               
@@ -685,9 +687,11 @@ export default function MyPayslips() {
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem' }}>{t('Lịch sử nghỉ phép')}</h3>
             {leavesList.length === 0 ? (
-              <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                {t('Bạn chưa có đơn đăng ký nghỉ phép nào.')}
-              </div>
+              <EmptyCard
+                icon={<Calendar />}
+                title={t('Chưa có đơn nghỉ phép')}
+                description={t('Bạn chưa có đơn đăng ký nghỉ phép nào.')}
+              />
             ) : (
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {leavesList.map(req => (
@@ -798,9 +802,11 @@ export default function MyPayslips() {
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem' }}>{t('Lịch sử tạm ứng')}</h3>
             {advancesList.length === 0 ? (
-              <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                {t('Bạn chưa có đề xuất tạm ứng lương nào.')}
-              </div>
+              <EmptyCard
+                icon={<DollarSign />}
+                title={t('Chưa có đề xuất tạm ứng')}
+                description={t('Bạn chưa có đề xuất tạm ứng lương nào.')}
+              />
             ) : (
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {advancesList.map(adv => (

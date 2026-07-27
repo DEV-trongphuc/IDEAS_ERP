@@ -8,6 +8,7 @@ import {
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { EmptyCard } from '../components/ui/EmptyCard';
 
 interface ApprovalItem {
   id: number;
@@ -233,10 +234,11 @@ export default function Approvals() {
       ) : activeTab === 'pending' && isAdmin ? (
         /* ADMIN PENDING LIST */
         pendingList.length === 0 ? (
-          <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            <ShieldCheck size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-            {t('Không có yêu cầu phê duyệt nào đang chờ xử lý.')}
-          </div>
+          <EmptyCard
+            icon={<ShieldCheck />}
+            title={t('Không có yêu cầu phê duyệt')}
+            description={t('Không có yêu cầu phê duyệt nào đang chờ xử lý.')}
+          />
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
             {pendingList.map(item => (
@@ -296,10 +298,11 @@ export default function Approvals() {
       ) : (
         /* MY REQUESTS LIST */
         myRequestsList.length === 0 ? (
-          <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            <Clipboard size={48} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-            {t('Bạn chưa gửi yêu cầu quy trình nào.')}
-          </div>
+          <EmptyCard
+            icon={<Clipboard />}
+            title={t('Không tìm thấy yêu cầu')}
+            description={t('Bạn chưa gửi yêu cầu quy trình nào.')}
+          />
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
             {myRequestsList.map(item => (

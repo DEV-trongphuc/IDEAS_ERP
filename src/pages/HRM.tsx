@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
+import { EmptyCard } from '../components/ui/EmptyCard';
 
 export default function HRM() {
   const { t } = useLanguage();
@@ -299,9 +300,11 @@ export default function HRM() {
         {activeTab === 'leaves' && (
           <div>
             {leaves.length === 0 ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                {t('Không có đơn nghỉ phép nào.')}
-              </div>
+              <EmptyCard
+                icon={<Calendar />}
+                title={t('Không có đơn nghỉ phép')}
+                description={t('Không có đơn nghỉ phép nào.')}
+              />
             ) : (
               <div style={{ display: 'grid', gap: '1rem' }}>
                 {leaves.map(req => (
@@ -347,9 +350,11 @@ export default function HRM() {
         {activeTab === 'advances' && (
           <div>
             {advances.length === 0 ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                {t('Không có yêu cầu tạm ứng lương nào.')}
-              </div>
+              <EmptyCard
+                icon={<CreditCard />}
+                title={t('Không có yêu cầu tạm ứng')}
+                description={t('Không có yêu cầu tạm ứng lương nào.')}
+              />
             ) : (
               <div style={{ display: 'grid', gap: '1rem' }}>
                 {advances.map(adv => (
@@ -449,9 +454,11 @@ export default function HRM() {
 
             {/* Payroll list */}
             {payslips.length === 0 ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                {t('Chưa tính bảng lương cho tháng này. Hãy click "Tính lương tháng" ở trên.')}
-              </div>
+              <EmptyCard
+                icon={<DollarSign />}
+                title={t('Chưa tính bảng lương')}
+                description={t('Chưa tính bảng lương cho tháng này. Hãy click "Tính lương tháng" ở trên.')}
+              />
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
