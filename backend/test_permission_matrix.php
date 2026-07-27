@@ -123,4 +123,41 @@ foreach ($roles as $r) {
     assertTest("[{$r}] Quyen Quan ly HRM (HR/Admin)", $canManageHrm === in_array($r, ['superadmin', 'admin', 'director', 'hr'], true));
 }
 
+// ----------------------------------------------------
+// 3. KIEM THU TOAN VEN PHONG BAN & NHAN SU (DEPARTMENT & STAFF INTEGRITY)
+// ----------------------------------------------------
+echo "\n--- 3. KIEM THU TOAN VEN PHONG BAN & NHAN SU ---\n";
+
+$depts = ['Phòng Nhân sự', 'Phòng Kế toán', 'Phòng Marketing', 'Phòng Kinh doanh'];
+foreach ($depts as $deptName) {
+    $tChk = $conn->prepare("SELECT id FROM teams WHERE name = ? LIMIT 1");
+    $tChk->execute([$deptName]);
+    $tRes = $tChk->get_result();
+    $tExists = $tRes ? $tRes->fetch_assoc() : null;
+    $tChk->close();
+    assertTest("Phong ban '{$deptName}' duoc khoi tao trong CSDL", !empty($tExists));
+}
+
+// Verify users are correctly assigned to their respective departments
+$userRolesDepts = [
+    'hr@Ideas.test' => 'Phòng Nhân sự',
+    'accountant@Ideas.test' => 'Phòng Kế toán',
+    'marketing@Ideas.test' => 'Phòng Marketing'
+];
+
+foreach ($userRolesDepts as $email => $deptName) {
+    $uQ = $conn->prepare("
+        SELECT u.id, t.name as team_name 
+        FROM users u 
+        LEFT JOIN teams t ON u.team_id = t.id 
+        WHERE u.email = ? LIMIT 1
+    ");
+    $uQ->execute([$email]);
+    $uRes = $uQ->get_result();
+    $uRow = $uRes ? $uRes->fetch_assoc() : null;
+    $uQ->close();
+    
+    assertTest("Nhan su '{$email}' duoc gan dung vao '{$deptName}'", !empty($uRow) && $uRow['team_name'] === $deptName);
+}
+
 printTestSummary();

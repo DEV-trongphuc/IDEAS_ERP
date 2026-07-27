@@ -30,7 +30,7 @@ Tệp tin này đặc tả kịch bản kiểm thử cho hệ thống Trợ lý 
 
 ---
 
-## 👥 3. Cơ cấu Đội nhóm & Thành viên (Teams & Org Structure)
+## 👥 3. Cơ cấu Đội nhóm, Phòng ban & Phân cấp Nhân sự (Teams & Department Structure)
 
 ### Kịch bản 3.1: Tạo nhóm & Chỉ định Trưởng nhóm (Team Managers)
 *   **Các bước thực hiện**:
@@ -40,3 +40,19 @@ Tệp tin này đặc tả kịch bản kiểm thử cho hệ thống Trợ lý 
 *   **Kết quả mong đợi**:
     *   Nhóm được tạo thành công trong bảng `teams` với `manager_id` trỏ về Người dùng A.
     *   Xác minh: Khi Người dùng A xem báo cáo doanh số nhóm, hệ thống tự động lọc và tổng hợp số liệu của đúng 5 thành viên trong nhóm, bảo mật hoàn toàn dữ liệu với các trưởng nhóm khác.
+
+### Kịch bản 3.2: Phân bổ Nhân sự theo Phòng ban & Ranh giới Dữ liệu (Department Boundaries)
+*   **Tiền điều kiện**: Các phòng ban mặc định (`Phòng Nhân sự`, `Phòng Kế toán`, `Phòng Marketing`, `Phòng Kinh doanh`) đã được tạo tự động thông qua bản nâng cấp CSDL v195.
+*   **Các bước thực hiện**:
+    1. Kiểm tra trường `team_id` của các tài khoản nhân sự:
+        *   Tài khoản vai trò `hr` phải thuộc về `Phòng Nhân sự`.
+        *   Tài khoản vai trò `accountant` phải thuộc về `Phòng Kế toán`.
+        *   Tài khoản vai trò `marketing` phải thuộc về `Phòng Marketing`.
+        *   Tài khoản vai trò `sales`/`sale` phải thuộc về `Phòng Kinh doanh`.
+    2. **Kiểm tra ranh giới dữ liệu phòng ban**:
+        *   Đăng nhập với vai trò **Trưởng phòng Kinh doanh** (Manager thuộc Phòng Kinh doanh).
+        *   Thực hiện truy cập thông tin bảng lương của nhân sự thuộc **Phòng Kế toán**.
+*   **Kết quả mong đợi**:
+    *   Hệ thống chặn truy cập (403 Forbidden hoặc trả về danh sách rỗng), đảm bảo Trưởng phòng ban này không thể xem chéo thông tin cá nhân/lương bổng của thành viên phòng ban khác.
+    *   Khi HR truy cập, HR có quyền xem toàn bộ nhân viên thuộc tất cả các phòng ban để làm thủ tục chấm công và tính lương.
+

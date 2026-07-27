@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 194;
+$targetVersion = 195;
 $currentVersion = 186;
 
 // Query current DB version
@@ -564,8 +564,70 @@ try {
         $logMsg("Nâng cấp lên phiên bản 194 hoàn tất.", "success");
     }
 
+    // 9.8. Seed default departments and assign users (Version 195)
+    if ($currentVersion < 195 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 195 (Khởi tạo các phòng ban mặc định và gán nhân sự)...", "info");
+
+        // Seed default departments if they don't exist
+        $defaultTeams = [
+            'Phòng Nhân sự' => 'Phòng ban chịu trách nhiệm quản lý hồ sơ nhân sự, bảng lương và trực ca.',
+            'Phòng Kế toán' => 'Phòng ban chịu trách nhiệm quản lý dòng tiền, hóa đơn, cọc và chi phí.',
+            'Phòng Marketing' => 'Phòng ban chịu trách nhiệm chạy chiến dịch quảng cáo và điều phối data lead.',
+            'Phòng Kinh doanh' => 'Phòng ban tư vấn và bán hàng, quản lý chăm sóc leads và giao dịch.'
+        ];
+
+        // We find the first admin user to set as default leader
+        $admQ = $conn->query("SELECT id FROM users WHERE role IN ('admin', 'superadmin', 'super_admin') LIMIT 1");
+        $admRow = $admQ ? $admQ->fetch_assoc() : null;
+        $leaderId = $admRow ? (int)$admRow['id'] : 1;
+
+        foreach ($defaultTeams as $name => $desc) {
+            $chk = $conn->prepare("SELECT id FROM teams WHERE name = ? LIMIT 1");
+            $chk->execute([$name]);
+            $res = $chk->get_result();
+            $exists = $res ? $res->fetch_assoc() : null;
+            $chk->close();
+
+            if (!$exists) {
+                $ins = $conn->prepare("INSERT INTO teams (name, description, leader_id) VALUES (?, ?, ?)");
+                $ins->execute([$name, $desc, $leaderId]);
+                $ins->close();
+                $logMsg("Đã khởi tạo phòng ban: " . $name, "success");
+            }
+        }
+
+        // Link default roles to their departments
+        $roleDepts = [
+            'hr' => 'Phòng Nhân sự',
+            'accountant' => 'Phòng Kế toán',
+            'marketing' => 'Phòng Marketing',
+            'sales' => 'Phòng Kinh doanh',
+            'sale' => 'Phòng Kinh doanh'
+        ];
+
+        foreach ($roleDepts as $role => $deptName) {
+            // Find team ID
+            $tQ = $conn->prepare("SELECT id FROM teams WHERE name = ? LIMIT 1");
+            $tQ->execute([$deptName]);
+            $tRes = $tQ->get_result();
+            $tRow = $tRes ? $tRes->fetch_assoc() : null;
+            $tQ->close();
+
+            if ($tRow) {
+                $teamId = (int)$tRow['id'];
+                // Update users with this role to belong to this team/department
+                $upd = $conn->prepare("UPDATE users SET team_id = ? WHERE role = ?");
+                $upd->execute([$teamId, $role]);
+                $upd->close();
+                $logMsg("Đã gán nhân sự vai trò '" . $role . "' vào " . $deptName, "success");
+            }
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 195 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '194') ON DUPLICATE KEY UPDATE setting_value = '194'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '195') ON DUPLICATE KEY UPDATE setting_value = '195'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

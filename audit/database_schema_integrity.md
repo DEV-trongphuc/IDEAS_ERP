@@ -1,52 +1,92 @@
 # Phân hệ 1: Kiểm thử Cấu trúc & Toàn vẹn Cơ sở dữ liệu (Database Schema & Integrity)
 
-Tệp tin này đặc tả các kịch bản kiểm thử chi tiết về mặt cấu trúc dữ liệu, các ràng buộc và xử lý lỗi SQL trên cơ sở dữ liệu IDEAS ERP.
+Tài liệu này đặc tả chi tiết kỹ thuật các kịch bản kiểm thử cấu trúc CSDL, các ràng buộc dữ liệu, và các câu lệnh SQL kiểm tra nhằm loại bỏ hoàn toàn các lỗi SQLSTATE trên hệ thống IDEAS ERP.
 
 ---
 
-## 🗂️ 1. Đối soát cấu trúc bảng & kiểu dữ liệu (Schema Verification)
+## 🗂️ 1. Bản đồ Kiểm thực Cấu trúc Bảng (Table & Column Mapping)
 
-### Bảng `users` (Danh sách tài khoản)
-*   **Trường cần kiểm tra**: `role`
-*   **Kịch bản kiểm thử**:
-    *   Truy vấn danh sách các giá trị hợp lệ của cột `role` trong CSDL.
-    *   Đảm bảo hỗ trợ enums: `superadmin`, `super_admin`, `admin`, `manager`, `assistant`, `sales`, `sale`, `viewer`, `hr`, `accountant`, `marketing`.
-    *   Thử chèn một bản ghi với `role = 'unknown'` và đảm bảo DB báo lỗi ràng buộc dữ liệu hoặc tự chuyển về giá trị mặc định (`sales`).
+### 1.1. Bảng `users` (Tài khoản người dùng)
+*   **Kiểm tra Enums cho vai trò (`role`)**:
+    *   *Lệnh SQL kiểm tra*: `SHOW COLUMNS FROM users LIKE 'role';`
+    *   *Kết quả mong đợi*: Cột `Type` phải hiển thị chính xác là `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing')`.
+    *   *Ràng buộc mặc định*: `Default` là `sales`.
+*   **Trường `team_id` (Phòng ban/Nhóm)**:
+    *   *Lệnh SQL kiểm tra*: `SHOW COLUMNS FROM users LIKE 'team_id';`
+    *   *Kết quả mong đợi*: Kiểu dữ liệu `int(11) NULL`. Phải có chỉ mục (INDEX) để tối ưu hóa truy vấn kết nối phòng ban.
 
-### Bảng `hrm_profiles` (Hồ sơ nhân sự)
-*   **Trường cần kiểm tra**: `custom_fields_json`, `kpi_multiplier_rules`
-*   **Kịch bản kiểm thử**:
-    *   Đảm bảo `custom_fields_json` tồn tại và có kiểu dữ liệu là `TEXT` hoặc `JSON` (để lưu trữ mảng phụ cấp động không giới hạn).
-    *   Thử lưu dữ liệu thô dạng JSON và kiểm tra tính hợp lệ sau khi truy vấn.
+### 1.2. Bảng `hrm_profiles` (Hồ sơ nhân sự)
+*   **Trường `custom_fields_json` (Phụ cấp động)**:
+    *   *Lệnh SQL kiểm tra*: `SHOW COLUMNS FROM hrm_profiles LIKE 'custom_fields_json';`
+    *   *Kết quả mong đợi*: Kiểu dữ liệu `TEXT` hoặc `JSON` cho phép lưu trữ dữ liệu phi cấu trúc dưới dạng mảng JSON của các đối tượng `{ name: string, value: number }`.
+*   **Trường `kpi_multiplier_rules` (Quy tắc KPI)**:
+    *   *Kết quả mong đợi*: Kiểu dữ liệu `TEXT NULL` để chứa quy tắc tính hệ số nhân dựa trên doanh số thu thực tế.
 
-### Bảng `monthly_payslips` (Bảng lương tháng)
-*   **Trường cần kiểm tra**: Khóa trùng lặp `uk_user_month` (`user_id`, `month_year`).
-*   **Kịch bản kiểm thử**:
-    *   Thử chèn 2 bản ghi lương cho cùng một `user_id` trong cùng một tháng `month_year`. DB phải chặn và ném ra lỗi `Duplicate entry`.
-
----
-
-## 🛡️ 2. Stress-Test phòng chống lỗi SQLSTATE 22007 & 22001
-
-### Cột ngày tháng (Date/Datetime)
-*   **Các trường kiểm tra**: `dob` (ngày sinh), `joined_date` (ngày vào làm), `approval_date`.
-*   **Kịch bản kiểm thử**:
-    *   Khi người dùng để trống các ô ngày tháng trên Frontend, payload truyền về backend thường là chuỗi rỗng `""`.
-    *   **Thử nghiệm**: Chạy câu lệnh UPDATE/INSERT trực tiếp với giá trị ngày tháng là `""`.
-    *   **Kết quả mong đợi**: Hệ thống không được ném ra lỗi SQLSTATE 22007 (Incorrect date value). Bộ lọc dữ liệu ở backend hoặc trigger DB phải tự động quy đổi chuỗi rỗng `""` thành `NULL` trước khi thực thi SQL.
-
-### Cột số học & Tiền tệ (Integer/Decimal)
-*   **Các trường kiểm tra**: `amount` (bảng expenses), `price` (bảng deposits), `expected_commission`.
-*   **Kịch bản kiểm thử**:
-    *   **Thử nghiệm 1**: Truyền giá trị `NULL` hoặc `""` vào trường số học yêu cầu bắt buộc.
-    *   **Kết quả mong đợi**: Backend tự động chuyển đổi thành `0` hoặc báo lỗi kiểm thực dữ liệu (validation error) thân thiện thay vì để lỗi DB ném ra ngoài (HTTP 500).
-    *   **Thử nghiệm 2**: Truyền số âm hoặc số quá lớn (vượt quá giới hạn DECIMAL 15,2).
-    *   **Kết quả mong đợi**: Hệ thống chặn ngay ở lớp controller đầu vào.
+### 1.3. Bảng `monthly_payslips` (Bảng lương tháng)
+*   **Khóa duy nhất liên hợp (`uk_user_month`)**:
+    *   *Lệnh SQL kiểm tra*: `SHOW INDEX FROM monthly_payslips WHERE Key_name = 'uk_user_month';`
+    *   *Kết quả mong đợi*: Trả về index duy nhất (Non_unique = 0) kết hợp giữa hai trường `user_id` và `month_year`.
+    *   *Kịch bản lỗi mong đợi*:
+        ```sql
+        -- Câu lệnh chạy thử:
+        INSERT INTO monthly_payslips (user_id, month_year, basic_salary) VALUES (1, '2026-07', 10000000);
+        -- Chèn dòng thứ 2 với cùng user_id và month_year:
+        INSERT INTO monthly_payslips (user_id, month_year, basic_salary) VALUES (1, '2026-07', 12000000);
+        -- Lỗi trả về: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry '1-2026-07' for key 'uk_user_month'
+        ```
 
 ---
 
-## 🧹 3. Kiểm tra & xử lý dữ liệu bị hỏng (Data Corruption & Cleanup)
+## 🛡️ 2. Kịch bản Stress-Test Chống lỗi SQLSTATE đặc thù
+
+### 2.1. Lỗi định dạng ngày tháng không hợp lệ (SQLSTATE 22007 - Incorrect date value)
+Khi người dùng xóa sạch ngày sinh hoặc ngày vào làm trên giao diện React, trình duyệt sẽ gửi chuỗi rỗng `""` về backend.
 *   **Kịch bản kiểm thử**:
-    *   Quét toàn bộ bảng `users` để tìm các dòng có ngày tháng bị lỗi định dạng (ví dụ: `0000-00-00`).
-    *   Tự động cập nhật các dòng lỗi này về `NULL` bằng script `check_and_fix_corrupted_dates.php`.
-    *   Đảm bảo không còn bản ghi nào chứa giá trị ngày tháng không hợp lệ trước khi đưa lên môi trường sản xuất.
+    *   *Câu lệnh SQL mô phỏng lỗi*:
+        ```sql
+        UPDATE users SET dob = '' WHERE id = 1;
+        ```
+        *(MySQL ở chế độ STRICT_TRANS_TABLES sẽ ném lỗi SQLSTATE 22007)*
+    *   **Bộ lọc xử lý ở Backend (Controller / Model)**:
+        Trước khi thực hiện `execute()` câu lệnh chuẩn bị (Prepared Statement), backend phải chạy hàm chuẩn hóa dữ liệu:
+        ```php
+        $dob = (!empty($b['dob']) && trim($b['dob']) !== '') ? trim($b['dob']) : null;
+        ```
+    *   *Xác minh kết quả*:
+        ```sql
+        SELECT dob FROM users WHERE id = 1;
+        -- Kết quả trả về phải là NULL thay vì báo lỗi 500 Internal Server Error.
+        ```
+
+### 2.2. Lỗi tràn độ dài dữ liệu (SQLSTATE 22001 - Data too long)
+*   **Kịch bản kiểm thử**:
+    *   Nhập số điện thoại dài 50 ký tự (`09090909090909090909090909090909090909090909090909`).
+    *   Gửi payload lưu lên API `/contacts`.
+    *   *Xử lý mong đợi*: Backend phải validate độ dài chuỗi đầu vào (`strlen($phone) <= 20`) và trả về lỗi `422 Unprocessable Entity` kèm mô tả chi tiết, chặn không cho câu lệnh SQL lỗi chạy xuống database.
+
+---
+
+## 🧹 3. Quy trình Kiểm tra & Sửa đổi Dữ liệu ngày tháng bị hỏng (Data Integrity Script)
+*   **Vấn đề**: Trong quá trình vận hành cũ, MySQL có thể chứa các giá trị ngày tháng không hợp lệ như `0000-00-00` hoặc `1970-01-01`.
+*   **Kịch bản tự động quét và sửa lỗi**:
+    ```php
+    // Chạy script check_and_fix_corrupted_dates.php
+    $tables = [
+        'users' => ['dob'],
+        'hrm_profiles' => ['joined_date'],
+        'check_ins' => ['check_in_date'],
+        'hrm_leave_requests' => ['start_date', 'end_date']
+    ];
+
+    foreach ($tables as $table => $cols) {
+        foreach ($cols as $col) {
+            // Quét tìm dòng lỗi
+            $stmt = $conn->query("SELECT id FROM `$table` WHERE `$col` = '0000-00-00' OR `$col` = '1970-01-01'");
+            if ($stmt->num_rows > 0) {
+                // Sửa về NULL
+                $conn->query("UPDATE `$table` SET `$col` = NULL WHERE `$col` = '0000-00-00' OR `$col` = '1970-01-01'");
+                echo "Đã dọn dẹp dữ liệu ngày tháng lỗi tại {$table}.{$col}\n";
+            }
+        }
+    }
+    ```

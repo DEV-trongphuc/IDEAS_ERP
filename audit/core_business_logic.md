@@ -1,57 +1,89 @@
 # Phân hệ 3: Quy tắc Nghiệp vụ Đặc thù (Core Business Rules)
 
-Tệp tin này đặc tả kịch bản kiểm thử cho 4 quy tắc nghiệp vụ cốt lõi và các thuật toán vận hành tự động của IDEAS ERP.
+Tài liệu này đặc tả chi tiết kỹ thuật các kịch bản kiểm thử, lưu đồ logic và các đoạn mã xử lý liên quan đến 4 quy tắc nghiệp vụ cốt lõi của IDEAS ERP.
 
 ---
 
 ## 🏗️ 1. Quy tắc hủy cọc (Deposit Cancellation Logic)
 
-### Kịch bản 1.1: Hủy cọc khi CHƯA có doanh thu thực tế (Rule 1)
-*   **Tiền điều kiện**: Tạo một khách hàng mới (Person A) ở trạng thái `Booking`. Tạo phiếu đặt cọc `deposits` ở trạng thái chờ duyệt (`pending_admin`).
-*   **Các bước thực hiện**:
-    1. Trợ lý/Admin thực hiện phê duyệt cọc, trạng thái Person chuyển sang `Đặt Cọc`.
-    2. Đảm bảo chưa ghi nhận bất kỳ đợt đóng tiền thực tế nào cho công ty (CSDL chưa có hóa đơn thu tiền).
-    3. Thực hiện Hủy cọc (gọi API hủy đặt cọc).
-*   **Kết quả mong đợi**:
-    *   Trạng thái của Person A tự động tụt về mức trước đó (`Booking` hoặc `Đã Gặp`).
-    *   Đồng hồ bảo mật (security timer) của Person A được kích hoạt chạy lại. Nếu hết hạn tương tác, khách hàng này sẽ được giải phóng ra Kho chung (Databank) để chia lại.
+### 1.1. Lưu đồ & Chuỗi SQL kiểm thử
 
-### Kịch bản 1.2: Hủy cọc khi ĐÃ CÓ doanh thu thực tế (Rule 2)
-*   **Tiền điều kiện**: Tạo Person B. Tạo phiếu cọc và ghi nhận đã đóng đợt 1 (đã thu một phần phí môi giới/doanh thu thực tế).
-*   **Các bước thực hiện**:
-    1. Thực hiện Hủy cọc đối với giao dịch này.
-*   **Kết quả mong đợi**:
-    *   Trạng thái của Person B **phải giữ nguyên** mức `Đặt Cọc` (không được tụt trạng thái) vì đã phát sinh dòng tiền thực tế chạy về công ty, xác nhận đây là khách hàng thật sự.
+```mermaid
+graph TD
+    A[Hủy đặt cọc] --> B{Đã có hóa đơn Paid?}
+    B -- Không --> C[Hạ cấp trạng thái Person về Booking/Đã gặp]
+    C --> D[Kích hoạt chạy lại Đồng hồ bảo mật]
+    B -- Có --> E[Giữ nguyên trạng thái Person ở mức Đặt Cọc]
+```
+
+### Kịch bản 1.1: Hủy cọc khi CHƯA có doanh thu thực tế (Rule 1)
+*   **Các lệnh SQL thực thi giả định**:
+    1. Đặt cọc được tạo cho khách hàng `Person ID = 5001`.
+    2. Xác nhận CSDL không có hóa đơn nào trạng thái `paid` liên kết với Person này:
+        ```sql
+        SELECT COUNT(*) FROM invoices WHERE contact_id = 5001 AND status = 'paid'; -- Kết quả: 0
+        ```
+    3. Thực hiện hủy cọc bằng cách cập nhật trạng thái phiếu cọc:
+        ```sql
+        UPDATE deposits SET status = 'cancelled' WHERE contact_id = 5001;
+        ```
+    4. Trình xử lý Backend (`DepositController.php`) tự động kiểm tra và hạ cấp trạng thái của khách hàng:
+        ```sql
+        UPDATE contacts SET stage = 'Booking', security_timer_active = 1, security_timer_start = NOW() WHERE id = 5001;
+        ```
+*   **Kết quả xác minh**: Truy vấn CSDL khách hàng phải hiển thị đúng trạng thái cũ và đồng hồ bảo mật được bật lại.
+
+### Kịch bản 1.2: Hủy cọc sau khi đã phát sinh doanh thu (Rule 2)
+*   **Các lệnh SQL thực thi giả định**:
+    1. Ghi nhận hóa đơn đã thanh toán:
+        ```sql
+        INSERT INTO invoices (contact_id, amount, status) VALUES (5002, 10000000, 'paid');
+        ```
+    2. Gọi API hủy đặt cọc. Trình xử lý phát hiện hóa đơn `paid > 0` và bỏ qua bước hạ cấp trạng thái khách hàng.
+*   **Kết quả xác minh**:
+    ```sql
+    SELECT stage FROM contacts WHERE id = 5002;
+    -- Kết quả trả về phải là 'Đặt Cọc' (không bị hạ cấp).
+    ```
 
 ---
 
 ## 🔄 2. Quy tắc đổi căn giao dịch (Unit Switching - Rule 3)
-*   **Kịch bản kiểm thử**:
-    1. Khách hàng đổi từ căn hộ A sang căn hộ B.
-    2. Người dùng nhấn nút đổi căn trên Deal căn hộ A.
-*   **Kết quả mong đợi**:
-    *   Hệ thống tự động đóng Deal cũ của căn hộ A lại (đóng thất bại hoặc đánh dấu đã đổi).
-    *   Hệ thống tự tạo một Deal mới hoàn toàn cho căn hộ B.
-    *   Tại Deal mới, hệ thống tự động gắn một liên kết ghi rõ: *"Đổi từ căn A"* để giữ trọn vẹn vết lịch sử dòng tiền và phí môi giới phục vụ đối soát kiểm toán (audit trail).
+Khi khách hàng chuyển đổi giao dịch từ căn hộ A sang căn hộ B:
+*   **Các bước xử lý SQL tuần tự**:
+    1. Đóng deal cũ:
+        ```sql
+        UPDATE deals SET status = 'lost', loss_reason = 'Đổi sang căn B' WHERE id = 201;
+        ```
+    2. Tạo deal mới và liên kết lịch sử đối soát (`audit trail`):
+        ```sql
+        INSERT INTO deals (contact_id, unit_id, status, description) 
+        VALUES (5003, 305, 'open', 'Đổi căn từ deal ID 201');
+        
+        INSERT INTO audit_logs (entity_type, entity_id, action, description) 
+        VALUES ('deal', 202, 'SWITCH_UNIT', 'Đổi từ căn hộ ID 201 sang căn hộ ID 305');
+        ```
+*   **Kết quả xác minh**: Drawer chi tiết của Deal mới hiển thị rõ lịch sử liên kết đến Deal cũ để không bị thất thoát vết kiểm toán dòng tiền.
 
 ---
 
 ## 📡 3. Tín hiệu Conversion API Meta (CAPI - Rule 4)
+*   **Mô tả**: Tín hiệu Conversion API gửi về Meta chỉ đi một chiều (Forward-only), không gửi tín hiệu hoàn trả khi deal bị bể.
+*   **Cấu trúc payload CAPI gửi đi khi Deal thành công (Purchase)**:
+    ```json
+    {
+      "event_name": "Purchase",
+      "event_time": 1785166109,
+      "user_data": {
+        "em": "3b4f9... (hashed email)",
+        "ph": "0988... (hashed phone)"
+      },
+      "custom_data": {
+        "value": 15000000.00,
+        "currency": "VND"
+      }
+    }
+    ```
 *   **Kịch bản kiểm thử**:
-    1. Deal của khách hàng chuyển sang thành công -> Hệ thống gửi tín hiệu `Purchase` (Mua hàng) về Meta qua webhook CAPI.
-    2. Sau đó, khách hàng này hủy đặt cọc (Deal bị hủy).
-*   **Kết quả mong đợi**:
-    *   Hệ thống **không được bắn lùi tín hiệu** (không gửi sự kiện hoàn trả hay hạ cấp) về Meta. Tín hiệu CAPI chỉ đi một chiều đi lên (Forward-only) để đảm bảo chất lượng máy học (machine learning) của Meta không bị nhiễu.
-
----
-
-## 🎲 4. Logic Vòng chia Lead & Recall tự động
-*   **Kịch bản kiểm thử**:
-    1. Cấu hình ca trực ban đêm cho tư vấn viên A. Tư vấn viên B không đăng ký trực.
-    2. Cài đặt tư vấn viên A đang bật chế độ nghỉ phép (`vacation_mode = 1`).
-    3. Đẩy một Lead mới từ Website vào hệ thống.
-*   **Kết quả mong đợi**:
-    *   Lead không được phân cho tư vấn viên B (vì không trực).
-    *   Lead không được phân cho tư vấn viên A (vì đang nghỉ phép).
-    *   Hệ thống tự động chuyển lead sang tài khoản Admin nhận lỗi hoặc xếp vào hàng đợi chờ phân bổ khi có người trực hoạt động.
-    *   Nếu một tư vấn viên nhận lead nhưng không tương tác quá thời gian cấu hình, lead tự động bị thu hồi (recall) và chia lại cho người tiếp theo trong vòng chia (`redistributePendingLeads`).
+    1. Cập nhật trạng thái Deal sang `won` -> Xác minh webhook CAPI gửi payload thành công.
+    2. Sau đó cập nhật Deal sang `lost` -> Xác minh trong nhật ký hàng đợi CAPI **không phát sinh** thêm bất kỳ sự kiện gửi nào khác liên quan đến mã khách hàng này.
