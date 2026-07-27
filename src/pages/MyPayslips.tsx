@@ -6,11 +6,22 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 export default function MyPayslips() {
   const { t } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState<'payslip' | 'leaves' | 'advances'>('payslip');
   
+  // Custom states for multi-level approval & CCs
+  const [users, setUsers] = useState<any[]>([]);
+  const [leaveApproverId, setLeaveApproverId] = useState<string | number>('');
+  const [leaveApproverId2, setLeaveApproverId2] = useState<string | number>('');
+  const [leaveRelatedUserIds, setLeaveRelatedUserIds] = useState<any[]>([]);
+
+  const [advanceApproverId, setAdvanceApproverId] = useState<string | number>('');
+  const [advanceApproverId2, setAdvanceApproverId2] = useState<string | number>('');
+  const [advanceRelatedUserIds, setAdvanceRelatedUserIds] = useState<any[]>([]);
+
   // Tab 1: Payslip states
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
   const [payslip, setPayslip] = useState<any>(null);
@@ -32,6 +43,29 @@ export default function MyPayslips() {
   const [advanceAmount, setAdvanceAmount] = useState(0);
   const [advanceReason, setAdvanceReason] = useState('');
   const [submittingAdvance, setSubmittingAdvance] = useState(false);
+
+  // Fetch users list
+  useEffect(() => {
+    fetchAPI('users?all=1').then(res => {
+      setUsers(res?.data || []);
+    }).catch(() => {});
+  }, []);
+
+  const userOptions = React.useMemo(() => {
+    return users.map((u: any) => ({
+      value: u.id,
+      label: u.full_name || u.username,
+      avatar: u.avatar_url || u.avatar,
+      sublabel: u.role ? String(u.role).toUpperCase() : ''
+    }));
+  }, [users]);
+
+  const approver2Options = React.useMemo(() => {
+    return [
+      { value: '', label: t('Không có (Chỉ duyệt 1 cấp)') },
+      ...userOptions
+    ];
+  }, [userOptions, t]);
 
   useEffect(() => {
     if (activeSubTab === 'payslip') {
@@ -81,6 +115,10 @@ export default function MyPayslips() {
       toast.error(t('Vui lòng điền đầy đủ thông tin đăng ký phép!'));
       return;
     }
+    if (!leaveApproverId) {
+      toast.error(t('Vui lòng chọn Người duyệt cấp 1!'));
+      return;
+    }
     setSubmittingLeave(true);
     try {
       await fetchAPI('hrm/leaves', {
@@ -91,12 +129,18 @@ export default function MyPayslips() {
           start_date: leaveStart,
           end_date: leaveEnd,
           total_days: leaveTotalDays,
-          reason: leaveReason
+          reason: leaveReason,
+          approver_id: leaveApproverId,
+          approver_id_2: leaveApproverId2 || null,
+          related_user_ids: leaveRelatedUserIds
         })
       });
       toast.success(t('Gửi đơn xin nghỉ phép thành công!'));
       setLeaveReason('');
       setLeaveTotalDays(1.0);
+      setLeaveApproverId('');
+      setLeaveApproverId2('');
+      setLeaveRelatedUserIds([]);
       loadLeaves();
     } catch (err: any) {
       toast.error(err?.message || t('Lỗi gửi đơn nghỉ phép'));
@@ -112,6 +156,10 @@ export default function MyPayslips() {
       toast.error(t('Vui lòng điền số tiền và lý do tạm ứng hợp lệ!'));
       return;
     }
+    if (!advanceApproverId) {
+      toast.error(t('Vui lòng chọn Người duyệt cấp 1!'));
+      return;
+    }
     setSubmittingAdvance(true);
     try {
       await fetchAPI('hrm/advances', {
@@ -119,12 +167,18 @@ export default function MyPayslips() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: advanceAmount,
-          reason: advanceReason
+          reason: advanceReason,
+          approver_id: advanceApproverId,
+          approver_id_2: advanceApproverId2 || null,
+          related_user_ids: advanceRelatedUserIds
         })
       });
       toast.success(t('Gửi đề xuất tạm ứng lương thành công!'));
       setAdvanceAmount(0);
       setAdvanceReason('');
+      setAdvanceApproverId('');
+      setAdvanceApproverId2('');
+      setAdvanceRelatedUserIds([]);
       loadAdvances();
     } catch (err: any) {
       toast.error(err?.message || t('Lỗi gửi yêu cầu tạm ứng'));
@@ -545,13 +599,58 @@ export default function MyPayslips() {
             <form onSubmit={handleRequestLeave} style={{ display: 'grid', gap: '1rem' }}>
               <div>
                 <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Loại nghỉ phép')}</label>
-                <select className="form-input" value={leaveType} onChange={e => setLeaveType(e.target.value)}>
-                  <option value="annual">{t('Phép năm (Có hưởng lương)')}</option>
-                  <option value="sick">{t('Nghỉ ốm (Có hưởng lương)')}</option>
-                  <option value="compensatory">{t('Nghỉ bù (Có hưởng lương)')}</option>
-                  <option value="unpaid">{t('Nghỉ không lương')}</option>
-                  <option value="late_early">{t('Xin Đi trễ / Về sớm')}</option>
-                </select>
+                <CustomSelect
+                  options={[
+                    { value: 'annual', label: t('Phép năm (Có hưởng lương)') },
+                    { value: 'sick', label: t('Nghỉ ốm (Có hưởng lương)') },
+                    { value: 'compensatory', label: t('Nghỉ bù (Có hưởng lương)') },
+                    { value: 'unpaid', label: t('Nghỉ không lương') },
+                    { value: 'late_early', label: t('Xin Đi trễ / Về sớm') }
+                  ]}
+                  value={leaveType}
+                  onChange={val => setLeaveType(val)}
+                  size="sm"
+                />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Người duyệt cấp 1 (Quản lý) *')}</label>
+                <CustomSelect
+                  options={userOptions}
+                  value={leaveApproverId}
+                  onChange={val => setLeaveApproverId(val)}
+                  searchable={true}
+                  showAvatars={true}
+                  placeholder={t('Chọn người duyệt cấp 1...')}
+                  size="sm"
+                />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Người duyệt cấp 2 (Ban Giám đốc) (Không bắt buộc)')}</label>
+                <CustomSelect
+                  options={approver2Options}
+                  value={leaveApproverId2}
+                  onChange={val => setLeaveApproverId2(val)}
+                  searchable={true}
+                  showAvatars={true}
+                  placeholder={t('Chọn người duyệt cấp 2...')}
+                  size="sm"
+                />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Người liên quan (CC)')}</label>
+                <CustomSelect
+                  options={userOptions}
+                  value={leaveRelatedUserIds}
+                  onChange={val => setLeaveRelatedUserIds(val)}
+                  searchable={true}
+                  showAvatars={true}
+                  multiple={true}
+                  placeholder={t('Chọn người liên quan...')}
+                  size="sm"
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -614,10 +713,10 @@ export default function MyPayslips() {
                         padding: '3px 8px', 
                         borderRadius: 10,
                         textTransform: 'uppercase',
-                        background: req.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : req.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                        color: req.status === 'approved' ? '#10b981' : req.status === 'rejected' ? '#ef4444' : '#6b7280'
+                        background: req.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : req.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : req.status === 'level1_approved' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                        color: req.status === 'approved' ? '#10b981' : req.status === 'rejected' ? '#ef4444' : req.status === 'level1_approved' ? '#3b82f6' : '#6b7280'
                       }}>
-                        {req.status === 'approved' ? t('Đã duyệt') : req.status === 'rejected' ? t('Từ chối') : t('Chờ duyệt')}
+                        {req.status === 'approved' ? t('Đã duyệt') : req.status === 'rejected' ? t('Từ chối') : req.status === 'level1_approved' ? t('Đã duyệt Cấp 1') : t('Chờ duyệt')}
                       </span>
                     </div>
                   </div>
@@ -641,6 +740,46 @@ export default function MyPayslips() {
               <div>
                 <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Số tiền đề xuất (VND)')}</label>
                 <input type="number" className="form-input" value={advanceAmount} onChange={e => setAdvanceAmount(Number(e.target.value))} placeholder={t('Ví dụ: 1000000')} />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Người duyệt cấp 1 (Quản lý) *')}</label>
+                <CustomSelect
+                  options={userOptions}
+                  value={advanceApproverId}
+                  onChange={val => setAdvanceApproverId(val)}
+                  searchable={true}
+                  showAvatars={true}
+                  placeholder={t('Chọn người duyệt cấp 1...')}
+                  size="sm"
+                />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Người duyệt cấp 2 (Ban Giám đốc) (Không bắt buộc)')}</label>
+                <CustomSelect
+                  options={approver2Options}
+                  value={advanceApproverId2}
+                  onChange={val => setAdvanceApproverId2(val)}
+                  searchable={true}
+                  showAvatars={true}
+                  placeholder={t('Chọn người duyệt cấp 2...')}
+                  size="sm"
+                />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ fontSize: '0.78rem' }}>{t('Người liên quan (CC)')}</label>
+                <CustomSelect
+                  options={userOptions}
+                  value={advanceRelatedUserIds}
+                  onChange={val => setAdvanceRelatedUserIds(val)}
+                  searchable={true}
+                  showAvatars={true}
+                  multiple={true}
+                  placeholder={t('Chọn người liên quan...')}
+                  size="sm"
+                />
               </div>
 
               <div>
@@ -689,10 +828,10 @@ export default function MyPayslips() {
                         padding: '3px 8px', 
                         borderRadius: 10,
                         textTransform: 'uppercase',
-                        background: adv.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : adv.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                        color: adv.status === 'approved' ? '#10b981' : adv.status === 'rejected' ? '#ef4444' : '#6b7280'
+                        background: adv.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : adv.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : adv.status === 'level1_approved' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                        color: adv.status === 'approved' ? '#10b981' : adv.status === 'rejected' ? '#ef4444' : adv.status === 'level1_approved' ? '#3b82f6' : '#6b7280'
                       }}>
-                        {adv.status === 'approved' ? t('Đã duyệt chi') : adv.status === 'rejected' ? t('Từ chối') : t('Chờ duyệt')}
+                        {adv.status === 'approved' ? t('Đã duyệt chi') : adv.status === 'rejected' ? t('Từ chối') : adv.status === 'level1_approved' ? t('Đã duyệt Cấp 1') : t('Chờ duyệt')}
                       </span>
                     </div>
                   </div>

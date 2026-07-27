@@ -130,6 +130,13 @@ export default function Approvals() {
         </span>
       );
     }
+    if (s === 'level1_approved') {
+      return (
+        <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', textTransform: 'uppercase' }}>
+          {t('Đã duyệt Cấp 1')}
+        </span>
+      );
+    }
     if (s === 'rejected' || s === 'failed') {
       return (
         <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>
