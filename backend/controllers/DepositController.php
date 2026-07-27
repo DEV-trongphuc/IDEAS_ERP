@@ -412,7 +412,7 @@ class DepositController {
     }
 
     public function approveMilestone(array $auth, int $id, int $milestoneId): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'assistant', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'accountant']);
         
         $this->db->beginTransaction();
         try {
@@ -532,7 +532,7 @@ class DepositController {
     }
 
     public function rejectMilestone(array $auth, int $id, int $milestoneId): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'assistant', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'accountant']);
         
         $b = getBody();
         $reason = trim($b['reason'] ?? 'Không rõ lý do');
@@ -612,7 +612,7 @@ class DepositController {
     }
 
     public function cancelDeposit(array $auth, int $id): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'accountant']);
         $b = getBody();
         $reason = trim($b['reason'] ?? 'Khách hủy mua');
 

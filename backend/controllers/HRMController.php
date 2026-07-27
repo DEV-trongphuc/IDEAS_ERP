@@ -7,7 +7,7 @@ class HRMController {
     }
 
     private function isAdmin(array $auth): bool {
-        return in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director'], true);
+        return in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director', 'hr'], true);
     }
 
     // --- PROFILES & CONTRACTS ---

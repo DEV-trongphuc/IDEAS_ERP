@@ -27,18 +27,18 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { name: 'Dashboard', href: '/', icon: LayoutDashboard, end: true },
       { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-      { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2 }
+      { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2, hideForRoles: ['hr', 'marketing'] }
     ]
   },
   {
     title: 'KHÁCH HÀNG',
     items: [
-      { name: 'Khách hàng', href: '/contacts', icon: Users },
-      { name: 'Pipeline', href: '/deals', icon: TrendingUp },
-      { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale'] },
-      { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer'] },
-      { name: 'AI Pre-screener', href: '/gatekeeper', icon: Filter, adminOnly: true, badgeKey: 'gatekeeper', hideForRoles: ['manager', 'assistant', 'sale', 'sales'] },
-      { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
+      { name: 'Khách hàng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant'] },
+      { name: 'Pipeline', href: '/deals', icon: TrendingUp, hideForRoles: ['hr', 'accountant'] },
+      { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant'] },
+      { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer', 'hr', 'accountant', 'marketing'] },
+      { name: 'AI Pre-screener', href: '/gatekeeper', icon: Filter, adminOnly: true, badgeKey: 'gatekeeper', hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'marketing'] },
+      { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets', hideForRoles: ['hr', 'accountant'] },
       { name: 'Ticket hỗ trợ', href: '/support-tickets', icon: LifeBuoy, badgeKey: 'supportTickets' }
     ]
   },
@@ -46,49 +46,49 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     title: 'SẢN PHẨM & KHO HÀNG',
     items: [
       { name: 'Sản phẩm & Dịch vụ', href: '/products', icon: Package },
-      { name: 'Kho hàng hóa', href: '/inventory', icon: Boxes },
+      { name: 'Kho hàng hóa', href: '/inventory', icon: Boxes, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
-      { name: 'Đối tác kinh doanh', href: '/companies', icon: Building2 },
-      { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
+      { name: 'Đối tác kinh doanh', href: '/companies', icon: Building2, hideForRoles: ['hr'] },
+      { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck, hideForRoles: ['hr'] }
     ]
   },
   {
     title: 'TÀI CHÍNH',
     items: [
-      { name: 'Báo giá', href: '/quotes', icon: FileText, hideForRoles: ['viewer'] },
-      { name: 'Đơn đặt hàng', href: '/deposits', icon: Receipt, hideForRoles: ['viewer'], badgeKey: 'pendingDeposits' },
-      { name: 'Chi phí chi tiêu', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer'], badgeKey: 'pendingExpenses' }
+      { name: 'Báo giá', href: '/quotes', icon: FileText, hideForRoles: ['viewer', 'hr', 'marketing'] },
+      { name: 'Đơn đặt hàng', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingDeposits' },
+      { name: 'Chi phí chi tiêu', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingExpenses' }
     ]
   },
   {
     title: 'QUY TRÌNH & PHÊ DUYỆT',
     items: [
-      { name: 'Quy trình phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' }
+      { name: 'Quy trình phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals', hideForRoles: ['hr', 'marketing'] }
     ]
   },
   {
     title: 'NHÂN SỰ',
     items: [
       { name: 'Tài khoản cá nhân', href: '/account', icon: User },
-      { name: 'Chi nhánh', href: '/consultants?tab=branches', icon: Building2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
-      { name: 'Team', href: '/consultants?tab=teams', icon: Users, hideForRoles: ['assistant', 'viewer'] },
-      { name: 'Nhân viên kinh doanh', href: '/consultants', icon: Users, hideForRoles: ['assistant', 'viewer'] },
-      { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales'] },
+      { name: 'Chi nhánh', href: '/consultants?tab=branches', icon: Building2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
+      { name: 'Team', href: '/consultants?tab=teams', icon: Users, hideForRoles: ['assistant', 'viewer', 'accountant', 'marketing'] },
+      { name: 'Nhân viên kinh doanh', href: '/consultants', icon: Users, hideForRoles: ['assistant', 'viewer', 'accountant', 'marketing'] },
+      { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
       { name: 'Lịch trình', href: '/calendar', icon: Calendar },
-      { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'manager', 'viewer', 'director'] },
-      { name: 'Quản trị nhân sự & lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
+      { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'manager', 'viewer', 'director', 'hr', 'accountant', 'marketing'] },
+      { name: 'Quản trị nhân sự & lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
       { name: 'Phiếu lương cá nhân', href: '/my-payslips', icon: FileText }
     ]
   },
   {
     title: 'CÀI ĐẶT HỆ THỐNG',
     items: [
-      { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director'] },
-      { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director'] },
-      { name: 'Quản lý tài khoản', href: '/accounts', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
-      { name: 'Vòng phân bổ', href: '/rounds', icon: GitBranch, adminOnly: true, hideForRoles: ['manager', 'assistant', 'sale', 'sales'] },
-      { name: 'Quy tắc định tuyến', href: '/rules', icon: Webhook, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
-      { name: 'Tích hợp Data', href: '/integrations', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] }
+      { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director', 'hr', 'accountant', 'marketing'] },
+      { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director', 'hr', 'accountant', 'marketing'] },
+      { name: 'Quản lý tài khoản', href: '/accounts', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
+      { name: 'Vòng phân bổ', href: '/rounds', icon: GitBranch, adminOnly: true, hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant'] },
+      { name: 'Quy tắc định tuyến', href: '/rules', icon: Webhook, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'hr', 'accountant'] },
+      { name: 'Tích hợp Data', href: '/integrations', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'hr', 'accountant'] }
     ]
   }
 ];

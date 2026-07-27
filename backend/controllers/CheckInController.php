@@ -34,7 +34,7 @@ class CheckInController {
             }
         }
 
-        $isManager = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director'], true);
+        $isManager = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'hr'], true);
         
         try {
             $sql = "SELECT c.*, u.full_name as user_name, u.email as user_email, u.avatar_url as user_avatar, IF(COALESCE(u.use_custom_work_hours, 0) = 1, u.work_start_time, (SELECT setting_value FROM system_settings WHERE setting_key = 'global_work_start_time' LIMIT 1)) AS work_start_time
@@ -435,7 +435,7 @@ class CheckInController {
     }
 
     public function update(array $auth, int $id): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr']);
         $b = getBody();
         $status = trim($b['status'] ?? '');
         $reason = trim($b['reason'] ?? ''); // Optionally update reason or note
@@ -519,7 +519,7 @@ class CheckInController {
     }
 
     public function destroy(array $auth, int $id): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'hr']);
 
         // Fetch check-in record
         $stmtCheck = $this->db->prepare("

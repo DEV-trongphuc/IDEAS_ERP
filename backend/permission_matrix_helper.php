@@ -15,6 +15,36 @@ if (!function_exists('getModulePermissionScope')) {
         if (($role === 'sale' || $role === 'sales') && $module === 'deals') {
             return $action === 'delete' ? 'none' : 'own';
         }
+
+        if ($role === 'hr') {
+            if (in_array($module, ['hrm', 'attendance', 'users'], true)) {
+                return 'all';
+            }
+            if ($module === 'settings') {
+                return 'none';
+            }
+            return 'own';
+        }
+
+        if ($role === 'accountant') {
+            if (in_array($module, ['deposits', 'expenses', 'finance', 'invoices', 'quotes'], true)) {
+                return 'all';
+            }
+            if ($module === 'settings') {
+                return 'none';
+            }
+            return 'own';
+        }
+
+        if ($role === 'marketing') {
+            if (in_array($module, ['leads', 'campaigns', 'projects'], true)) {
+                return 'all';
+            }
+            if ($module === 'settings') {
+                return 'none';
+            }
+            return 'own';
+        }
         
         // Check if the user has custom permissions in their decoded context or fetched live
         $permissions = $decodedUser['permissions'] ?? null;

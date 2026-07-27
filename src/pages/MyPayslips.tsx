@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '../utils/api';
+import api from '../api/axios';
 import { 
   FileText, Calendar, CheckCircle, ShieldCheck, PenTool,
   Clock, DollarSign, Award, Percent, HelpCircle, Plus, Send,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, XCircle, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyCard } from '../components/ui/EmptyCard';
+import { Avatar } from '../components/ui/Avatar';
 
 export default function MyPayslips() {
   const { t } = useLanguage();
@@ -45,6 +47,7 @@ export default function MyPayslips() {
   const [advanceAmount, setAdvanceAmount] = useState(0);
   const [advanceReason, setAdvanceReason] = useState('');
   const [submittingAdvance, setSubmittingAdvance] = useState(false);
+  const [selectedTimelineItem, setSelectedTimelineItem] = useState<any | null>(null);
 
   // Fetch users list
   useEffect(() => {
@@ -719,7 +722,22 @@ export default function MyPayslips() {
             ) : (
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {leavesList.map(req => (
-                  <div key={req.id} style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: '1rem', background: 'var(--color-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div 
+                    key={req.id} 
+                    onClick={() => setSelectedTimelineItem({ ...req, type: 'leave' })}
+                    className="hover-lift"
+                    style={{ 
+                      border: '1px solid var(--color-border)', 
+                      borderRadius: 12, 
+                      padding: '1rem', 
+                      background: 'var(--color-surface)', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: '0.725rem', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
@@ -730,8 +748,9 @@ export default function MyPayslips() {
                       <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
                         {t('Từ')}: {new Date(req.start_date).toLocaleString('vi-VN')} {t('đến')} {new Date(req.end_date).toLocaleString('vi-VN')}
                       </p>
-                      <p style={{ fontSize: '0.825rem', marginTop: 6, fontStyle: 'italic' }}>
-                        "{req.reason || t('Không có lý do')}"
+                      <p style={{ fontSize: '0.825rem', marginTop: 6, fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span>"{req.reason || t('Không có lý do')}"</span>
+                        <span style={{ fontSize: '0.725rem', color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>{t('Xem tiến trình')}</span>
                       </p>
                     </div>
                     <div>
@@ -834,7 +853,22 @@ export default function MyPayslips() {
             ) : (
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {advancesList.map(adv => (
-                  <div key={adv.id} style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: '1rem', background: 'var(--color-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div 
+                    key={adv.id} 
+                    onClick={() => setSelectedTimelineItem({ ...adv, type: 'advance' })}
+                    className="hover-lift"
+                    style={{ 
+                      border: '1px solid var(--color-border)', 
+                      borderRadius: 12, 
+                      padding: '1rem', 
+                      background: 'var(--color-surface)', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>{formatCurrency(adv.amount)}</strong>
@@ -842,8 +876,9 @@ export default function MyPayslips() {
                           ({t('Ngày đề xuất')}: {new Date(adv.request_date).toLocaleDateString('vi-VN')})
                         </span>
                       </div>
-                      <p style={{ fontSize: '0.825rem', marginTop: 6, fontStyle: 'italic' }}>
-                        "{adv.reason || t('Tạm ứng sinh hoạt')}"
+                      <p style={{ fontSize: '0.825rem', marginTop: 6, fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span>"{adv.reason || t('Tạm ứng sinh hoạt')}"</span>
+                        <span style={{ fontSize: '0.725rem', color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>{t('Xem tiến trình')}</span>
                       </p>
                       {adv.deducted_payslip_id && (
                         <p style={{ fontSize: '0.725rem', color: '#10b981', marginTop: 4, fontWeight: 600 }}>
@@ -871,6 +906,406 @@ export default function MyPayslips() {
           </div>
         </div>
       )}
+      
+      {/* Progress Timeline Drawer */}
+      {selectedTimelineItem && (
+        <ApprovalDetailDrawer
+          item={selectedTimelineItem}
+          onClose={() => setSelectedTimelineItem(null)}
+          users={users}
+          t={t}
+          onApprove={async () => {}}
+          onReject={() => {}}
+          isAdmin={false}
+        />
+      )}
+    </div>
+  );
+}
+
+// Side-Drawer Component detailing step-by-step progress
+function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, isAdmin }: {
+  item: any;
+  onClose: () => void;
+  users: any[];
+  t: any;
+  onApprove: (item: any) => Promise<void>;
+  onReject: (item: any) => void;
+  isAdmin: boolean;
+}) {
+  const [detail, setDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchDetail = async () => {
+      setLoading(true);
+      try {
+        if (item.type === 'leave') {
+          const res = await fetchAPI('hrm/leaves');
+          const found = res?.data?.find((l: any) => l.id === item.id);
+          if (active) setDetail(found);
+        } else if (item.type === 'advance') {
+          const res = await fetchAPI('hrm/advances');
+          const found = res?.data?.find((a: any) => a.id === item.id);
+          if (active) setDetail(found);
+        } else if (item.type === 'expense') {
+          const res = await api.get('/expenses');
+          const found = res?.data?.data?.find((e: any) => e.id === item.id);
+          if (active) setDetail(found);
+        } else if (item.type === 'checkin') {
+          const res = await api.get('/check_ins');
+          const found = res?.data?.data?.find((c: any) => c.id === item.id);
+          if (active) setDetail(found);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    fetchDetail();
+    return () => { active = false; };
+  }, [item]);
+
+  const getEmployeeName = () => {
+    if (detail?.employee_name) return detail.employee_name;
+    if (item.employee_name) return item.employee_name;
+    return t('Nhân viên');
+  };
+
+  const getEmployeeAvatar = () => {
+    const emp = users.find(u => String(u.full_name) === String(getEmployeeName()) || String(u.id) === String(detail?.user_id || detail?.created_by));
+    return emp?.avatar_url || emp?.avatar;
+  };
+
+  const renderTimeline = () => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--color-text-muted)' }}>
+          <div className="spinner sm" style={{ margin: '0 auto 10px auto' }}></div>
+          {t('Đang tải tiến trình...')}
+        </div>
+      );
+    }
+
+    const steps = [];
+
+    // Step 1: Proposal Submission
+    steps.push({
+      title: item.type === 'leave' ? t('Lập đề nghị nghỉ phép') : item.type === 'advance' ? t('Lập đề xuất tạm ứng') : item.type === 'expense' ? t('Lập đề xuất chi phí') : t('Gửi giải trình chấm công'),
+      user: {
+        name: getEmployeeName(),
+        avatar: getEmployeeAvatar()
+      },
+      status: 'approved',
+      time: detail?.created_at || item.created_at,
+      notes: detail?.reason || detail?.notes || detail?.description
+    });
+
+    // Multi-level Leaves & Salary Advances
+    if (item.type === 'leave' || item.type === 'advance') {
+      const approver1Id = detail?.approver_id;
+      if (approver1Id) {
+        const app1 = users.find(u => String(u.id) === String(approver1Id));
+        const app1Status = detail?.status_level_1 || 'pending';
+        steps.push({
+          title: t('Trưởng phòng phê duyệt'),
+          user: {
+            name: app1?.full_name || t('Trưởng phòng'),
+            avatar: app1?.avatar_url || app1?.avatar
+          },
+          status: app1Status,
+          time: app1Status !== 'pending' ? detail?.updated_at : null,
+          notes: app1Status === 'rejected' ? detail?.reason : null
+        });
+      }
+
+      const approver2Id = detail?.approver_id_2;
+      if (approver2Id) {
+        const app2 = users.find(u => String(u.id) === String(approver2Id));
+        const app2Status = detail?.status_level_2 || 'pending';
+        steps.push({
+          title: t('Kế toán toán tổng hợp kiểm tra'),
+          user: {
+            name: app2?.full_name || t('Kế toán'),
+            avatar: app2?.avatar_url || app2?.avatar
+          },
+          status: app2Status,
+          time: app2Status !== 'pending' ? detail?.updated_at : null,
+          notes: app2Status === 'rejected' ? detail?.reject_reason || detail?.reason : null
+        });
+      }
+    } else if (item.type === 'expense') {
+      const approverId = detail?.approver_id;
+      const app = users.find(u => String(u.id) === String(approverId || '1003'));
+      const appStatus = detail?.status || 'pending';
+      steps.push({
+        title: t('Phê duyệt đề xuất chi phí'),
+        user: {
+          name: app?.full_name || t('Người phê duyệt'),
+          avatar: app?.avatar_url || app?.avatar
+        },
+        status: appStatus,
+        time: appStatus !== 'pending' ? detail?.approved_at : null,
+        notes: appStatus === 'rejected' ? detail?.reject_reason : null
+      });
+    } else if (item.type === 'checkin') {
+      const appStatus = detail?.status === 'approved' ? 'approved' : (detail?.status === 'rejected' ? 'rejected' : 'pending');
+      steps.push({
+        title: t('Phê duyệt giải trình chấm công'),
+        user: {
+          name: t('Admin hệ thống'),
+          initial: 'AD'
+        },
+        status: appStatus,
+        time: appStatus !== 'pending' ? detail?.updated_at : null,
+        notes: appStatus === 'rejected' ? detail?.reason : null
+      });
+    }
+
+    return (
+      <div style={{ position: 'relative', paddingLeft: '2.5rem', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {/* Gray connecting line background */}
+        <div style={{
+          position: 'absolute',
+          left: '9px',
+          top: '16px',
+          bottom: '16px',
+          width: '2px',
+          background: 'var(--color-border-light)'
+        }} />
+        
+        {/* Green connecting line foreground for completed steps */}
+        <div style={{
+          position: 'absolute',
+          left: '9px',
+          top: '16px',
+          height: `${Math.max(0, (steps.filter(s => s.status === 'approved').length - 1)) * 100 / Math.max(1, steps.length - 1)}%`,
+          width: '2px',
+          background: '#10b981',
+          transition: 'height 0.3s ease'
+        }} />
+
+        {steps.map((step, idx) => {
+          const isDone = step.status === 'approved' || step.status === 'confirmed';
+          const isRejected = step.status === 'rejected' || step.status === 'failed';
+          const isPending = step.status === 'pending';
+          
+          const borderStyle = isPending ? '1px solid #3b82f6' : (isRejected ? '1px solid #ef4444' : '1px solid var(--color-border-light)');
+          
+          return (
+            <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              {/* Timeline circle dot */}
+              <div style={{
+                position: 'absolute',
+                left: '-2.5rem',
+                top: '12px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                background: isDone ? '#10b981' : (isRejected ? '#ef4444' : 'var(--color-surface)'),
+                border: isDone || isRejected ? 'none' : '2px solid var(--color-border)',
+                color: '#fff',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                boxShadow: '0 0 0 4px var(--color-surface)'
+              }}>
+                {isDone && '✓'}
+                {isRejected && '✗'}
+              </div>
+
+              {/* Speech bubble card body */}
+              <div style={{
+                background: 'var(--color-surface)',
+                border: borderStyle,
+                borderRadius: '12px',
+                padding: '1.25rem',
+                boxShadow: isPending ? '0 4px 12px rgba(59, 130, 246, 0.08)' : '0 1px 3px rgba(0,0,0,0.02)',
+                position: 'relative',
+                transition: 'all 0.2s',
+                textAlign: 'left'
+              }}>
+                {/* Speech bubble triangle pointer */}
+                <div style={{
+                  position: 'absolute',
+                  left: '-8px',
+                  top: '16px',
+                  width: 0,
+                  height: 0,
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderRight: `8px solid ${isPending ? '#3b82f6' : (isRejected ? '#ef4444' : 'var(--color-border-light)')}`,
+                  zIndex: 1
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  left: '-7px',
+                  top: '16px',
+                  width: 0,
+                  height: 0,
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderRight: '8px solid var(--color-surface)',
+                  zIndex: 2
+                }} />
+
+                {/* Card details */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 8 }}>
+                      <h4 style={{ fontSize: '0.925rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                        {step.title}
+                      </h4>
+                      {/* Optional comment bubble icon for logs containing reason / notes */}
+                      {step.notes && (
+                        <div title={step.notes} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-light)', cursor: 'help' }}>
+                          <span style={{ fontSize: '11px' }}>💬</span>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Avatar src={step.user.avatar} name={step.user.name} size={24} />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-light)' }}>
+                        {step.user.name}
+                      </span>
+                    </div>
+                    
+                    {step.time && (
+                      <div style={{ fontSize: '0.78rem', color: isRejected ? '#ef4444' : '#10b981', fontWeight: 600, marginTop: '8px' }}>
+                        {new Date(step.time).toLocaleString('vi-VN')}
+                      </div>
+                    )}
+
+                    {!step.time && isPending && (
+                      <div style={{ fontSize: '0.78rem', color: '#6b7280', fontStyle: 'italic', marginTop: '8px' }}>
+                        {t('Đang chờ phê duyệt...')}
+                      </div>
+                    )}
+
+                    {step.notes && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '6px 10px',
+                        background: isRejected ? 'rgba(239, 68, 68, 0.05)' : 'var(--color-bg-secondary)',
+                        borderLeft: `3px solid ${isRejected ? '#ef4444' : 'var(--color-primary)'}`,
+                        borderRadius: '4px',
+                        fontSize: '0.78rem',
+                        color: 'var(--color-text-muted)',
+                        fontStyle: 'italic'
+                      }}>
+                        "{step.notes}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(15, 23, 42, 0.4)',
+      backdropFilter: 'blur(8px)',
+      display: 'flex',
+      justifyContent: 'flex-end',
+      zIndex: 1000000,
+      animation: 'fadeIn 0.2s ease-out'
+    }} onClick={onClose}>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+      `}</style>
+      
+      <div style={{
+        width: '480px',
+        maxWidth: '100%',
+        height: '100vh',
+        background: 'var(--color-surface)',
+        boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+        display: 'flex',
+        flexDirection: 'column',
+        animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        boxSizing: 'border-box'
+      }} onClick={e => e.stopPropagation()}>
+        
+        {/* Drawer Header */}
+        <div style={{
+          padding: '1.5rem',
+          borderBottom: '1px solid var(--color-border-light)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase' }}>
+            {t('Chi tiết tiến trình')}
+          </h3>
+          <button className="btn-icon-bare" onClick={onClose} style={{ fontSize: '1.5rem', lineHeight: 1 }}>×</button>
+        </div>
+
+        {/* Drawer Body */}
+        <div className="custom-scrollbar" style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '1.5rem 1.5rem 3rem 1.5rem'
+        }}>
+          <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.5px' }}>
+            {t('CÁC BƯỚC THỰC HIỆN')}
+          </h3>
+          
+          {renderTimeline()}
+        </div>
+
+        {/* Drawer Footer Actions (Pending only) */}
+        {isAdmin && (
+          <div style={{
+            padding: '1.5rem',
+            borderTop: '1px solid var(--color-border-light)',
+            display: 'flex',
+            gap: '1rem',
+            background: 'var(--color-bg-secondary)'
+          }}>
+            <button
+              className="btn secondary"
+              style={{ flex: 1, color: '#ef4444', borderColor: '#ef4444' }}
+              onClick={() => onReject(item)}
+            >
+              <XCircle size={14} style={{ marginRight: 4 }} />
+              {t('Từ chối')}
+            </button>
+            <button
+              className="btn primary"
+              style={{ flex: 1 }}
+              onClick={async () => {
+                await onApprove(item);
+                onClose();
+              }}
+            >
+              <CheckCircle2 size={14} style={{ marginRight: 4 }} />
+              {t('Phê duyệt')}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

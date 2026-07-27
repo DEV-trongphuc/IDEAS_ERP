@@ -818,7 +818,7 @@ switch ($resource) {
 
     case 'expenses':
         $auth = requireAuth();
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'sales', 'sale', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'sales', 'sale', 'director', 'accountant']);
         $ctrl = new FinanceController($db);
         if ($resourceId === 'entity' && $subResource && $method === 'GET') {
             $ctrl->listEntityExpenses($auth, $subResource, (int)($segments[3] ?? 0));

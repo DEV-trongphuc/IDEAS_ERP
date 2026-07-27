@@ -1,11 +1,11 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, AlertTriangle, RefreshCw,
   GitBranch, UserPlus, Zap, Calendar, BarChart2, Scale,
   FileSpreadsheet, MessageCircle, Database, Server, ExternalLink, Clock, CheckCircle, Cpu,
   ShieldAlert, Filter, Ticket as TicketIcon,
-  FileText, CheckSquare, AlertCircle, CheckCircle2, Settings, DollarSign, Send
+  FileText, CheckSquare, AlertCircle, CheckCircle2, Settings, DollarSign, Send, CreditCard, TrendingUp
 } from 'lucide-react';
 import {
   Bar, XAxis, YAxis, CartesianGrid,
@@ -539,6 +539,317 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   const aiTotal = aiPassed + aiFailed;
   const aiPassedPercent = aiTotal > 0 ? Math.round((aiPassed / aiTotal) * 100) : 0;
   const aiFailedPercent = aiTotal > 0 ? 100 - aiPassedPercent : 0;
+
+  // ==========================================
+  // ROLE-SPECIFIC CUSTOM DASHBOARD VIEWS
+  // ==========================================
+  
+  if (user?.role === 'hr') {
+    const hrStats = {
+      totalEmployees: 32,
+      presentToday: 28,
+      lateToday: 4,
+      onLeave: 2,
+      pendingLeaves: pendingCheckInsCount || 1,
+      departmentData: [
+        { name: t('Kinh doanh'), count: 18 },
+        { name: t('Marketing'), count: 6 },
+        { name: t('Kế toán'), count: 3 },
+        { name: t('Nhân sự'), count: 2 },
+        { name: t('Kỹ thuật'), count: 3 }
+      ],
+      attendanceTrend: [
+        { day: t('Thứ 2'), rate: 95 },
+        { day: t('Thứ 3'), rate: 90 },
+        { day: t('Thứ 4'), rate: 92 },
+        { day: t('Thứ 5'), rate: 88 },
+        { day: t('Thứ 6'), rate: 94 },
+        { day: t('Thứ 7'), rate: 85 }
+      ]
+    };
+
+    return (
+      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Welcome Banner */}
+        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+          <div>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{t('Chào mừng trở lại,')} {user.name}!</h1>
+            <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '4px 0 0 0' }}>{t('Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.')}</p>
+          </div>
+          <span style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '6px 14px', borderRadius: '99px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Nhân sự')}</span>
+        </div>
+
+        {/* KPIs */}
+        <div className="dashboard-kpi-grid">
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG NHÂN SỰ')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{hrStats.totalEmployees}</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('ĐI LÀM HÔM NAY')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{hrStats.presentToday}</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('ĐI TRỄ / VỀ SỚM')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{hrStats.lateToday}</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertCircle size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('YÊU CẦU CHỜ DUYỆT')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{hrStats.pendingLeaves}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts & Details */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Tỷ lệ đi làm tuần này (%)')}</h3>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={hrStats.attendanceTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+                  <YAxis domain={[50, 100]} tick={{ fontSize: 9 }} />
+                  <Tooltip />
+                  <Bar dataKey="rate" fill="var(--color-primary)" radius={[4, 4, 0, 0]} barSize={25} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Cơ cấu nhân sự theo phòng ban')}</h3>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={hrStats.departmentData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={{ fontSize: 9, fontWeight: 600 }}>
+                    {hrStats.departmentData.map((entry, idx) => (
+                      <Cell key={`cell-${idx}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][idx % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role === 'accountant') {
+    const actStats = {
+      revenueThisMonth: stats?.revenue || 185200000,
+      pendingDeposits: 52000000,
+      expensesThisMonth: stats?.expenses || 18450000,
+      pendingApprovalInvoices: pendingExpensesCount || 0,
+      cashFlowTrend: [
+        { month: t('T3'), revenue: 120, expenses: 15 },
+        { month: t('T4'), revenue: 150, expenses: 18 },
+        { month: t('T5'), revenue: 140, expenses: 12 },
+        { month: t('T6'), revenue: 195, expenses: 22 },
+        { month: t('T7'), revenue: 185, expenses: 18 }
+      ],
+      expenseCategories: [
+        { name: t('Marketing & Ads'), value: 12000000 },
+        { name: t('Lương & Thưởng'), value: 45000000 },
+        { name: t('Vận hành văn phòng'), value: 8500000 },
+        { name: t('Khác'), value: 2000000 }
+      ]
+    };
+
+    return (
+      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Welcome Banner */}
+        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+          <div>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{t('Chào mừng trở lại,')} {user.name}!</h1>
+            <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '4px 0 0 0' }}>{t('Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.')}</p>
+          </div>
+          <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '6px 14px', borderRadius: '99px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Kế toán')}</span>
+        </div>
+
+        {/* KPIs */}
+        <div className="dashboard-kpi-grid">
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><DollarSign size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('DOANH THU THỰC THU')}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('DOANH THU CHỜ DUYỆT')}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CreditCard size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('CHI PHÍ ĐÃ CHI')}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertTriangle size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('YÊU CẦU DUYỆT CHI')}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#8b5cf6' }}>{actStats.pendingApprovalInvoices}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts & Details */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={actStats.cashFlowTrend} margin={{ left: -15, right: 10, top: 15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 9 }} />
+                  <Tooltip />
+                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={actStats.expenseCategories} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={{ fontSize: 9, fontWeight: 600 }}>
+                    {actStats.expenseCategories.map((entry, idx) => (
+                      <Cell key={`cell-${idx}`} fill={['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6'][idx % 4]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => value.toLocaleString() + 'đ'} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role === 'marketing') {
+    const mktStats = {
+      totalLeads: stats?.contacts || 1450,
+      todayLeads: 38,
+      conversionRate: 4.8,
+      activeCampaigns: 6,
+      leadSources: [
+        { name: 'Meta Ads', value: 850 },
+        { name: 'Google Ads', value: 320 },
+        { name: 'Zalo Ads', value: 180 },
+        { name: 'TikTok Ads', value: 100 }
+      ],
+      campaignPerformance: [
+        { name: 'Camp A (Sài Gòn)', leads: 220, cost: 12 },
+        { name: 'Camp B (Hà Nội)', leads: 180, cost: 9 },
+        { name: 'Camp C (BĐS Thử)', leads: 140, cost: 7 },
+        { name: 'Camp D (Tỉnh lẻ)', leads: 90, cost: 5 }
+      ]
+    };
+
+    return (
+      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Welcome Banner */}
+        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+          <div>
+            <h1 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{t('Chào mừng trở lại,')} {user.name}!</h1>
+            <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '4px 0 0 0' }}>{t('Thống kê nguồn lead, chiến dịch quảng cáo và chuyển đổi Ads.')}</p>
+          </div>
+          <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '6px 14px', borderRadius: '99px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Marketing')}</span>
+        </div>
+
+        {/* KPIs */}
+        <div className="dashboard-kpi-grid">
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Database size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG SỐ LEAD')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{mktStats.totalLeads.toLocaleString()}</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('LEAD MỚI HÔM NAY')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{mktStats.todayLeads}</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TrendingUp size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỶ LỆ CHUYỂN ĐỔI')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{mktStats.conversionRate}%</div>
+            </div>
+          </div>
+          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><GitBranch size={20} /></div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('CHIẾN DỊCH CHẠY')}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{mktStats.activeCampaigns}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts & Details */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Số lượng Lead vs Chi phí Ads ($)')}</h3>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={mktStats.campaignPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 9 }} />
+                  <Tooltip />
+                  <Bar dataKey="leads" name={t('Số Leads')} fill="#3b82f6" radius={[3, 3, 0, 0]} barSize={20} />
+                  <Bar dataKey="cost" name={t('Chi phí (Tr VND)')} fill="#f59e0b" radius={[3, 3, 0, 0]} barSize={20} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Tỷ trọng kênh quảng cáo')}</h3>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={mktStats.leadSources} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={{ fontSize: 9, fontWeight: 600 }}>
+                    {mktStats.leadSources.map((entry, idx) => (
+                      <Cell key={`cell-${idx}`} fill={['#3b82f6', '#ef4444', '#10b981', '#f59e0b'][idx % 4]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: 'relative' }}>

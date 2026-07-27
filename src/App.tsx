@@ -61,7 +61,7 @@ const PageLoader = () => (
   </div>
 );
 
-const ProtectedRoute = ({ allowedRoles }: { allowedRoles?: ('superadmin' | 'admin' | 'manager' | 'director' | 'assistant' | 'viewer' | 'sale')[] }) => {
+const ProtectedRoute = ({ allowedRoles }: { allowedRoles?: ('superadmin' | 'admin' | 'manager' | 'director' | 'assistant' | 'viewer' | 'sale' | 'hr' | 'accountant' | 'marketing')[] }) => {
   const { user, token } = useAuth();
   if (!token || !user) return <Navigate to="/login" replace />;
   if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" replace />;

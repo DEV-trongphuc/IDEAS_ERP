@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/axios';
 
@@ -6,7 +6,7 @@ type User = {
   id?: number;
   username: string;
   name: string;
-  role: 'superadmin' | 'admin' | 'manager' | 'director' | 'assistant' | 'viewer' | 'sale';
+  role: 'superadmin' | 'admin' | 'manager' | 'director' | 'assistant' | 'viewer' | 'sale' | 'hr' | 'accountant' | 'marketing';
   email?: string;
   consultant_id?: number;
   avatar?: string;

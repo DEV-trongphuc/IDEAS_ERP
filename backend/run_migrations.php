@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 192;
+$targetVersion = 193;
 $currentVersion = 186;
 
 // Query current DB version
@@ -495,8 +495,62 @@ try {
         UNIQUE KEY `uk_user_month` (`user_id`, `month_year`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // 9.6. Add roles 'hr', 'accountant', 'marketing' (Version 193)
+    if ($currentVersion < 193 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 193 (Cấu hình Role mới và chèn tài khoản)...", "info");
+        
+        // Update users table enum
+        $conn->query("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing') NOT NULL DEFAULT 'sales'");
+        $logMsg("Đã cập nhật ENUM role của bảng users.", "success");
+
+        // Insert test accounts if they do not exist
+        $testUsers = [
+            [
+                'email' => 'hr@Ideas.test',
+                'role' => 'hr',
+                'full_name' => 'Nhân sự Demo',
+                'username' => 'hr_demo',
+                'password' => 'hr123'
+            ],
+            [
+                'email' => 'accountant@Ideas.test',
+                'role' => 'accountant',
+                'full_name' => 'Kế toán Demo',
+                'username' => 'accountant_demo',
+                'password' => 'accountant123'
+            ],
+            [
+                'email' => 'marketing@Ideas.test',
+                'role' => 'marketing',
+                'full_name' => 'Marketing Demo',
+                'username' => 'marketing_demo',
+                'password' => 'marketing123'
+            ]
+        ];
+
+        foreach ($testUsers as $tu) {
+            $chk = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $chk->execute([$tu['email']]);
+            $res = $chk->get_result();
+            $exists = $res ? $res->fetch_assoc() : null;
+            $chk->close();
+
+            if (!$exists) {
+                $hash = password_hash($tu['password'], PASSWORD_BCRYPT);
+                $ins = $conn->prepare("
+                    INSERT INTO users (tenant_id, username, email, password_hash, full_name, role, is_active, status) 
+                    VALUES (1, ?, ?, ?, ?, ?, 1, 'active')
+                ");
+                $ins->execute([$tu['username'], $tu['email'], $hash, $tu['full_name'], $tu['role']]);
+                $ins->close();
+                $logMsg("Đã chèn tài khoản thử nghiệm: " . $tu['email'], "success");
+            }
+        }
+        $logMsg("Nâng cấp lên phiên bản 193 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '192') ON DUPLICATE KEY UPDATE setting_value = '192'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '193') ON DUPLICATE KEY UPDATE setting_value = '193'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
