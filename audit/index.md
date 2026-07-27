@@ -38,6 +38,22 @@ Tài liệu này chứa bản đồ danh mục các cấu phần cần kiểm th
 *   **Tệp tin**: [inventory_cooperation_reports.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/inventory_cooperation_reports.md)
 *   **Nội dung**: Kiểm thử giỏ hàng dự án, cơ chế giữ chỗ căn hộ trực tuyến (khóa giỏ hàng 15 phút), chia sẻ hoa hồng dự án (Cooperation slips), các biểu đồ thống kê hiệu suất Sale / phễu chuyển đổi và lưu vết kiểm toán (Audit logs).
 
+### 📂 9. Hoạt động CRM, Khách hàng Doanh nghiệp & Vé hỗ trợ (CRM Activities & Tickets)
+*   **Tệp tin**: [crm_activities_companies_tickets.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/crm_activities_companies_tickets.md)
+*   **Nội dung**: Kiểm thử ghi nhận lịch sử tương tác khách hàng (cuộc gọi, email, gặp mặt), lên lịch hẹn bám sát lead, liên kết Công ty - Người liên hệ, và tiếp nhận phân bổ Vé hỗ trợ kỹ thuật/khiếu nại (Helpdesk Tickets) kèm cam kết SLA.
+
+### 📂 10. Mua hàng, Nhà cung cấp, Báo giá & Tệp tin đám mây (Purchase Orders, Quotes & Cloud Storage)
+*   **Tệp tin**: [purchase_orders_suppliers_quotes.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/purchase_orders_suppliers_quotes.md)
+*   **Nội dung**: Kiểm thử quy trình tạo và duyệt đơn đặt mua thiết bị/vật tư (Purchase Orders), cập nhật công nợ nhà cung cấp, xuất bản file PDF báo giá chi tiết (Quotes), và phân quyền lưu trữ thư mục tài liệu nhạy cảm trên Cloud.
+
+### 📂 11. Trợ lý AI, Dữ liệu Huấn luyện & Cơ cấu Tổ chức (AI Chatbot, Training & Organization)
+*   **Tệp tin**: [ai_chat_training_organization.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/ai_chat_training_organization.md)
+*   **Nội dung**: Kiểm thử trợ lý AI tư vấn dự án theo thời gian thực, nạp dữ liệu tri thức huấn luyện AI (Knowledge Base Vector Embeddings) và thiết lập cơ cấu phòng ban đội nhóm phân cấp báo cáo.
+
+### 📂 12. Kế toán, Tài chính, Hóa đơn & Chi phí (Accounting & Finance)
+*   **Tệp tin**: [accounting_finance_invoices_expenses.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/accounting_finance_invoices_expenses.md)
+*   **Nội dung**: Kiểm thử xuất bản hóa đơn thu tiền từ phiếu đặt cọc, xác nhận thanh toán hóa đơn (Mark Paid), quy trình nhân viên gửi đề xuất chi phí, Kế toán và Admin phê duyệt đề xuất chi giải ngân và báo cáo đối soát dòng tiền ròng (Net cash flow).
+
 ---
 
 ## 📋 Hướng dẫn thực thi & Tự động hóa
