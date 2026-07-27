@@ -784,7 +784,40 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         }}
         onClick={onClick}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        {className === 'distributed-card' && (
+          <div className="decor-svg" style={{ color: '#3b82f6' }}>
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+              <circle cx="45" cy="35" r="15" stroke="currentColor" strokeWidth="2" />
+              <path d="M20 75 C 20 60, 31 50, 45 50 C 59 50, 70 60, 70 75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M75 35 H 89 M 82 28 V 42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
+        {className === 'fair_share_equity-card' && (
+          <div className="decor-svg" style={{ color: '#10b981' }}>
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+              <circle cx="50" cy="50" r="30" stroke="currentColor" strokeWidth="2" />
+              <path d="M40 50 L 47 57 L 62 42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
+        {className === 'duplicates-card' && (
+          <div className="decor-svg" style={{ color: '#f59e0b' }}>
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+              <path d="M50 20 L 85 80 H 15 Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M50 40 V 55 M 50 67 H 50.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
+        {className === 'errors-card' && (
+          <div className="decor-svg" style={{ color: '#ef4444' }}>
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+              <path d="M55 15 L 25 55 H 50 L 45 85 L 75 45 H 50 Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', zIndex: 1 }}>
           <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{label}</span>
           <div className="stat-icon" style={{ 
             width: '32px', 
@@ -799,7 +832,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           }}><Icon size={16} /></div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', zIndex: 1 }}>
           <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.5rem' }}>{value}</div>
         </div>
       </div>

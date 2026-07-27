@@ -94,11 +94,11 @@ const AppTabs = () => {
   }
 
   if (currentPath === '/accounts') {
-    if (!['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role || '')) {
+    if (!['admin', 'superadmin', 'super_admin', 'director', 'hr'].includes(user?.role || '')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/consultants') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/attendance') {
@@ -115,7 +115,7 @@ const AppTabs = () => {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/expenses') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/tickets') {
@@ -136,6 +136,10 @@ const AppTabs = () => {
       return <Navigate to="/workspace" replace />;
     }
     return <Navigate to="/" replace />;
+  } else if (currentPath === '/hrm') {
+    if (!['admin', 'superadmin', 'super_admin', 'director', 'hr'].includes(user?.role || '')) {
+      return <Navigate to="/" replace />;
+    }
   } else if (isAdminPath) {
     if (currentPath === '/settings') {
       if (!['admin', 'superadmin', 'super_admin'].includes(user?.role || '')) {

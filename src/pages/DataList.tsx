@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, Fragment, useMemo } from 'react';
+import { useState, useEffect, Fragment, useMemo } from 'react';
 import api from '../api/axios';
 import { createPortal } from 'react-dom';
 import { Database, Search, Filter, ChevronLeft, ChevronRight, Download, RefreshCw, User, Users, Phone, Mail, Clock, Tag, ExternalLink, AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Calendar, LayoutList, Sparkles, Check, X, Edit, Bell, Copy, CheckCircle, BarChart2, Scale, Info, Ban, UserPlus, Send } from 'lucide-react';
@@ -1623,7 +1623,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
               >
                 <Calendar size={13} /> <span className="hide-on-mobile">{t('Lịch biểu')}</span>
               </button>
-/* databank tab disabled */
+              {/* databank tab disabled */}
             </div>
 
             {/* Separator line */}

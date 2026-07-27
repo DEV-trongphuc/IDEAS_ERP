@@ -620,7 +620,7 @@ class FinanceController
         $from = $_GET['from'] ?? '';
         $to = $_GET['to'] ?? '';
         $companyId = $_GET['company_id'] ?? '';
-        $where = ['e.tenant_id=?', 'e.deleted_at IS NULL'];
+        $where = ['e.tenant_id=?', 'e.deleted_at IS NULL', "NOT (e.category IN ('hr', 'admin') AND COALESCE(e.amount, 0) = 0)"];
         $params = [$tid];
         $role = $auth['role'] ?? '';
         $uid = (int)($auth['user_id'] ?? 0);
