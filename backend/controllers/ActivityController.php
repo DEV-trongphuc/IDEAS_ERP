@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 class ActivityController {
     private PDO $db;
     public function __construct(PDO $db) { 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // webhook_logic.php
 // Common routing and distribution logic for leads
 

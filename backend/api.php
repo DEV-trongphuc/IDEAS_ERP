@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Auth-Token, X-HTTP-Method-Override");
 header("Content-Type: application/json; charset=utf-8");
@@ -67,7 +67,7 @@ $allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000',
-    'https://rich-land.vercel.app',
+    'https://crm-ideas.vercel.app',
     'https://crm-Ideas.vercel.app'
 ];
 

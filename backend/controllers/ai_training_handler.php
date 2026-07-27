@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/controllers/ai_training_handler.php
 // IDEAS DATA CRM - AI Training and Settings controller handler
 

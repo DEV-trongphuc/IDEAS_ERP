@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -361,7 +361,7 @@ export const Login = () => {
           <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Animated rotated logo container */}
             <div className="logo-box">
-              <img src="/imgs/logo-rich-land-viet-nam-trang.webp" className="logo-img" style={{ objectFit: 'contain' }} alt="IDEAS Logo" />
+              <img src="/LOGO.webp" className="logo-img" style={{ objectFit: 'contain' }} alt="IDEAS Logo" />
             </div>
             <div style={{ paddingTop: '8px' }}>
               <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', letterSpacing: '-0.5px' }}>

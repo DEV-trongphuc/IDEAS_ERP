@@ -1,7 +1,7 @@
-# LUỒNG 3 — CHĂM SÓC & NHIỆT ĐỘ KHÁCH
+﻿# LUỒNG 3 — CHĂM SÓC & NHIỆT ĐỘ KHÁCH
 
 > Trạng thái: ✅ Đã review cùng Sếp 06/06/2026
-> Đọc kèm: `00-MUC-LUC-va-TU-DIEN.md` + sổ tay `BEP-DUN-NUOC-RL-so-tay-v2.md` (hệ thống Richland-AI)
+> Đọc kèm: `00-MUC-LUC-va-TU-DIEN.md` + sổ tay `BEP-DUN-NUOC-RL-so-tay-v2.md` (hệ thống Ideas-AI)
 > Đây là lần đầu framework Bếp Đun Nước được số hóa.
 
 ---

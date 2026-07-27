@@ -1,7 +1,7 @@
-# LUỒNG 7 — DỮ LIỆU NGƯỢC (CAPI · BÁO CÁO · AI)
+﻿# LUỒNG 7 — DỮ LIỆU NGƯỢC (CAPI · BÁO CÁO · AI)
 
 > Trạng thái: ✅ Sếp duyệt 06/06/2026 (gồm 7.5 Đóng — Không Phù Hợp không bắn Meta · 7.2 bắn theo Person · 7.13 số CRM là chuẩn)
-> Đọc kèm: `00-MUC-LUC-va-TU-DIEN.md` + `META-CAPI-MAPPING.md` (hệ thống Richland-AI)
+> Đọc kèm: `00-MUC-LUC-va-TU-DIEN.md` + `META-CAPI-MAPPING.md` (hệ thống Ideas-AI)
 
 ---
 

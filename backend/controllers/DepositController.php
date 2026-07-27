@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/controllers/DepositController.php
 
 class DepositController {

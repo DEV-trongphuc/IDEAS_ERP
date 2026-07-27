@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/test_send_zalo.php
 header('Content-Type: text/plain; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';

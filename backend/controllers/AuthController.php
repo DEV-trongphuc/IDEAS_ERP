@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/controllers/AuthController.php
 
 class AuthController {

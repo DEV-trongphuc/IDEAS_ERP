@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // cron_sync.php
 // Script to pull data from Google Sheets based on active connections
 

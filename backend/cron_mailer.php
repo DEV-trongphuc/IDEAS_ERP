@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/cron_mailer.php
 // Tiến trình chạy ngầm (Worker) để gửi Email bất đồng bộ từ bảng mail_queue
 

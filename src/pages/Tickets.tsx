@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, Users, User, CheckCircle, Ticket as TicketIcon, RefreshCw, Zap, Filter, Settings2, Save, Bell, ChevronLeft, ChevronRight, ExternalLink, AlertTriangle, Phone, Mail, Clock, Tag, CheckCircle2, XCircle, ShieldAlert, Database, Plus, Trash2, Edit2, Sparkles, Check, X, Edit, Copy, BarChart2, Scale, Calendar, Info, ArrowRight, Ban, UserPlus, Send } from 'lucide-react';
 import {
@@ -3209,7 +3209,7 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                 {selectedLead.ai_screener_status === 'passed' && selectedLead.ai_evaluation && (
                   <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1.5px solid var(--color-primary)', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                      <Avatar src="/LOGO.jpg" name="IDEAS AI" size={36} />
+                      <Avatar src="/LOGO.webp" name="IDEAS AI" size={36} />
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>{t('Đánh giá')}</div>
                         <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI</div>

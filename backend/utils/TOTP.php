@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/utils/TOTP.php
 
 class TOTP {

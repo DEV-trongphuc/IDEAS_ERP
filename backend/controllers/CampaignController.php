@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/controllers/CampaignController.php
 
 class CampaignController {

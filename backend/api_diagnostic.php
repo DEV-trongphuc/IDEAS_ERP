@@ -1,5 +1,5 @@
-﻿<?php
-// D:\RICH_LAND_DATA_UI\backend\api_diagnostic.php
+<?php
+// d:\GITHUB_SPACE\IDEAS_ERP\backend\api_diagnostic.php
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');

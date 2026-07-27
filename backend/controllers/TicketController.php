@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // f:\CRM\backend\controllers\TicketController.php
 
 class TicketController {

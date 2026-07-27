@@ -1,4 +1,4 @@
-# 11. KẾ HOẠCH KIỂM THỬ TOÀN DIỆN (TEST PLAN)
+﻿# 11. KẾ HOẠCH KIỂM THỬ TOÀN DIỆN (TEST PLAN)
 
 > Trạng thái: ✅ ĐĂNG KÝ PHÊ DUYỆT 06/07/2026 — Khung kiểm thử tích hợp 4 lớp.
 > Tài liệu bổ trợ cho toàn bộ 10 file thiết kế nghiệp vụ của hệ thống CRM RLVN.
@@ -31,7 +31,7 @@ graph TD
 ## LỚP 2 — LUẬT KIỂM THỬ ĐÃ CHỐT (CHECKLIST & TEST CASES)
 
 ### A. Ma trận kiểm thử Phân quyền (Permission Matrix)
-*Áp dụng ma trận quyền tại [09-Phan-Quyen.md](file:///d:/RICH_LAND_DATA_UI/markdown/09-Phan-Quyen.md) ở mọi API backend và giao diện:*
+*Áp dụng ma trận quyền tại [09-Phan-Quyen.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/09-Phan-Quyen.md) ở mọi API backend và giao diện:*
 
 | # | Kịch bản kiểm thử | Mô tả chi tiết | Kết quả mong đợi (Pass Criteria) |
 |---|---|---|---|
@@ -52,43 +52,43 @@ graph TD
 
 ### C. Kiểm thử Logic 7 Luồng Nghiệp vụ (Flow Logic)
 
-#### Luồng 1: Lead Vào ([02-Luong-1-Lead-Vao.md](file:///d:/RICH_LAND_DATA_UI/markdown/02-Luong-1-Lead-Vao.md))
+#### Luồng 1: Lead Vào ([02-Luong-1-Lead-Vao.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/02-Luong-1-Lead-Vao.md))
 * **L1.1 (Một cửa duy nhất)**: Đổ lead ảo qua API tiếp nhận. Xác minh lead bắt buộc được gán `nguon`, `campaign_id`, `du_an_id`.
 * **L1.2 (Deduplication theo SĐT)**: Gửi 2 lead trùng SĐT. Xác minh chỉ tạo 1 `PERSON` duy nhất, nhưng tạo 2 bản ghi `LEAD` trỏ về cùng `PERSON`.
 * **L1.3 (Khách cá nhân)**: Sale nhập tay khách cá nhân trùng SĐT với lead MKT đang hoạt động. Xác minh hệ thống cho phép lưu nhưng gắn flag cảnh báo cho Quản lý & MKT duyệt, không tự động chia.
 * **L1.4 (Đối soát tự động)**: Chạy job đối soát sáng. Mock dữ liệu API Facebook trả về 100 leads, DB chỉ có 98. Xác minh hệ thống bắn cảnh báo lệch 2 leads kèm ID cụ thể qua email/Zalo IT.
 
-#### Luồng 2: Chia Lead ([03-Luong-2-Chia-Lead.md](file:///d:/RICH_LAND_DATA_UI/markdown/03-Luong-2-Chia-Lead.md))
+#### Luồng 2: Chia Lead ([03-Luong-2-Chia-Lead.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/03-Luong-2-Chia-Lead.md))
 * **L2.1 (Cổng điều kiện nhận lead)**: Lập danh sách sale trong roster. Test tắt nút sẵn sàng hoặc không check-in. Xác minh vòng chia tự động bỏ qua sale này và ghi log lý do chặn.
 * **L2.2 (Van chống ôm)**: Gán cho Sale A giữ quá X (ví dụ: 5) KHTN ở trạng thái "Chưa Xác Định". Đổ lead mới vào. Xác minh vòng chia bỏ qua Sale A. Chuyển 1 KHTN sang "Quan Tâm", đổ lead tiếp theo -> Sale A lại nhận được lead.
 * **L2.3 (Timeout 2 phút)**: Đổ lead cho Sale B. Không bấm nhận trong 2 phút. Xác minh lead tự động thu hồi, chuyển cho Sale C; hệ thống ghi log "Timeout" và đánh giá tính sẵn sàng của Sale B giảm.
 * **L2.4 (Ca đêm & Giờ vàng)**: Lúc 18h01, đổ lead vào hệ thống. Xác minh chỉ chia cho những sale đã đăng ký trực đêm trong app. Lúc 06h00 sáng, danh sách trực đêm tự động xóa (clear roster đêm). Hàng đợi lead đêm tự động bung cho những sale bật "Sẵn sàng" sớm (Giờ vàng 6h-8h30).
 
-#### Luồng 3: Chăm sóc & Nhiệt độ ([04-Luong-3-Cham-Soc-Nhiet-Do.md](file:///d:/RICH_LAND_DATA_UI/markdown/04-Luong-3-Cham-Soc-Nhiet-Do.md))
+#### Luồng 3: Chăm sóc & Nhiệt độ ([04-Luong-3-Cham-Soc-Nhiet-Do.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/04-Luong-3-Cham-Soc-Nhiet-Do.md))
 * **L3.1 (Ghi chú có cấu trúc)**: Tạo ghi chú không chọn phân loại Nồi (Đất/Đồng/Áp Suất) hoặc thiếu thời lượng cuộc gọi. Xác minh API báo lỗi yêu cầu điền đầy đủ.
 * **L3.2 (Nhiệt hybrid)**: Thêm 3 tương tác + 1 cuộc gọi > 5 phút. Xác minh máy đề xuất nhiệt độ là **Ấm**. Sale chốt nhiệt độ là **Lạnh**. Xác minh DB lưu cả hai cột `nhiet_may_doan` = `Warm` và `nhiet_sale_chot` = `Cold`.
 * **L3.3 (Decay rớt nhiệt)**: Set up một KHTN trạng thái "Quan Tâm", nhiệt độ "Nóng", không có tương tác chất lượng trong 5 ngày. Chạy job decay. Xác minh nhiệt độ tự rớt về "Ấm" và hiển thị cảnh báo "Nguội".
 * **L3.4 (Gating Form TTL1)**: Thử chuyển trạng thái KHTN sang "Đồng Ý Gặp" khi form TTL1 thiếu thông tin của >= 2 nhóm. Xác minh hệ thống chặn lại và hiển thị cảnh báo "chưa nên chuyển giai đoạn pha Than".
 * **L3.5 (Bằng chứng trạng thái)**: Chuyển trạng thái sang "Đã Gặp". Không upload ảnh check-in/gặp mặt. Xác minh hệ thống chặn không cho lưu trạng thái mới.
 
-#### Luồng 4: Hợp tác & Chia hoa hồng ([05-Luong-4-Hop-Tac-Hoa-Hong.md](file:///d:/RICH_LAND_DATA_UI/markdown/05-Luong-4-Hop-Tac-Hoa-Hong.md))
+#### Luồng 4: Hợp tác & Chia hoa hồng ([05-Luong-4-Hop-Tac-Hoa-Hong.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/05-Luong-4-Hop-Tac-Hoa-Hong.md))
 * **L4.1 (Mời hỗ trợ & Quyền ghi)**: Sale A (owner) mời Sale B hỗ trợ. Xác minh Sale B đọc được lịch sử ghi chú và tạo được ghi chú mới dưới tên Sale B. Thử dùng tài khoản Sale B chuyển trạng thái deal sang Booking -> Hệ thống chặn (chỉ owner được chuyển).
 * **L4.2 (Tự sinh phiếu hợp tác)**: Sale A thu hồi quyền hỗ trợ của Sale B. Khi chuyển trạng thái sang Đặt Cọc, xác minh phiếu hợp tác tự sinh có cả tên Sale A và Sale B (gồm cả người đã bị thu hồi).
 * **L4.3 (Ràng buộc 100%)**: Nhập tỉ lệ hoa hồng Sale A: 60%, Sale B: 30%. Thử lưu phiếu. Xác minh hệ thống chặn vì tổng mới đạt 90%. Sửa lại thành 60% - 40% -> Hệ thống cho lưu và gửi yêu cầu ký.
 * **L4.4 (Chữ ký số & Khóa phiếu)**: Sale B bấm xác nhận, Sale A xác nhận. GĐKD bấm duyệt. Xác minh phiếu chuyển sang trạng thái `LOCKED` vĩnh viễn. Thử dùng quyền Admin sửa trực tiếp tỉ lệ % -> Hệ thống chặn.
 
-#### Luồng 5: Kho data - Databank ([06-Luong-5-Kho-Data.md](file:///d:/RICH_LAND_DATA_UI/markdown/06-Luong-5-Kho-Data.md))
+#### Luồng 5: Kho data - Databank ([06-Luong-5-Kho-Data.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/06-Luong-5-Kho-Data.md))
 * **L5.1 (Loại trừ nguồn cá nhân)**: Tạo KHTN nguồn `ca_nhan` hết hạn tương tác. Xác minh không bao giờ bị đẩy ra Kho chung.
 * **L5.2 (Ẩn/Hiện thông tin)**: Cấu hình Kho chung ở chế độ ẩn SĐT. Dùng tài khoản Sale C duyệt kho. Xác minh SĐT hiển thị dạng che (`090****123`). Bấm nhận lead thành công -> SĐT hiển thị đầy đủ.
 * **L5.3 (Giới hạn nhận)**: Sale C nhận lead thứ 4 trong vòng 1 giờ. Xác minh hệ thống báo lỗi vượt hạn mức (hạn mức tối đa 3 lead/giờ/sale).
 * **L5.4 (Rút kho vĩnh viễn)**: KHTN của Person X tại Sale D đạt trạng thái Đặt Cọc. Xác minh Person X tự động biến mất khỏi danh sách Kho chung ở chiến dịch đó.
 
-#### Luồng 6: Tiền & Deals ([07-Luong-6-Tien.md](file:///d:/RICH_LAND_DATA_UI/markdown/07-Luong-6-Tien.md))
+#### Luồng 6: Tiền & Deals ([07-Luong-6-Tien.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/07-Luong-6-Tien.md))
 * **L6.1 (Đặt cọc nhanh)**: Khách hàng xuống tiền cọc căn hộ chưa có trong giỏ hàng. Sale nhập mã căn tự do và submit. Xác minh hệ thống cho phép tạo phiếu cọc, gắn cờ "chưa có trong danh mục" và trạng thái chuyển sang Đặt Cọc ngay lập tức mà không chặn.
 * **L6.2 (UNC làm nguồn sự thật)**: Sale tải lên ảnh Ủy Nhiệm Chi (UNC) thanh toán đợt 2. Xác minh hệ thống tạo hàng đợi xác nhận cho Admin. Admin bấm xác nhận -> mốc thanh toán đợt 2 được đánh dấu hoàn thành.
 * **L6.3 (Đầu ra Kế toán)**: Query dữ liệu xuất cho kế toán. Xác minh hệ thống chỉ xuất ra danh sách các căn hộ "Đủ điều kiện tính phí" kèm số đợt thanh toán, không chứa thông tin hạch toán nội bộ hay dòng tiền của công ty.
 
-#### Luồng 7: Dữ liệu ngược - CAPI & Báo cáo ([08-Luong-7-Du-Lieu-Nguoc.md](file:///d:/RICH_LAND_DATA_UI/markdown/08-Luong-7-Du-Lieu-Nguoc.md))
+#### Luồng 7: Dữ liệu ngược - CAPI & Báo cáo ([08-Luong-7-Du-Lieu-Nguoc.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/markdown/08-Luong-7-Du-Lieu-Nguoc.md))
 * **L7.1 (Báo cáo tính từ data gốc)**: Thay đổi trạng thái KHTN trong bảng `LICH_SU_TRANG_THAI`. Kiểm tra dashboard của GĐKD. Xác minh số liệu cập nhật ngay lập tức dựa trên query trực tiếp từ event log, không lấy từ trường đệm/text lưu tĩnh.
 * **L7.2 (Không bắn CAPI cho Đóng - Không Phù Hợp)**: Chuyển KHTN sang trạng thái "Đóng - Không Phù Hợp". Kiểm tra hàng đợi CAPI. Xác minh không sinh ra sự kiện `BAD` hay bất kỳ event nào gửi về Meta (tránh làm lệch thuật toán học của Meta).
 * **L7.3 (Cảnh báo Stale CAPI)**: Giả lập chặn kết nối API với Meta trong 25 giờ. Xác minh hệ thống gửi cảnh báo đỏ cho IT/MKT vì có sự kiện nằm trong hàng đợi quá 24h chưa gửi được.

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, Activity, Sun, Moon, Keyboard, ChevronDown, User, AlertTriangle, LogOut, Menu, LayoutGrid, LayoutDashboard, Users, Building2, Clock, Truck, Boxes, Receipt, Settings, CheckCircle2, Fingerprint, Bell, MessageSquare, Info, Trash2, Check, Eye, EyeOff, CheckSquare, FileText, ArrowLeft, ShieldAlert, Laptop } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -162,7 +162,7 @@ export const Header = ({
           try {
             new Notification('IDEAS', {
               body: 'Bạn đã kích hoạt nhận thông báo trình duyệt thành công.',
-              icon: '/LOGO.jpg'
+              icon: '/LOGO.webp'
             });
           } catch (err) {
             console.warn('Desktop notifications not supported:', err);
@@ -197,7 +197,7 @@ export const Header = ({
           try {
             new Notification('Hộp kiểm duyệt IDEAS', {
               body: `Có dữ liệu mới đang chờ xử lý trong Hộp kiểm duyệt (${pendingInboxCount} yêu cầu).`,
-              icon: '/LOGO.jpg'
+              icon: '/LOGO.webp'
             });
           } catch (err) {
             console.warn('Desktop notifications not supported:', err);
@@ -269,7 +269,7 @@ export const Header = ({
               try {
                 new Notification(latestNotif.title || 'Thông báo IDEAS', {
                   body: latestNotif.body || 'Bạn có thông báo mới.',
-                  icon: '/LOGO.jpg'
+                  icon: '/LOGO.webp'
                 });
               } catch (err) {
                 console.warn('Desktop notifications not supported:', err);

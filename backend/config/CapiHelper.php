@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/config/CapiHelper.php
 
 class CapiHelper {

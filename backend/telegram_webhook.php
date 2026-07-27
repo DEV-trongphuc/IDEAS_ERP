@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/telegram_webhook.php
 // Endpoint để nhận sự kiện từ Telegram Bot API
 

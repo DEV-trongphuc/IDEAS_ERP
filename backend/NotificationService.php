@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/NotificationService.php
 
 class NotificationService {

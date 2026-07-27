@@ -1103,7 +1103,7 @@ export const QuickAddLeadModal = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'rich_land_mau_nhap_lieu.csv');
+    link.setAttribute('download', 'ideas_mau_nhap_lieu.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

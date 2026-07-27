@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/test_vector_rag.php
 require_once __DIR__ . '/test_bootstrap.php';
 require_once __DIR__ . '/utils/rag_helpers.php';

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/controllers/CooperationController.php
 
 class CooperationController {

@@ -182,7 +182,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `cham_cong_rich_land_${date}.csv`);
+    link.setAttribute('download', `cham_cong_ideas_${date}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

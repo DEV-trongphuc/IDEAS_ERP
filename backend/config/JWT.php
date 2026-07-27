@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // f:\CRM\backend\config\JWT.php
 
 class JWT {

@@ -338,7 +338,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
             flexShrink: 0,
             overflow: 'hidden'
           }}>
-            <img src="/imgs/logo-rich-land-viet-nam-trang.webp" style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            <img src="/LOGO.webp" style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               alt="logo" />
           </div>

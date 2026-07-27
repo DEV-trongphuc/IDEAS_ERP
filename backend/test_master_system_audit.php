@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/test_master_system_audit.php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);

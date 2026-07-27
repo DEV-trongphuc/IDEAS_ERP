@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once 'db_connect.php';
 
 $token = $_GET['token'] ?? '';
@@ -240,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="card">
         <div class="header">
-            <img src="https://rich-land.vercel.app/imgs/ICON.png" alt="IDEAS Logo" style="max-height: 48px; border-radius: 50%;">
+            <img src="https://crm-ideas.vercel.app/LOGO.webp" alt="IDEAS Logo" style="max-height: 48px; border-radius: 50%;">
             <h2>Hệ Thống CRM</h2>
         </div>
         <div class="content">

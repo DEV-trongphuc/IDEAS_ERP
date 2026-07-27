@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { withRouterFreezer } from '../components/RouterFreezer';
@@ -4545,7 +4545,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             border: '2px solid rgba(255,255,255,0.9)'
           }}>
             <img
-              src="/LOGO.jpg"
+              src="/LOGO.webp"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               alt="logo"
@@ -14811,7 +14811,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: '2px solid rgba(192, 132, 252, 0.8)'
               }}>
-                <img src="/LOGO.jpg" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} alt="logo" />
+                <img src="/LOGO.webp" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} alt="logo" />
               </div>
               <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>IDEAS</span>
             </div>
@@ -14984,7 +14984,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             overflow: 'hidden',
             border: '2px solid rgba(192, 132, 252, 0.8)'
           }}>
-            <img src="/LOGO.jpg" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            <img src="/LOGO.webp" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               alt="logo" />
           </div>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/zalo_webhook.php
 // Endpoint để nhận sự kiện từ Zalo Bot Platform
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/read_logs.php
 header('Content-Type: text/plain; charset=utf-8');
 

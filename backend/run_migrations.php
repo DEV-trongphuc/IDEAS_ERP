@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/run_migrations.php
 
 // Safe check: Allow CLI, inclusion by diagnostic script, or token validation

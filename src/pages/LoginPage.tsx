@@ -32,7 +32,7 @@ export const LoginPage: React.FC = () => {
       <div className={styles.formCard}>
         <div className={styles.brandContainer}>
           <div className={styles.brandIcon}>
-            <img src="/LOGO.jpg" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="/LOGO.webp" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <span className={styles.brandName}>CRM Portal</span>
         </div>

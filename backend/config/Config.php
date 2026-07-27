@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ── Database credentials ───────────────────────
 if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
 if (!defined('DB_USER')) define('DB_USER', 'vhvxoigh_mail_auto');

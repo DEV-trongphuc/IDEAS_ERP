@@ -1,6 +1,6 @@
-# RICH LAND CRM - CẨM NANG & HƯỚNG DẪN KỸ THUẬT TOÀN DIỆN (WORKSPACE PROFILE)
+# IDEAS ERP - CẨM NANG & HƯỚNG DẪN KỸ THUẬT TOÀN DIỆN (WORKSPACE PROFILE)
 
-Tài liệu này là nguồn tham chiếu kỹ thuật tối cao dành cho các lập trình viên hoặc AI agent khi tiếp cận, sửa đổi và nâng cấp hệ thống RICH LAND CRM. Hãy luôn đọc kỹ tài liệu này để hiểu sâu các quy tắc nghiệp vụ đặc thù và bản đồ mã nguồn nhằm đảm bảo tính ổn định tối đa cho hệ thống.
+Tài liệu này là nguồn tham chiếu kỹ thuật tối cao dành cho các lập trình viên hoặc AI agent khi tiếp cận, sửa đổi và nâng cấp hệ thống IDEAS ERP. Hãy luôn đọc kỹ tài liệu này để hiểu sâu các quy tắc nghiệp vụ đặc thù và bản đồ mã nguồn nhằm đảm bảo tính ổn định tối đa cho hệ thống.
 
 ---
 
@@ -8,15 +8,15 @@ Tài liệu này là nguồn tham chiếu kỹ thuật tối cao dành cho các 
 
 ### 1.1 Sơ đồ Client - Server
 * **Frontend**: React (Single Page Application) sử dụng Vite.
-  * Quản lý định tuyến bằng `react-router-dom` tại [src/App.tsx](file:///d:/RICH_LAND_DATA_UI/src/App.tsx).
+  * Quản lý định tuyến bằng `react-router-dom` tại [src/App.tsx](file:///d:/GITHUB_SPACE/IDEAS_ERP/src/App.tsx).
   * Sử dụng giải pháp giữ kết nối DOM `<AppTabs>` giúp chuyển đổi qua lại giữa các trang trong CRM cực nhanh mà không làm mount/remount lại trang (giữ nguyên state).
 * **Backend**: Cấu trúc API thuần bằng PHP kết nối với CSDL MySQL.
-  * Mọi luồng API đi qua cổng vào duy nhất [backend/index.php](file:///d:/RICH_LAND_DATA_UI/backend/index.php). Tệp này xử lý CORS, bắt ngoại lệ hệ thống và phân phối định tuyến dựa trên tham số query action.
+  * Mọi luồng API đi qua cổng vào duy nhất [backend/index.php](file:///d:/GITHUB_SPACE/IDEAS_ERP/backend/index.php). Tệp này xử lý CORS, bắt ngoại lệ hệ thống và phân phối định tuyến dựa trên tham số query action.
 
 ### 1.2 Authentication Middleware & JWT
-Hàm `requireAuth()` trong [backend/index.php#L90](file:///d:/RICH_LAND_DATA_UI/backend/index.php#L90) thực thi các tác vụ:
+Hàm `requireAuth()` trong [backend/index.php#L90](file:///d:/GITHUB_SPACE/IDEAS_ERP/backend/index.php#L90) thực thi các tác vụ:
 1. Trích xuất Bearer token từ header `Authorization` hoặc query string `token`.
-2. Sử dụng thư viện JWT ([backend/config/JWT.php](file:///d:/RICH_LAND_DATA_UI/backend/config/JWT.php)) để giải mã token.
+2. Sử dụng thư viện JWT ([backend/config/JWT.php](file:///d:/GITHUB_SPACE/IDEAS_ERP/backend/config/JWT.php)) để giải mã token.
 3. **Chuẩn hóa quyền hạn (Role Normalization)**: 
    * Đổi quyền `'sale'` từ Frontend thành `'sales'` cho đồng bộ với kiểm tra phân quyền trong các Controller PHP.
    * Đồng bộ trường khóa chính `id` thành `user_id`.
@@ -26,7 +26,7 @@ Hàm `requireAuth()` trong [backend/index.php#L90](file:///d:/RICH_LAND_DATA_UI/
 
 ## 2. Lược Đồ Cơ Sở Dữ Liệu & Ràng Buộc Thể Hiện
 
-Các thực thể quan trọng được quản trị bởi tệp [backend/unified_schema.sql](file:///d:/RICH_LAND_DATA_UI/backend/unified_schema.sql):
+Các thực thể quan trọng được quản trị bởi tệp [backend/unified_schema.sql](file:///d:/GITHUB_SPACE/IDEAS_ERP/backend/unified_schema.sql):
 
 ```mermaid
 erDiagram
@@ -54,7 +54,7 @@ erDiagram
 
 ## 3. Thuật Toán Phân Phối Lead Xoay Vòng & 5 Cổng Kiểm Duyệt (Lead Distribution Gates)
 
-Trong [backend/webhook_logic.php](file:///d:/RICH_LAND_DATA_UI/backend/webhook_logic.php#L1645), hàm `checkConsultantGates` kiểm duyệt từng Sales qua 5 cổng bảo vệ trước khi bàn giao lead:
+Trong [backend/webhook_logic.php](file:///d:/GITHUB_SPACE/IDEAS_ERP/backend/webhook_logic.php#L1645), hàm `checkConsultantGates` kiểm duyệt từng Sales qua 5 cổng bảo vệ trước khi bàn giao lead:
 
 ### ❖ Cổng 1: Project Roster (Roster chiến dịch)
 * Đối khớp các từ khóa tìm kiếm (mã dự án, tên dự án) xuất hiện trong tên chiến dịch, ghi chú hoặc nguồn lead với các dự án đang hoạt động (`projects` table).
@@ -80,7 +80,7 @@ Trong [backend/webhook_logic.php](file:///d:/RICH_LAND_DATA_UI/backend/webhook_l
 ## 4. Các Quy Tắc Nghiệp Vụ Đặc Thù (Business Rules)
 
 ### 4.1 Quy Tắc Hủy Đặt Cọc (Bể cọc)
-Được quản lý chặt chẽ trong hàm `cancelDeposit` ở [DepositController.php](file:///d:/RICH_LAND_DATA_UI/backend/controllers/DepositController.php#L270):
+Được quản lý chặt chẽ trong hàm `cancelDeposit` ở [DepositController.php](file:///d:/GITHUB_SPACE/IDEAS_ERP/backend/controllers/DepositController.php#L270):
 
 * **Trường hợp 1: Hủy cọc trước khi phát sinh doanh thu thực tế**
   * *Điều kiện*: Số đợt thanh toán đã được duyệt trong `deposit_milestones` bằng 0.

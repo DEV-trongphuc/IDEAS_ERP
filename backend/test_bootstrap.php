@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/test_bootstrap.php
 // IDEAS DATA CRM - Testing Harness Bootstrap
 // Tập tin khởi tạo môi trường kiểm thử toàn diện cho toàn bộ hệ thống (DB, Webhook, NotificationService, Mailer)

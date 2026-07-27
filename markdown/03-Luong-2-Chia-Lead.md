@@ -1,4 +1,4 @@
-# LUỒNG 2 — CHIA LEAD
+﻿# LUỒNG 2 — CHIA LEAD
 
 > Trạng thái: ✅ Đã review cùng Sếp 06/06/2026
 > Đọc kèm: `00-MUC-LUC-va-TU-DIEN.md`
@@ -89,7 +89,7 @@ DATABANK (Luồng 5) ← Quản lý cũng có thể đẩy thủ công vào đâ
 
 **Vì sao van chống ôm (2.8).** [Tư duy hệ thống] Không phạt ai cả — đây là backpressure: cấu trúc tự điều tiết để lead chảy về người còn sức chăm. Sale ôm 10 lead chưa chạm mà vẫn nhận thêm = lead chết hàng loạt; van đóng tạm cho đến khi họ xử lý bớt — hệ tự cân bằng, quản lý không phải canh.
 
-**Vì sao "lead tính công" thay cơ chế đền bù (2.9).** Đền lead = thêm 1 cơ chế, thêm 1 loại tranh cãi ("lead này có đáng đền không"). Cách của Rich Land sạch hơn: Not Lead được duyệt = *chưa từng nhận* — vì có tương tác được đâu. Một định nghĩa, áp mọi chỉ số, kể cả van chống ôm (Sếp chỉ đúng: không trừ Not Lead khỏi mẫu số thì van bất công với người nhận trúng lead rác).
+**Vì sao "lead tính công" thay cơ chế đền bù (2.9).** Đền lead = thêm 1 cơ chế, thêm 1 loại tranh cãi ("lead này có đáng đền không"). Cách của IDEAS sạch hơn: Not Lead được duyệt = *chưa từng nhận* — vì có tương tác được đâu. Một định nghĩa, áp mọi chỉ số, kể cả van chống ôm (Sếp chỉ đúng: không trừ Not Lead khỏi mẫu số thì van bất công với người nhận trúng lead rác).
 
 **Vì sao giám sát tỷ lệ Not Lead (2.10).** [Lý thuyết trò chơi] "Lead tính công" mở khe lách: báo Not Lead để xả van + đẹp mẫu số TTL1. Cửa duyệt MKT chặn phần lớn; chỉ số so-với-trung-bình bắt phần còn lại — ai lệch tự lòi. Bonus: tỷ lệ Not Lead theo *ad* = chính là signal `BAD` bắn về Meta — một dữ liệu hai công dụng.
 

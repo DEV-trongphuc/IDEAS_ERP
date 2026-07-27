@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Download, Laptop, Monitor, ShieldCheck, Zap, BellRing, 
   ArrowLeft, AlertCircle, CheckCircle2, ChevronRight, RefreshCw
@@ -476,11 +476,11 @@ export function DownloadPage() {
                     setDownloadStarted(true);
                     let filename = '';
                     if (targetDownloadOS === 'windows') {
-                      filename = 'Rich_Land_Desktop_1.0.0_x64_en-US.msi';
+                      filename = 'Ideas_Desktop_1.0.0_x64_en-US.msi';
                     } else if (targetDownloadOS === 'mac') {
-                      filename = 'Rich-Land-Desktop_1.0.0_x64.dmg';
+                      filename = 'Ideas-Desktop_1.0.0_x64.dmg';
                     } else {
-                      filename = 'rich-land-desktop_1.0.0_amd64.deb';
+                      filename = 'ideas-desktop_1.0.0_amd64.deb';
                     }
                     const link = document.createElement('a');
                     link.href = `/downloads/${filename}`;

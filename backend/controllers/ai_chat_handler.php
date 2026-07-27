@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/controllers/ai_chat_handler.php
 // IDEAS DATA CRM - AI Chatbot controller handler
 

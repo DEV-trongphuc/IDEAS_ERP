@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // backend/exec_db_query.php
 // File truy vấn database toàn quyền cho agent và admin đối soát
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // cron_recurring_tasks.php
 // Script to parse activities of type 'task' and generate next task occurrences based on recurrence rules.
 

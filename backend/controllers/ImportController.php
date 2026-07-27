@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 class ImportController {
     private PDO $db;

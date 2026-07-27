@@ -728,7 +728,7 @@ const RuleSettingsInner = () => {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button className="btn outline" onClick={handleAIEvaluateRules} style={{ borderColor: '#a31422', color: '#a31422', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <img 
-              src="/LOGO.jpg" 
+              src="/LOGO.webp" 
               alt="Gemini" 
               style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }} 
             /> {t("AI Đánh giá Quy tắc")}
@@ -1647,7 +1647,7 @@ const RuleSettingsInner = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '0.5rem 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '12px' }}>
               <img 
-                src="/LOGO.jpg" 
+                src="/LOGO.webp" 
                 alt="Gemini AI Logo" 
                 style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-primary-light)', boxShadow: 'var(--shadow-sm)' }} 
               />
