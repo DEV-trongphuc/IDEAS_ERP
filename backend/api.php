@@ -4872,7 +4872,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             break;
         }
-        if (!in_array(strtolower($decodedUser['role']), ['admin', 'superadmin', 'director', 'manager', 'assistant'])) {
+        if (!in_array(strtolower($decodedUser['role']), ['admin', 'superadmin', 'director', 'manager', 'assistant', 'hr'])) {
             echo json_encode(['success' => false, 'message' => 'Forbidden']);
             break;
         }
@@ -4903,7 +4903,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             break;
         }
-        if (!in_array(strtolower($decodedUser['role']), ['admin', 'superadmin', 'director', 'manager', 'assistant'])) {
+        if (!in_array(strtolower($decodedUser['role']), ['admin', 'superadmin', 'director', 'manager', 'assistant', 'hr'])) {
             echo json_encode(['success' => false, 'message' => 'Forbidden']);
             break;
         }
@@ -4979,7 +4979,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             break;
         }
-        if (!in_array(strtolower($decodedUser['role']), ['admin', 'superadmin', 'director', 'manager', 'assistant'])) {
+        if (!in_array(strtolower($decodedUser['role']), ['admin', 'superadmin', 'director', 'manager', 'assistant', 'hr'])) {
             echo json_encode(['success' => false, 'message' => 'Forbidden']);
             break;
         }
