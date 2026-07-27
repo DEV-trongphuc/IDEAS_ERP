@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, GitBranch, Settings, ChevronLeft, Webhook, Link2, Database, ShieldCheck, Ticket, Plus, Scale, Filter, Cpu, Building2, TrendingUp, FileText, Calendar, Package, Receipt, CreditCard, BarChart2, Truck, File, Boxes, Layers, Clock, Home, CheckSquare, LifeBuoy, User } from 'lucide-react';
+import { LayoutDashboard, Users, GitBranch, Settings, ChevronLeft, Webhook, Link2, Database, ShieldCheck, Ticket, Plus, Scale, Filter, Cpu, Building2, TrendingUp, FileText, Calendar, Package, Receipt, CreditCard, BarChart2, Truck, File, Boxes, Layers, Clock, Home, CheckSquare, LifeBuoy, User, Clipboard } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useEffect, useState, useRef, Fragment } from 'react';
@@ -62,6 +62,12 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     ]
   },
   {
+    title: 'QUY TRÌNH & PHÊ DUYỆT',
+    items: [
+      { name: 'Quy trình phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' }
+    ]
+  },
+  {
     title: 'NHÂN SỰ',
     items: [
       { name: 'Tài khoản cá nhân', href: '/account', icon: User },
@@ -100,6 +106,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
   const [undoneTasksCount, setUndoneTasksCount] = useState(0);
   const [pendingLeadsCount, setPendingLeadsCount] = useState(0);
   const [pendingDepositsCount, setPendingDepositsCount] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
   // Poll pending counts every 60s
@@ -179,12 +186,25 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
             countExpenses = resExpenses.data?.total ?? 0;
           }
 
+          // Fetch pending approvals for admin/manager/assistant
+          try {
+            const resApps = await fetchAPI('hrm/approvals/pending');
+            if (Array.isArray(resApps)) {
+              setPendingApprovalsCount(resApps.length);
+            } else {
+              setPendingApprovalsCount(0);
+            }
+          } catch(e) {
+            setPendingApprovalsCount(0);
+          }
+
           setPendingTickets(countReports);
           setHeldLeadsCount(countHeld);
           setPendingCoopCount(countCoop);
           setSupportTicketsCount(countSupport);
           setPendingExpensesCount(countExpenses);
         } else if (role === 'sale' || role === 'sales') {
+          setPendingApprovalsCount(0);
           const resCoop = await fetchAPI('cooperation-slips');
           let countUnsigned = 0;
           if (resCoop.success) {
@@ -452,7 +472,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
                   </span>
                 )}
                  {group.items.map(({ name, href, icon: Icon, end, badgeKey }) => {
-                   const badgeCount = badgeKey === 'tickets' ? pendingTickets : badgeKey === 'supportTickets' ? supportTicketsCount : badgeKey === 'gatekeeper' ? heldLeadsCount : badgeKey === 'coopSlips' ? pendingCoopCount : badgeKey === 'pendingExpenses' ? pendingExpensesCount : badgeKey === 'pendingDeposits' ? pendingDepositsCount : badgeKey === 'workspaceTasks' ? (undoneTasksCount + pendingLeadsCount) : 0;
+                   const badgeCount = badgeKey === 'tickets' ? pendingTickets : badgeKey === 'supportTickets' ? supportTicketsCount : badgeKey === 'gatekeeper' ? heldLeadsCount : badgeKey === 'coopSlips' ? pendingCoopCount : badgeKey === 'pendingExpenses' ? pendingExpensesCount : badgeKey === 'pendingDeposits' ? pendingDepositsCount : badgeKey === 'pendingApprovals' ? pendingApprovalsCount : badgeKey === 'workspaceTasks' ? (undoneTasksCount + pendingLeadsCount) : 0;
                    const checkIsActive = (locationPath: string, locationSearch: string, itemHref: string) => {
                      const qIdx = itemHref.indexOf('?');
                      if (qIdx !== -1) {

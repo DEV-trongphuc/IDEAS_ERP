@@ -52,6 +52,7 @@ const DownloadPage = lazy(() => import('./pages/DownloadPage').then(module => ({
 const AITrainingPage = lazy(() => import('./pages/AITrainingPage').then(module => ({ default: module.AITrainingPage })));
 const HRM = lazy(() => import('./pages/HRM'));
 const MyPayslips = lazy(() => import('./pages/MyPayslips'));
+const Approvals = lazy(() => import('./pages/Approvals'));
 
 // Loading spinner fallback
 const PageLoader = () => (
@@ -83,7 +84,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training', '/hrm'];
-  const userPaths = ['/', '/workspace', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips'];
+  const userPaths = ['/', '/workspace', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -215,6 +216,8 @@ const AppTabs = () => {
         return <HRM key="hrm" />;
       case '/my-payslips':
         return <MyPayslips key="my-payslips" />;
+      case '/approvals':
+        return <Approvals key="approvals" />;
       default:
         return <Navigate to="/" replace />;
     }

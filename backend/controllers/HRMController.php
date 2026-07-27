@@ -611,4 +611,185 @@ class HRMController {
 
         respond(200, ['success' => true]);
     }
+
+    public function getPendingApprovals(array $auth): void {
+        if (!$this->isAdmin($auth)) respond(403, null, 'Quyền admin là bắt buộc', false);
+
+        $pending = [];
+
+        // 1. Pending Leaves
+        $stmtLeaves = $this->db->prepare("
+            SELECT l.id, u.full_name as employee_name, l.leave_type, 
+                   l.start_date, l.end_date, l.total_days, l.reason, l.status, l.created_at
+            FROM hrm_leave_requests l
+            JOIN users u ON l.user_id = u.id
+            WHERE u.tenant_id = ? AND l.status = 'pending'
+        ");
+        $stmtLeaves->execute([$auth['tenant_id']]);
+        $leaves = $stmtLeaves->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($leaves as $l) {
+            $pending[] = [
+                'id' => (int)$l['id'],
+                'type' => 'leave',
+                'employee_name' => $l['employee_name'],
+                'title' => 'Đơn xin nghỉ phép (' . ($l['leave_type'] === 'annual' ? 'Phép năm' : ($l['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($l['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($l['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')))) . ')',
+                'description' => 'Thời gian: ' . $l['start_date'] . ' -> ' . $l['end_date'] . ' (' . $l['total_days'] . ' ngày). Lý do: "' . $l['reason'] . '"',
+                'created_at' => $l['created_at']
+            ];
+        }
+
+        // 2. Pending Advances
+        $stmtAdvances = $this->db->prepare("
+            SELECT a.id, u.full_name as employee_name, a.amount, a.reason, a.status, a.created_at
+            FROM hrm_salary_advances a
+            JOIN users u ON a.user_id = u.id
+            WHERE u.tenant_id = ? AND a.status = 'pending'
+        ");
+        $stmtAdvances->execute([$auth['tenant_id']]);
+        $advances = $stmtAdvances->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($advances as $a) {
+            $pending[] = [
+                'id' => (int)$a['id'],
+                'type' => 'advance',
+                'employee_name' => $a['employee_name'],
+                'title' => 'Đề xuất tạm ứng lương',
+                'description' => 'Số tiền: ' . number_format($a['amount'], 0, ',', '.') . 'đ. Lý do: "' . $a['reason'] . '"',
+                'created_at' => $a['created_at']
+            ];
+        }
+
+        // 3. Pending Expenses
+        $stmtExpenses = $this->db->prepare("
+            SELECT e.id, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at
+            FROM expenses e
+            JOIN users u ON e.created_by = u.id
+            WHERE e.tenant_id = ? AND e.status = 'pending' AND e.deleted_at IS NULL
+        ");
+        $stmtExpenses->execute([$auth['tenant_id']]);
+        $expenses = $stmtExpenses->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($expenses as $e) {
+            $pending[] = [
+                'id' => (int)$e['id'],
+                'type' => 'expense',
+                'employee_name' => $e['employee_name'],
+                'title' => 'Yêu cầu chi phí: ' . $e['title'],
+                'description' => 'Số tiền: ' . number_format($e['amount'], 0, ',', '.') . 'đ. Ghi chú: "' . $e['notes'] . '"',
+                'created_at' => $e['created_at']
+            ];
+        }
+
+        // 4. Pending Checkins
+        $stmtCheckins = $this->db->prepare("
+            SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, c.created_at
+            FROM check_ins c
+            JOIN users u ON c.user_id = u.id
+            WHERE u.tenant_id = ? AND c.status = 'pending_approval'
+        ");
+        $stmtCheckins->execute([$auth['tenant_id']]);
+        $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($checkins as $c) {
+            $pending[] = [
+                'id' => (int)$c['id'],
+                'type' => 'checkin',
+                'employee_name' => $c['employee_name'],
+                'title' => 'Giải trình đi trễ ngày ' . $c['check_in_date'],
+                'description' => 'Đi trễ ' . $c['late_minutes'] . ' phút (Check-in lúc ' . $c['check_in_time'] . '). Lý do: "' . $c['reason'] . '"',
+                'created_at' => $c['created_at']
+            ];
+        }
+
+        // Sort by created_at DESC
+        usort($pending, function($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+
+        respond(200, $pending);
+    }
+
+    public function getMyRequests(array $auth): void {
+        $pending = [];
+
+        // 1. My Leaves
+        $stmtLeaves = $this->db->prepare("
+            SELECT l.id, l.leave_type, l.start_date, l.end_date, l.total_days, l.reason, l.status, l.created_at
+            FROM hrm_leave_requests l
+            WHERE l.user_id = ?
+        ");
+        $stmtLeaves->execute([$auth['user_id']]);
+        $leaves = $stmtLeaves->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($leaves as $l) {
+            $pending[] = [
+                'id' => (int)$l['id'],
+                'type' => 'leave',
+                'title' => 'Đơn xin nghỉ phép (' . ($l['leave_type'] === 'annual' ? 'Phép năm' : ($l['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($l['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($l['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')))) . ')',
+                'description' => 'Thời gian: ' . $l['start_date'] . ' -> ' . $l['end_date'] . ' (' . $l['total_days'] . ' ngày). Lý do: "' . $l['reason'] . '"',
+                'status' => $l['status'],
+                'created_at' => $l['created_at']
+            ];
+        }
+
+        // 2. My Advances
+        $stmtAdvances = $this->db->prepare("
+            SELECT a.id, a.amount, a.reason, a.status, a.created_at
+            FROM hrm_salary_advances a
+            WHERE a.user_id = ?
+        ");
+        $stmtAdvances->execute([$auth['user_id']]);
+        $advances = $stmtAdvances->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($advances as $a) {
+            $pending[] = [
+                'id' => (int)$a['id'],
+                'type' => 'advance',
+                'title' => 'Đề xuất tạm ứng lương',
+                'description' => 'Số tiền: ' . number_format($a['amount'], 0, ',', '.') . 'đ. Lý do: "' . $a['reason'] . '"',
+                'status' => $a['status'],
+                'created_at' => $a['created_at']
+            ];
+        }
+
+        // 3. My Expenses
+        $stmtExpenses = $this->db->prepare("
+            SELECT e.id, e.title, e.amount, e.notes, e.status, e.created_at
+            FROM expenses e
+            WHERE e.created_by = ? AND e.deleted_at IS NULL
+        ");
+        $stmtExpenses->execute([$auth['user_id']]);
+        $expenses = $stmtExpenses->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($expenses as $e) {
+            $pending[] = [
+                'id' => (int)$e['id'],
+                'type' => 'expense',
+                'title' => 'Yêu cầu chi phí: ' . $e['title'],
+                'description' => 'Số tiền: ' . number_format($e['amount'], 0, ',', '.') . 'đ. Ghi chú: "' . $e['notes'] . '"',
+                'status' => $e['status'],
+                'created_at' => $e['created_at']
+            ];
+        }
+
+        // 4. My Checkins
+        $stmtCheckins = $this->db->prepare("
+            SELECT c.id, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, c.created_at
+            FROM check_ins c
+            WHERE c.user_id = ? AND c.late_minutes > 0
+        ");
+        $stmtCheckins->execute([$auth['user_id']]);
+        $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($checkins as $c) {
+            $pending[] = [
+                'id' => (int)$c['id'],
+                'type' => 'checkin',
+                'title' => 'Giải trình đi trễ ngày ' . $c['check_in_date'],
+                'description' => 'Đi trễ ' . $c['late_minutes'] . ' phút (Check-in lúc ' . $c['check_in_time'] . '). Lý do: "' . $c['reason'] . '"',
+                'status' => $c['status'],
+                'created_at' => $c['created_at']
+            ];
+        }
+
+        // Sort by created_at DESC
+        usort($pending, function($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+
+        respond(200, $pending);
+    }
 }
