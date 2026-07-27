@@ -1070,6 +1070,32 @@ class ActivityController {
         respond(200, $comments);
     }
 
+    public function getSubtasksCommentCounts(array $auth, int $id): void {
+        // Verify activity belongs to tenant and user has permission
+        $check = $this->db->prepare("SELECT * FROM activities WHERE id=? AND tenant_id=? AND deleted_at IS NULL");
+        $check->execute([$id, $auth['tenant_id']]);
+        $activity = $check->fetch();
+        if (!$activity) respond(404, null, 'Không tìm thấy hoạt động hoặc không có quyền truy cập', false);
+
+        if (!$this->hasAccess($auth, $activity)) {
+            respond(403, null, 'Bạn không có quyền truy cập hoạt động này', false);
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT subtask_id, COUNT(*) as count 
+            FROM activity_comments 
+            WHERE activity_id = ? AND tenant_id = ? AND subtask_id IS NOT NULL
+            GROUP BY subtask_id
+        ");
+        $stmt->execute([$id, $auth['tenant_id']]);
+        $counts = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $counts[$row['subtask_id']] = (int)$row['count'];
+        }
+
+        respond(200, $counts);
+    }
+
     public function addComment(array $auth, int $id): void {
         if ($auth['role'] === 'viewer') respond(403, null, 'Bạn không có quyền bình luận', false);
         // Verify activity belongs to tenant and user has permission
@@ -1147,12 +1173,12 @@ class ActivityController {
 
         if (!empty($mentions)) {
             require_once __DIR__ . '/../NotificationService.php';
-            $targetLink = "/activities/{$id}?comment_id={$commentId}";
+            $targetLink = "/activities/{$id}?comment_id={$commentId}" . ($subtaskId ? "&subtask_id={$subtaskId}" : "");
             if (!empty($activity['related_type']) && !empty($activity['related_id'])) {
                 if ($activity['related_type'] === 'contact') {
-                    $targetLink = "/contacts?open_contact_id={$activity['related_id']}&highlight_activity_id={$id}&highlight_comment_id={$commentId}";
+                    $targetLink = "/contacts?open_contact_id={$activity['related_id']}&highlight_activity_id={$id}&highlight_comment_id={$commentId}" . ($subtaskId ? "&subtask_id={$subtaskId}" : "");
                 } else if ($activity['related_type'] === 'deal') {
-                    $targetLink = "/deals?id={$activity['related_id']}&highlight_activity_id={$id}&highlight_comment_id={$commentId}";
+                    $targetLink = "/deals?id={$activity['related_id']}&highlight_activity_id={$id}&highlight_comment_id={$commentId}" . ($subtaskId ? "&subtask_id={$subtaskId}" : "");
                 }
             }
             foreach ($mentions as $uid => $userRow) {

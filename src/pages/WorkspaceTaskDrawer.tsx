@@ -99,6 +99,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [newSubtaskCommentText, setNewSubtaskCommentText] = useState('');
   const [isSubmittingSubtaskComment, setIsSubmittingSubtaskComment] = useState(false);
   const [subtaskCommentAttachments, setSubtaskCommentAttachments] = useState<any[]>([]);
+  const [subtaskCommentCounts, setSubtaskCommentCounts] = useState<Record<string, number>>({});
 
   const [isMuted, setIsMuted] = useState(false);
   const [loadingMute, setLoadingMute] = useState(false);
@@ -115,6 +116,17 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [cancelReason, setCancelReason] = useState('');
   const [savingCancel, setSavingCancel] = useState(false);
 
+  const loadSubtaskCommentCounts = () => {
+    if (!task?.id || task.id === 'new') return;
+    api.get(`/activities/${task.id}/subtasks-comment-counts`)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setSubtaskCommentCounts(res.data.data || {});
+        }
+      })
+      .catch(err => console.error("Lỗi lấy số lượng bình luận việc con:", err));
+  };
+
   useEffect(() => {
     if (isOpen && task?.id) {
       setLoadingMute(true);
@@ -126,6 +138,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         })
         .catch(err => console.error("Lỗi lấy trạng thái thông báo task:", err))
         .finally(() => setLoadingMute(false));
+      
+      loadSubtaskCommentCounts();
     }
   }, [isOpen, task?.id]);
 
@@ -540,10 +554,48 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   }, [selectedSubtask]);
 
   useEffect(() => {
+    if (isOpen && task && erpMeta?.checklist) {
+      const targetSubtaskId = searchParams.get('subtask_id');
+      if (targetSubtaskId) {
+        const found = erpMeta.checklist.find((item: any) => String(item.id) === String(targetSubtaskId));
+        if (found) {
+          setSelectedSubtask(found);
+        }
+      }
+    }
+  }, [isOpen, task, erpMeta?.checklist]);
+
+  useEffect(() => {
+    if (subtaskComments.length > 0) {
+      const targetSubtaskId = searchParams.get('subtask_id');
+      const highlightCommentId = searchParams.get('comment_id') || searchParams.get('highlight_comment_id');
+      if (targetSubtaskId && highlightCommentId) {
+        setTimeout(() => {
+          const element = document.getElementById(`workspace-comment-${highlightCommentId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.style.backgroundColor = 'var(--color-primary-light)';
+            setTimeout(() => {
+              element.style.backgroundColor = 'var(--color-surface)';
+            }, 2500);
+
+            // Clean URL parameters
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('subtask_id');
+            newParams.delete('comment_id');
+            newParams.delete('highlight_comment_id');
+            setSearchParams(newParams, { replace: true });
+          }
+        }, 500);
+      }
+    }
+  }, [subtaskComments]);
+
+  useEffect(() => {
     if (comments.length > 0) {
       const params = new URLSearchParams(window.location.search);
       const highlightCommentId = params.get('comment_id') || params.get('highlight_comment_id');
-      if (highlightCommentId) {
+      if (highlightCommentId && !params.get('subtask_id')) {
         setTimeout(() => {
           const element = document.getElementById(`workspace-comment-${highlightCommentId}`);
           if (element) {
@@ -1458,6 +1510,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
       if (res.data && res.data.success) {
         loadSubtaskComments(Number(task.id), selectedSubtask.id);
+        loadSubtaskCommentCounts();
         toast.success(t('Đã thêm bình luận việc con!'));
       }
     } catch (e: any) {
@@ -2196,251 +2249,230 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                     const itemUser = users.find(u => Number(u.id) === Number(item.assignee_id));
                     const isEditingThis = editingChecklistId === item.id;
                     const isAssigneeDropdownOpen = activeAssigneeDropdownId === item.id;
+                    const isCommentsOpen = selectedSubtask?.id === item.id;
 
                     return (
-                      <div 
-                        key={item.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          background: item.done ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg)',
-                          border: '1px solid var(--color-border-light)',
-                          padding: '10px 14px',
-                          borderRadius: '10px',
-                          transition: 'all 0.2s',
-                          opacity: item.done ? 0.8 : 1,
-                          position: 'relative',
-                          gap: '10px'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                          {/* Round & Large Custom Checkbox */}
-                          <div style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}>
-                            <input
-                              type="checkbox"
-                              checked={!!item.done}
-                              onChange={() => handleToggleChecklist(item.id)}
-                              disabled={currentUser?.role === 'viewer'}
-                              style={{
-                                opacity: 0,
-                                position: 'absolute',
-                                width: '100%',
-                                height: '100%',
-                                cursor: currentUser?.role === 'viewer' ? 'not-allowed' : 'pointer',
-                                margin: 0,
-                                zIndex: 1
-                              }}
-                            />
-                            <motion.div
-                              animate={{
-                                backgroundColor: item.done ? 'var(--color-success)' : 'var(--color-surface)',
-                                borderColor: item.done ? 'var(--color-success)' : 'var(--color-border)',
-                                opacity: currentUser?.role === 'viewer' ? 0.6 : 1
-                              }}
-                              style={{
-                                width: 22,
-                                height: 22,
-                                border: '2px solid',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'background-color 0.2s, border-color 0.2s'
-                              }}
-                            >
-                              <AnimatePresence>
-                                {item.done && (
-                                  <motion.div
-                                    initial={{ scale: 0, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0, opacity: 0 }}
-                                    transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-                                  >
-                                    <Check size={14} color="white" strokeWidth={4} />
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </motion.div>
-                          </div>
+                      <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {/* Subtask Card */}
+                        <div 
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: item.done ? 'rgba(16, 185, 129, 0.03)' : 'var(--color-bg)',
+                            border: '1px solid var(--color-border-light)',
+                            padding: '10px 14px',
+                            borderRadius: '10px',
+                            transition: 'all 0.2s',
+                            opacity: item.done ? 0.8 : 1,
+                            position: 'relative',
+                            gap: '10px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                            {/* Round & Large Custom Checkbox */}
+                            <div style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={!!item.done}
+                                onChange={() => handleToggleChecklist(item.id)}
+                                disabled={currentUser?.role === 'viewer'}
+                                style={{
+                                  opacity: 0,
+                                  position: 'absolute',
+                                  width: '100%',
+                                  height: '100%',
+                                  cursor: currentUser?.role === 'viewer' ? 'not-allowed' : 'pointer',
+                                  margin: 0,
+                                  zIndex: 1
+                                }}
+                              />
+                              <motion.div
+                                animate={{
+                                  backgroundColor: item.done ? 'var(--color-success)' : 'var(--color-surface)',
+                                  borderColor: item.done ? 'var(--color-success)' : 'var(--color-border)',
+                                  opacity: currentUser?.role === 'viewer' ? 0.6 : 1
+                                }}
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  border: '2px solid',
+                                  borderRadius: '50%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'background-color 0.2s, border-color 0.2s'
+                                }}
+                              >
+                                <AnimatePresence>
+                                  {item.done && (
+                                    <motion.div
+                                      initial={{ scale: 0, opacity: 0 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      exit={{ scale: 0, opacity: 0 }}
+                                      transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+                                    >
+                                      <Check size={14} color="white" strokeWidth={4} />
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </motion.div>
+                            </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: '3px' }}>
-                            {/* Title / Inline Edit */}
-                            {isEditingThis ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <input
-                                  type="text"
-                                  className="form-input"
-                                  value={editingChecklistTitle}
-                                  onChange={(e) => setEditingChecklistTitle(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
-                                      setEditingChecklistId(null);
-                                    } else if (e.key === 'Escape') {
-                                      setEditingChecklistId(null);
-                                    }
-                                  }}
-                                  autoFocus
-                                  style={{ fontSize: '0.82rem', padding: '4px 8px', height: '32px', borderRadius: '6px', width: '100%' }}
-                                />
-                                <button
-                                  type="button"
-                                  className="btn primary sm"
-                                  onClick={() => {
-                                    handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
-                                    setEditingChecklistId(null);
-                                  }}
-                                  style={{ padding: '4px 10px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
-                                >
-                                  {t('Lưu')}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn outline sm"
-                                  onClick={() => setEditingChecklistId(null)}
-                                  style={{ padding: '4px 8px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{
-                                  fontSize: '0.82rem',
-                                  fontWeight: 700,
-                                  color: item.done ? 'var(--color-text-muted)' : 'var(--color-text)',
-                                  textDecoration: item.done ? 'line-through' : 'none',
-                                  wordBreak: 'break-word'
-                                }}>
-                                  {item.title}
-                                </span>
-                                {currentUser?.role !== 'viewer' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: '3px' }}>
+                              {/* Title / Inline Edit */}
+                              {isEditingThis ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    value={editingChecklistTitle}
+                                    onChange={(e) => setEditingChecklistTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
+                                        setEditingChecklistId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingChecklistId(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    style={{ fontSize: '0.82rem', padding: '4px 8px', height: '32px', borderRadius: '6px', width: '100%' }}
+                                  />
                                   <button
                                     type="button"
+                                    className="btn primary sm"
                                     onClick={() => {
-                                      setEditingChecklistId(item.id);
-                                      setEditingChecklistTitle(item.title);
+                                      handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
+                                      setEditingChecklistId(null);
                                     }}
-                                    style={{
-                                      border: 'none',
-                                      background: 'transparent',
-                                      color: 'var(--color-text-muted)',
-                                      cursor: 'pointer',
-                                      padding: '2px 4px',
-                                      borderRadius: '4px',
-                                      display: 'inline-flex',
-                                      alignItems: 'center'
-                                    }}
-                                    className="hover-bg-alt hover-color-primary"
-                                    title={t('Sửa tiêu đề')}
+                                    style={{ padding: '4px 10px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
                                   >
-                                    <Edit3 size={13} />
+                                    {t('Lưu')}
                                   </button>
+                                  <button
+                                    type="button"
+                                    className="btn outline sm"
+                                    onClick={() => setEditingChecklistId(null)}
+                                    style={{ padding: '4px 8px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{
+                                    fontSize: '0.82rem',
+                                    fontWeight: 700,
+                                    color: item.done ? 'var(--color-text-muted)' : 'var(--color-text)',
+                                    textDecoration: item.done ? 'line-through' : 'none',
+                                    wordBreak: 'break-word'
+                                  }}>
+                                    {item.title}
+                                  </span>
+                                  {currentUser?.role !== 'viewer' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingChecklistId(item.id);
+                                        setEditingChecklistTitle(item.title);
+                                      }}
+                                      style={{
+                                        border: 'none',
+                                        background: 'transparent',
+                                        color: 'var(--color-text-muted)',
+                                        cursor: 'pointer',
+                                        padding: '2px 4px',
+                                        borderRadius: '4px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center'
+                                      }}
+                                      className="hover-bg-alt hover-color-primary"
+                                      title={t('Sửa tiêu đề')}
+                                    >
+                                      <Edit3 size={13} />
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Subtitle Assignee & Due Date Row */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
+                                  {t('Giao cho')}: <strong style={{ color: itemUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{itemUser ? (itemUser.full_name || itemUser.name) : t('Chưa phân công')}</strong>
+                                </span>
+                                {item.due_date && (
+                                  <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
+                                    {` • Hạn: ${new Date(item.due_date).toLocaleDateString('vi-VN')}`}
+                                  </span>
                                 )}
                               </div>
-                            )}
-
-                            {/* Subtitle Assignee & Due Date Row */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
-                                {t('Giao cho')}: <strong style={{ color: itemUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{itemUser ? (itemUser.full_name || itemUser.name) : t('Chưa phân công')}</strong>
-                              </span>
-                              {item.due_date && (
-                                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
-                                  {` • Hạn: ${new Date(item.due_date).toLocaleDateString('vi-VN')}`}
-                                </span>
-                              )}
                             </div>
                           </div>
-                        </div>
 
-                        {/* Right Actions (Round User Icon & Delete Trash Icon) */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                          {/* Round User Assignee Icon Button */}
-                          <div style={{ position: 'relative' }}>
-                            <button
-                              type="button"
-                              onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
-                              disabled={currentUser?.role === 'viewer'}
-                              style={{
-                                border: itemUser ? '1.5px solid var(--color-primary-light)' : '1px solid var(--color-border-light)',
-                                background: itemUser ? 'transparent' : 'rgba(163, 20, 34, 0.06)',
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
-                                padding: 0,
-                                transition: 'all 0.15s ease'
-                              }}
-                              className="hover-scale"
-                              title={itemUser ? `${t('Giao cho')}: ${itemUser.full_name || itemUser.name}` : t('Phân công người thực hiện')}
-                            >
-                              {itemUser ? (
-                                <Avatar 
-                                  src={itemUser.avatar || itemUser.avatar_url} 
-                                  name={itemUser.full_name || itemUser.name} 
-                                  size={26} 
-                                />
-                              ) : (
-                                <UserPlus size={14} color="var(--color-primary)" />
-                              )}
-                            </button>
+                          {/* Right Actions */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            {/* Round User Assignee Icon Button */}
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                type="button"
+                                onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
+                                disabled={currentUser?.role === 'viewer'}
+                                style={{
+                                  border: itemUser ? '1.5px solid var(--color-primary-light)' : '1px solid var(--color-border-light)',
+                                  background: itemUser ? 'transparent' : 'rgba(163, 20, 34, 0.06)',
+                                  width: '28px',
+                                  height: '28px',
+                                  borderRadius: '50%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
+                                  padding: 0,
+                                  transition: 'all 0.15s ease'
+                                }}
+                                className="hover-scale"
+                                title={itemUser ? `${t('Giao cho')}: ${itemUser.full_name || itemUser.name}` : t('Phân công người thực hiện')}
+                              >
+                                {itemUser ? (
+                                  <Avatar 
+                                    src={itemUser.avatar || itemUser.avatar_url} 
+                                    name={itemUser.full_name || itemUser.name} 
+                                    size={26} 
+                                  />
+                                ) : (
+                                  <UserPlus size={14} color="var(--color-primary)" />
+                                )}
+                              </button>
 
-                            {/* User selection dropdown popup */}
-                            {isAssigneeDropdownOpen && (
-                              <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                marginTop: '6px',
-                                zIndex: 9999,
-                                background: 'var(--color-surface)',
-                                border: '1px solid var(--color-border-light)',
-                                borderRadius: '12px',
-                                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                                minWidth: '220px',
-                                maxHeight: '230px',
-                                overflowY: 'auto',
-                                padding: '6px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '2px'
-                              }}>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
-                                  {t('Phân công người thực hiện:')}
-                                </div>
-                                
-                                {/* Unassign option */}
-                                <div
-                                  onClick={() => {
-                                    handleUpdateChecklistItemAssignee(item.id, '');
-                                    setActiveAssigneeDropdownId(null);
-                                  }}
-                                  style={{
-                                    padding: '6px 8px',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75rem',
-                                    color: 'var(--color-danger)',
-                                    fontWeight: 600,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}
-                                  className="hover-bg-alt"
-                                >
-                                  <span>✕ {t('Bỏ phân công (Chưa ai làm)')}</span>
-                                </div>
-
-                                {users.map((u: any) => (
+                              {/* User selection dropdown popup */}
+                              {isAssigneeDropdownOpen && (
+                                <div style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  right: 0,
+                                  marginTop: '6px',
+                                  zIndex: 9999,
+                                  background: 'var(--color-surface)',
+                                  border: '1px solid var(--color-border-light)',
+                                  borderRadius: '12px',
+                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                                  minWidth: '220px',
+                                  maxHeight: '230px',
+                                  overflowY: 'auto',
+                                  padding: '6px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '2px'
+                                }}>
+                                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                                    {t('Phân công người thực hiện:')}
+                                  </div>
+                                  
+                                  {/* Unassign option */}
                                   <div
-                                    key={u.id}
                                     onClick={() => {
-                                      handleUpdateChecklistItemAssignee(item.id, String(u.id));
+                                      handleUpdateChecklistItemAssignee(item.id, '');
                                       setActiveAssigneeDropdownId(null);
                                     }}
                                     style={{
@@ -2448,73 +2480,278 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                       borderRadius: '6px',
                                       cursor: 'pointer',
                                       fontSize: '0.75rem',
+                                      color: 'var(--color-danger)',
+                                      fontWeight: 600,
                                       display: 'flex',
                                       alignItems: 'center',
-                                      gap: '8px',
-                                      background: String(u.id) === String(item.assignee_id) ? 'var(--color-primary-light)' : 'transparent',
-                                      color: String(u.id) === String(item.assignee_id) ? 'var(--color-primary)' : 'var(--color-text)',
-                                      fontWeight: String(u.id) === String(item.assignee_id) ? 700 : 500
+                                      gap: '6px'
                                     }}
                                     className="hover-bg-alt"
                                   >
-                                    <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={18} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {u.full_name || u.name}
-                                    </span>
+                                    <span>✕ {t('Bỏ phân công (Chưa ai làm)')}</span>
                                   </div>
-                                ))}
-                              </div>
+
+                                  {users.map((u: any) => (
+                                    <div
+                                      key={u.id}
+                                      onClick={() => {
+                                        handleUpdateChecklistItemAssignee(item.id, String(u.id));
+                                        setActiveAssigneeDropdownId(null);
+                                      }}
+                                      style={{
+                                        padding: '6px 8px',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.75rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        background: String(u.id) === String(item.assignee_id) ? 'var(--color-primary-light)' : 'transparent',
+                                        color: String(u.id) === String(item.assignee_id) ? 'var(--color-primary)' : 'var(--color-text)',
+                                        fontWeight: String(u.id) === String(item.assignee_id) ? 700 : 500
+                                      }}
+                                      className="hover-bg-alt"
+                                    >
+                                      <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={18} />
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {u.full_name || u.name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Subtask Discussion / Comments Trigger */}
+                            {task?.id !== 'new' && (() => {
+                              const commentCount = subtaskCommentCounts[item.id] || 0;
+                              return (
+                                <div style={{ position: 'relative' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedSubtask(isCommentsOpen ? null : item)}
+                                    style={{
+                                      border: isCommentsOpen ? '1px solid var(--color-primary)' : '1px solid var(--color-border-light)',
+                                      background: isCommentsOpen ? 'rgba(163, 20, 34, 0.06)' : 'transparent',
+                                      width: '28px',
+                                      height: '28px',
+                                      borderRadius: '50%',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      padding: 0,
+                                      color: isCommentsOpen ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    className="hover-scale hover-color-primary"
+                                    title={t('Thảo luận / Bình luận việc con')}
+                                  >
+                                    <MessageSquare size={13} />
+                                  </button>
+                                  {commentCount > 0 && (
+                                    <span style={{
+                                      position: 'absolute',
+                                      top: '-6px',
+                                      right: '-6px',
+                                      background: 'var(--color-primary)',
+                                      color: 'white',
+                                      fontSize: '9px',
+                                      fontWeight: 800,
+                                      borderRadius: '8px',
+                                      padding: '2px 5px',
+                                      lineHeight: 1,
+                                      border: '1.5px solid var(--color-bg)',
+                                      pointerEvents: 'none'
+                                    }}>
+                                      {commentCount}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
+                            {/* Delete Trash Can */}
+                            {currentUser?.role !== 'viewer' && (
+                              <button
+                                type="button"
+                                onClick={() => setDeleteSubtaskTarget({ id: item.id, title: item.title })}
+                                style={{
+                                  border: 'none',
+                                  background: 'transparent',
+                                  color: 'var(--color-danger)',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                className="hover-lift"
+                                title={t('Xóa việc con')}
+                              >
+                                <Trash2 size={15} />
+                              </button>
                             )}
                           </div>
-
-                          {/* Subtask Discussion / Comments Trigger */}
-                          {task?.id !== 'new' && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedSubtask(item)}
-                              style={{
-                                border: '1px solid var(--color-border-light)',
-                                background: 'transparent',
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                padding: 0,
-                                color: 'var(--color-text-muted)',
-                                transition: 'all 0.15s ease'
-                              }}
-                              className="hover-scale hover-color-primary"
-                              title={t('Thảo luận / Bình luận việc con')}
-                            >
-                              <MessageSquare size={13} />
-                            </button>
-                          )}
-
-                          {/* Delete Trash Can */}
-                          {currentUser?.role !== 'viewer' && (
-                            <button
-                              type="button"
-                              onClick={() => setDeleteSubtaskTarget({ id: item.id, title: item.title })}
-                              style={{
-                                border: 'none',
-                                background: 'transparent',
-                                color: 'var(--color-danger)',
-                                cursor: 'pointer',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              className="hover-lift"
-                              title={t('Xóa việc con')}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          )}
                         </div>
+
+                        {/* Inline Comments Area */}
+                        <AnimatePresence>
+                          {isCommentsOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.25 }}
+                              style={{
+                                overflow: 'hidden',
+                                background: 'rgba(0, 0, 0, 0.015)',
+                                border: '1px solid var(--color-border-light)',
+                                borderRadius: '12px',
+                                padding: '14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px',
+                                marginLeft: '34px'
+                              }}
+                            >
+                              {/* Comments Feed */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }} className="custom-scrollbar">
+                                {loadingSubtaskComments ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <StatRowSkeleton />
+                                    <StatRowSkeleton />
+                                  </div>
+                                ) : subtaskComments.length === 0 ? (
+                                  <div style={{ textAlign: 'center', padding: '12px', color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                                    {t('Chưa có thảo luận nào.')}
+                                  </div>
+                                ) : (
+                                  subtaskComments.map((comment: any) => {
+                                    const commUser = users.find(u => Number(u.id) === Number(comment.user_id));
+                                    let commentParsedAtts = [];
+                                    if (comment.attachments) {
+                                      try {
+                                        commentParsedAtts = typeof comment.attachments === 'string' ? JSON.parse(comment.attachments) : comment.attachments;
+                                      } catch (e) {
+                                        console.error(e);
+                                      }
+                                    }
+                                    if (!Array.isArray(commentParsedAtts)) commentParsedAtts = [];
+
+                                    return (
+                                      <div 
+                                        key={comment.id}
+                                        id={`workspace-comment-${comment.id}`}
+                                        style={{ 
+                                          display: 'flex', 
+                                          gap: '8px', 
+                                          background: 'var(--color-surface)', 
+                                          border: '1px solid var(--color-border-light)', 
+                                          padding: '8px 12px', 
+                                          borderRadius: '10px',
+                                          transition: 'background-color 0.5s ease'
+                                        }}
+                                      >
+                                        <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={22} />
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
+                                            <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)' }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
+                                          </div>
+                                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                            {renderCommentContent(comment.content)}
+                                          </div>
+                                          {commentParsedAtts.length > 0 && (
+                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                              {commentParsedAtts.map((url: any, aIdx: number) => {
+                                                const name = typeof url === 'string' ? url.substring(url.lastIndexOf('/') + 1) : (url.name || 'File');
+                                                const rawHref = typeof url === 'string' ? url : (url.url || '#');
+
+                                                const apiBase = import.meta.env.VITE_API_URL || '/backend';
+                                                let href = rawHref;
+                                                if (rawHref && rawHref.startsWith('uploads/')) {
+                                                  href = `${apiBase}/${rawHref}`;
+                                                } else if (rawHref && rawHref.startsWith('storage/uploads/')) {
+                                                  href = `${apiBase}/${rawHref.replace('storage/uploads/', 'uploads/')}`;
+                                                }
+
+                                                const isImg = name.match(/\.(jpg|jpeg|png|gif|webp|svg)/i);
+                                                if (isImg) {
+                                                  return (
+                                                    <a key={aIdx} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'block', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--color-border-light)' }}>
+                                                      <img src={href} alt={name} style={{ maxHeight: '60px', maxWidth: '100px', objectFit: 'contain' }} />
+                                                    </a>
+                                                  );
+                                                }
+                                                return (
+                                                  <a key={aIdx} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '3px 6px', borderRadius: '10px', background: 'rgba(0, 0, 0, 0.03)', fontSize: '0.68rem', color: 'var(--color-primary)', fontWeight: 600, border: '1px solid var(--color-border-light)' }} className="hover-opacity">
+                                                    <Paperclip size={9} />
+                                                    <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                                                  </a>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              {/* Comment Input */}
+                              {currentUser?.role !== 'viewer' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '10px' }}>
+                                  <div style={{ position: 'relative' }}>
+                                    <MentionInput
+                                      value={newSubtaskCommentText}
+                                      onChange={e => setNewSubtaskCommentText(e.target.value)}
+                                      onImagePaste={addLocalSubtaskCommentAttachment}
+                                      onFilePaste={addLocalSubtaskCommentAttachment}
+                                      placeholder={t('Viết bình luận việc con... (Dán ảnh Ctrl+V)')}
+                                      style={{ minHeight: '48px', fontSize: '0.8rem', paddingRight: '40px' }}
+                                      disabled={isSubmittingSubtaskComment || uploadingFile}
+                                    />
+                                    <label style={{ position: 'absolute', right: '8px', bottom: '8px', cursor: (uploadingFile || isSubmittingSubtaskComment) ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
+                                      <input type="file" onChange={handleSubtaskCommentAttachmentUpload} style={{ display: 'none' }} disabled={uploadingFile || isSubmittingSubtaskComment} />
+                                      {uploadingFile ? <RefreshCw className="spin" size={15} /> : <Paperclip size={15} />}
+                                    </label>
+                                  </div>
+
+                                  {/* Attachment Chips */}
+                                  {subtaskCommentAttachments.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                      {subtaskCommentAttachments.map((att: any, idx: number) => (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '2px 6px', borderRadius: '10px', fontSize: '0.68rem', color: 'var(--color-text)' }}>
+                                          {att.previewUrl ? (
+                                            <img src={att.previewUrl} alt="preview" style={{ width: '18px', height: '18px', borderRadius: '3px', objectFit: 'cover' }} />
+                                          ) : (
+                                            <Paperclip size={10} color="var(--color-primary)" />
+                                          )}
+                                          <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{att.name}</span>
+                                          <button onClick={() => removeSubtaskCommentAttachment(idx)} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px' }}>×</button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                                    <button
+                                      onClick={handlePostSubtaskComment}
+                                      disabled={isSubmittingSubtaskComment || uploadingFile || (!newSubtaskCommentText.trim() && subtaskCommentAttachments.length === 0)}
+                                      className="btn primary sm"
+                                      style={{ padding: '4px 14px', fontSize: '0.72rem', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
+                                    >
+                                      {isSubmittingSubtaskComment ? <RefreshCw className="spin" size={11} /> : <Send size={11} />}
+                                      <span>{t('Gửi')}</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     );
                   })
@@ -3168,202 +3405,211 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             </div>
 
             {/* Khách hàng liên quan */}
-            <div className="card" style={cardStyle}>
-              
-              {/* Primary Contact (if any) */}
-              {((formData.related_type === 'contact' || formData.contact_id) && (formData.related_type === 'contact' ? formData.related_id : formData.contact_id)) ? (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                      {t('Khách hàng chính')}
-                    </div>
-                    {task.id === 'new' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({ 
-                            ...formData, 
-                            contact_id: null, 
-                            contact_name: '',
-                            ...(formData.related_type === 'contact' ? { related_id: '', related_type: null } : {})
-                          });
-                        }}
-                        style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px' }}
-                      >
-                        {t('Thay đổi')}
-                      </button>
-                    )}
-                  </div>
-                  <div 
-                    className="hover-lift"
-                    onClick={() => {
-                      if (onOpenContact) {
-                        onOpenContact(Number(formData.related_type === 'contact' ? formData.related_id : formData.contact_id));
-                      }
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      background: 'rgba(189, 29, 45, 0.04)',
-                      border: '1px solid rgba(189, 29, 45, 0.1)',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      color: 'var(--color-primary)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Avatar name={formData.contact_name || t('Khách hàng')} size={26} />
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>{formData.contact_name || t('Khách hàng')}</span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Nhấn để xem chi tiết')}</span>
-                      </div>
-                    </div>
-                    <ArrowUpRight size={16} />
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                    {t('Khách hàng chính *')}
-                  </div>
-                  <CustomSelect
-                    searchable
-                    options={[
-                      { value: '', label: t('Chọn khách hàng chính...') },
-                      ...allowedContacts.map(c => ({
-                        value: String(c.id),
-                        label: `${getContactFullName(c)} ${c.phone ? `(${c.phone})` : ''}`,
-                        avatar: c.avatar_url || c.avatar
-                      }))
-                    ]}
-                    value={formData.contact_id ? String(formData.contact_id) : (formData.related_type === 'contact' && formData.related_id ? String(formData.related_id) : '')}
-                    onChange={async val => {
-                      const selected = allowedContacts.find(c => String(c.id) === String(val));
-                      const contactIdVal = val ? Number(val) : null;
-                      const contactNameVal = selected ? getContactFullName(selected) : '';
-                      const isContactRelated = (formData.related_type === 'contact' || !formData.related_type);
-                      
-                      setFormData({
-                        ...formData,
-                        contact_id: contactIdVal,
-                        contact_name: contactNameVal,
-                        ...(isContactRelated ? {
-                          related_id: contactIdVal,
-                          related_type: contactIdVal ? 'contact' : null
-                        } : {})
-                      });
-
-                      if (task.id !== 'new') {
-                        try {
-                          await api.put(`/activities/${task.id}`, {
-                            contact_id: contactIdVal,
-                            ...(isContactRelated ? {
-                              related_id: contactIdVal,
-                              related_type: contactIdVal ? 'contact' : null
-                            } : {})
-                          });
-                          onUpdate();
-                        } catch (e: any) {
-                          toast.error(t('Lỗi cập nhật khách hàng liên kết: ') + e.message);
-                        }
-                      }
-                    }}
-                    placeholder={t('Chọn khách hàng chính...')}
-                  />
-                </div>
-              )}
-
-              {/* Additional Contacts list */}
-              {(() => {
-                const addContactIds = erpMeta.related_contact_ids || [];
-                const addContacts = allowedContacts.filter(c => addContactIds.includes(Number(c.id)));
-                const mainContactId = Number(formData.related_id || formData.contact_id || 0);
+            {(currentUser?.role === 'superadmin' || currentUser?.role === 'admin' || currentUser?.role === 'sale') && (
+              <div className="card" style={cardStyle}>
                 
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {addContacts.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                          {t('Khách hàng liên kết thêm')} ({addContacts.length})
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {addContacts.map(c => (
-                            <div 
-                              key={c.id} 
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                background: 'rgba(0, 0, 0, 0.015)',
-                                border: '1px solid var(--color-border-light)',
-                                padding: '8px 12px',
-                                borderRadius: '10px'
-                              }}
-                            >
-                              <div 
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 }}
-                                onClick={() => {
-                                  if (onOpenContact) {
-                                    onOpenContact(Number(c.id));
-                                  }
-                                }}
-                              >
-                                <Avatar name={getContactFullName(c)} src={c.avatar_url || c.avatar} size={22} />
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>{getContactFullName(c)}</span>
-                                  <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)' }}>{c.phone || c.email || t('Xem hồ sơ')}</span>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const nextIds = addContactIds.filter((id: number) => id !== Number(c.id));
-                                  const updatedMeta = { ...erpMeta, related_contact_ids: nextIds };
-                                  setErpMeta(updatedMeta);
-                                  handleSaveMeta(updatedMeta);
-                                }}
-                                style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '4px' }}
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Picker/Dropdown */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                {/* Primary Contact (if any) */}
+                {((formData.related_type === 'contact' || formData.contact_id) && (formData.related_type === 'contact' ? formData.related_id : formData.contact_id)) ? (
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-                        {t('Thêm khách hàng liên kết')}
+                        {t('Khách hàng chính')}
                       </div>
-                      <CustomSelect
-                        multiple
-                        searchable
-                        showAvatars
-                        options={allowedContacts
-                          .filter(c => Number(c.id) !== mainContactId)
-                          .map(c => ({
-                            value: String(c.id),
-                            label: `${getContactFullName(c)} ${c.phone ? `(${c.phone})` : ''}`,
-                            avatar: c.avatar_url || c.avatar
-                          }))}
-                        value={addContactIds.map(String)}
-                        onChange={(vals) => {
-                          const nextIds = vals.map(Number);
-                          const updatedMeta = { ...erpMeta, related_contact_ids: nextIds };
-                          setErpMeta(updatedMeta);
-                          handleSaveMeta(updatedMeta);
-                        }}
-                        placeholder={t('Chọn khách hàng...')}
-                      />
+                      {task.id === 'new' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ 
+                              ...formData, 
+                              contact_id: null, 
+                              contact_name: '',
+                              ...(formData.related_type === 'contact' ? { related_id: '', related_type: null } : {})
+                            });
+                          }}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px' }}
+                        >
+                          {t('Thay đổi')}
+                        </button>
+                      )}
+                    </div>
+                    <div 
+                      className="hover-lift"
+                      onClick={() => {
+                        if (onOpenContact) {
+                          onOpenContact(Number(formData.related_type === 'contact' ? formData.related_id : formData.contact_id));
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        background: 'rgba(0, 0, 0, 0.015)',
+                        border: '1px solid var(--color-border-light)',
+                        borderRadius: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Avatar 
+                          name={formData.contact_name || t('Khách hàng')} 
+                          src={allowedContacts.find(c => String(c.id) === String(formData.contact_id || formData.related_id))?.avatar_url || allowedContacts.find(c => String(c.id) === String(formData.contact_id || formData.related_id))?.avatar}
+                          size={24} 
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                            {formData.contact_name || t('Khách hàng')}
+                          </span>
+                          <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)' }}>
+                            {allowedContacts.find(c => String(c.id) === String(formData.contact_id || formData.related_id))?.phone || allowedContacts.find(c => String(c.id) === String(formData.contact_id || formData.related_id))?.email || t('Xem hồ sơ')}
+                          </span>
+                        </div>
+                      </div>
+                      <ArrowUpRight size={16} />
                     </div>
                   </div>
-                );
-              })()}
-            </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                      {t('Khách hàng chính *')}
+                    </div>
+                    <CustomSelect
+                      searchable
+                      options={[
+                        { value: '', label: t('Chọn khách hàng chính...') },
+                        ...allowedContacts.map(c => ({
+                          value: String(c.id),
+                          label: `${getContactFullName(c)} ${c.phone ? `(${c.phone})` : ''}`,
+                          avatar: c.avatar_url || c.avatar
+                        }))
+                      ]}
+                      value={formData.contact_id ? String(formData.contact_id) : (formData.related_type === 'contact' && formData.related_id ? String(formData.related_id) : '')}
+                      onChange={async val => {
+                        const selected = allowedContacts.find(c => String(c.id) === String(val));
+                        const contactIdVal = val ? Number(val) : null;
+                        const contactNameVal = selected ? getContactFullName(selected) : '';
+                        const isContactRelated = (formData.related_type === 'contact' || !formData.related_type);
+                        
+                        setFormData({
+                          ...formData,
+                          contact_id: contactIdVal,
+                          contact_name: contactNameVal,
+                          ...(isContactRelated ? {
+                            related_id: contactIdVal,
+                            related_type: contactIdVal ? 'contact' : null
+                          } : {})
+                        });
+
+                        if (task.id !== 'new') {
+                          try {
+                            await api.put(`/activities/${task.id}`, {
+                              contact_id: contactIdVal,
+                              ...(isContactRelated ? {
+                                related_id: contactIdVal,
+                                related_type: contactIdVal ? 'contact' : null
+                              } : {})
+                            });
+                            onUpdate();
+                          } catch (e: any) {
+                            toast.error(t('Lỗi cập nhật khách hàng liên kết: ') + e.message);
+                          }
+                        }
+                      }}
+                      placeholder={t('Chọn khách hàng chính...')}
+                    />
+                  </div>
+                )}
+
+                {/* Additional Contacts list */}
+                {(() => {
+                  const addContactIds = erpMeta.related_contact_ids || [];
+                  const addContacts = allowedContacts.filter(c => addContactIds.includes(Number(c.id)));
+                  const mainContactId = Number(formData.related_id || formData.contact_id || 0);
+                  
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {addContacts.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                            {t('Khách hàng liên kết thêm')} ({addContacts.length})
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {addContacts.map(c => (
+                              <div 
+                                key={c.id} 
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: 'rgba(0, 0, 0, 0.015)',
+                                  border: '1px solid var(--color-border-light)',
+                                  padding: '8px 12px',
+                                  borderRadius: '10px'
+                                }}
+                              >
+                                <div 
+                                  style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 }}
+                                  onClick={() => {
+                                    if (onOpenContact) {
+                                      onOpenContact(Number(c.id));
+                                    }
+                                  }}
+                                >
+                                  <Avatar name={getContactFullName(c)} src={c.avatar_url || c.avatar} size={22} />
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>{getContactFullName(c)}</span>
+                                    <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)' }}>{c.phone || c.email || t('Xem hồ sơ')}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextIds = addContactIds.filter((id: number) => id !== Number(c.id));
+                                    const updatedMeta = { ...erpMeta, related_contact_ids: nextIds };
+                                    setErpMeta(updatedMeta);
+                                    handleSaveMeta(updatedMeta);
+                                  }}
+                                  style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '4px' }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Picker/Dropdown */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                          {t('Thêm khách hàng liên kết')}
+                        </div>
+                        <CustomSelect
+                          multiple
+                          searchable
+                          showAvatars
+                          options={allowedContacts
+                            .filter(c => Number(c.id) !== mainContactId)
+                            .map(c => ({
+                              value: String(c.id),
+                              label: `${getContactFullName(c)} ${c.phone ? `(${c.phone})` : ''}`,
+                              avatar: c.avatar_url || c.avatar
+                            }))}
+                          value={addContactIds.map(String)}
+                          onChange={(vals) => {
+                            const nextIds = vals.map(Number);
+                            const updatedMeta = { ...erpMeta, related_contact_ids: nextIds };
+                            setErpMeta(updatedMeta);
+                            handleSaveMeta(updatedMeta);
+                          }}
+                          placeholder={t('Chọn khách hàng...')}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Nhóm / Team liên quan */}
             <div className="card" style={cardStyle}>
@@ -4602,203 +4848,6 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                       {t('Xác nhận tắt')}
                     </button>
                   </div>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
-
-          {/* Subtask Discussion Modal */}
-          <AnimatePresence>
-            {selectedSubtask && (
-              <div 
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'rgba(15, 23, 42, 0.45)',
-                  backdropFilter: 'blur(4px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 99999,
-                  padding: '20px'
-                }}
-                onClick={() => setSelectedSubtask(null)}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '20px',
-                    width: '100%',
-                    maxWidth: '650px',
-                    maxHeight: '85vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {/* Modal Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--color-border-light)', background: 'var(--color-surface-hover)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <MessageSquare size={18} color="var(--color-primary)" />
-                      <span style={{ fontSize: '0.925rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                        {t('Thảo luận việc con')}: <strong style={{ color: 'var(--color-primary)' }}>{selectedSubtask.title}</strong>
-                      </span>
-                    </div>
-                    <button 
-                      onClick={() => setSelectedSubtask(null)} 
-                      style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-
-                  {/* Comments Feed - custom scrollbar */}
-                  <div 
-                    style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--color-bg)' }}
-                    className="custom-scrollbar"
-                  >
-                    {loadingSubtaskComments ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <StatRowSkeleton />
-                        <StatRowSkeleton />
-                        <StatRowSkeleton />
-                      </div>
-                    ) : subtaskComments.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '3rem 1.5rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                        <MessageSquare size={32} style={{ opacity: 0.25, marginBottom: '4px' }} />
-                        {t('Chưa có bình luận nào cho công việc con này.')}
-                      </div>
-                    ) : (
-                      subtaskComments.map((comment: any) => {
-                        const commUser = users.find(u => Number(u.id) === Number(comment.user_id));
-                        let commentParsedAtts = [];
-                        if (comment.attachments) {
-                          try {
-                            commentParsedAtts = typeof comment.attachments === 'string' ? JSON.parse(comment.attachments) : comment.attachments;
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        }
-                        if (!Array.isArray(commentParsedAtts)) commentParsedAtts = [];
-
-                        return (
-                          <div 
-                            key={comment.id}
-                            style={{ 
-                              display: 'flex', 
-                              gap: '12px', 
-                              background: 'rgba(0, 0, 0, 0.01)', 
-                              border: '1px solid var(--color-border-light)', 
-                              padding: '12px 16px', 
-                              borderRadius: '14px'
-                            }}
-                          >
-                            <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={28} />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
-                              </div>
-                              <div style={{ fontSize: '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
-                                {renderCommentContent(comment.content)}
-                              </div>
-                              {commentParsedAtts.length > 0 && (
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                                  {commentParsedAtts.map((url: any, aIdx: number) => {
-                                    const name = typeof url === 'string' ? url.substring(url.lastIndexOf('/') + 1) : (url.name || 'File');
-                                    const rawHref = typeof url === 'string' ? url : (url.url || '#');
-
-                                    const apiBase = import.meta.env.VITE_API_URL || '/backend';
-                                    let href = rawHref;
-                                    if (rawHref && rawHref.startsWith('uploads/')) {
-                                      href = `${apiBase}/${rawHref}`;
-                                    } else if (rawHref && rawHref.startsWith('storage/uploads/')) {
-                                      href = `${apiBase}/${rawHref.replace('storage/uploads/', 'uploads/')}`;
-                                    }
-
-                                    const isImg = name.match(/\.(jpg|jpeg|png|gif|webp|svg)/i);
-                                    if (isImg) {
-                                      return (
-                                        <a key={aIdx} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'block', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border-light)' }}>
-                                          <img src={href} alt={name} style={{ maxHeight: '90px', maxWidth: '140px', objectFit: 'contain' }} />
-                                        </a>
-                                      );
-                                    }
-                                    return (
-                                      <a key={aIdx} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.03)', fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, border: '1px solid var(--color-border-light)' }} className="hover-opacity">
-                                        <Paperclip size={10} />
-                                        <span>{name}</span>
-                                      </a>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {/* Modal Footer / Comment Input Area */}
-                  {currentUser?.role !== 'viewer' && (
-                    <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border-light)', background: 'var(--color-surface-hover)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ position: 'relative' }}>
-                        <MentionInput
-                          value={newSubtaskCommentText}
-                          onChange={e => setNewSubtaskCommentText(e.target.value)}
-                          onImagePaste={addLocalSubtaskCommentAttachment}
-                          onFilePaste={addLocalSubtaskCommentAttachment}
-                          placeholder={t('Viết bình luận việc con... (Dán ảnh trực tiếp Ctrl+V)')}
-                          style={{ minHeight: '65px', fontSize: '0.85rem', paddingRight: '40px' }}
-                          disabled={isSubmittingSubtaskComment || uploadingFile}
-                        />
-                        <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: (uploadingFile || isSubmittingSubtaskComment) ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
-                          <input type="file" onChange={handleSubtaskCommentAttachmentUpload} style={{ display: 'none' }} disabled={uploadingFile || isSubmittingSubtaskComment} />
-                          {uploadingFile ? <RefreshCw className="spin" size={18} /> : <Paperclip size={18} />}
-                        </label>
-                      </div>
-
-                      {/* Attachment Chips List */}
-                      {subtaskCommentAttachments.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '2px' }}>
-                          {subtaskCommentAttachments.map((att: any, idx: number) => (
-                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', color: 'var(--color-text)' }}>
-                              {att.previewUrl ? (
-                                <img src={att.previewUrl} alt="preview" style={{ width: '22px', height: '22px', borderRadius: '4px', objectFit: 'cover' }} />
-                              ) : (
-                                <Paperclip size={11} color="var(--color-primary)" />
-                              )}
-                              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{att.name}</span>
-                              <button onClick={() => removeSubtaskCommentAttachment(idx)} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>×</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px' }}>
-                        <button
-                          onClick={handlePostSubtaskComment}
-                          disabled={isSubmittingSubtaskComment || uploadingFile || (!newSubtaskCommentText.trim() && subtaskCommentAttachments.length === 0)}
-                          className="btn primary sm"
-                          style={{ padding: '6px 18px', fontSize: '0.78rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
-                        >
-                          {isSubmittingSubtaskComment ? <RefreshCw className="spin" size={13} /> : <Send size={13} />}
-                          <span>{t('Gửi')}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </motion.div>
               </div>
             )}
