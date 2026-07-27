@@ -314,36 +314,50 @@ class ActivityController {
         
         // 5. Team-based tags check
         if (!empty($activity['tags']) && strpos($activity['tags'], 'internal_') === 0) {
-            if (in_array($auth['role'], ['sales', 'sale'], true)) {
-                // For sales, they can only access if they are creator/assignee/participant (checked elsewhere)
-                // OR if the task is unassigned and they belong to the same team as the creator
-                if (empty($activity['user_id'])) {
-                    $creatorId = !empty($activity['created_by']) ? (int)$activity['created_by'] : 0;
-                    if ($creatorId > 0) {
-                        $stmtTeamCheck = $this->db->prepare("
-                            SELECT 1 FROM users u 
-                            WHERE u.id = ? 
-                              AND u.team_id = (SELECT team_id FROM users WHERE id = ?)
-                        ");
-                        $stmtTeamCheck->execute([$creatorId, $auth['user_id']]);
-                        if ($stmtTeamCheck->fetch()) {
-                            return true;
-                        }
-                    }
-                }
-                // Check if it's a global scope announcement
-                if (!empty($activity['body']) && strpos($activity['body'], '"scope":"global"') !== false) {
-                    return true;
-                }
-            } elseif ($auth['role'] === 'manager') {
+            // Check if it's a global scope announcement
+            if (!empty($activity['body']) && strpos($activity['body'], '"scope":"global"') !== false) {
+                return true;
+            }
+
+            // Check if user belongs to the same team as the creator
+            $creatorId = !empty($activity['created_by']) ? (int)$activity['created_by'] : 0;
+            if ($creatorId > 0) {
                 $stmtTeamCheck = $this->db->prepare("
                     SELECT 1 FROM users u 
                     WHERE u.id = ? 
-                      AND (u.team_id IN (SELECT id FROM teams WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))) 
-                           OR ? LIKE '%\"scope\":\"global\"%')
+                      AND u.team_id = (SELECT team_id FROM users WHERE id = ?)
                 ");
-                $stmtTeamCheck->execute([$activity['user_id'], $auth['user_id'], $activity['body']]);
+                $stmtTeamCheck->execute([$creatorId, $auth['user_id']]);
                 if ($stmtTeamCheck->fetch()) {
+                    return true;
+                }
+            }
+
+            // Check if user belongs to the same team as the assignee
+            $assigneeId = !empty($activity['user_id']) ? (int)$activity['user_id'] : 0;
+            if ($assigneeId > 0) {
+                $stmtTeamCheck = $this->db->prepare("
+                    SELECT 1 FROM users u 
+                    WHERE u.id = ? 
+                      AND u.team_id = (SELECT team_id FROM users WHERE id = ?)
+                ");
+                $stmtTeamCheck->execute([$assigneeId, $auth['user_id']]);
+                if ($stmtTeamCheck->fetch()) {
+                    return true;
+                }
+            }
+
+            // If the current user is a manager of the creator or assignee's team
+            if ($auth['role'] === 'manager') {
+                $checkMgr = $this->db->prepare("
+                    SELECT 1 FROM teams 
+                    WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
+                      AND id IN (
+                          SELECT team_id FROM users WHERE id = ? OR id = ?
+                      )
+                ");
+                $checkMgr->execute([$auth['user_id'], $creatorId, $assigneeId]);
+                if ($checkMgr->fetch()) {
                     return true;
                 }
             }

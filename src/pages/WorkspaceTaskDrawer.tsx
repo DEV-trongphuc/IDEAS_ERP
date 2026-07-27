@@ -158,10 +158,16 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       .finally(() => setLoadingMute(false));
   };
 
+  const getTomorrowString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
   // Checklist adding state
   const [newSubTitle, setNewSubTitle] = useState('');
   const [newSubAssignee, setNewSubAssignee] = useState('');
-  const [newSubDeadline, setNewSubDeadline] = useState('');
+  const [newSubDeadline, setNewSubDeadline] = useState(getTomorrowString());
   const [newSubPriority, setNewSubPriority] = useState<string>('medium');
 
   // Checklist inline edit & assignee picker state
@@ -1061,7 +1067,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     // Reset input
     setNewSubTitle('');
     setNewSubAssignee('');
-    setNewSubDeadline('');
+    setNewSubDeadline(getTomorrowString());
     setNewSubPriority('medium');
     setShowAddChecklist(false);
     toast.success(t('Đã thêm việc con'));
@@ -3217,98 +3223,13 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               })()}
             </div>
 
-            {/* Dự án & Chiến dịch liên quan */}
+            {/* Nhóm / Team liên quan */}
             <div className="card" style={cardStyle}>
               <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                {t('Liên kết Dự án / Chiến dịch / Team')}
+                {t('Liên kết Nhóm / Team')}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Dự án')}</span>
-                    {!!erpMeta.project_id && (
-                      <button 
-                        type="button" 
-                                                onClick={() => { navigate(`/projects?id=${erpMeta.project_id}`); onClose?.(); }} 
-                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '0.725rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
-                        className="hover-opacity"
-                      >
-                        <Eye size={13} style={{ color: 'var(--color-text-muted)' }} /> {t('Xem')}
-                      </button>
-                    )}
-                  </div>
-                  <CustomSelect
-                    searchable
-                    options={[
-                      { value: '', label: t('Chọn dự án...') },
-                      ...allowedProjects.map(p => ({ value: String(p.id), label: p.name }))
-                    ]}
-                    value={erpMeta.project_id ? String(erpMeta.project_id) : ''}
-                    onChange={val => {
-                      const nextProject = val ? Number(val) : null;
-                      let nextCampaign = erpMeta.campaign_id;
-                      if (nextProject && nextCampaign) {
-                        const campObj = allowedCampaigns.find(c => Number(c.id) === nextCampaign);
-                        if (campObj && Number(campObj.project_id) !== nextProject) {
-                          nextCampaign = null;
-                        }
-                      }
-                      const nextMeta = { ...erpMeta, project_id: nextProject, campaign_id: nextCampaign };
-                      setErpMeta(nextMeta);
-                      handleSaveMeta(nextMeta);
-                    }}
-                    placeholder={t('Chọn dự án...')}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chiến dịch')}</span>
-                    {!!erpMeta.campaign_id && (
-                      <button 
-                        type="button" 
-                                                onClick={() => { navigate(`/projects?tab=campaigns&id=${erpMeta.campaign_id}`); onClose?.(); }} 
-                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '0.725rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
-                        className="hover-opacity"
-                        title={t('Xem chi tiết chiến dịch')}
-                      >
-                        <Eye size={13} style={{ color: 'var(--color-text-muted)' }} /> {t('Xem')}
-                      </button>
-                    )}
-                  </div>
-                  {(() => {
-                    const filteredCamps = erpMeta.project_id
-                      ? allowedCampaigns.filter(c => Number(c.project_id) === Number(erpMeta.project_id))
-                      : allowedCampaigns;
-                    return (
-                      <CustomSelect
-                        searchable
-                        options={[
-                          { value: '', label: t('Chọn chiến dịch...') },
-                          ...filteredCamps.map(c => ({ value: String(c.id), label: c.name, faded: c.status !== 'active' }))
-                        ]}
-                        value={erpMeta.campaign_id ? String(erpMeta.campaign_id) : ''}
-                        onChange={val => {
-                          const nextCampaign = val ? Number(val) : null;
-                          let nextProject = erpMeta.project_id;
-                          if (nextCampaign) {
-                            const campObj = allowedCampaigns.find(c => Number(c.id) === nextCampaign);
-                            if (campObj && campObj.project_id) {
-                              nextProject = Number(campObj.project_id);
-                            }
-                          }
-                          const nextMeta = { ...erpMeta, campaign_id: nextCampaign, project_id: nextProject };
-                          setErpMeta(nextMeta);
-                          handleSaveMeta(nextMeta);
-                        }}
-                        placeholder={t('Chọn chiến dịch...')}
-                      />
-                    );
-                  })()}
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Nhóm / Team')}</span>
                   <CustomSelect
                     searchable
                     showAvatars
