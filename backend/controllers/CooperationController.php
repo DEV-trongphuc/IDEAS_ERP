@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/controllers/CooperationController.php
 
 class CooperationController {
@@ -403,11 +403,11 @@ class CooperationController {
 
         // Email all shareholders that a slip requires their signature (only if not auto-approved)
         if (!$isSingleShareholder) {
-            $emailSubject = "[RICH LAND] Yêu cầu ký xác nhận Phiếu hợp tác #" . $slipId;
+            $emailSubject = "[IDEAS] Yêu cầu ký xác nhận Phiếu hợp tác #" . $slipId;
             $emailTitle = "KÝ XÁC NHẬN PHIẾU HỢP TÁC";
             $emailContent = "Chào các thành viên,<br/><br/>" .
                             "Một phiếu hợp tác chia sẻ hoa hồng mới (#" . $slipId . ") đã được tự động khởi tạo trên hệ thống.<br/>" .
-                            "Vui lòng đăng nhập hệ thống RICH LAND CRM và truy cập mục <strong>Phiếu hợp tác</strong> để xem chi tiết và ký xác nhận.";
+                            "Vui lòng đăng nhập hệ thống IDEAS CRM và truy cập mục <strong>Phiếu hợp tác</strong> để xem chi tiết và ký xác nhận.";
             $this->notifyShareholders($slipId, $shares, $emailSubject, $emailTitle, $emailContent);
         }
     }
@@ -504,7 +504,7 @@ class CooperationController {
 
         if ($isManagerOrAdmin) {
             // Notify all shareholders about direct update
-            $emailSubject = "[RICH LAND] Cập nhật tỷ lệ hoa hồng Phiếu hợp tác #" . $id;
+            $emailSubject = "[IDEAS] Cập nhật tỷ lệ hoa hồng Phiếu hợp tác #" . $id;
             $emailTitle = "TỶ LỆ HOA HỒNG ĐÃ ĐƯỢC CẬP NHẬT";
             $emailContent = "Chào các thành viên,<br/><br/>" .
                             "Tỷ lệ hoa hồng hoặc số tiền hoa hồng trong Phiếu hợp tác #" . $id . " đã được điều chỉnh trực tiếp bởi Quản trị viên <strong>" . htmlspecialchars($auth['full_name']) . "</strong>.<br/>" .
@@ -525,7 +525,7 @@ class CooperationController {
             ]);
         } else {
             // Email all shareholders about the change and sign request
-            $emailSubject = "[RICH LAND] Yêu cầu ký xác nhận lại Phiếu hợp tác #" . $id;
+            $emailSubject = "[IDEAS] Yêu cầu ký xác nhận lại Phiếu hợp tác #" . $id;
             $emailTitle = "KÝ XÁC NHẬN LẠI PHIẾU HỢP TÁC";
             $emailContent = "Chào các thành viên,<br/><br/>" .
                             "Tỷ lệ hoa hồng trong Phiếu hợp tác #" . $id . " đã được cập nhật bởi <strong>" . htmlspecialchars($auth['full_name']) . "</strong>.<br/>" .
@@ -710,7 +710,7 @@ class CooperationController {
         // Email notifications based on signature status
         if ($allSigned) {
             if ($status === 'approved') {
-                $emailSubject = "[RICH LAND] Phiếu hợp tác #" . $id . " đã được phê duyệt và ký kết thành công";
+                $emailSubject = "[IDEAS] Phiếu hợp tác #" . $id . " đã được phê duyệt và ký kết thành công";
                 $emailTitle = "PHÊ DUYỆT PHIẾU HỢP TÁC";
                 $emailContent = "Chào các thành viên,<br/><br/>" .
                                 "Phiếu hợp tác chia sẻ hoa hồng #" . $id . " đã được thu thập đầy đủ chữ ký và chính thức phê duyệt thành công.<br/>" .
@@ -732,11 +732,11 @@ class CooperationController {
                 }
             }
             if (!empty($remainingShares)) {
-                $emailSubject = "[RICH LAND] Nhắc nhở ký xác nhận Phiếu hợp tác #" . $id;
+                $emailSubject = "[IDEAS] Nhắc nhở ký xác nhận Phiếu hợp tác #" . $id;
                 $emailTitle = "NHẮC NHỞ KÝ XÁC NHẬN PHIẾU";
                 $emailContent = "Chào bạn,<br/><br/>" .
                                 "Bạn có một yêu cầu ký xác nhận cho Phiếu hợp tác chia sẻ hoa hồng #" . $id . " chưa hoàn thành.<br/>" .
-                                "Vui lòng đăng nhập hệ thống RICH LAND CRM và truy cập mục <strong>Phiếu hợp tác</strong> để ký xác nhận sớm nhất.";
+                                "Vui lòng đăng nhập hệ thống IDEAS CRM và truy cập mục <strong>Phiếu hợp tác</strong> để ký xác nhận sớm nhất.";
                 $this->notifyShareholders($id, $remainingShares, $emailSubject, $emailTitle, $emailContent);
             }
         }
@@ -783,7 +783,7 @@ class CooperationController {
 
         // Email shareholders about approval
         $shares = json_decode($slip['shares_json'], true) ?: [];
-        $emailSubject = "[RICH LAND] Phiếu hợp tác #" . $id . " đã được phê duyệt thành công";
+        $emailSubject = "[IDEAS] Phiếu hợp tác #" . $id . " đã được phê duyệt thành công";
         $emailTitle = "PHÊ DUYỆT PHIẾU HỢP TÁC";
         $emailContent = "Chào các thành viên,<br/><br/>" .
                         "Phiếu hợp tác chia sẻ hoa hồng #" . $id . " đã được phê duyệt thành công bởi quản trị viên.<br/>" .
@@ -826,12 +826,12 @@ class CooperationController {
         $stmt->execute([$details, $id]);
 
         // Email shareholders about dispute/rejection
-        $emailSubject = "[RICH LAND] Từ chối / Khiếu nại Phiếu hợp tác #" . $id;
+        $emailSubject = "[IDEAS] Từ chối / Khiếu nại Phiếu hợp tác #" . $id;
         $emailTitle = "KHIẾU NẠI PHIẾU HỢP TÁC";
         $emailContent = "Chào các thành viên,<br/><br/>" .
                         "Phiếu hợp tác chia sẻ hoa hồng #" . $id . " đã bị từ chối / gửi phản hồi khiếu nại bởi <strong>" . htmlspecialchars($auth['full_name']) . "</strong>.<br/>" .
                         "Lý do: <em>" . htmlspecialchars($details) . "</em>.<br/>" .
-                        "Vui lòng truy cập hệ thống RICH LAND CRM để xem chi tiết và cập nhật lại.";
+                        "Vui lòng truy cập hệ thống IDEAS CRM để xem chi tiết và cập nhật lại.";
         $this->notifyShareholders($id, $shares, $emailSubject, $emailTitle, $emailContent);
 
         logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'REJECT_COOPERATION_SLIP', 'cooperation_slip', $id, "Từ chối phiếu hợp tác ID: $id. Lý do: $details");
@@ -964,11 +964,11 @@ class CooperationController {
 
         // Email and notify all shareholders that a slip requires their signature
         $custFullName = trim(($contactRow['first_name'] ?? '') . ' ' . ($contactRow['last_name'] ?? '')) ?: 'Khách hàng';
-        $emailSubject = "[RICH LAND] Yêu cầu ký xác nhận Phiếu hợp tác #" . $slipId;
+        $emailSubject = "[IDEAS] Yêu cầu ký xác nhận Phiếu hợp tác #" . $slipId;
         $emailTitle = "KÝ XÁC NHẬN PHIẾU HỢP TÁC";
         $emailContent = "Chào các thành viên,<br/><br/>" .
                         "Một phiếu hợp tác chia sẻ hoa hồng mới (#" . $slipId . ") đã được khởi tạo trên hệ thống cho khách hàng <strong>" . htmlspecialchars($custFullName) . "</strong>.<br/>" .
-                        "Vui lòng đăng nhập hệ thống RICH LAND CRM và truy cập mục <strong>Phiếu hợp tác</strong> để xem chi tiết và ký xác nhận.";
+                        "Vui lòng đăng nhập hệ thống IDEAS CRM và truy cập mục <strong>Phiếu hợp tác</strong> để xem chi tiết và ký xác nhận.";
         $this->notifyShareholders($slipId, $shares, $emailSubject, $emailTitle, $emailContent);
 
         // Withdraw from databank and terminate other parallel contacts
@@ -1390,11 +1390,11 @@ class CooperationController {
 
         // Send email notifications to all shareholders of the new slip
         $shares = json_decode($sharesJson, true) ?: [];
-        $emailSubject = "[RICH LAND] Yêu cầu ký xác nhận Phiếu điều chỉnh #" . $newSlipId;
+        $emailSubject = "[IDEAS] Yêu cầu ký xác nhận Phiếu điều chỉnh #" . $newSlipId;
         $emailTitle = "KÝ XÁC NHẬN PHIẾU ĐIỀU CHỈNH HOA HỒNG";
         $emailContent = "Chào các thành viên,<br/><br/>" .
                         "Một phiếu điều chỉnh chia sẻ hoa hồng mới (#" . $newSlipId . ") đã được khởi tạo để thay thế cho phiếu #" . $id . ".<br/>" .
-                        "Vui lòng đăng nhập hệ thống RICH LAND CRM và truy cập mục <strong>Phiếu hợp tác</strong> để ký xác nhận.";
+                        "Vui lòng đăng nhập hệ thống IDEAS CRM và truy cập mục <strong>Phiếu hợp tác</strong> để ký xác nhận.";
         $this->notifyShareholders($newSlipId, $shares, $emailSubject, $emailTitle, $emailContent);
 
         respond(200, ['new_slip_id' => $newSlipId], 'Tạo phiếu điều chỉnh thành công');
@@ -1453,12 +1453,12 @@ class CooperationController {
         $usersToNotify = $stmtUsers->fetchAll(PDO::FETCH_ASSOC);
 
         $creatorName = $auth['full_name'] ?? 'Nhân viên';
-        $emailSubject = "[RICH LAND] Yêu cầu chỉnh sửa tỷ lệ hoa hồng - Khách: " . $slip['customer_name'];
+        $emailSubject = "[IDEAS] Yêu cầu chỉnh sửa tỷ lệ hoa hồng - Khách: " . $slip['customer_name'];
         $emailTitle = "YÊU CẦU CHỈNH SỬA TỶ LỆ HOA HỒNG";
         $emailContent = "Chào ban quản lý,<br/><br/>" .
                         "Nhân viên <strong>" . htmlspecialchars($creatorName) . "</strong> đã gửi yêu cầu chỉnh sửa tỷ lệ chia sẻ hoa hồng cho Phiếu hợp tác #" . $id . " (Khách hàng: " . htmlspecialchars($slip['customer_name']) . ").<br/>" .
                         "<strong>Lý do yêu cầu:</strong> <em>" . htmlspecialchars($reason) . "</em>.<br/><br/>" .
-                        "Vui lòng đăng nhập RICH LAND CRM để xem xét và cập nhật trực tiếp trên Phiếu cọc.";
+                        "Vui lòng đăng nhập IDEAS CRM để xem xét và cập nhật trực tiếp trên Phiếu cọc.";
 
         $stmtNotif = $this->db->prepare("
             INSERT INTO notifications (user_id, tenant_id, title, body, type, link) 
@@ -1502,7 +1502,7 @@ class CooperationController {
                       "• <b>Dự án:</b> " . htmlspecialchars($slip['project_name'] ?? 'Dự án khác') . "\n" .
                       "• <b>Căn/Lô:</b> " . htmlspecialchars($slip['unit_code'] ?? '—') . "\n" .
                       "• <b>Lý do yêu cầu:</b> <i>" . htmlspecialchars($reason) . "</i>\n\n" .
-                      "👉 Vui lòng đăng nhập RICH LAND CRM để xem xét và xử lý.";
+                      "👉 Vui lòng đăng nhập IDEAS CRM để xem xét và xử lý.";
 
             $zaloText = "⚠️ [ YÊU CẦU CHỈNH SỬA TỶ LỆ HOA HỒNG ] ⚠️\n" .
                         "━━━━━━━━━━━━━━━━━━━━━\n" .
@@ -1512,7 +1512,7 @@ class CooperationController {
                         "• Dự án: " . ($slip['project_name'] ?? 'Dự án khác') . "\n" .
                         "• Căn/Lô: " . ($slip['unit_code'] ?? '—') . "\n" .
                         "• Lý do yêu cầu: " . $reason . "\n\n" .
-                        "👉 Vui lòng đăng nhập RICH LAND CRM để xem xét và xử lý.";
+                        "👉 Vui lòng đăng nhập IDEAS CRM để xem xét và xử lý.";
 
             // Send Zalo Notification
             if (!empty($zaloBotToken) && !empty($zaloAdminGroup)) {
@@ -1607,7 +1607,7 @@ class CooperationController {
 
                 // Notify all shareholders of the new slip
                 $shares = json_decode($sharesJson, true) ?: [];
-                $emailSubject = "[RICH LAND] Duyệt yêu cầu chỉnh sửa & Yêu cầu ký xác nhận Phiếu điều chỉnh #" . $newSlipId;
+                $emailSubject = "[IDEAS] Duyệt yêu cầu chỉnh sửa & Yêu cầu ký xác nhận Phiếu điều chỉnh #" . $newSlipId;
                 $emailTitle = "KÝ XÁC NHẬN PHIẾU ĐIỀU CHỈNH HOA HỒNG";
                 $emailContent = "Chào các thành viên,<br/><br/>" .
                                 "Ban quản lý đã <strong>phê duyệt</strong> yêu cầu chỉnh sửa tỷ lệ hoa hồng cho khách hàng <strong>" . htmlspecialchars($slip['customer_name']) . "</strong>.<br/>" .
@@ -1640,7 +1640,7 @@ class CooperationController {
                 $requester = $stmtReq->fetch(PDO::FETCH_ASSOC);
 
                 if ($requester) {
-                    $notifySubject = "[RICH LAND] Từ chối yêu cầu chỉnh sửa tỷ lệ hoa hồng - Khách: " . $slip['customer_name'];
+                    $notifySubject = "[IDEAS] Từ chối yêu cầu chỉnh sửa tỷ lệ hoa hồng - Khách: " . $slip['customer_name'];
                     $notifyTitle = "TỪ CHỐI YÊU CẦU CHỈNH SỬA TỶ LỆ";
                     $notifyContent = "Chào <strong>" . htmlspecialchars($requester['full_name']) . "</strong>,<br/><br/>" .
                                      "Yêu cầu chỉnh sửa tỷ lệ hoa hồng của bạn cho khách hàng <strong>" . htmlspecialchars($slip['customer_name']) . "</strong> (Phiếu hợp tác #" . $id . ") đã bị ban quản lý <strong>từ chối</strong>.<br/>" .

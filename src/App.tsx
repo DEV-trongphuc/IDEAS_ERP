@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+﻿import { lazy, Suspense, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
@@ -497,13 +497,13 @@ import { UploadProgressProvider } from './contexts/UploadProgressContext';
 
 export default function App() {
   useEffect(() => {
-    const localTheme = localStorage.getItem('richland_theme') as 'light' | 'dark';
+    const localTheme = localStorage.getItem('Ideas_theme') as 'light' | 'dark';
     if (localTheme) {
       document.documentElement.setAttribute('data-theme', localTheme);
     } else {
       document.documentElement.setAttribute('data-theme', 'light');
     }
-    localStorage.setItem('richland_global_date', getDefaultDateFilter());
+    localStorage.setItem('Ideas_global_date', getDefaultDateFilter());
   }, []);
 
   return (

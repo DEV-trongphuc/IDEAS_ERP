@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // D:\RICH_LAND_DATA_UI\backend\api_diagnostic.php
 
 header('Access-Control-Allow-Origin: *');
@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // 1. Authentication check
-define('DIAG_TOKEN', 'RichLand_Diag_Secure_Token_2026_9e88d6c701fbc6b7');
+define('DIAG_TOKEN', 'Ideas_Diag_Secure_Token_2026_9e88d6c701fbc6b7');
 $token = $_REQUEST['token'] ?? '';
 if ($token !== DIAG_TOKEN) {
     http_response_code(403);

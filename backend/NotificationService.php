@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/NotificationService.php
 
 class NotificationService {
@@ -241,7 +241,7 @@ class NotificationService {
                         . "  • Thời gian: <code>" . substr($time, 0, 5) . "</code>\n"
                         . "  • Lý do: <i>\"$reason\"</i>\n\n"
                         . "Vui lòng truy cập hệ thống CRM để phê duyệt.",
-                    'email_subject' => "[RICH LAND] Yêu cầu phê duyệt đi trễ - NV $userName",
+                    'email_subject' => "[IDEAS] Yêu cầu phê duyệt đi trễ - NV $userName",
                     'email_title' => "DUYỆT YÊU CẦU ĐI TRỄ",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Nhân viên <strong>$userName</strong> vừa check-in trễ giờ quy định lúc " . substr($time, 0, 5) . " ngày $today.<br/>" .
@@ -269,7 +269,7 @@ class NotificationService {
                         . "  • Giờ đề xuất: <code>" . substr($time, 0, 5) . "</code>\n"
                         . "  • Lý do: <i>\"$reason\"</i>\n\n"
                         . "Vui lòng truy cập hệ thống CRM để phê duyệt.",
-                    'email_subject' => "[RICH LAND] Yêu cầu cập nhật công - NV $userName",
+                    'email_subject' => "[IDEAS] Yêu cầu cập nhật công - NV $userName",
                     'email_title' => "YÊU CẦU CẬP NHẬT CÔNG",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Nhân viên <strong>$userName</strong> vừa gửi Yêu cầu cập nhật công bổ sung ngày $today lúc " . substr($time, 0, 5) . ".<br/>" .
@@ -306,7 +306,7 @@ class NotificationService {
                         . (!empty($reason) ? "  • Ghi chú: \"$reason\"\n" : ""),
                     'tg_msg' => "✅ <b>[ KẾT QUẢ DUYỆT " . ($isSupplementary ? "CẬP NHẬT CÔNG" : "ĐI TRỄ") . " ]</b>\n\n"
                         . "Yêu cầu của <b>" . htmlspecialchars($userName) . "</b> ngày <code>$today</code> đã được <b>$statusText</b> bởi quản trị viên.\n",
-                    'email_subject' => "[RICH LAND] Phê duyệt " . ($isSupplementary ? "cập nhật công" : "đi trễ") . " - Ngày " . $today,
+                    'email_subject' => "[IDEAS] Phê duyệt " . ($isSupplementary ? "cập nhật công" : "đi trễ") . " - Ngày " . $today,
                     'email_title' => "KẾT QUẢ PHÊ DUYỆT CHẤM CÔNG",
                     'email_content' => "Chào <strong>" . htmlspecialchars($userName) . "</strong>,<br/><br/>" .
                                     "Yêu cầu " . ($isSupplementary ? "cập nhật công" : "phê duyệt đi trễ") . " ngày $today của bạn đã được <strong>$statusText</strong> bởi quản trị viên.<br/>" .
@@ -333,7 +333,7 @@ class NotificationService {
                         . "Ban quản trị đã mở đăng ký ca trực cho ngày nghỉ lễ: <b>$holidayName</b> (<code>$shiftDate</code>).\n"
                         . (!empty($deadline) ? "  • Hạn chót đăng ký: <code>$deadline</code>\n" : "")
                         . "Vui lòng truy cập hệ thống để đăng ký nhận lead.",
-                    'email_subject' => "[RICH LAND] Mở đăng ký trực lễ - $holidayName",
+                    'email_subject' => "[IDEAS] Mở đăng ký trực lễ - $holidayName",
                     'email_title' => "MỞ ĐĂNG KÝ TRỰC LỄ",
                     'email_content' => "Chào các thành viên,<br/><br/>" .
                                     "Ban quản trị chính thức mở đăng ký nhận lead ca trực cho ngày lễ: <strong>$holidayName</strong> ($shiftDate).<br/>" .
@@ -359,7 +359,7 @@ class NotificationService {
                         . "Công ty thông báo chính thức lịch nghỉ lễ: <b>$holidayName</b>.\n"
                         . (!empty($description) ? "  • Chi tiết: <i>$description</i>\n" : "")
                         . "Chúc toàn thể cán bộ nhân viên có kỳ nghỉ vui vẻ!",
-                    'email_subject' => "[RICH LAND] Thông báo lịch nghỉ lễ - $holidayName",
+                    'email_subject' => "[IDEAS] Thông báo lịch nghỉ lễ - $holidayName",
                     'email_title' => "THÔNG BÁO LỊCH NGHĨ LỄ",
                     'email_content' => "Chào toàn thể cán bộ nhân viên,<br/><br/>" .
                                     "Công ty xin thông báo chính thức lịch nghỉ lễ: <strong>$holidayName</strong>.<br/>" .
@@ -379,7 +379,7 @@ class NotificationService {
                     'link' => "/attendance",
                     'zalo_msg' => "📊 [ BÁO CÁO CHẤM CÔNG & TRỰC CA ]\n\n" . $summaryText,
                     'tg_msg' => "📊 <b>[ BÁO CÁO CHẤM CÔNG & TRỰC CA ]</b>\n\n" . preg_replace('/•\s*([^:]+):/', '• <b>$1</b>:', htmlspecialchars($summaryText)),
-                    'email_subject' => "[RICH LAND] Báo cáo tổng kết Chấm công & Trực ca ($periodStr)",
+                    'email_subject' => "[IDEAS] Báo cáo tổng kết Chấm công & Trực ca ($periodStr)",
                     'email_title' => "BÁO CÁO CHẤM CÔNG CÁ NHÂN",
                     'email_content' => nl2br(htmlspecialchars($summaryText))
                 ];
@@ -395,7 +395,7 @@ class NotificationService {
                     'link' => "/attendance",
                     'zalo_msg' => "🌆 [ NHẮC NHỞ CHẤM CÔNG RA CA ]\n\nĐã đến giờ tan làm ($workEnd)! Vui lòng truy cập hệ thống để chấm công ra ca.",
                     'tg_msg' => "🌆 <b>[ NHẮC NHỞ CHẤM CÔNG RA CA ]</b>\n\nĐã đến giờ tan làm (<code>$workEnd</code>)! Vui lòng truy cập hệ thống để chấm công ra ca.",
-                    'email_subject' => "[RICH LAND] Nhắc nhở chấm công ra ca",
+                    'email_subject' => "[IDEAS] Nhắc nhở chấm công ra ca",
                     'email_title' => "NHẮC NHỞ TAN LÀM",
                     'email_content' => "Chào bạn,<br/><br/>Đã đến giờ tan làm ca chiều (lúc $workEnd).<br/>Vui lòng truy cập hệ thống CRM để chấm công ra ca."
                 ];
@@ -422,7 +422,7 @@ class NotificationService {
                         . "  • Số tiền: <b>$amountText</b>\n"
                         . "  • Ghi chú: <i>\"" . htmlspecialchars($reason) . "\"</i>\n\n"
                         . "Vui lòng truy cập hệ thống CRM để phê duyệt.",
-                    'email_subject' => "[RICH LAND] Yêu cầu phê duyệt Chi phí - NV $userName",
+                    'email_subject' => "[IDEAS] Yêu cầu phê duyệt Chi phí - NV $userName",
                     'email_title' => "PHÊ DUYỆT CHI PHÍ",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Nhân viên <strong>$userName</strong> vừa tạo một khoản chi phí mới cần phê duyệt: <strong>" . htmlspecialchars($titleText) . "</strong>.<br/>" .
@@ -454,7 +454,7 @@ class NotificationService {
                         . "  • Tiêu đề: <b>" . htmlspecialchars($subjectText) . "</b>\n"
                         . "  • Độ ưu tiên: <b>" . htmlspecialchars($priorityText) . "</b>\n\n"
                         . "Vui lòng truy cập CRM để xử lý.",
-                    'email_subject' => "[RICH LAND] Yêu cầu hỗ trợ mới (Ticket #$ticketId)",
+                    'email_subject' => "[IDEAS] Yêu cầu hỗ trợ mới (Ticket #$ticketId)",
                     'email_title' => "TICKET HỖ TRỢ MỚI",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Có yêu cầu hỗ trợ mới từ <strong>" . htmlspecialchars($userName) . "</strong>:<br/>" .
@@ -481,7 +481,7 @@ class NotificationService {
                         . "Phiếu hợp tác chia sẻ hoa hồng <b>#$slipId</b> đã thu thập đầy đủ chữ ký của các thành viên.\n"
                         . "  • Trạng thái: Chờ phê duyệt\n\n"
                         . "Vui lòng truy cập hệ thống CRM để phê duyệt.",
-                    'email_subject' => "[RICH LAND] Yêu cầu phê duyệt Phiếu hợp tác #$slipId",
+                    'email_subject' => "[IDEAS] Yêu cầu phê duyệt Phiếu hợp tác #$slipId",
                     'email_title' => "PHÊ DUYỆT PHIẾU HỢP TÁC",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Phiếu hợp tác chia sẻ hoa hồng <strong>#$slipId</strong> đã thu thập đầy đủ chữ ký của các thành viên.<br/>" .
@@ -511,7 +511,7 @@ class NotificationService {
                         . "  • Khách hàng: <b>" . htmlspecialchars($customerName) . "</b>\n"
                         . "  • Số tiền: <b>$depAmount</b>\n\n"
                         . "Vui lòng truy cập CRM để xem xét.",
-                    'email_subject' => "[RICH LAND] Yêu cầu duyệt Đặt cọc mới #$depId",
+                    'email_subject' => "[IDEAS] Yêu cầu duyệt Đặt cọc mới #$depId",
                     'email_title' => "DUYỆT ĐẶT CỌC MỚI",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Nhân viên <strong>$userName</strong> vừa tạo giao dịch đặt cọc mới cho khách hàng <strong>" . htmlspecialchars($customerName) . "</strong>.<br/>" .
@@ -538,7 +538,7 @@ class NotificationService {
                         . "Giao dịch cọc <b>#$depId</b> (KH <b>" . htmlspecialchars($customerName) . "</b>) đã <b>$statusText</b>.\n"
                         . (!empty($reason) ? "  • Ghi chú: <i>\"" . htmlspecialchars($reason) . "\"</i>\n" : "")
                         . "\nVui lòng xem chi tiết trên CRM.",
-                    'email_subject' => "[RICH LAND] Cập nhật giao dịch cọc #$depId - $customerName",
+                    'email_subject' => "[IDEAS] Cập nhật giao dịch cọc #$depId - $customerName",
                     'email_title' => "CẬP NHẬT GIAO DỊCH ĐẶT CỌC",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "Giao dịch cọc #$depId của khách hàng <strong>" . htmlspecialchars($customerName) . "</strong> đã <strong>$statusText</strong>.<br/>" .
@@ -564,7 +564,7 @@ class NotificationService {
                         . "Nhân viên <b>$userName</b> vừa đăng ký trực ca đêm:\n"
                         . "  • Ngày trực: <code>$shiftDate</code>\n\n"
                         . "Vui lòng kiểm tra lịch trực trên CRM.",
-                    'email_subject' => "[RICH LAND] Đăng ký trực đêm - NV $userName",
+                    'email_subject' => "[IDEAS] Đăng ký trực đêm - NV $userName",
                     'email_title' => "ĐĂNG KÝ TRỰC ĐÊM",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Nhân viên <strong>$userName</strong> vừa đăng ký trực ca đêm ngày <strong>$shiftDate</strong>.<br/>" .
@@ -590,7 +590,7 @@ class NotificationService {
                         . "  • Ngày nghỉ: <code>$leaveDate</code>\n"
                         . "  • Lý do: <i>\"$reason\"</i>\n\n"
                         . "Vui lòng truy cập CRM để phê duyệt.",
-                    'email_subject' => "[RICH LAND] Đơn xin nghỉ phép - NV $userName",
+                    'email_subject' => "[IDEAS] Đơn xin nghỉ phép - NV $userName",
                     'email_title' => "ĐƠN XIN NGHỈ PHÉP",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Nhân viên <strong>$userName</strong> vừa gửi đơn xin nghỉ phép ngày $leaveDate.<br/>" .
@@ -621,7 +621,7 @@ class NotificationService {
                         . "  • Trạng thái: <b>Chờ nhận & xem chi tiết</b>\n"
                         . "  • SĐT liên hệ: <code>$maskedPhone</code>\n\n"
                         . "Vui lòng truy cập Sale Portal trên CRM ngay để nhận và lấy thông tin chi tiết!",
-                    'email_subject' => "[RICH LAND] Thông báo phân bổ khách hàng mới",
+                    'email_subject' => "[IDEAS] Thông báo phân bổ khách hàng mới",
                     'email_title' => "KHÁCH HÀNG MỚI ĐƯỢC PHÂN BỔ",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "Hệ thống vừa phân bổ 1 khách hàng mới cho bạn.<br/>" .
@@ -651,7 +651,7 @@ class NotificationService {
                         'tg_msg' => "✍️ <b>[ YÊU CẦU KÝ XÁC NHẬN PHIẾU HỢP TÁC ]</b>\n\n"
                             . "Một phiếu hợp tác chia sẻ hoa hồng mới (<b>#$slipId</b>) đã được tạo cho khách hàng: <b>" . htmlspecialchars($custName) . "</b>.\n"
                             . "Vui lòng truy cập CRM để xem chi tiết và ký xác nhận.",
-                        'email_subject' => $payload['email_subject'] ?? "[RICH LAND] Yêu cầu ký xác nhận Phiếu hợp tác #$slipId",
+                        'email_subject' => $payload['email_subject'] ?? "[IDEAS] Yêu cầu ký xác nhận Phiếu hợp tác #$slipId",
                         'email_title' => $payload['email_title'] ?? "KÝ XÁC NHẬN PHIẾU HỢP TÁC",
                         'email_content' => $payload['email_content'] ?? "Chào bạn,<br/><br/>" .
                                         "Một phiếu hợp tác chia sẻ hoa hồng mới (#$slipId) đã được tạo trên hệ thống cho khách hàng <strong>" . htmlspecialchars($custName) . "</strong>.<br/>" .
@@ -674,7 +674,7 @@ class NotificationService {
                             . "  • Khách hàng: <b>" . htmlspecialchars($custName) . "</b>\n"
                             . (!empty($sharePct) ? "  • Tỷ lệ chia: <b>$sharePct</b>\n" : "")
                             . "\nVui lòng truy cập CRM để xem chi tiết khách hàng.",
-                        'email_subject' => $payload['email_subject'] ?? "[RICH LAND] Lời mời hợp tác chăm sóc khách hàng $custName",
+                        'email_subject' => $payload['email_subject'] ?? "[IDEAS] Lời mời hợp tác chăm sóc khách hàng $custName",
                         'email_title' => $payload['email_title'] ?? "LỜI MỜI HỢP TÁC CHĂM SÓC (CO-CARE)",
                         'email_content' => $payload['email_content'] ?? "Chào bạn,<br/><br/>" .
                                         "Sale <strong>" . htmlspecialchars($inviterName) . "</strong> vừa mời bạn hợp tác chăm sóc (Co-care) khách hàng: <strong>" . htmlspecialchars($custName) . "</strong>.<br/>" .
@@ -701,7 +701,7 @@ class NotificationService {
                         . "Khách hàng <b>" . htmlspecialchars($custName) . "</b> có cập nhật mới:\n"
                         . "  • Nội dung: <i>" . htmlspecialchars($updateContent) . "</i>\n\n"
                         . "Vui lòng truy cập CRM để xem chi tiết.",
-                    'email_subject' => "[RICH LAND] Cập nhật thông tin khách hàng $custName",
+                    'email_subject' => "[IDEAS] Cập nhật thông tin khách hàng $custName",
                     'email_title' => "CẬP NHẬT KHÁCH HÀNG",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "Khách hàng <strong>" . htmlspecialchars($custName) . "</strong> có cập nhật mới.<br/>" .
@@ -727,7 +727,7 @@ class NotificationService {
                         . "Khách hàng <b>" . htmlspecialchars($custName) . "</b> của bạn sắp hết thời hạn bảo mật:\n"
                         . "  • Thời gian còn lại: <code>$deadlineText</code>\n\n"
                         . "Hãy cập nhật tương tác để gia hạn bảo mật data.",
-                    'email_subject' => "[RICH LAND] Cảnh báo hạn bảo mật Data - $custName",
+                    'email_subject' => "[IDEAS] Cảnh báo hạn bảo mật Data - $custName",
                     'email_title' => "CẢNH BÁO HẠN BẢO MẬT DATA",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "Khách hàng <strong>" . htmlspecialchars($custName) . "</strong> sắp hết thời hạn bảo mật.<br/>" .
@@ -753,7 +753,7 @@ class NotificationService {
                         . "<b>" . htmlspecialchars($authorName) . "</b> vừa nhắc tên bạn trong ghi chú/thảo luận:\n"
                         . "  • Nội dung: <i>\"" . htmlspecialchars($commentText) . "\"</i>\n\n"
                         . "Bấm để xem chi tiết.",
-                    'email_subject' => "[RICH LAND] $authorName vừa tag tên bạn trong bình luận",
+                    'email_subject' => "[IDEAS] $authorName vừa tag tên bạn trong bình luận",
                     'email_title' => "BẠN ĐƯỢC NHẮC ĐẾN",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "<strong>" . htmlspecialchars($authorName) . "</strong> vừa nhắc tên bạn trong bình luận:<br/>" .
@@ -781,7 +781,7 @@ class NotificationService {
                         . "  • Tiêu đề: <b>" . htmlspecialchars($taskTitle) . "</b>\n"
                         . ($dueDate ? "  • Hạn hoàn thành: <code>$dueDate</code>\n" : "")
                         . "\nVui lòng kiểm tra và xử lý.",
-                    'email_subject' => "[RICH LAND] Công việc mới được giao - $taskTitle",
+                    'email_subject' => "[IDEAS] Công việc mới được giao - $taskTitle",
                     'email_title' => "CÔNG VIỆC MỚI ĐƯỢC GIAO",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "Bạn vừa được phân công công việc mới: <strong>" . htmlspecialchars($taskTitle) . "</strong>.<br/>" .
@@ -803,7 +803,7 @@ class NotificationService {
                     'tg_msg' => "🔒 <b>[ BẢO MẬT TÀI KHOẢN ]</b>\n\n"
                         . "Thông tin hồ sơ tài khoản của bạn vừa được cập nhật thành công.\n"
                         . "Nếu không phải bạn thực hiện, vui lòng liên hệ Admin ngay lập tức.",
-                    'email_subject' => "[RICH LAND] Cập nhật thông tin hồ sơ tài khoản",
+                    'email_subject' => "[IDEAS] Cập nhật thông tin hồ sơ tài khoản",
                     'email_title' => "THÔNG BÁO BẢO MẬT TÀI KHOẢN",
                     'email_content' => "Chào bạn,<br/><br/>" .
                                     "Thông tin hồ sơ tài khoản của bạn vừa được thay đổi.<br/>" .
@@ -825,7 +825,7 @@ class NotificationService {
                     'tg_msg' => "🏢 <b>[ CẬP NHẬT ROSTER DỰ ÁN ]</b>\n\n"
                         . "Lịch trực ca và phân công nhân sự dự án <b>" . htmlspecialchars($projectName) . "</b> vừa được cập nhật.\n"
                         . "Vui lòng xem chi tiết trên bảng Roster CRM.",
-                    'email_subject' => "[RICH LAND] Cập nhật Lịch Roster dự án $projectName",
+                    'email_subject' => "[IDEAS] Cập nhật Lịch Roster dự án $projectName",
                     'email_title' => "CẬP NHẬT LỊCH ROSTER DỰ ÁN",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
                                     "Danh sách phân công Roster dự án <strong>" . htmlspecialchars($projectName) . "</strong> vừa có thay đổi.<br/>" .
@@ -864,7 +864,7 @@ class NotificationService {
                         . "Chi tiết tổng kết cá nhân:\n"
                         . nl2br(htmlspecialchars($reportSummary))
                         . "\nVui lòng xem thêm chi tiết tại Sale Portal.",
-                    'email_subject' => "[RICH LAND] Báo cáo Chấm công & Ca trực - $periodText",
+                    'email_subject' => "[IDEAS] Báo cáo Chấm công & Ca trực - $periodText",
                     'email_title' => "BÁO CÁO CHẤM CÔNG & CA TRỰC",
                     'email_content' => "Chào <strong>$userName</strong>,<br/><br/>" .
                                     "Dưới đây là chi tiết báo cáo chấm công & ca trực kỳ <strong>$periodText</strong> của bạn:<br/>" .
@@ -899,7 +899,7 @@ class NotificationService {
                         . "  • Dịp lễ: <b>" . htmlspecialchars($holidayName) . "</b>\n"
                         . "  • Hạn đăng ký: <code>$deadline</code>\n\n"
                         . "Vui lòng truy cập mục Lịch Roster để đăng ký ca trực.",
-                    'email_subject' => "[RICH LAND] Mở đăng ký trực lễ $holidayName",
+                    'email_subject' => "[IDEAS] Mở đăng ký trực lễ $holidayName",
                     'email_title' => "MỞ ĐĂNG KÝ TRỰC LỄ / TẾT",
                     'email_content' => "Chào toàn thể cán bộ nhân viên,<br/><br/>" .
                                     "Hệ thống đã mở cổng đăng ký ca trực dịp <strong>" . htmlspecialchars($holidayName) . "</strong>.<br/>" .
@@ -927,7 +927,7 @@ class NotificationService {
                         . "  • Dịp lễ: <b>" . htmlspecialchars($holidayName) . "</b>\n"
                         . ($datesText ? "  • Thời gian: <code>$datesText</code>\n" : "")
                         . "\nChúc toàn thể nhân viên có kỳ nghỉ lễ an toàn và vui vẻ!",
-                    'email_subject' => "[RICH LAND] Thông báo lịch nghỉ lễ $holidayName",
+                    'email_subject' => "[IDEAS] Thông báo lịch nghỉ lễ $holidayName",
                     'email_title' => "THÔNG BÁO LỊCH NGHỈ LỄ",
                     'email_content' => "Chào toàn thể cán bộ nhân viên,<br/><br/>" .
                                     "Công ty xin thông báo lịch nghỉ lễ <strong>" . htmlspecialchars($holidayName) . "</strong>.<br/>" .

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { fetchAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Link2, Save, Check, X, AlertCircle, RefreshCw, Code, CheckCircle, Info, ShieldAlert, ArrowRight, Search, Calendar, FileText, MessageCircle, Eye, Zap } from 'lucide-react';
@@ -380,7 +380,7 @@ export default function CapiPage() {
           }}>
             <Info size={24} color="var(--color-primary)" style={{ flexShrink: 0 }} />
             <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', lineHeight: 1.5, margin: 0 }}>
-              Hệ thống kết nối trực tiếp máy chủ Rich Land với Meta (Facebook) để báo cáo kết quả bán hàng từ CRM. Giúp phòng Marketing đo lường quảng cáo chính xác hơn, tránh bị chặn theo dõi bởi các ứng dụng chặn quảng cáo hoặc tính năng bảo mật trên điện thoại iPhone (iOS).
+              Hệ thống kết nối trực tiếp máy chủ IDEAS với Meta (Facebook) để báo cáo kết quả bán hàng từ CRM. Giúp phòng Marketing đo lường quảng cáo chính xác hơn, tránh bị chặn theo dõi bởi các ứng dụng chặn quảng cáo hoặc tính năng bảo mật trên điện thoại iPhone (iOS).
             </p>
           </div>
 

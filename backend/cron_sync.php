@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // cron_sync.php
 // Script to pull data from Google Sheets based on active connections
 
@@ -2408,7 +2408,7 @@ function releaseExpiredLeadsToKho($conn) {
 
             if ($ownerRow && !empty($ownerRow['email'])) {
                 require_once __DIR__ . '/mailer.php';
-                $emailSubject = "[RICH LAND] Thông báo thu hồi khách hàng: " . $clientName;
+                $emailSubject = "[IDEAS] Thông báo thu hồi khách hàng: " . $clientName;
                 $emailTitle = "THU HỒI KHÁCH HÀNG HẾT HẠN BẢO MẬT";
                 $emailContent = "Chào <strong>" . htmlspecialchars($ownerRow['full_name']) . "</strong>,<br/><br/>" .
                                 "Khách hàng <strong>" . htmlspecialchars($clientName) . "</strong> đã bị thu hồi khỏi danh sách chăm sóc của bạn do hết hạn bảo mật tương tác mà không phát sinh cập nhật mới.<br/>" .
@@ -3317,7 +3317,7 @@ function sendShiftRemindersAndCheckInAlerts($conn) {
                             if ($getSaleMatrixSetting($conn, $userId, 'NIGHT_SHIFT_BOOKING', 'email')) {
                                 try {
                                     if (!empty($reg['email']) && function_exists('sendEmailNotification')) {
-                                        $emailSubject = "[RICH LAND] Nhắc nhở lịch trực đêm hôm nay";
+                                        $emailSubject = "[IDEAS] Nhắc nhở lịch trực đêm hôm nay";
                                         $emailTitle = "NHẮC NHỞ LỊCH TRỰC ĐÊM";
                                         $emailContent = "Chào <strong>" . htmlspecialchars($reg['full_name']) . "</strong>,<br/><br/>" .
                                                         "Hệ thống ghi nhận bạn có lịch trực ca đêm hôm nay (từ " . htmlspecialchars($nightShiftStart) . " đến " . htmlspecialchars($nightShiftEnd) . ").<br/>" .

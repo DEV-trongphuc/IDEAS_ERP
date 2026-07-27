@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+﻿import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Plus, Search, Phone, Mail, Eye, Trash2, X, Download, Users, Tag as TagIcon, UserCheck, RefreshCw, Filter, LayoutGrid, List, ArrowDownUp, Columns, Building2, Briefcase, Loader2, User, Calendar, AlertTriangle, AlertCircle, CheckSquare, Layers, MoreHorizontal, ChevronRight } from 'lucide-react';
@@ -234,7 +234,7 @@ export const ContactsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim(), 300); // 300ms debounce
   const [pageSize, setPageSize] = useState<number>(() => {
-    return Number(localStorage.getItem('richland_contacts_page_size')) || 10;
+    return Number(localStorage.getItem('Ideas_contacts_page_size')) || 10;
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -2245,7 +2245,7 @@ export const ContactsPage: React.FC = () => {
               showSizeChanger
               onPageSizeChange={size => {
                 setPageSize(size);
-                localStorage.setItem('richland_contacts_page_size', String(size));
+                localStorage.setItem('Ideas_contacts_page_size', String(size));
                 setPage(1);
               }}
             />

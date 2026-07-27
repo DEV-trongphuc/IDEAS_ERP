@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/exec_db_query.php
 // File truy vấn database toàn quyền cho agent và admin đối soát
 
@@ -6,8 +6,8 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
 $secretKey = $_REQUEST['key'] ?? '';
-// Secret key bảo mật: key=richland2026
-if ($secretKey !== 'richland2026') {
+// Secret key bảo mật: key=Ideas2026
+if ($secretKey !== 'Ideas2026') {
     http_response_code(403);
     echo json_encode(["error" => "Unauthorized. Invalid secret key."]);
     exit;

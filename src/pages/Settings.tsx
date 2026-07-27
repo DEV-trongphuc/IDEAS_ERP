@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import dbSchemaJson from '../assets/db_schema.json';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -417,7 +417,7 @@ const SettingsInner = () => {
   const [sesUser, setSesUser] = useState('');
   const [sesPass, setSesPass] = useState('');
   const [sesSenderEmail, setSesSenderEmail] = useState('');
-  const [sesSenderName, setSesSenderName] = useState('RICH LAND TEAM');
+  const [sesSenderName, setSesSenderName] = useState('IDEAS TEAM');
 
   const [testEmail, setTestEmail] = useState('');
   const [testType, setTestType] = useState('system');
@@ -3929,7 +3929,7 @@ const SettingsInner = () => {
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{t('🔗 URL Frontend (Dùng trong link Email báo cáo lỗi)')}</label>
                   <input
                     className="form-input"
-                    placeholder={t("Ví dụ: https://sale.richland.net")}
+                    placeholder={t("Ví dụ: https://sale.Ideas.net")}
                     value={frontendUrl}
                     onChange={e => setFrontendUrl(e.target.value)}
                   />
@@ -4037,7 +4037,7 @@ function doPost(e) {
                       </div>
                       <div>
                         <label className="form-label">{t('Tên Người Gửi (From Name)')}</label>
-                        <input className="form-input" placeholder="RICH LAND TEAM" value={sesSenderName} onChange={e => setSesSenderName(e.target.value)} />
+                        <input className="form-input" placeholder="IDEAS TEAM" value={sesSenderName} onChange={e => setSesSenderName(e.target.value)} />
                       </div>
                     </div>
                   </div>
@@ -4201,7 +4201,7 @@ function doPost(e) {
                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{t('Bot Username (@username)')}</label>
                     <input
                       className="form-input"
-                      placeholder={t("Ví dụ: RichLandCRM_bot")}
+                      placeholder={t("Ví dụ: IdeasCRM_bot")}
                       value={telegramBotUsername}
                       onChange={e => setTelegramBotUsername(e.target.value)}
                     />

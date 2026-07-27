@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 // backend/controllers/ai_training_handler.php
-// RICH LAND DATA CRM - AI Training and Settings controller handler
+// IDEAS DATA CRM - AI Training and Settings controller handler
 
 if (!in_array($decodedUser['role'] ?? '', ['admin', 'super_admin'])) {
     http_response_code(403);
@@ -35,7 +35,7 @@ try {
 
         // Fill defaults
         $settings['is_enabled'] = isset($settings['is_enabled']) ? (int)$settings['is_enabled'] : 1;
-        $settings['bot_name'] = $settings['bot_name'] ?? 'AI Rich Land';
+        $settings['bot_name'] = $settings['bot_name'] ?? 'AI IDEAS';
         $settings['welcome_msg'] = $settings['welcome_msg'] ?? 'Chào bạn! Tôi có thể giúp gì cho bạn hôm nay?';
         $settings['persona_prompt'] = $settings['persona_prompt'] ?? 'Bạn là trợ lý ảo chuyên nghiệp.';
         $settings['similarity_threshold'] = isset($settings['similarity_threshold']) ? (float)$settings['similarity_threshold'] : 0.45;
@@ -52,7 +52,7 @@ try {
     elseif ($actionType === 'update_settings') {
         $settings = [
             'is_enabled' => (int)($input['is_enabled'] ?? 1),
-            'bot_name' => trim($input['bot_name'] ?? 'AI Rich Land'),
+            'bot_name' => trim($input['bot_name'] ?? 'AI IDEAS'),
             'welcome_msg' => trim($input['welcome_msg'] ?? 'Chào bạn! Tôi có thể giúp gì cho bạn hôm nay?'),
             'persona_prompt' => trim($input['persona_prompt'] ?? 'Bạn là trợ lý ảo chuyên nghiệp.'),
             'similarity_threshold' => (float)($input['similarity_threshold'] ?? 0.45),

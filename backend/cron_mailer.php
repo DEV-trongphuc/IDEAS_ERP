@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/cron_mailer.php
 // Tiến trình chạy ngầm (Worker) để gửi Email bất đồng bộ từ bảng mail_queue
 
@@ -94,8 +94,8 @@ function runMailerCron($conn) {
             $mail->Timeout = 10;
             $mail->SMTPKeepAlive = true; // Giữ kết nối SMTP sống để tái sử dụng
 
-            $senderEmail = $settings['ses_sender_email'] ?? 'no-reply@richland.test';
-            $senderName = $settings['ses_sender_name'] ?? 'RICH LAND TEAM';
+            $senderEmail = $settings['ses_sender_email'] ?? 'no-reply@Ideas.test';
+            $senderName = $settings['ses_sender_name'] ?? 'IDEAS TEAM';
 
             $mail->setFrom($senderEmail, $senderName);
         } catch (Exception $e) {

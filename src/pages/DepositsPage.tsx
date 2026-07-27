@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+﻿import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { fetchAPI } from '../utils/api';
 import { compressToWebP } from '../utils/imageCompress';
 import { useAuth } from '../contexts/AuthContext';
@@ -411,7 +411,7 @@ export default function DepositsPage() {
       const compressedFile = await compressToWebP(file);
       const formData = new FormData();
       formData.append('file', compressedFile);
-      const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+      const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
       const url = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=deposits/${depositId}/milestones/${milestoneId}/unc&token=${token}`;
 
       const response = await fetch(url, {
@@ -545,7 +545,7 @@ export default function DepositsPage() {
       const compressedFile = await compressToWebP(file);
       const formData = new FormData();
       formData.append('file', compressedFile);
-      const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+      const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
       const url = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=upload&token=${token}`;
 
       const response = await fetch(url, {

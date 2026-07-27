@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { CustomModal } from './CustomModal';
 import { Mail, MessageCircle, Send } from 'lucide-react';
 import { fetchAPI } from '../../utils/api';
@@ -486,13 +486,13 @@ export const NotificationPreviewModal: React.FC<NotificationPreviewModalProps> =
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span style={{ color: '#64748b', width: '70px', fontWeight: 600 }}>{t("Từ:")}</span>
                   <span style={{ color: '#0f172a' }}>
-                    {settings?.ses_sender_name || 'RICH LAND TEAM'} &lt;{settings?.ses_sender_email || 'noreply@richland.net'}&gt;
+                    {settings?.ses_sender_name || 'IDEAS TEAM'} &lt;{settings?.ses_sender_email || 'noreply@Ideas.net'}&gt;
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span style={{ color: '#64748b', width: '70px', fontWeight: 600 }}>{t("Tới:")}</span>
                   <span style={{ color: '#0f172a', fontWeight: 500 }}>
-                    {assignedToName} &lt;{consultant?.email || 'sale@richland.net'}&gt;
+                    {assignedToName} &lt;{consultant?.email || 'sale@Ideas.net'}&gt;
                   </span>
                 </div>
                 {round?.cc_emails && (
@@ -532,10 +532,10 @@ export const NotificationPreviewModal: React.FC<NotificationPreviewModalProps> =
                   }}>
                     <div style={{ marginBottom: '12px', textAlign: 'center' }}>
                       <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.25)', borderRadius: '50%', width: '48px', height: '48px', lineHeight: '48px', textAlign: 'center', verticalAlign: 'middle' }}>
-                        <img src={`${import.meta.env.VITE_API_URL || '/backend'}/Compress_ICON.png`} alt="Rich Land Logo" style={{ width: '28px', height: '28px', verticalAlign: 'middle', display: 'inline-block', borderRadius: '50%' }} />
+                        <img src={`${import.meta.env.VITE_API_URL || '/backend'}/Compress_ICON.png`} alt="IDEAS Logo" style={{ width: '28px', height: '28px', verticalAlign: 'middle', display: 'inline-block', borderRadius: '50%' }} />
                       </div>
                     </div>
-                    <h1 style={{ color: '#ffffff', fontSize: '24px', margin: 0, fontWeight: 900, letterSpacing: '2px', textAlign: 'center', fontFamily: "'Inter', Helvetica, Arial, sans-serif" }}>RICH LAND</h1>
+                    <h1 style={{ color: '#ffffff', fontSize: '24px', margin: 0, fontWeight: 900, letterSpacing: '2px', textAlign: 'center', fontFamily: "'Inter', Helvetica, Arial, sans-serif" }}>IDEAS</h1>
                     <p style={{ color: 'rgba(255,255,255,0.95)', fontSize: '12px', margin: '4px 0 0', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 700, textAlign: 'center' }}>
                       {isReminder ? 'DATA ROUTING ENGINE' : 'CÓ DATA MỚI VỀ!'}
                     </p>
@@ -569,8 +569,8 @@ export const NotificationPreviewModal: React.FC<NotificationPreviewModalProps> =
                     borderTop: '1px solid #e2e8f0'
                   }}>
                     <p style={{ color: '#64748b', fontSize: '12px', margin: 0, lineHeight: '1.6' }}>
-                      © 2026 Rich Land Ecosystem. All rights reserved.<br/>
-                      Email này được gửi tự động từ hệ thống quản trị RICH LAND.
+                      © 2026 IDEAS Ecosystem. All rights reserved.<br/>
+                      Email này được gửi tự động từ hệ thống quản trị IDEAS.
                     </p>
                   </div>
                 </div>

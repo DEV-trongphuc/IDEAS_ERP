@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // mailer.php
 
 require_once __DIR__ . '/db_connect.php';
@@ -21,7 +21,7 @@ function _getBaseHtml($title, $subtitle, $contentHtml)
             <div style="background: linear-gradient(135deg, #BD1D2D 0%, #8C111E 100%); padding: 35px 24px; text-align: center; border-bottom: 3px solid #BD1D2D;">
                 <div style="margin-bottom: 12px; text-align: center;">
                     <div style="width: 70px; height: 70px; background-color: #ffffff; border-radius: 50%; display: inline-block; text-align: center; vertical-align: middle; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 5px; box-sizing: border-box;">
-                        <img src="https://rich-land.vercel.app/imgs/ICON.png" alt="Rich Land Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; vertical-align: middle;" />
+                        <img src="https://rich-land.vercel.app/imgs/ICON.png" alt="IDEAS Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%; vertical-align: middle;" />
                     </div>
                 </div>
                 <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 6px 0 0; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; text-align: center;">' . $headerSub . '</p>
@@ -37,8 +37,8 @@ function _getBaseHtml($title, $subtitle, $contentHtml)
             <!-- Footer -->
             <div style="background-color: #f8fafc; padding: 24px 30px; text-align: center; border-top: 1px solid #f1f5f9;">
                 <p style="color: #64748b; font-size: 12px; margin: 0; line-height: 1.6; font-weight: 500;">
-                    © ' . date("Y") . ' Rich Land Ecosystem. All rights reserved.<br/>
-                    Email này được gửi tự động từ hệ thống quản trị RICH LAND. Vui lòng không phản hồi email này.
+                    © ' . date("Y") . ' IDEAS Ecosystem. All rights reserved.<br/>
+                    Email này được gửi tự động từ hệ thống quản trị IDEAS. Vui lòng không phản hồi email này.
                 </p>
             </div>
         </div>
@@ -142,8 +142,8 @@ function sendEmailNotification($to, $subject, $title, $content, $ccEmailString =
             $mail->CharSet = 'UTF-8';
             $mail->Timeout = 15;
 
-            $senderEmail = $settings['ses_sender_email'] ?? 'no-reply@richland.test';
-            $senderName = $settings['ses_sender_name'] ?? 'RICH LAND TEAM';
+            $senderEmail = $settings['ses_sender_email'] ?? 'no-reply@Ideas.test';
+            $senderName = $settings['ses_sender_name'] ?? 'IDEAS TEAM';
 
             $mail->setFrom($senderEmail, $senderName);
             $mail->addAddress($to);
@@ -640,7 +640,7 @@ function sendWelcomeEmailToSale(
     string $zaloBotLink,
     bool $sync = false
 ) {
-    $subject = '🎉 Chào mừng bạn gia nhập Hệ thống Rich Land DATA';
+    $subject = '🎉 Chào mừng bạn gia nhập Hệ thống IDEAS DATA';
     $fName = htmlspecialchars($consultantName ?: 'Bạn');
 
     $content = '
@@ -698,7 +698,7 @@ function sendWelcomeEmailToAdminTicket(
                 <span style="font-size: 32px; line-height: 64px; vertical-align: middle;">🛡️</span>
             </div>
             <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 22px;">Chào ' . $fName . '</h2>
-            <p style="color: #64748b; font-size: 15px; margin: 0;">Bạn vừa được thiết lập để nhận thông báo từ hệ thống quản trị RICH LAND.</p>
+            <p style="color: #64748b; font-size: 15px; margin: 0;">Bạn vừa được thiết lập để nhận thông báo từ hệ thống quản trị IDEAS.</p>
         </div>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
@@ -740,7 +740,7 @@ function sendTelegramVerificationEmail(
                 <span style="font-size: 32px; line-height: 64px; vertical-align: middle;">✈️</span>
             </div>
             <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 22px;">Chào ' . $fName . '</h2>
-            <p style="color: #64748b; font-size: 15px; margin: 0;">Bạn cần liên kết tài khoản Telegram để nhận thông báo từ hệ thống RICH LAND.</p>
+            <p style="color: #64748b; font-size: 15px; margin: 0;">Bạn cần liên kết tài khoản Telegram để nhận thông báo từ hệ thống IDEAS.</p>
         </div>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
@@ -782,7 +782,7 @@ function sendAdminConfirmationEmail(
                 <span style="font-size: 32px; line-height: 64px; vertical-align: middle;">✉️</span>
             </div>
             <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 22px;">Chào ' . $fName . '</h2>
-            <p style="color: #64748b; font-size: 15px; margin: 0;">Tài khoản Admin của bạn đã được tạo trên hệ thống Rich Land DATA.</p>
+            <p style="color: #64748b; font-size: 15px; margin: 0;">Tài khoản Admin của bạn đã được tạo trên hệ thống IDEAS DATA.</p>
         </div>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
@@ -909,7 +909,7 @@ function sendDailyReportEmailToAdmins(
                  <span style="font-size: 32px; line-height: 64px; vertical-align: middle;">&#128202;</span>
              </div>
              <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 22px;">Chào ' . $fName . '</h2>
-             <p style="color: #64748b; font-size: 15px; margin: 0;">Dưới đây là Báo cáo tổng kết ngày hôm nay của hệ thống Rich Land DATA.</p>
+             <p style="color: #64748b; font-size: 15px; margin: 0;">Dưới đây là Báo cáo tổng kết ngày hôm nay của hệ thống IDEAS DATA.</p>
          </div>
  
           <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
@@ -971,7 +971,7 @@ function sendCompensationAddedEmailToSale($consultantEmail, $consultantName, $ro
     if (empty($time))
         $time = date('H:i:s d/m/Y');
 
-    $subject = "[Rich Land DATA] Thông báo Bù Data Chủ Động - Vòng: $roundName";
+    $subject = "[IDEAS DATA] Thông báo Bù Data Chủ Động - Vòng: $roundName";
     $title = "BẠN VỪA ĐƯỢC BÙ DATA CHỦ ĐỘNG";
 
     $reasonStr = !empty($reason) ? "<p style='margin: 8px 0 0 0; font-size: 15px; color: #1e1b4b;'><strong>Lý do:</strong> " . htmlspecialchars($reason) . "</p>" : "";
@@ -1002,7 +1002,7 @@ function sendActiveCompensationEmailToAdmins($adminEmail, $adminName, $consultan
     if (empty($time))
         $time = date('H:i:s d/m/Y');
 
-    $subject = "[Rich Land DATA] Báo cáo Bù Data Chủ Động — $consultantName";
+    $subject = "[IDEAS DATA] Báo cáo Bù Data Chủ Động — $consultantName";
     $title = "BÁO CÁO BÙ DATA CHỦ ĐỘNG";
 
     $reasonStr = !empty($reason) ? "<p style='margin: 8px 0 0 0; font-size: 15px; color: #1e1b4b;'><strong>Lý do:</strong> " . htmlspecialchars($reason) . "</p>" : "";

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, AlertTriangle, RefreshCw,
@@ -71,12 +71,12 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     return cached === null ? true : cached === '1';
   });
   const [dateFilter, setDateFilter] = useState(() => {
-    return localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+    return localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
   });
 
   const handleUpdateDateFilter = (val: string) => {
     setDateFilter(val);
-    localStorage.setItem('richland_global_date', val);
+    localStorage.setItem('Ideas_global_date', val);
     window.dispatchEvent(new CustomEvent('global-date-change', { detail: val }));
   };
 
@@ -329,7 +329,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
   useEffect(() => {
     if (isActive) {
-      const savedDate = localStorage.getItem('richland_global_date');
+      const savedDate = localStorage.getItem('Ideas_global_date');
       if (savedDate && savedDate !== dateFilter) {
         setDateFilter(savedDate);
       }
@@ -1081,7 +1081,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <img
                     src="/LOGO.jpg"
-                    alt="RICH LAND AI Logo"
+                    alt="IDEAS AI Logo"
                     style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
                   />
                   <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1627,13 +1627,13 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                         }
                         name={
                           log.status === 'pending_approval'
-                            ? 'Rich Land AI - Screener'
+                            ? 'IDEAS AI - Screener'
                             : (log.status === 'pending_work_hours' || !log.assigned_to_name || log.assigned_to_name === '-')
-                              ? 'Rich Land Bot'
+                              ? 'IDEAS Bot'
                               : log.status === 'rejected'
-                                ? 'Rich Land AI - Evaluator'
+                                ? 'IDEAS AI - Evaluator'
                                 : log.status === 'blacklisted'
-                                  ? 'Rich Land AI - Angry'
+                                  ? 'IDEAS AI - Angry'
                                   : log.assigned_to_name
                         }
                         size={32}
@@ -1641,13 +1641,13 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                       <div style={{ flex: 1, overflow: 'hidden' }}>
                         <div style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--color-text)' }}>
                           {log.status === 'pending_approval'
-                            ? 'Rich Land AI - Screener'
+                            ? 'IDEAS AI - Screener'
                             : (log.status === 'pending_work_hours' || !log.assigned_to_name || log.assigned_to_name === '-')
-                              ? 'Rich Land Bot'
+                              ? 'IDEAS Bot'
                               : log.status === 'rejected'
-                                ? 'Rich Land AI - Evaluator'
+                                ? 'IDEAS AI - Evaluator'
                                 : log.status === 'blacklisted'
-                                  ? 'Rich Land AI - Angry'
+                                  ? 'IDEAS AI - Angry'
                                   : log.assigned_to_name}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

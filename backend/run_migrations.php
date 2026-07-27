@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 // backend/run_migrations.php
 
 // Safe check: Allow CLI, inclusion by diagnostic script, or token validation
 $isCli = (php_sapi_name() === 'cli');
-$hasValidToken = (($_GET['token'] ?? '') === 'RichLand_Diag_Secure_Token_2026_9e88d6c701fbc6b7') || defined('DIAG_TOKEN');
+$hasValidToken = (($_GET['token'] ?? '') === 'Ideas_Diag_Secure_Token_2026_9e88d6c701fbc6b7') || defined('DIAG_TOKEN');
 if (!$isCli && !$hasValidToken) {
     http_response_code(403);
     header("Content-Type: application/json; charset=UTF-8");

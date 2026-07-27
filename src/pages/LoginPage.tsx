@@ -8,7 +8,7 @@ import styles from './LoginPage.module.css';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const [form, setForm] = useState({ email: 'admin@richland.crm', password: 'password' });
+  const [form, setForm] = useState({ email: 'admin@ideas.edu.vn', password: 'password' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -91,7 +91,7 @@ export const LoginPage: React.FC = () => {
         </form>
 
         <div className={styles.demoHint}>
-          <p>Demo: admin@richland.crm / password</p>
+          <p>Demo: admin@ideas.edu.vn / password</p>
         </div>
 
         {/*

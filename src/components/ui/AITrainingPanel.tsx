@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Sparkles, Database, FileText, Globe, Upload, Trash2, Edit2, Play, 
@@ -198,9 +198,9 @@ export const AITrainingPanel: React.FC = () => {
   // RAG Settings State
   const [settings, setSettings] = useState<RAGSettings>({
     is_enabled: 1,
-    bot_name: 'AI Rich Land',
+    bot_name: 'AI IDEAS',
     welcome_msg: 'Chào bạn! Tôi có thể giúp gì cho bạn hôm nay?',
-    persona_prompt: 'Bạn là chuyên viên tư vấn nhiệt tình của Richland.',
+    persona_prompt: 'Bạn là chuyên viên tư vấn nhiệt tình của Ideas.',
     similarity_threshold: 0.45,
     top_k: 8,
     chunk_size: 700,
@@ -271,7 +271,7 @@ export const AITrainingPanel: React.FC = () => {
     try {
       const res = await fetchAPI('ai_training', {
         method: 'POST',
-        body: JSON.stringify({ action: 'list_docs', property_id: 'richland' })
+        body: JSON.stringify({ action: 'list_docs', property_id: 'Ideas' })
       });
       if (res && res.success) {
         setDocs(res.data || []);
@@ -290,12 +290,12 @@ export const AITrainingPanel: React.FC = () => {
     try {
       const res = await fetchAPI('ai_training', {
         method: 'POST',
-        body: JSON.stringify({ action: 'get_settings', property_id: 'richland' })
+        body: JSON.stringify({ action: 'get_settings', property_id: 'Ideas' })
       });
       if (res && res.success && res.data) {
         setSettings({
           is_enabled: Number(res.data.is_enabled ?? 1),
-          bot_name: res.data.bot_name || 'AI Rich Land',
+          bot_name: res.data.bot_name || 'AI IDEAS',
           welcome_msg: res.data.welcome_msg || 'Chào bạn! Tôi có thể giúp gì cho bạn hôm nay?',
           persona_prompt: res.data.persona_prompt || 'Bạn là trợ lý ảo chuyên nghiệp.',
           similarity_threshold: Number(res.data.similarity_threshold ?? 0.45),
@@ -322,7 +322,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'update_settings',
-          property_id: 'richland',
+          property_id: 'Ideas',
           ...settings
         })
       });
@@ -349,7 +349,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'create_folder',
-          property_id: 'richland',
+          property_id: 'Ideas',
           name: folderName
         })
       });
@@ -379,7 +379,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'add_manual',
-          property_id: 'richland',
+          property_id: 'Ideas',
           name: manualTitle,
           content: manualContent,
           tags: manualTags,
@@ -415,7 +415,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'add_manual',
-          property_id: 'richland',
+          property_id: 'Ideas',
           name: webTitle,
           content: `URL_TO_CRAWL: ${webUrl}`,
           tags: webTags,
@@ -454,7 +454,7 @@ export const AITrainingPanel: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('action', 'upload_training_file');
-      formData.append('property_id', 'richland');
+      formData.append('property_id', 'Ideas');
       if (uploadFolderId) {
         formData.append('folder_id', uploadFolderId);
       }
@@ -501,7 +501,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'train_docs',
-          property_id: 'richland',
+          property_id: 'Ideas',
           doc_ids: [docId]
         })
       });
@@ -546,7 +546,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'train_docs',
-          property_id: 'richland',
+          property_id: 'Ideas',
           doc_ids: docIds
         })
       });
@@ -580,7 +580,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'delete_doc',
-          property_id: 'richland',
+          property_id: 'Ideas',
           doc_id: docId
         })
       });
@@ -604,7 +604,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'delete_batch',
-          property_id: 'richland',
+          property_id: 'Ideas',
           batch_id: folderId
         })
       });
@@ -626,7 +626,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'update_doc',
-          property_id: 'richland',
+          property_id: 'Ideas',
           id: docId,
           is_active: nextStatus
         })
@@ -649,7 +649,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'toggle_batch',
-          property_id: 'richland',
+          property_id: 'Ideas',
           batch_id: folderId,
           is_active: nextStatus
         })
@@ -677,7 +677,7 @@ export const AITrainingPanel: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           action: 'update_doc',
-          property_id: 'richland',
+          property_id: 'Ideas',
           id: editingDoc.id,
           name: editingDoc.name,
           content: editingDoc.content || '',
@@ -1034,7 +1034,7 @@ export const AITrainingPanel: React.FC = () => {
                         <EmptyCard
                           icon={<Database size={36} color="#BD1D2D" />}
                           title="Không tìm thấy tài liệu tri thức nào"
-                          description="Hệ thống chưa học dữ liệu nào cho Richland. Hãy nạp tài liệu từ file, nhập tay hoặc cào liên kết website ở trên để bắt đầu huấn luyện AI."
+                          description="Hệ thống chưa học dữ liệu nào cho Ideas. Hãy nạp tài liệu từ file, nhập tay hoặc cào liên kết website ở trên để bắt đầu huấn luyện AI."
                         />
                       </td>
                     </tr>
@@ -1359,7 +1359,7 @@ export const AITrainingPanel: React.FC = () => {
                     rows={12}
                     value={settings.persona_prompt}
                     onChange={e => setSettings({ ...settings, persona_prompt: e.target.value })}
-                    placeholder="VD: Bạn là trợ lý AI chuyên nghiệp của Richland..."
+                    placeholder="VD: Bạn là trợ lý AI chuyên nghiệp của Ideas..."
                     style={{ fontSize: '0.8125rem', lineHeight: 1.5 }}
                   />
                 </div>
@@ -1371,7 +1371,7 @@ export const AITrainingPanel: React.FC = () => {
               <div style={{ background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '0.75rem', borderRadius: '8px', display: 'flex', gap: 8 }}>
                 <Info size={14} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <p style={{ fontSize: '0.725rem', color: '#1d4ed8', margin: 0, lineHeight: 1.4 }}>
-                  Mẹo: Hãy chỉ dẫn AI xưng hô "Richland xin chào..." hoặc "Dạ, em là trợ lý Richland..." để tạo thiện cảm tốt nhất cho khách hàng bất động sản.
+                  Mẹo: Hãy chỉ dẫn AI xưng hô "Ideas xin chào..." hoặc "Dạ, em là trợ lý Ideas..." để tạo thiện cảm tốt nhất cho khách hàng bất động sản.
                 </p>
               </div>
             </div>
@@ -1400,7 +1400,7 @@ export const AITrainingPanel: React.FC = () => {
                   className="form-input"
                   value={settings.bot_name}
                   onChange={e => setSettings({ ...settings, bot_name: e.target.value })}
-                  placeholder="VD: AI Richland"
+                  placeholder="VD: AI Ideas"
                 />
               </div>
 
@@ -1801,7 +1801,7 @@ export const AITrainingPanel: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 700 }}>Đường dẫn URL chi tiết (AI sẽ tự động tải nội dung)</label>
-              <input type="url" className="form-input" placeholder="Ví dụ: https://richland.com.vn/gioi-thieu" value={webUrl} onChange={e => setWebUrl(e.target.value)} />
+              <input type="url" className="form-input" placeholder="Ví dụ: https://Ideas.com.vn/gioi-thieu" value={webUrl} onChange={e => setWebUrl(e.target.value)} />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

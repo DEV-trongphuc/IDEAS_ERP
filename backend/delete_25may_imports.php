@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 header('Content-Type: text/plain; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
@@ -47,6 +47,6 @@ if ($confirm) {
 } else {
     echo "Chế độ: XEM TRƯỚC (Dry Run) - Chưa xóa dữ liệu nào thực tế.\n";
     echo "Để thực hiện xóa thực tế, vui lòng truy cập đường dẫn thêm tham số '?confirm=1':\n";
-    echo "Ví dụ: https://open.richland.test/sale_data/delete_25may_imports.php?confirm=1\n";
+    echo "Ví dụ: https://open.Ideas.test/sale_data/delete_25may_imports.php?confirm=1\n";
 }
 ?>

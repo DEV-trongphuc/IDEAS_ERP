@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Pagination } from '../components/ui/Pagination';
 import { Plus, GripVertical, Pencil, Trash2, Calendar, Target, DollarSign, MessageSquare, Building2, Loader2, Search, Filter, Users, User, CheckCircle2, Phone, Mail, LayoutGrid, List, Clock, Download, RefreshCw, X, AlertCircle, AlertTriangle, ShieldAlert, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -165,7 +165,7 @@ export const DealsPage: React.FC = () => {
   
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState<number>(() => {
-    return Number(localStorage.getItem('richland_deals_page_size')) || 20;
+    return Number(localStorage.getItem('Ideas_deals_page_size')) || 20;
   });
   const [total, setTotal] = useState(0);
   const [allowPipelineBackward, setAllowPipelineBackward] = useState<boolean>(false);
@@ -1567,7 +1567,7 @@ export const DealsPage: React.FC = () => {
               showSizeChanger
               onPageSizeChange={size => {
                 setLimit(size);
-                localStorage.setItem('richland_deals_page_size', String(size));
+                localStorage.setItem('Ideas_deals_page_size', String(size));
                 setPage(1);
               }}
             />

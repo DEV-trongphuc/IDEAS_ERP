@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, Users, User, CheckCircle, Ticket as TicketIcon, RefreshCw, Zap, Filter, Settings2, Save, Bell, ChevronLeft, ChevronRight, ExternalLink, AlertTriangle, Phone, Mail, Clock, Tag, CheckCircle2, XCircle, ShieldAlert, Database, Plus, Trash2, Edit2, Sparkles, Check, X, Edit, Copy, BarChart2, Scale, Calendar, Info, ArrowRight, Ban, UserPlus, Send } from 'lucide-react';
 import {
@@ -255,12 +255,12 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
   const saleFilter = searchParams.get('consultant') || '';
 
   const [dateFilter, setDateFilter] = useState(() => {
-    return localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+    return localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
   });
 
   const handleUpdateDateFilter = (val: string) => {
     setDateFilter(val);
-    localStorage.setItem('richland_global_date', val);
+    localStorage.setItem('Ideas_global_date', val);
     window.dispatchEvent(new CustomEvent('global-date-change', { detail: val }));
   };
 
@@ -666,7 +666,7 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
 
   useEffect(() => {
     if (isActive) {
-      const saved = localStorage.getItem('richland_global_date');
+      const saved = localStorage.getItem('Ideas_global_date');
       if (saved && saved !== dateFilter) {
         setDateFilter(saved);
       }
@@ -3164,7 +3164,7 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                     gap: '0.75rem'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <Avatar src="/imgs/warn_icon.png" name="Rich Land AI - Screener" size={36} />
+                      <Avatar src="/imgs/warn_icon.png" name="IDEAS AI - Screener" size={36} />
                       <div>
                         <div style={{ fontSize: '0.72rem', color: selectedLead.ai_screener_status === 'error' ? '#d97706' : 'var(--color-danger)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           {selectedLead.ai_screener_status === 'error' ? t('Lỗi AI Pre-screener') : (
@@ -3179,7 +3179,7 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                           )}
                         </div>
                         <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                          {t('Rich Land AI - Screener')}
+                          {t('IDEAS AI - Screener')}
                         </div>
                       </div>
                     </div>
@@ -3209,10 +3209,10 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                 {selectedLead.ai_screener_status === 'passed' && selectedLead.ai_evaluation && (
                   <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1.5px solid var(--color-primary)', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                      <Avatar src="/LOGO.jpg" name="Rich Land AI" size={36} />
+                      <Avatar src="/LOGO.jpg" name="IDEAS AI" size={36} />
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>{t('Đánh giá')}</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI</div>
                       </div>
                     </div>
                     <div>

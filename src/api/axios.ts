@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import { API_BASE } from '../config/env';
 
 // Auto-detect: local dev uses Vite proxy, production uses real URL
@@ -59,17 +59,17 @@ api.interceptors.request.use((config) => {
   }
 
   let token = null;
-  const storedUserStr = localStorage.getItem('richland_user');
+  const storedUserStr = localStorage.getItem('Ideas_user');
   if (storedUserStr) {
     try {
       const u = JSON.parse(storedUserStr);
       if (u && (u.role === 'sale' || u.role === 'sales')) {
-        token = localStorage.getItem('richland_token');
+        token = localStorage.getItem('Ideas_token');
       }
     } catch (e) {}
   }
   if (!token) {
-    token = localStorage.getItem('access_token') || localStorage.getItem('richland_token');
+    token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token');
   }
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;

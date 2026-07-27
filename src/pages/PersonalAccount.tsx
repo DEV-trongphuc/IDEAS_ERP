@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User, Key, Eye, EyeOff, Save, ShieldAlert, Mail, Activity, Clock, Settings, ChevronDown, ChevronUp, LogOut, Edit3, Package } from 'lucide-react';
 import { SignaturePadModal } from '../components/ui/SignaturePadModal';
@@ -158,7 +158,7 @@ const PersonalAccountInner = () => {
       if (res.success && res.url) {
         setProfileData(prev => ({ ...prev, avatar: res.url }));
         if (user) {
-          const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+          const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
           login(token, { ...user, avatar: res.url } as any);
         }
         toast.success(t('Tải ảnh đại diện lên thành công!'));
@@ -187,7 +187,7 @@ const PersonalAccountInner = () => {
       });
       if (res.success) {
         toast.success(t('Cập nhật thông tin thành công!'));
-        const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+        const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
         if (user) {
           login(token, { ...user, name: profileData.name, avatar: profileData.avatar } as any);
         }

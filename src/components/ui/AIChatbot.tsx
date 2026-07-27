@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Send, X, Database, Sparkles, LayoutGrid, Search, ChevronRight, RefreshCw, ChevronLeft, FileText } from 'lucide-react';
@@ -25,7 +25,7 @@ export const AIChatbot: React.FC = () => {
     else if (hour >= 18) timeStr = 'Chào buổi tối';
 
     const greetings = [
-      `${timeStr}${name}! 🌟 Tôi là Trợ lý AI Rich Land. Hôm nay tôi có thể hỗ trợ gì cho bạn về dữ liệu, hệ thống CRM hay cấu hình Zalo/Telegram?`,
+      `${timeStr}${name}! 🌟 Tôi là Trợ lý AI IDEAS. Hôm nay tôi có thể hỗ trợ gì cho bạn về dữ liệu, hệ thống CRM hay cấu hình Zalo/Telegram?`,
       `Xin chào${name}! 👋 Rất vui được đồng hành cùng bạn. Bạn cần tra cứu chỉ số data hôm nay, kiểm tra ticket hay giải đáp thắc mắc nghiệp vụ nào không?`,
       `${timeStr}${name}! ✨ Tôi đã sẵn sàng hỗ trợ. Hãy đặt câu hỏi về quy tắc chia số, blacklist, báo cáo hoặc thông tin dự án nhé!`
     ];
@@ -974,7 +974,7 @@ Bạn có thể gõ rõ từ khóa hoặc click vào các gợi ý bên dưới 
               {renderBotAvatar(34, true)}
               <div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {t('Trợ lý AI Rich Land')}
+                  {t('Trợ lý AI IDEAS')}
                   <Sparkles size={12} style={{ color: '#fcd34d' }} />
                 </div>
                 <div style={{ fontSize: '0.6875rem', opacity: 0.85, display: 'flex', alignItems: 'center', gap: 4 }}>

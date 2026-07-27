@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/utils/TOTP.php
 
 class TOTP {
@@ -63,7 +63,7 @@ class TOTP {
     /**
      * Get otpauth:// URL for generating QR codes
      */
-    public static function getOtpAuthUrl(string $label, string $secret, string $issuer = 'RichLand'): string {
+    public static function getOtpAuthUrl(string $label, string $secret, string $issuer = 'Ideas'): string {
         $encodedLabel = rawurlencode($issuer . ':' . $label);
         $encodedIssuer = rawurlencode($issuer);
         return "otpauth://totp/{$encodedLabel}?secret={$secret}&issuer={$encodedIssuer}&algorithm=SHA1&digits=6&period=30";

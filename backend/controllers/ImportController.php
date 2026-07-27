@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 class ImportController {
     private PDO $db;
@@ -20,7 +20,7 @@ class ImportController {
 
         if ($type === 'contact') {
             $headers = ['first_name', 'last_name', 'email', 'phone', 'job_title', 'source', 'status', 'company_name', 'notes', 'customer_type', 'temperature', 'project_name'];
-            $sample  = ['Nguyễn', 'Văn A', 'example@email.com', '0901234567', 'Giám đốc', 'website', 'lead', 'Công ty ABC', 'Khách hàng quan tâm dự án căn hộ 2 phòng ngủ', 'Cá nhân', 'Nóng', 'Richland Riverside'];
+            $sample  = ['Nguyễn', 'Văn A', 'example@email.com', '0901234567', 'Giám đốc', 'website', 'lead', 'Công ty ABC', 'Khách hàng quan tâm dự án căn hộ 2 phòng ngủ', 'Cá nhân', 'Nóng', 'Ideas Riverside'];
         } elseif ($type === 'company') {
             $headers = ['name', 'industry', 'city', 'phone', 'email', 'website', 'status', 'tax_id'];
             $sample  = ['Công ty ABC', 'Công nghệ', 'TP.HCM', '02812345678', 'info@abc.vn', 'abc.vn', 'active', '0101234567'];

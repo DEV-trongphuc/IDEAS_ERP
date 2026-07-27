@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 class ActivityController {
     private PDO $db;
     public function __construct(PDO $db) { 
@@ -1471,7 +1471,7 @@ class ActivityController {
             // Send Email
             if (!empty($u['email'])) {
                 require_once __DIR__ . '/../mailer.php';
-                $emailSubject = "[RICH LAND] " . $title;
+                $emailSubject = "[IDEAS] " . $title;
                 $emailTitle = mb_strtoupper($type, 'UTF-8');
                 $emailContent = "Chào <strong>" . htmlspecialchars($u['full_name']) . "</strong>,<br/><br/>" .
                                 htmlspecialchars($body) . "<br/><br/>" .

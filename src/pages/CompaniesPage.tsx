@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Building2, X, Loader2, Pencil, Trash2, Globe, Phone, Mail, MapPin, Users, LayoutGrid, List, Filter, RefreshCw, Download, DollarSign, Briefcase, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '../components/ui/Avatar';
@@ -43,7 +43,7 @@ export const CompaniesPage: React.FC = () => {
   const [showImportExport, setShowImportExport] = useState(false);
   const [showFiltersMenu, setShowFiltersMenu] = useState(false);
   const [pageSize, setPageSize] = useState<number>(() => {
-    return Number(localStorage.getItem('richland_companies_page_size')) || 10;
+    return Number(localStorage.getItem('Ideas_companies_page_size')) || 10;
   });
 
   const fetchCompanies = useCallback(async () => {
@@ -475,7 +475,7 @@ export const CompaniesPage: React.FC = () => {
             showSizeChanger
             onPageSizeChange={size => {
               setPageSize(size);
-              localStorage.setItem('richland_companies_page_size', String(size));
+              localStorage.setItem('Ideas_companies_page_size', String(size));
               setPage(1);
             }}
           />
@@ -569,7 +569,7 @@ export const CompaniesPage: React.FC = () => {
             showSizeChanger
             onPageSizeChange={size => {
               setPageSize(size);
-              localStorage.setItem('richland_companies_page_size', String(size));
+              localStorage.setItem('Ideas_companies_page_size', String(size));
               setPage(1);
             }}
           />

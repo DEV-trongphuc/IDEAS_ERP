@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/zalo_webhook.php
 // Endpoint để nhận sự kiện từ Zalo Bot Platform
 
@@ -138,7 +138,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
     $fromName = 'bạn'; // Zalo webhook user_send_text thường không kèm tên, dùng default
 
     if (!empty($text) && !empty($chatId)) {
-        // Hỗ trợ loại bỏ phần @mention bot trong group chat (ví dụ: "@Bot RICH LAND /report homqua")
+        // Hỗ trợ loại bỏ phần @mention bot trong group chat (ví dụ: "@Bot IDEAS /report homqua")
         if (strpos(trim($text), '@') === 0 && strpos($text, '/') !== false) {
             $slashPos = strpos($text, '/');
             $text = trim(substr($text, $slashPos));
@@ -148,7 +148,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
         // --- COMMAND LẤY CHAT ID ---
         if ($textLower === '/chatid' || $textLower === '/id' || $textLower === '/info') {
             if (!empty($botToken)) {
-                $zaloMsg = "💬 [ HỆ THỐNG RICH LAND ]\n\n"
+                $zaloMsg = "💬 [ HỆ THỐNG IDEAS ]\n\n"
                     . "• Chat ID của phòng này: $chatId\n\n"
                     . "💡 Bạn có thể dùng Chat ID này điền vào cấu hình Zalo Admin Group Chat ID trong trang Cài Đặt của hệ thống để nhận các thông báo cảnh báo, duyệt ticket và báo cáo ngày.";
                 sendZaloMessage($botToken, $chatId, $zaloMsg);
@@ -169,7 +169,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
                         . "  • Loại: Quan tâm dịch vụ\n\n"
                         . "❖ GHI CHÚ:\n"
                         . "  Khách gọi cần tư vấn gấp vào buổi sáng.\n\n"
-                        . "Báo lỗi Data tại đây: https://open.richland.test/...";
+                        . "Báo lỗi Data tại đây: https://open.Ideas.test/...";
                     sendZaloMessage($botToken, $chatId, $zaloMsg);
                 } else if ($textLower === 'test_data_admin') {
                     $zaloMsg = "[ YÊU CẦU DUYỆT TICKET ]\n\n"
@@ -1719,7 +1719,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
 
             // Xử lý trùng lặp Email giữa 2 tài khoản Sale và Admin khác nhau
             if ($sale && $admin && $targetType === '') {
-                $errorMsg = "[ HỆ THỐNG RICH LAND DATA ]\n\nEmail này đang được dùng cho cả 2 tài khoản Quản trị viên và Tư vấn viên khác nhau.\nĐể đảm bảo chính xác, vui lòng sử dụng Mã ID thay vì Email để xác thực:\n\n- Nếu bạn muốn liên kết Admin: Gửi A + Mã ID (Ví dụ: A" . $admin['id'] . ")\n- Nếu bạn muốn liên kết Tư vấn viên: Gửi Mã ID (Ví dụ: " . $sale['id'] . ")";
+                $errorMsg = "[ HỆ THỐNG IDEAS DATA ]\n\nEmail này đang được dùng cho cả 2 tài khoản Quản trị viên và Tư vấn viên khác nhau.\nĐể đảm bảo chính xác, vui lòng sử dụng Mã ID thay vì Email để xác thực:\n\n- Nếu bạn muốn liên kết Admin: Gửi A + Mã ID (Ví dụ: A" . $admin['id'] . ")\n- Nếu bạn muốn liên kết Tư vấn viên: Gửi Mã ID (Ví dụ: " . $sale['id'] . ")";
                 $sendReply($errorMsg);
                 exit;
             }
@@ -1797,7 +1797,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
             }
 
             if ($linkedAny) {
-                $msg = "[ HỆ THỐNG RICH LAND DATA ]\n\n"
+                $msg = "[ HỆ THỐNG IDEAS DATA ]\n\n"
                     . "Chúc mừng bạn đã xác thực hệ thống thành công:\n";
                 foreach ($successMessages as $sm) {
                     $msg .= "  • $sm\n";
@@ -1812,7 +1812,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
             }
         } else {
             // Hướng dẫn lại
-            $guideMsg = "[ HỆ THỐNG RICH LAND DATA ]\n\n"
+            $guideMsg = "[ HỆ THỐNG IDEAS DATA ]\n\n"
                 . "Chào $fromName!\n"
                 . "Để liên kết tài khoản nhận dữ liệu tự động, vui lòng soạn tin nhắn theo cú pháp đơn giản:\n\n"
                 . "- Nhập mã ID của bạn (Ví dụ: 12)\n"

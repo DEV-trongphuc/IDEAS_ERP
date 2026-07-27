@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // f:\CRM\backend\controllers\TicketController.php
 
 class TicketController {
@@ -285,12 +285,12 @@ class TicketController {
         $stmtUser->execute([$assigneeId]);
         $assigneeRow = $stmtUser->fetch();
         if ($assigneeRow && !empty($assigneeRow['email'])) {
-            $emailSubject = "[RICH LAND] Bạn được phân công hỗ trợ Ticket #" . $id;
+            $emailSubject = "[IDEAS] Bạn được phân công hỗ trợ Ticket #" . $id;
             $emailTitle = "PHÂN CÔNG HỖ TRỢ TICKET";
             $emailContent = "Chào <strong>" . htmlspecialchars($assigneeRow['full_name']) . "</strong>,<br/><br/>" .
                             "Bạn đã được phân công xử lý Ticket mới: <strong>" . htmlspecialchars($data['subject']) . "</strong>.<br/>" .
                             "Mô tả: <em>" . htmlspecialchars($data['description'] ?? 'Không có') . "</em>.<br/>" .
-                            "Vui lòng truy cập hệ thống RICH LAND CRM mục <strong>Hỗ trợ / Khiếu nại</strong> để xử lý.";
+                            "Vui lòng truy cập hệ thống IDEAS CRM mục <strong>Hỗ trợ / Khiếu nại</strong> để xử lý.";
             sendEmailNotification($assigneeRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
         }
 
@@ -301,12 +301,12 @@ class TicketController {
             $relatedRows = $stmtRelated->fetchAll(PDO::FETCH_ASSOC) ?: [];
             foreach ($relatedRows as $rel) {
                 if (!empty($rel['email'])) {
-                    $emailSubject = "[RICH LAND] Bạn được thêm là người liên quan Ticket #" . $id;
+                    $emailSubject = "[IDEAS] Bạn được thêm là người liên quan Ticket #" . $id;
                     $emailTitle = "NGƯỜI LIÊN QUAN TICKET";
                     $emailContent = "Chào <strong>" . htmlspecialchars($rel['full_name']) . "</strong>,<br/><br/>" .
                                     "Bạn đã được thêm vào làm người liên quan của Ticket: <strong>" . htmlspecialchars($data['subject']) . "</strong>.<br/>" .
                                     "Người phân công: <strong>" . htmlspecialchars($auth['full_name']) . "</strong>.<br/>" .
-                                    "Vui lòng truy cập hệ thống RICH LAND CRM để biết thêm chi tiết.";
+                                    "Vui lòng truy cập hệ thống IDEAS CRM để biết thêm chi tiết.";
                     sendEmailNotification($rel['email'], $emailSubject, $emailTitle, $emailContent, '', false);
                 }
             }
@@ -430,7 +430,7 @@ class TicketController {
                 $stmtUser->execute([$newAssigneeId]);
                 $assigneeRow = $stmtUser->fetch();
                 if ($assigneeRow && !empty($assigneeRow['email'])) {
-                    $emailSubject = "[RICH LAND] Bạn được phân công hỗ trợ Ticket #" . $id;
+                    $emailSubject = "[IDEAS] Bạn được phân công hỗ trợ Ticket #" . $id;
                     $emailTitle = "PHÂN CÔNG HỖ TRỢ TICKET";
                     $emailContent = "Chào <strong>" . htmlspecialchars($assigneeRow['full_name']) . "</strong>,<br/><br/>" .
                                     "Bạn đã được phân công xử lý Ticket: <strong>" . htmlspecialchars($oldTicket['subject']) . "</strong>.<br/>" .
@@ -452,7 +452,7 @@ class TicketController {
                     $relatedRows = $stmtRelated->fetchAll(PDO::FETCH_ASSOC) ?: [];
                     foreach ($relatedRows as $rel) {
                         if (!empty($rel['email'])) {
-                            $emailSubject = "[RICH LAND] Bạn được thêm là người liên quan Ticket #" . $id;
+                            $emailSubject = "[IDEAS] Bạn được thêm là người liên quan Ticket #" . $id;
                             $emailTitle = "NGƯỜI LIÊN QUAN TICKET";
                             $emailContent = "Chào <strong>" . htmlspecialchars($rel['full_name']) . "</strong>,<br/><br/>" .
                                             "Bạn đã được thêm vào làm người liên quan của Ticket: <strong>" . htmlspecialchars($oldTicket['subject']) . "</strong>.<br/>" .
@@ -483,7 +483,7 @@ class TicketController {
                     $stmtUser->execute([$nUid]);
                     $notifRow = $stmtUser->fetch();
                     if ($notifRow && !empty($notifRow['email'])) {
-                        $emailSubject = "[RICH LAND] Cập nhật trạng thái Ticket #" . $id;
+                        $emailSubject = "[IDEAS] Cập nhật trạng thái Ticket #" . $id;
                         $emailTitle = "CẬP NHẬT TRẠNG THÁI TICKET";
                         $emailContent = "Chào <strong>" . htmlspecialchars($notifRow['full_name']) . "</strong>,<br/><br/>" .
                                         "Ticket <strong>" . htmlspecialchars($oldTicket['subject']) . "</strong> đã được cập nhật trạng thái mới.<br/>" .

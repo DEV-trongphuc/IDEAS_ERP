@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+﻿import { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, LabelList } from 'recharts';
@@ -545,7 +545,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
 
   // Search Params
   const getInitialDateFilter = () => {
-    return localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+    return localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
   };
   const dateFilter = searchParams.get('date') || getInitialDateFilter();
 
@@ -806,7 +806,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
       return;
     }
     if (key === 'date') {
-      localStorage.setItem('richland_global_date', value);
+      localStorage.setItem('Ideas_global_date', value);
       window.dispatchEvent(new CustomEvent('global-date-change', { detail: value }));
     }
     setSearchParams((prev: any) => {
@@ -990,7 +990,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
 
   useEffect(() => {
     if (isActive) {
-      const saved = localStorage.getItem('richland_global_date');
+      const saved = localStorage.getItem('Ideas_global_date');
       if (saved && searchParams.get('date') !== saved) {
         setSearchParams((prev: any) => {
           const next = new URLSearchParams(prev);
@@ -1565,7 +1565,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
               {t("Bộ Lọc AI Pre-screener hoạt động thế nào?")}
             </h4>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text)', lineHeight: 1.6, margin: 0 }}>
-              {t("Hệ thống tự động tiếp nhận dữ liệu từ webhook nguồn, chuyển qua đánh giá chất lượng tự động (RICH LAND AI hoặc Luật thủ công cấu hình). Những dữ liệu không đạt chuẩn sẽ được tạm giữ phê duyệt và gửi tin báo cho Quản trị viên, giúp tiết kiệm thời gian Telesale.")}
+              {t("Hệ thống tự động tiếp nhận dữ liệu từ webhook nguồn, chuyển qua đánh giá chất lượng tự động (IDEAS AI hoặc Luật thủ công cấu hình). Những dữ liệu không đạt chuẩn sẽ được tạm giữ phê duyệt và gửi tin báo cho Quản trị viên, giúp tiết kiệm thời gian Telesale.")}
             </p>
           </div>
           <button
@@ -1961,7 +1961,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <img
                   src="/LOGO.jpg"
-                  alt="RICH LAND AI Logo"
+                  alt="IDEAS AI Logo"
                   style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
                 />
                 <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -3394,7 +3394,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                                     )}
                                     {config.mode === 'ai' && (
                                       <span>
-                                        {t('Chế độ AI: RICH LAND AI để đánh giá theo yêu cầu cấu hình dưới.')}
+                                        {t('Chế độ AI: IDEAS AI để đánh giá theo yêu cầu cấu hình dưới.')}
                                       </span>
                                     )}
                                   </div>
@@ -5558,13 +5558,13 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                         gap: '0.75rem'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <Avatar src="/imgs/warn_icon.png" name="Rich Land AI - Screener" size={36} />
+                          <Avatar src="/imgs/warn_icon.png" name="IDEAS AI - Screener" size={36} />
                           <div>
                             <div style={{ fontSize: '0.72rem', color: (selectedLead.ai_screener_status === 'error' || selectedLead.ai_screener_status === 'pending') ? '#d97706' : 'var(--color-danger)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               {(selectedLead.ai_screener_status === 'error' || selectedLead.ai_screener_status === 'pending') ? t('Lỗi AI Pre-screener') : t('Tạm giữ')}
                             </div>
                             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                              {t('Rich Land AI - Screener')}
+                              {t('IDEAS AI - Screener')}
                             </div>
                           </div>
                         </div>
@@ -5626,10 +5626,10 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                     {selectedLead.status === 'rejected' ? (
                       <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1.5px solid var(--color-primary)', boxShadow: 'var(--shadow-sm)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                          <Avatar src="/LOGO.jpg" name="Rich Land AI - Evaluator" size={36} />
+                          <Avatar src="/LOGO.jpg" name="IDEAS AI - Evaluator" size={36} />
                           <div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Đánh giá')}</div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Evaluator</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Evaluator</div>
                           </div>
                         </div>
 
@@ -5657,10 +5657,10 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                     ) : selectedLead.status === 'blacklisted' ? (
                       <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1.5px solid var(--color-primary)', boxShadow: 'var(--shadow-sm)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                          <Avatar src="/imgs/angry_icon.jpg" name="Rich Land AI - Angry" size={36} />
+                          <Avatar src="/imgs/angry_icon.jpg" name="IDEAS AI - Angry" size={36} />
                           <div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Đánh giá')}</div>
-                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Angry</div>
+                            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Angry</div>
                           </div>
                         </div>
 

@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 // backend/controllers/ai_chat_handler.php
-// RICH LAND DATA CRM - AI Chatbot controller handler
+// IDEAS DATA CRM - AI Chatbot controller handler
 
 try {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -80,7 +80,7 @@ try {
     };
 
     // Enhanced system instruction detailing database schemas
-    $systemInstruction = "Bạn là Trợ lý AI Rich Land, một chatbot hỗ trợ đắc lực tích hợp sẵn trong hệ thống quản trị phân chia lead dữ liệu Rich Land.\n" .
+    $systemInstruction = "Bạn là Trợ lý AI IDEAS, một chatbot hỗ trợ đắc lực tích hợp sẵn trong hệ thống quản trị phân chia lead dữ liệu IDEAS.\n" .
         "Hãy trả lời người dùng một cách thân thiện, chuyên nghiệp, bằng tiếng Việt. Sử dụng markdown (in đậm, danh sách, bảng biểu) để câu trả lời rõ ràng.\n\n" .
         "QUY TẮC PHẢN HỒI (BẮT BUỘC): BẠN KHÔNG ĐƯỢC CHÀO HỎI LAN MAN HOẶC HỎI LẠI NGƯỜI DÙNG TRƯỚC KHI TRUY VẤN. BẤT KỲ CÂU HỎI NÀO CÓ THỂ CẦN TRA CỨU DỮ LIỆU, BẠN PHẢI GỌI CÔNG CỤ `execute_readonly_query` NGAY LẬP TỨC TRONG LƯỢT ĐẦU TIÊN ĐỂ TRA CỨU. NẾU BẠN KHÔNG GỌI CÔNG CỤ MÀ TRẢ LỜI NGAY HOẶC HỎI LẠI, ĐÓ LÀ LỖI VẬN HÀNH NGHIÊM TRỌNG.\n\n" .
         "QUY TẮC HIỂU NGÔN NGỮ VIẾT TẮT TIẾNG VIỆT:\n" .

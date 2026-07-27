@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Auth-Token, X-HTTP-Method-Override");
 header("Content-Type: application/json; charset=utf-8");
@@ -68,7 +68,7 @@ $allowedOrigins = [
     'http://localhost:5174',
     'http://localhost:3000',
     'https://rich-land.vercel.app',
-    'https://crm-richland.vercel.app'
+    'https://crm-Ideas.vercel.app'
 ];
 
 $frontendUrl = get_system_setting($conn, 'frontend_url');
@@ -91,7 +91,7 @@ if (!empty($httpOrigin)) {
 }
 header("Access-Control-Allow-Origin: " . $originToSet);
 
-$JWT_SECRET = $_ENV['JWT_SECRET'] ?? "RICH LAND_SECRET_KEY_2026";
+$JWT_SECRET = $_ENV['JWT_SECRET'] ?? "IDEAS_SECRET_KEY_2026";
 
 function getSafeErrorMsg($e)
 {
@@ -129,7 +129,7 @@ function verify_jwt($jwt, $secret)
     if ($jwt === 'demo_token_12345') {
         return [
             'username' => 'admin',
-            'email' => 'admin@richland.test',
+            'email' => 'admin@Ideas.test',
             'name' => 'Admin Demo',
             'role' => 'admin',
             'id' => 1
@@ -138,7 +138,7 @@ function verify_jwt($jwt, $secret)
     if ($jwt === 'demo_token_manager') {
         return [
             'username' => 'manager',
-            'email' => 'manager@richland.test',
+            'email' => 'manager@Ideas.test',
             'name' => 'Manager Demo',
             'role' => 'manager',
             'id' => 2,
@@ -154,14 +154,14 @@ function verify_jwt($jwt, $secret)
             4 => 'Minh Tuấn'
         ];
         $emails = [
-            1 => 'haidang@richland.test',
-            2 => 'thanhthao@richland.test',
-            3 => 'vietdung@richland.test',
-            4 => 'minhtuan@richland.test'
+            1 => 'haidang@Ideas.test',
+            2 => 'thanhthao@Ideas.test',
+            3 => 'vietdung@Ideas.test',
+            4 => 'minhtuan@Ideas.test'
         ];
         return [
-            'username' => str_replace('@richland.test', '', $emails[$cId] ?? 'sale'),
-            'email' => $emails[$cId] ?? 'sale@richland.test',
+            'username' => str_replace('@Ideas.test', '', $emails[$cId] ?? 'sale'),
+            'email' => $emails[$cId] ?? 'sale@Ideas.test',
             'name' => $names[$cId] ?? 'Sale Demo',
             'role' => 'sale',
             'consultant_id' => $cId,
@@ -8418,7 +8418,7 @@ switch ($action) {
                     $ccList = array_map(fn($a) => $a['email'], $adminEmails);
                     $ccString = implode(',', array_filter($ccList));
 
-                    $emailSubjAdmin = "[Rich Land DATA] Thông báo Ticket Tự động duyệt - Sale: $cName";
+                    $emailSubjAdmin = "[IDEAS DATA] Thông báo Ticket Tự động duyệt - Sale: $cName";
                     $emailBodyAdmin = "<h3>Thông báo Ticket Tự động duyệt</h3>
                                       <p>Hệ thống đã tự động duyệt báo cáo lỗi của Sale <strong>$cName</strong> đối với khách hàng <strong>$lName ($lPhone)</strong>.</p>
                                       <p><strong>Lý do lỗi:</strong> $reason</p>
@@ -11290,7 +11290,7 @@ switch ($action) {
                 $stmtAdminChat = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'telegram_admin_group_chat_id' LIMIT 1");
                 $adminChatId = $stmtAdminChat->fetch_assoc()['setting_value'] ?? '';
                 if (!empty($adminChatId)) {
-                    $msg = "🔔 <b>[Thông báo] Khởi tạo Bot thành công</b>\n\nWebhook của hệ thống RICH LAND đã được cấu hình và kích hoạt thành công trên Telegram Server!";
+                    $msg = "🔔 <b>[Thông báo] Khởi tạo Bot thành công</b>\n\nWebhook của hệ thống IDEAS đã được cấu hình và kích hoạt thành công trên Telegram Server!";
                     $testUrl = "https://api.telegram.org/bot" . $botToken . "/sendMessage?chat_id=" . urlencode($adminChatId) . "&text=" . urlencode($msg) . "&parse_mode=HTML";
                     @file_get_contents($testUrl);
                 }
@@ -11696,7 +11696,7 @@ switch ($action) {
                 'search_col_phone' => 'Số điện thoại',
                 'search_val_phone' => '0999999999',
                 'search_col_email' => 'Email',
-                'search_val_email' => 'test@richland.test',
+                'search_val_email' => 'test@Ideas.test',
                 'allow_insert' => true,
                 'updates' => [
                     'Thời gian' => date('Y-m-d H:i:s'),
@@ -11705,7 +11705,7 @@ switch ($action) {
                     'Sale phụ trách' => 'Sale Test',
                     'Họ tên' => 'Khách hàng Thử nghiệm',
                     'Số điện thoại' => '0999999999',
-                    'Email' => 'test@richland.test',
+                    'Email' => 'test@Ideas.test',
                     'Ghi chú' => 'Đồng bộ thử nghiệm thành công! Kết nối hoạt động tốt.',
                     'Trạng thái' => 'Kiểm thử'
                 ]
@@ -11723,7 +11723,7 @@ switch ($action) {
             ]);
             curl_setopt($ch, CURLOPT_TIMEOUT, 6); // Timeout 6s tối đa cho kiểm thử
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 RICH LAND CRM Client");
+            curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 IDEAS CRM Client");
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -11887,14 +11887,14 @@ switch ($action) {
             sendQuickMessageEmailToSale($email, "Sale Test", "Admin ĐÃ TỪ CHỐI Ticket của bạn cho khách hàng Nguyễn Văn A. Lý do: Số điện thoại vẫn đổ chuông bình thường.");
             $success = true;
         } else if ($type === 'admin_confirm') {
-            sendAdminConfirmationEmail($email, "Admin Test", "https://open.richland.test/confirm?token=123456");
+            sendAdminConfirmationEmail($email, "Admin Test", "https://open.Ideas.test/confirm?token=123456");
             $success = true;
         } else if ($type === 'daily_report') {
             $statsHtml = "<li>Sale Test 1: <b>15</b> data</li><li>Sale Test 2: <b>12</b> data</li>";
             sendDailyReportEmailToAdmins($email, "Admin Test", 27, $statsHtml, 3);
             $success = true;
         } else {
-            $subject = "Test Cấu hình Email từ RICH LAND";
+            $subject = "Test Cấu hình Email từ IDEAS";
             $body = "<p>Nếu bạn nhận được email này, nghĩa là cấu hình gửi mail của bạn (Amazon SES hoặc AppScript) đang hoạt động hoàn hảo!</p><p style='color:#64748b;font-size:14px;'>Gửi lúc: " . date('d/m/Y H:i:s') . "</p>";
             $success = sendEmailNotification($email, $subject, "Kết nối thành công ✅", $body, '', true);
         }
@@ -13755,7 +13755,7 @@ switch ($action) {
             }
             require_once 'mailer.php';
             $settingStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'telegram_bot_username'");
-            $botUsername = "richlandvietnam_bot"; // Default
+            $botUsername = "Ideasvietnam_bot"; // Default
             if ($settingStmt && $settingStmt->num_rows > 0) {
                 $row = $settingStmt->fetch_assoc();
                 if (!empty($row['setting_value']))
@@ -13785,7 +13785,7 @@ switch ($action) {
             }
             require_once 'mailer.php';
             $settingStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'telegram_bot_username'");
-            $botUsername = "richlandvietnam_bot"; // Default
+            $botUsername = "Ideasvietnam_bot"; // Default
             if ($settingStmt && $settingStmt->num_rows > 0) {
                 $row = $settingStmt->fetch_assoc();
                 if (!empty($row['setting_value']))
@@ -13875,7 +13875,7 @@ switch ($action) {
                                 $zName = $admin['name'] ?: 'Quản trị viên';
                                 $zaloMsg = "[ PHÂN QUYỀN TICKET ]\n\n"
                                     . "Chào $zName,\n"
-                                    . "Bạn vừa được cấp quyền xử lý Báo cáo lỗi (Ticket) từ hệ thống Rich Land DATA.\n\n"
+                                    . "Bạn vừa được cấp quyền xử lý Báo cáo lỗi (Ticket) từ hệ thống IDEAS DATA.\n\n"
                                     . "Từ bây giờ, hệ thống sẽ tự động gửi thông báo cho bạn mỗi khi có Ticket mới chờ duyệt.";
                                 sendZaloMessage($botToken, $admin['zalo_chat_id'], $zaloMsg, false);
                             }
@@ -15876,14 +15876,14 @@ switch ($action) {
                                         . "Chào $oldCName,\n\n"
                                         . "Data \"$lName\" của bạn đã được giao lại cho TVV $new_cons_name.\n"
                                         . "Hệ thống đã bù lại 1 lượt nhận data cho bạn tại vòng: $roundNameStr.\n\n"
-                                        . "Trân trọng,\nHệ thống Quản lý Rich Land DATA\n"
+                                        . "Trân trọng,\nHệ thống Quản lý IDEAS DATA\n"
                                         . "━━━━━━━━━━━━━━━━━━━━━";
                                 } else {
                                     $zaloMsg = "🔄 [ THÔNG BÁO CHUYỂN GIAO DATA ] 🔄\n"
                                         . "━━━━━━━━━━━━━━━━━━━━━\n"
                                         . "Chào $oldCName,\n\n"
                                         . "Data \"$lName\" của bạn đã được chuyển giao cho TVV $new_cons_name.\n\n"
-                                        . "Trân trọng,\nHệ thống Quản lý Rich Land DATA\n"
+                                        . "Trân trọng,\nHệ thống Quản lý IDEAS DATA\n"
                                         . "━━━━━━━━━━━━━━━━━━━━━";
                                 }
                                 sendZaloMessage($botToken, $oldCZalo, $zaloMsg, false);
@@ -15895,13 +15895,13 @@ switch ($action) {
                         if (!empty($oldCEmail)) {
                             try {
                                 if ($compensate_old_sale) {
-                                    $emailSubj = "[Rich Land DATA] Thông báo đền bù Data - $lName";
+                                    $emailSubj = "[IDEAS DATA] Thông báo đền bù Data - $lName";
                                     $emailBody = "<h3>Đền bù Data do chuyển giao lại</h3>
                                                   <p>Chào $oldCName,</p>
                                                   <p>Lead <strong>$lName</strong> của bạn đã được giao lại cho TVV <strong>$new_cons_name</strong>.</p>
                                                   <p>Hệ thống đã tự động cộng thêm 1 lượt đền bù cho bạn trong vòng phân bổ <strong>$roundNameStr</strong>.</p>";
                                 } else {
-                                    $emailSubj = "[Rich Land DATA] Thông báo chuyển giao Data - $lName";
+                                    $emailSubj = "[IDEAS DATA] Thông báo chuyển giao Data - $lName";
                                     $emailBody = "<h3>Chuyển giao Data</h3>
                                                   <p>Chào $oldCName,</p>
                                                   <p>Lead <strong>$lName</strong> của bạn đã được chuyển giao cho TVV <strong>$new_cons_name</strong>.</p>";
@@ -16559,7 +16559,7 @@ switch ($action) {
                         $ccEmailsArr = array_filter($ccEmailsArr, fn($e) => $e !== $saleEmail);
                         $ccString = implode(',', $ccEmailsArr);
 
-                        $emailSubj = "[Rich Land DATA] Thông báo đền bù do chặn Lead - $lead_name";
+                        $emailSubj = "[IDEAS DATA] Thông báo đền bù do chặn Lead - $lead_name";
                         $emailBody = "<h3>Đền bù Data do chặn Blacklist</h3>
                                       <p>Chào $old_consultant_name,</p>
                                       <p>Khách hàng của bạn đã bị Admin <strong>$adminName</strong> đưa vào Danh sách đen (Blacklist).</p>
@@ -16585,7 +16585,7 @@ switch ($action) {
                         $ccList = array_map(fn($a) => $a['email'], $adminEmailsCopy);
                         $ccString = implode(',', array_filter($ccList));
 
-                        $emailSubj = "[Rich Land DATA] Thông báo Chặn Lead (Không Bù) - $lead_name";
+                        $emailSubj = "[IDEAS DATA] Thông báo Chặn Lead (Không Bù) - $lead_name";
                         $emailBody = "<h3>Thông báo Chặn Lead - Blacklist</h3>
                                       <p>Kính gửi Ban quản trị,</p>
                                       <p>Admin <strong>$adminName</strong> đã chặn khách hàng và đưa vào danh sách đen (không đền bù cho Sale).</p>

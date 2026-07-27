@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/test_master_system_audit.php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -108,7 +108,7 @@ try {
     $roundId = $conn->insert_id;
 
     // Create a mock sales consultant
-    $salesEmail = 'mock.sales.' . rand(100, 999) . '@richland.vn';
+    $salesEmail = 'mock.sales.' . rand(100, 999) . '@Ideas.vn';
     $conn->query("
         INSERT INTO users (tenant_id, email, full_name, role, status, vacation_mode) 
         VALUES (1, '$salesEmail', 'Mock Audit Sales', 'sales', 'active', 0)

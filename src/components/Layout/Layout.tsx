@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -812,7 +812,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               }}>
                 <img src="/LOGO.jpg" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} alt="logo" />
               </div>
-              <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>RICH LAND</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>IDEAS</span>
             </div>
             <button 
               onClick={() => setIsMobileSidebarOpen(false)}
@@ -2334,7 +2334,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', padding: '1rem 0 0.5rem 0', textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', margin: '0.5rem 0 0.25rem 0' }}>
-              {/* Richland Logo */}
+              {/* IDEAS Logo */}
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -2349,7 +2349,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               }}>
                 <img 
                   src="/LOGO.jpg" 
-                  alt="Rich Land" 
+                  alt="IDEAS" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
               </div>
@@ -2393,7 +2393,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)'
             }}>
               <a
-                href={`https://t.me/${sysSettings?.telegram_bot_username || 'richlandvietnam_bot'}?start=${consultantProfile?.id || user?.id || ''}`}
+                href={`https://t.me/${sysSettings?.telegram_bot_username || 'Ideasvietnam_bot'}?start=${consultantProfile?.id || user?.id || ''}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsTelegramModalOpen(false)}

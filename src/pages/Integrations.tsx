@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { withRouterFreezer } from '../components/RouterFreezer';
 import { Webhook, Plus, Trash2, Copy, CheckCircle2, ChevronRight, ChevronLeft, Link2, Tag, Info, FileSpreadsheet, Zap, Clock, Target, RefreshCw, Edit2, ExternalLink, AlertCircle, Settings, Database } from 'lucide-react';
@@ -119,7 +119,7 @@ const generateDefaultTemplate = (
 };
 
 const masterAppsScriptCode = `/**
- * RICH LAND CRM - Google Apps Script Two-Way Synchronization Script
+ * IDEAS CRM - Google Apps Script Two-Way Synchronization Script
  * 
  * HƯỚNG DẪN CẤU HÌNH:
  * 1. Mở trang Google Sheet của bạn.
@@ -1993,7 +1993,7 @@ fetch("${webhookUrl(selected.webhook_token)}", {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{t('Cấu hình Trường dữ liệu')}</h2>
-                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{t('Ánh xạ các cột trên Google Sheets của bạn vào hệ thống Rich Land DATA.')}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{t('Ánh xạ các cột trên Google Sheets của bạn vào hệ thống IDEAS DATA.')}</p>
               </div>
 
               {/* Add Mapping Row at the TOP */}

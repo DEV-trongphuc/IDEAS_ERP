@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   Download, Laptop, Monitor, ShieldCheck, Zap, BellRing, 
   ArrowLeft, AlertCircle, CheckCircle2, ChevronRight, RefreshCw
@@ -104,10 +104,10 @@ export function DownloadPage() {
         zIndex: 2
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <img src="/LOGO.jpg" alt="Rich Land Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+          <img src="/LOGO.jpg" alt="IDEAS Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
           <div>
             <div style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '0.05em', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              RICH LAND <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#9CA3AF' }}>V1.0</span>
+              IDEAS <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#9CA3AF' }}>V1.0</span>
             </div>
             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#BD1D2D', textTransform: 'uppercase', letterSpacing: '0.15em' }}>DATA AUTOMATION</div>
           </div>
@@ -179,7 +179,7 @@ export function DownloadPage() {
               marginBottom: '1rem',
               letterSpacing: '-0.02em'
             }}>
-              Trải nghiệm <span className="text-gradient">Rich Land</span> chuyên nghiệp trên Máy tính
+              Trải nghiệm <span className="text-gradient">IDEAS</span> chuyên nghiệp trên Máy tính
             </h1>
             <p style={{ 
               fontSize: '1.05rem', 
@@ -409,7 +409,7 @@ export function DownloadPage() {
         position: 'relative',
         zIndex: 2
       }}>
-        © 2026 Rich Land Việt Nam. Bản quyền ứng dụng được bảo hộ trên nền tảng Tauri Secure App Sandbox.
+        © 2026 IDEAS Việt Nam. Bản quyền ứng dụng được bảo hộ trên nền tảng Tauri Secure App Sandbox.
       </footer>
 
       {/* Dev Mode Explanation Modal */}

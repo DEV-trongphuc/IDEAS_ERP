@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/controllers/CampaignController.php
 
 class CampaignController {
@@ -565,7 +565,7 @@ class CampaignController {
                 ]);
 
                 if (!empty($userRow['email'])) {
-                    $emailSubject = "[RICH LAND] Bạn được nhắc tên trong bình luận chiến dịch " . $campaignName;
+                    $emailSubject = "[IDEAS] Bạn được nhắc tên trong bình luận chiến dịch " . $campaignName;
                     $emailTitle = "NHẮC TÊN TRÊN HỆ THỐNG";
                     $emailContent = "Chào <strong>" . htmlspecialchars($userRow['full_name']) . "</strong>,<br/><br/>" .
                                     "Bạn đã được nhắc tên bởi <strong>" . htmlspecialchars($auth['full_name']) . "</strong> trong một bình luận của chiến dịch <strong>" . htmlspecialchars($campaignName) . "</strong>.<br/>" .

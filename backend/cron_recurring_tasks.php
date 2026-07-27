@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // cron_recurring_tasks.php
 // Script to parse activities of type 'task' and generate next task occurrences based on recurrence rules.
 
@@ -218,7 +218,7 @@ if (!function_exists('runRecurringTasksCron')) {
 
                             if ($u && !empty($u['email']) && function_exists('sendEmailNotification')) {
                                 try {
-                                    $emailSubject = "[RICH LAND] " . $titleNotify;
+                                    $emailSubject = "[IDEAS] " . $titleNotify;
                                     $emailTitle = "Nhiệm vụ định kỳ";
                                     $emailContent = "Chào <strong>" . htmlspecialchars($u['full_name']) . "</strong>,<br/><br/>" .
                                                     htmlspecialchars($bodyNotify) . "<br/><br/>" .

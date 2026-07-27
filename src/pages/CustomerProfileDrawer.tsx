@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Users, Phone, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2 } from 'lucide-react';
@@ -189,7 +189,7 @@ const resolveAttachmentUrl = (url: string | null | undefined): string => {
     cleanPath = 'uploads/' + cleanPath;
   }
   
-  const apiBase = import.meta.env.VITE_API_URL || 'https://open.domation.net/richland/api.php';
+  const apiBase = import.meta.env.VITE_API_URL || 'https://open.domation.net/Ideas/api.php';
   let baseUrl = apiBase;
   if (baseUrl.includes('api.php')) {
     baseUrl = baseUrl.split('api.php')[0];
@@ -197,7 +197,7 @@ const resolveAttachmentUrl = (url: string | null | undefined): string => {
   baseUrl = baseUrl.replace(/\/+$/, '');
   
   if (!baseUrl.startsWith('http')) {
-    baseUrl = 'https://open.domation.net/richland';
+    baseUrl = 'https://open.domation.net/Ideas';
   }
   
   return `${baseUrl}/${cleanPath}`;
@@ -2679,7 +2679,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     if (contact?.id) {
       setCurrentFolder('');
       try {
-        const saved = localStorage.getItem(`richland_folders_contact_${contact.id}`);
+        const saved = localStorage.getItem(`Ideas_folders_contact_${contact.id}`);
         setLocalFolders(saved ? JSON.parse(saved) : []);
       } catch {
         setLocalFolders([]);
@@ -4235,7 +4235,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       const updatedFolders = Array.from(new Set([...localFolders, 'Đặt cọc']));
       setLocalFolders(updatedFolders);
       if (contact?.id) {
-        localStorage.setItem(`richland_folders_contact_${contact.id}`, JSON.stringify(updatedFolders));
+        localStorage.setItem(`Ideas_folders_contact_${contact.id}`, JSON.stringify(updatedFolders));
       }
 
       // 3. Complete pipeline stage transition if pending
@@ -4360,7 +4360,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       const formData = new FormData();
       formData.append('file', file);
       
-      const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+      const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
       const response = await fetch(`${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=upload&token=${token}`, {
         method: 'POST',
         headers: {
@@ -7852,7 +7852,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                           {sh.signature_img && (
                                             <div style={{ background: '#f8fafc', padding: '3px 8px', borderRadius: '6px', border: '1px dashed var(--color-border-light)', display: 'inline-flex', justifyContent: 'center', alignItems: 'center' }}>
                                               <img 
-                                                src={sh.signature_img.startsWith('http') || sh.signature_img.startsWith('data:') ? sh.signature_img : `https://open.domation.net/richland/${sh.signature_img.replace(/^\/+/, '')}`} 
+                                                src={sh.signature_img.startsWith('http') || sh.signature_img.startsWith('data:') ? sh.signature_img : `https://open.domation.net/Ideas/${sh.signature_img.replace(/^\/+/, '')}`} 
                                                 style={{ height: '36px', maxWidth: '120px', objectFit: 'contain' }} 
                                                 alt="Chữ ký" 
                                               />
@@ -9702,7 +9702,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                       }
                                       const next = [...localFolders, trimmed];
                                       setLocalFolders(next);
-                                      localStorage.setItem(`richland_folders_contact_${contact.id}`, JSON.stringify(next));
+                                      localStorage.setItem(`Ideas_folders_contact_${contact.id}`, JSON.stringify(next));
                                       addToast('Đã tạo thư mục mới.', 'success');
                                     }
                                   }
@@ -9932,7 +9932,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                                 
                                                 const next = localFolders.map(f => f === folder ? trimmed : f);
                                                 setLocalFolders(next);
-                                                localStorage.setItem(`richland_folders_contact_${contact.id}`, JSON.stringify(next));
+                                                localStorage.setItem(`Ideas_folders_contact_${contact.id}`, JSON.stringify(next));
                                                 
                                                 fetchData();
                                                 addToast('Đã đổi tên thư mục thành công.', 'success');
@@ -9980,7 +9980,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                               
                                               const next = localFolders.filter(f => f !== folder);
                                               setLocalFolders(next);
-                                              localStorage.setItem(`richland_folders_contact_${contact.id}`, JSON.stringify(next));
+                                              localStorage.setItem(`Ideas_folders_contact_${contact.id}`, JSON.stringify(next));
                                               
                                               fetchData();
                                               addToast('Đã xóa thư mục thành công.', 'success');
@@ -11134,7 +11134,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   }}>
                     <span style={{ fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Lightbulb size={13} style={{ color: '#eab308' }} />
-                      {'Toa gợi ý hành động (Sổ tay Richland):'}
+                      {'Toa gợi ý hành động (Sổ tay Ideas):'}
                     </span>
                     <span style={{ lineHeight: 1.45 }}>
                       {noteObstacle === 'trust' && 'Áp dụng nguyên liệu [Phòng Bếp] (Xây dựng uy tín cá nhân, chia sẻ kiến thức chuyên sâu và hỗ trợ tận tâm để khách hàng tin tưởng hơn).'}
@@ -12389,7 +12389,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               {item.name}
                             </p>
                             <a 
-                              href={item.path.startsWith('http') ? item.path : `https://open.domation.net/richland/${item.path}`} 
+                              href={item.path.startsWith('http') ? item.path : `https://open.domation.net/Ideas/${item.path}`} 
                               target="_blank" 
                               rel="noreferrer" 
                               style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline', marginTop: '2px', display: 'inline-block' }}
@@ -12459,7 +12459,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     flexShrink: 0
                   }}>
                     <img 
-                      src={currentUser.signature_url.startsWith('http') || currentUser.signature_url.startsWith('data:') ? currentUser.signature_url : `https://open.domation.net/richland/${currentUser.signature_url.replace(/^\/+/, '')}`} 
+                      src={currentUser.signature_url.startsWith('http') || currentUser.signature_url.startsWith('data:') ? currentUser.signature_url : `https://open.domation.net/Ideas/${currentUser.signature_url.replace(/^\/+/, '')}`} 
                       alt="Chữ ký mẫu" 
                       style={{ maxHeight: '35px', objectFit: 'contain' }} 
                     />
@@ -12946,7 +12946,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             {/* Invoice Layout */}
             <div className="card-panel" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '1.5rem', boxShadow: 'var(--shadow-sm)', marginBottom: '1.5rem' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.25rem', borderBottom: '2px dashed var(--color-border-light)', paddingBottom: '1.25rem' }}>
-                <h4 style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '0.25rem' }}>Richland Data Automation</h4>
+                <h4 style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '0.25rem' }}>Ideas Data Automation</h4>
                 <h2 style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-text)', margin: 0 }}>HÓA ĐƠN CHI PHÍ</h2>
                 <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', margin: 0 }}>Mã số: #EXP-{viewExpense.id}</p>
               </div>

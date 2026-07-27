@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 class UserController {
     private PDO $db;
     public function __construct(PDO $db) { 
@@ -231,7 +231,7 @@ class UserController {
         if (!$user) respond(404, null, 'Người dùng không tồn tại', false);
 
         $secret = TOTP::generateSecret();
-        $otpauthUrl = TOTP::getOtpAuthUrl($user['email'], $secret, 'RichLand');
+        $otpauthUrl = TOTP::getOtpAuthUrl($user['email'], $secret, 'Ideas');
 
         // Generate 5 backup codes
         $backupCodes = [];

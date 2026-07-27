@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/test_vector_rag.php
 require_once __DIR__ . '/test_bootstrap.php';
 require_once __DIR__ . '/utils/rag_helpers.php';
@@ -143,7 +143,7 @@ echo "\n--- ĐANG KIỂM TRA HÀM TOÁN HỌC & GOOGLE GEMINI API ---\n";
 
 assertTest("Hàm chunk_text phân mảnh chính xác", function_exists('chunk_text'));
 if (function_exists('chunk_text')) {
-    $sampleText = "Đây là tài liệu huấn luyện AI của Rich Land về các sản phẩm và dịch vụ bất động sản chất lượng cao. Cần kiểm tra ranh giới câu.";
+    $sampleText = "Đây là tài liệu huấn luyện AI của IDEAS về các sản phẩm và dịch vụ bất động sản chất lượng cao. Cần kiểm tra ranh giới câu.";
     $chunks = chunk_text($sampleText, 25, 8);
     assertTest("Số lượng chunks cắt được > 1", count($chunks) > 1, "Số chunks: " . count($chunks));
 }
@@ -169,14 +169,14 @@ $apiKey = get_system_setting($conn, 'gemini_api_key');
 assertTest("Gemini API Key đã được cấu hình trong cài đặt hệ thống", !empty($apiKey));
 
 if (!empty($apiKey) && function_exists('generate_embedding')) {
-    $testVector = generate_embedding("Rich Land bất động sản", $apiKey);
+    $testVector = generate_embedding("IDEAS bất động sản", $apiKey);
     $apiWorking = (is_array($testVector) && count($testVector) > 0);
     assertTest("Gọi Google Gemini API tạo vector thành công", $apiWorking, "Chiều vector: " . (is_array($testVector) ? count($testVector) : 0));
 }
 
 assertTest("Hàm generate_batch_embeddings hoạt động chuẩn xác", function_exists('generate_batch_embeddings'));
 if (!empty($apiKey) && function_exists('generate_batch_embeddings')) {
-    $testVectors = generate_batch_embeddings(["Căn hộ cao cấp Rich Land quận 1", "Nhà phố thương mại Rich Land"], $apiKey);
+    $testVectors = generate_batch_embeddings(["Căn hộ cao cấp IDEAS quận 1", "Nhà phố thương mại IDEAS"], $apiKey);
     $batchWorking = (is_array($testVectors) && count($testVectors) === 2);
     assertTest("Gọi Google Gemini API tạo batch vector thành công", $batchWorking, "Số lượng vector nhận được: " . (is_array($testVectors) ? count($testVectors) : 0));
 }

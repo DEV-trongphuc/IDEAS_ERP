@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
+﻿import React, { useEffect, useState, useRef, useMemo, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { withRouterFreezer } from '../components/RouterFreezer';
@@ -350,7 +350,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   });
 
   useEffect(() => {
-    const localTheme = localStorage.getItem('richland_theme') as 'light' | 'dark';
+    const localTheme = localStorage.getItem('Ideas_theme') as 'light' | 'dark';
     if (localTheme) {
       setTheme(localTheme);
       document.documentElement.setAttribute('data-theme', localTheme);
@@ -367,7 +367,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     if (!(document as any).startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setTheme(nextTheme);
       document.documentElement.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('richland_theme', nextTheme);
+      localStorage.setItem('Ideas_theme', nextTheme);
       window.dispatchEvent(new Event('theme-change'));
       return;
     }
@@ -384,7 +384,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     const transition = (document as any).startViewTransition(() => {
       setTheme(nextTheme);
       document.documentElement.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('richland_theme', nextTheme);
+      localStorage.setItem('Ideas_theme', nextTheme);
       window.dispatchEvent(new Event('theme-change'));
     });
 
@@ -1886,11 +1886,11 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     setGoogleError('');
     setIsAdminMsg('');
 
-    if (localStorage.getItem('RICH LAND_DEMO_MODE') === 'true') {
+    if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 500));
       login('demo_token_sale_1', {
         username: 'haidang',
-        email: 'haidang@richland.net',
+        email: 'haidang@Ideas.net',
         name: 'Hải Đăng',
         role: 'sale',
         consultant_id: 1,
@@ -3459,7 +3459,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           const geoRes = await fetch(geoUrl, {
             headers: {
               'Accept-Language': 'vi',
-              'User-Agent': 'RichLandCRM/1.0'
+              'User-Agent': 'IdeasCRM/1.0'
             }
           });
           if (geoRes.ok) {
@@ -4610,14 +4610,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
                 <div ref={googleBtnRef} style={{ minHeight: 44 }}></div>
 
-                {localStorage.getItem('RICH LAND_DEMO_MODE') === 'true' && (
+                {localStorage.getItem('IDEAS_DEMO_MODE') === 'true' && (
                   <button
                     onClick={() => {
                       setGoogleLoading(true);
                       setTimeout(() => {
                         login('demo_token_sale_1', {
                           username: 'haidang',
-                          email: 'haidang@richland.net',
+                          email: 'haidang@Ideas.net',
                           name: 'Hải Đăng',
                           role: 'sale',
                           consultant_id: 1,
@@ -4668,7 +4668,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           </div>
 
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
-            {t('Hệ thống Quản lý Rich Land DATA')} &copy; 2026
+            {t('Hệ thống Quản lý IDEAS DATA')} &copy; 2026
           </div>
         </div>
         <style>{`
@@ -14813,7 +14813,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               }}>
                 <img src="/LOGO.jpg" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} alt="logo" />
               </div>
-              <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>RICH LAND</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'white', letterSpacing: '-0.02em' }}>IDEAS</span>
             </div>
             <button 
               onClick={() => setIsMobileSidebarOpen(false)}
@@ -14992,7 +14992,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           {!isCollapsed && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
               <span style={{ fontSize: '1.45rem', fontWeight: 900, whiteSpace: 'nowrap', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.05 }}>
-                RICH LAND
+                IDEAS
               </span>
               <span style={{
                 fontSize: '0.625rem',
@@ -15271,7 +15271,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
             <div>
               <h1 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, letterSpacing: '0.5px', color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>RICH LAND PORTAL</span>
+                <span>IDEAS PORTAL</span>
                 <span style={{ fontSize: '0.725rem', padding: '2px 8px', borderRadius: 20, background: 'var(--color-primary-light)', color: 'var(--color-primary)', fontWeight: 700 }}>
                   SALE
                 </span>

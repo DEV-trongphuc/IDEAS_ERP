@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // f:\CRM\backend\controllers\FinanceController.php
 
 class FinanceController
@@ -1041,12 +1041,12 @@ class FinanceController
                 $creatorRow = $stmtUser->fetch();
                 if ($creatorRow && !empty($creatorRow['email'])) {
                     require_once __DIR__ . '/../mailer.php';
-                    $emailSubject = "[RICH LAND] Yêu cầu chi phí của bạn đã được cập nhật";
+                    $emailSubject = "[IDEAS] Yêu cầu chi phí của bạn đã được cập nhật";
                     $emailTitle = "CẬP NHẬT YÊU CẦU CHI PHÍ";
                     $emailContent = "Chào <strong>" . htmlspecialchars($creatorRow['full_name']) . "</strong>,<br/><br/>" .
                                     "Yêu cầu thanh toán chi phí của bạn cho mục <strong>" . htmlspecialchars($row['title']) . "</strong> đã được quản trị viên chỉnh sửa.<br/>" .
                                     "Số tiền hiện tại: <strong>" . number_format($currentTotal, 0, ',', '.') . "đ</strong>.<br/>" .
-                                    "Vui lòng đăng nhập hệ thống RICH LAND CRM để xem chi tiết.";
+                                    "Vui lòng đăng nhập hệ thống IDEAS CRM để xem chi tiết.";
                     sendEmailNotification($creatorRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
                 }
             }
@@ -1185,13 +1185,13 @@ class FinanceController
             $creatorRow = $stmtUser->fetch();
             if ($creatorRow && !empty($creatorRow['email'])) {
                 require_once __DIR__ . '/../mailer.php';
-                $emailSubject = "[RICH LAND] Chi phí của bạn đã được " . ($status === 'approved' ? 'duyệt' : 'từ chối');
+                $emailSubject = "[IDEAS] Chi phí của bạn đã được " . ($status === 'approved' ? 'duyệt' : 'từ chối');
                 $emailTitle = "PHẢN HỒI YÊU CẦU CHI PHÍ";
                 $emailContent = "Chào <strong>" . htmlspecialchars($creatorRow['full_name']) . "</strong>,<br/><br/>" .
                                 "Yêu cầu thanh toán chi phí của bạn cho mục <strong>" . htmlspecialchars($expenseRow['title']) . "</strong> đã được cập nhật.<br/>" .
                                 "Số tiền: <strong>" . number_format($expenseRow['amount'] ?? 0, 0, ',', '.') . "đ</strong>.<br/>" .
                                 "Trạng thái mới: <strong style='color: " . ($status === 'approved' ? '#22c55e' : '#ef4444') . ";'>" . ($status === 'approved' ? 'Đã duyệt' : 'Từ chối') . "</strong> bởi quản trị viên.<br/>" .
-                                "Vui lòng đăng nhập hệ thống RICH LAND CRM để xem chi tiết.";
+                                "Vui lòng đăng nhập hệ thống IDEAS CRM để xem chi tiết.";
                 sendEmailNotification($creatorRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
             }
         }

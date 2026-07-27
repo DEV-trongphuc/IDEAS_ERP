@@ -1,11 +1,11 @@
-<?php
+﻿<?php
 // backend/test_bootstrap.php
-// RICH LAND DATA CRM - Testing Harness Bootstrap
+// IDEAS DATA CRM - Testing Harness Bootstrap
 // Tập tin khởi tạo môi trường kiểm thử toàn diện cho toàn bộ hệ thống (DB, Webhook, NotificationService, Mailer)
 
 // 1. Kiểm tra an toàn: Chỉ cho phép chạy từ CLI hoặc với Secure Token
 $isCli = (php_sapi_name() === 'cli');
-$hasValidToken = (($_GET['token'] ?? '') === 'RichLand_Diag_Secure_Token_2026_9e88d6c701fbc6b7') || defined('DIAG_TOKEN');
+$hasValidToken = (($_GET['token'] ?? '') === 'Ideas_Diag_Secure_Token_2026_9e88d6c701fbc6b7') || defined('DIAG_TOKEN');
 
 if (!$isCli && !$hasValidToken) {
     http_response_code(403);

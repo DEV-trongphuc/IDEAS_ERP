@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment, useMemo } from 'react';
+﻿import { useState, useEffect, Fragment, useMemo } from 'react';
 import api from '../api/axios';
 import { createPortal } from 'react-dom';
 import { Database, Search, Filter, ChevronLeft, ChevronRight, Download, RefreshCw, User, Users, Phone, Mail, Clock, Tag, ExternalLink, AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Calendar, LayoutList, Sparkles, Check, X, Edit, Bell, Copy, CheckCircle, BarChart2, Scale, Info, Ban, UserPlus, Send } from 'lucide-react';
@@ -236,7 +236,7 @@ const getAICardConfig = (selectedLead: Lead | null, theme: 'light' | 'dark', t: 
   if (selectedLead.ai_screener_status === 'passed' && selectedLead.ai_evaluation) {
     return {
       avatar: "/LOGO.jpg",
-      title: "Rich Land AI",
+      title: "IDEAS AI",
       badgeText: t("Đạt chuẩn"),
       badgeBg: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
       badgeColor: '#ffffff',
@@ -256,7 +256,7 @@ const getAICardConfig = (selectedLead: Lead | null, theme: 'light' | 'dark', t: 
     })();
     return {
       avatar: "/imgs/warn_icon.png",
-      title: "Rich Land AI",
+      title: "IDEAS AI",
       badgeText: t("Chờ duyệt"),
       badgeBg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       badgeColor: '#ffffff',
@@ -270,7 +270,7 @@ const getAICardConfig = (selectedLead: Lead | null, theme: 'light' | 'dark', t: 
   } else if (selectedLead.status === 'rejected') {
     return {
       avatar: "/LOGO.jpg",
-      title: "Rich Land AI",
+      title: "IDEAS AI",
       badgeText: t("Từ chối"),
       badgeBg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
       badgeColor: '#ffffff',
@@ -284,7 +284,7 @@ const getAICardConfig = (selectedLead: Lead | null, theme: 'light' | 'dark', t: 
   } else if (selectedLead.status === 'blacklisted') {
     return {
       avatar: "/imgs/angry_icon.jpg",
-      title: "Rich Land AI",
+      title: "IDEAS AI",
       badgeText: t("Bị chặn"),
       badgeBg: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
       badgeColor: '#ffffff',
@@ -372,12 +372,12 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const searchTerm = searchParams.get('search') || '';
   const statusFilter = searchParams.get('status') || 'all';
   const [dateFilter, setDateFilter] = useState(() => {
-    return localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+    return localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
   });
 
   const handleUpdateDateFilter = (val: string) => {
     setDateFilter(val);
-    localStorage.setItem('richland_global_date', val);
+    localStorage.setItem('Ideas_global_date', val);
     window.dispatchEvent(new CustomEvent('global-date-change', { detail: val }));
   };
   const consultantFilter = searchParams.get('consultant') || 'all';
@@ -561,7 +561,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
   useEffect(() => {
     if (isActive) {
-      const saved = localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+      const saved = localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
       if (saved && saved !== dateFilter) {
         setDateFilter(saved);
       } else {
@@ -1164,7 +1164,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
   // BUG-05 fix: Implement CSV export using Backend Stream to prevent browser/server OOM
   const handleExportCSV = () => {
-    if (localStorage.getItem('RICH LAND_DEMO_MODE') === 'true') {
+    if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       toast.loading(t('Đang chuẩn bị dữ liệu xuất CSV (Demo)...'), { id: 'export' });
       try {
         if (leads.length === 0) {
@@ -1229,7 +1229,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
     toast.loading(t('Đang chuẩn bị dữ liệu xuất CSV...'), { id: 'export' });
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+      const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
       const baseUrl = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api.php` : '/backend/api.php';
       const exportUrl = `${baseUrl}?action=export_csv&token=${encodeURIComponent(token)}&date=${encodeURIComponent(dateFilter)}&status=${encodeURIComponent(statusFilter)}&consultant=${encodeURIComponent(consultantFilter)}&round=${encodeURIComponent(roundFilter)}&search=${encodeURIComponent(searchTerm)}`;
 
@@ -2359,23 +2359,23 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                           <span style={{ color: 'var(--color-text-muted)' }}>{t('Giao cho')}:</span>
                           {lead.status === 'pending_approval' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Avatar src="/imgs/warn_icon.png" name="Rich Land AI - Screener" size={20} />
-                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Screener</span>
+                              <Avatar src="/imgs/warn_icon.png" name="IDEAS AI - Screener" size={20} />
+                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Screener</span>
                             </div>
                           ) : lead.status === 'fallback' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Avatar src="/LOGO.jpg" name="Rich Land AI" size={20} />
-                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI</span>
+                              <Avatar src="/LOGO.jpg" name="IDEAS AI" size={20} />
+                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI</span>
                             </div>
                           ) : lead.status === 'rejected' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Avatar src="/LOGO.jpg" name="Rich Land AI - Evaluator" size={20} />
-                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Evaluator</span>
+                              <Avatar src="/LOGO.jpg" name="IDEAS AI - Evaluator" size={20} />
+                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Evaluator</span>
                             </div>
                           ) : lead.status === 'blacklisted' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Avatar src="/imgs/angry_icon.jpg" name="Rich Land AI - Angry" size={20} />
-                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Angry</span>
+                              <Avatar src="/imgs/angry_icon.jpg" name="IDEAS AI - Angry" size={20} />
+                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Angry</span>
                             </div>
                           ) : (lead.is_public === 1 || Number(lead.is_public) === 1 || lead.status === 'released_to_kho' || lead.status === 'databank_claim' || lead.status === 'databank') ? (
                             (() => {
@@ -2399,9 +2399,9 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                             </div>
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Avatar src="/LOGO.jpg" name="Rich Land Bot" size={20} />
+                              <Avatar src="/LOGO.jpg" name="IDEAS Bot" size={20} />
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                                <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.75rem', lineHeight: '1rem' }}>Rich Land Bot</span>
+                                <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.75rem', lineHeight: '1rem' }}>IDEAS Bot</span>
                                 <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', lineHeight: '0.8rem' }}>{getPendingUntilTime()}</span>
                               </div>
                             </div>
@@ -2499,33 +2499,33 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                         <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                           {lead.status === 'pending_approval' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <Avatar src="/imgs/warn_icon.png" name="Rich Land AI - Screener" size={32} />
+                              <Avatar src="/imgs/warn_icon.png" name="IDEAS AI - Screener" size={32} />
                               <div>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Rich Land AI - Screener</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>IDEAS AI - Screener</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{t('Chờ duyệt')}</div>
                               </div>
                             </div>
                           ) : lead.status === 'fallback' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <Avatar src="/LOGO.jpg" name="Rich Land AI" size={32} />
+                              <Avatar src="/LOGO.jpg" name="IDEAS AI" size={32} />
                               <div>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Rich Land AI</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>IDEAS AI</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{t('Fallback')}</div>
                               </div>
                             </div>
                           ) : lead.status === 'rejected' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <Avatar src="/LOGO.jpg" name="Rich Land AI - Evaluator" size={32} />
+                              <Avatar src="/LOGO.jpg" name="IDEAS AI - Evaluator" size={32} />
                               <div>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Rich Land AI - Evaluator</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>IDEAS AI - Evaluator</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{t('Failed')}</div>
                               </div>
                             </div>
                           ) : lead.status === 'blacklisted' ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <Avatar src="/imgs/angry_icon.jpg" name="Rich Land AI - Angry" size={32} />
+                              <Avatar src="/imgs/angry_icon.jpg" name="IDEAS AI - Angry" size={32} />
                               <div>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Rich Land AI - Angry</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>IDEAS AI - Angry</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{t('Blacklist')}</div>
                               </div>
                             </div>
@@ -2572,9 +2572,9 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                             </div>
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <Avatar src="/LOGO.jpg" name="Rich Land Bot" size={32} />
+                              <Avatar src="/LOGO.jpg" name="IDEAS Bot" size={32} />
                               <div>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Rich Land Bot</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>IDEAS Bot</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                                   {getPendingUntilTime()}
                                 </div>
@@ -3841,10 +3841,10 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                     borderRadius: 12
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                      <Avatar src="/imgs/warn_icon.png" name="Rich Land AI - Screener" size={36} />
+                      <Avatar src="/imgs/warn_icon.png" name="IDEAS AI - Screener" size={36} />
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>{t('Người tiếp nhận')}</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Screener</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Screener</div>
                       </div>
                     </div>
 
@@ -3864,10 +3864,10 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 ) : selectedLead.status === 'rejected' ? (
                   <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1px solid var(--color-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                      <Avatar src="/LOGO.jpg" name="Rich Land AI - Evaluator" size={36} />
+                      <Avatar src="/LOGO.jpg" name="IDEAS AI - Evaluator" size={36} />
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>{t('Người tiếp nhận')}</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Evaluator</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Evaluator</div>
                       </div>
                     </div>
 
@@ -3887,10 +3887,10 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 ) : selectedLead.status === 'blacklisted' ? (
                   <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1px solid var(--color-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                      <Avatar src="/imgs/angry_icon.jpg" name="Rich Land AI - Angry" size={36} />
+                      <Avatar src="/imgs/angry_icon.jpg" name="IDEAS AI - Angry" size={36} />
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>{t('Người tiếp nhận')}</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>Rich Land AI - Angry</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Angry</div>
                       </div>
                     </div>
 

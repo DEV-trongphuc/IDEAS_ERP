@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { withRouterFreezer } from '../components/RouterFreezer';
@@ -76,7 +76,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const [dateFilter, setDateFilter] = useState(() => {
-    return localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+    return localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
   });
   const [showDateModal, setShowDateModal] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -84,7 +84,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
 
   const handleUpdateDateFilter = (val: string) => {
     setDateFilter(val);
-    localStorage.setItem('richland_global_date', val);
+    localStorage.setItem('Ideas_global_date', val);
     window.dispatchEvent(new CustomEvent('global-date-change', { detail: val }));
   };
 
@@ -263,7 +263,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
 
   useEffect(() => {
     if (isActive) {
-      const saved = localStorage.getItem('richland_global_date');
+      const saved = localStorage.getItem('Ideas_global_date');
       if (saved && saved !== dateFilter) {
         setDateFilter(saved);
       }
@@ -1669,7 +1669,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
                             <label className="form-label">{t("Nhập CC email ngoài hệ thống")}</label>
                             <input
                               className="form-input"
-                              placeholder={t("VD: giamdoc@richland.vn, quanly@richland.vn")}
+                              placeholder={t("VD: giamdoc@Ideas.vn, quanly@Ideas.vn")}
                               value={externalCcEmails}
                               onChange={e => setExternalCcEmails(e.target.value)}
                             />

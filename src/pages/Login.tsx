@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -35,9 +35,9 @@ export const Login = () => {
     setLoading(true);
     setError('');
 
-    if (localStorage.getItem('RICH LAND_DEMO_MODE') === 'true') {
+    if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 500));
-      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@richland.net', name: 'Admin Demo', role: 'admin' });
+      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@Ideas.net', name: 'Admin Demo', role: 'admin' });
       navigate('/');
       setLoading(false);
       return;
@@ -79,7 +79,7 @@ export const Login = () => {
           client_id: '641158233158-nsg8a8tdsj3fdgb34dc9tugm8god7tho.apps.googleusercontent.com',
           callback: handleGoogleLoginResponse
         });
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || localStorage.getItem('richland_theme') === 'dark';
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || localStorage.getItem('Ideas_theme') === 'dark';
         (window as any).google.accounts.id.renderButton(
           googleBtnRef.current,
           { theme: isDark ? 'filled_blue' : 'outline', size: 'large', width: 320, text: 'signin_with', shape: 'rectangular' }
@@ -100,21 +100,21 @@ export const Login = () => {
     setLoading(true);
     setError('');
 
-    if (localStorage.getItem('RICH LAND_DEMO_MODE') === 'true') {
+    if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 500));
       const isSale = email.includes('sale') || email.includes('haidang') || email.includes('thao') || email.includes('dung') || email.includes('tuan');
       if (isSale) {
         let cId = 1;
         let name = 'Hải Đăng';
-        let cEmail = 'haidang@richland.net';
-        if (email.includes('thao')) { cId = 2; name = 'Thanh Thảo'; cEmail = 'thanhthao@richland.net'; }
-        else if (email.includes('dung')) { cId = 3; name = 'Việt Dũng'; cEmail = 'vietdung@richland.net'; }
-        else if (email.includes('tuan')) { cId = 4; name = 'Minh Tuấn'; cEmail = 'minhtuan@richland.net'; }
+        let cEmail = 'haidang@ideas.edu.vn';
+        if (email.includes('thao')) { cId = 2; name = 'Thanh Thảo'; cEmail = 'thanhthao@ideas.edu.vn'; }
+        else if (email.includes('dung')) { cId = 3; name = 'Việt Dũng'; cEmail = 'vietdung@ideas.edu.vn'; }
+        else if (email.includes('tuan')) { cId = 4; name = 'Minh Tuấn'; cEmail = 'minhtuan@ideas.edu.vn'; }
 
         login(`demo_token_sale_${cId}`, { id: cId, username: cEmail.split('@')[0], email: cEmail, name: name, role: 'sale', consultant_id: cId });
         navigate('/');
       } else {
-        login('demo_token_12345', { id: 1, username: (email || 'admin@richland.net').split('@')[0], email: email || 'admin@richland.net', name: 'Admin Demo', role: 'admin' });
+        login('demo_token_12345', { id: 1, username: (email || 'admin@ideas.edu.vn').split('@')[0], email: email || 'admin@ideas.edu.vn', name: 'Admin Demo', role: 'admin' });
         navigate('/');
       }
       setLoading(false);
@@ -238,17 +238,17 @@ export const Login = () => {
     setLoading(true);
     setError('');
 
-    if (localStorage.getItem('RICH LAND_DEMO_MODE') === 'true') {
+    if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 300));
       let userRole = roleName.toLowerCase();
       if (userRole === 'sales') userRole = 'sale';
       login(`demo_token_quick_${userRole}`, {
-        id: emailVal === 'haidang@richland.net' ? 1000 : 999,
+        id: emailVal === 'haidang@Ideas.net' ? 1000 : 999,
         username: emailVal.split('@')[0],
         email: emailVal,
         name: `Dev ${roleName}`,
         role: userRole as any,
-        consultant_id: emailVal === 'haidang@richland.net' ? 1 : undefined
+        consultant_id: emailVal === 'haidang@Ideas.net' ? 1 : undefined
       });
       navigate('/');
       setLoading(false);
@@ -286,7 +286,7 @@ export const Login = () => {
   const row1 = ALL_MODULES.slice(0, 3);
   const row2 = ALL_MODULES.slice(3);
 
-  const isDemoMode = localStorage.getItem('RICH LAND_DEMO_MODE') === 'true';
+  const isDemoMode = localStorage.getItem('IDEAS_DEMO_MODE') === 'true';
 
   return (
     <div className="login-container">
@@ -307,7 +307,7 @@ export const Login = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h1 className="title-main">
-              RICH LAND <br />
+              IDEAS <br />
               <span className="title-gradient">
                 DATA SYSTEM 2026.
               </span>
@@ -361,7 +361,7 @@ export const Login = () => {
           <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Animated rotated logo container */}
             <div className="logo-box">
-              <img src="/imgs/logo-rich-land-viet-nam-trang.webp" className="logo-img" style={{ objectFit: 'contain' }} alt="Rich Land Logo" />
+              <img src="/imgs/logo-rich-land-viet-nam-trang.webp" className="logo-img" style={{ objectFit: 'contain' }} alt="IDEAS Logo" />
             </div>
             <div style={{ paddingTop: '8px' }}>
               <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', letterSpacing: '-0.5px' }}>
@@ -392,7 +392,7 @@ export const Login = () => {
                     className="input-field"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t("VD: ten@richland.net")}
+                    placeholder={t("VD: ten@ideas.edu.vn")}
                     autoComplete="email"
                     required
                   />
@@ -449,7 +449,7 @@ export const Login = () => {
                   onClick={() => {
                     setLoading(true);
                     setTimeout(() => {
-                      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@richland.net', name: 'Admin Demo', role: 'admin' });
+                      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@Ideas.net', name: 'Admin Demo', role: 'admin' });
                       navigate('/');
                       setLoading(false);
                     }, 500);
@@ -490,13 +490,13 @@ export const Login = () => {
                 Admin
               </button>
               <button
-                onClick={() => handleQuickLogin('director@richland.test', 'director123', 'Director')}
+                onClick={() => handleQuickLogin('director@Ideas.test', 'director123', 'Director')}
                 style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
               >
                 Director
               </button>
               <button
-                onClick={() => handleQuickLogin('manager@richland.test', 'manager123', 'Manager')}
+                onClick={() => handleQuickLogin('manager@Ideas.test', 'manager123', 'Manager')}
                 style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
               >
                 Manager
@@ -511,9 +511,8 @@ export const Login = () => {
           </div>
         </div>
 
-        {/* Watermark */}
         <div style={{ position: 'absolute', bottom: '24px', right: '24px', color: 'rgba(255,255,255,0.015)', fontSize: '80px', fontWeight: 900, pointerEvents: 'none', userSelect: 'none', transform: 'rotate(2deg) translateY(40px)' }}>
-          RICHLAND.
+          IDEAS.
         </div>
 
         {/* 2FA Verification Modal */}
@@ -585,7 +584,7 @@ export const Login = () => {
                     className="form-input"
                     value={forgotEmail}
                     onChange={e => setForgotEmail(e.target.value)}
-                    placeholder="email@richland.net"
+                    placeholder="email@ideas.edu.vn"
                     required
                   />
                 </div>

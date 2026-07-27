@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ================================================
    MOBILE RESPONSIVE OVERRIDES (SAFE)
@@ -509,7 +509,7 @@
   --color-success-light: rgba(52, 199, 89, 0.08);
   --color-warning: #FF9500; /* iOS system orange */
   --color-warning-light: rgba(255, 149, 0, 0.08);
-  --color-danger: #BD1D2D; /* Richland brand red */
+  --color-danger: #BD1D2D; /* Ideas brand red */
   --color-danger-light: rgba(189, 29, 45, 0.08);
   --color-info: #5856D6; /* iOS system purple */
   --color-info-light: rgba(88, 86, 214, 0.08);

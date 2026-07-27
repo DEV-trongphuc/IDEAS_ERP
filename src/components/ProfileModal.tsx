@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User, Key, Eye, EyeOff, Save, ShieldAlert, Mail, Activity, Clock, Settings, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
 import { fetchAPI } from '../utils/api';
@@ -143,7 +143,7 @@ export const ProfileModal = () => {
       });
       if (res.success) {
         toast.success(t('Cập nhật thông tin thành công!'));
-        const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+        const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
         if (user) {
           login(token, { ...user, name: profileData.name, avatar: profileData.avatar, bio: profileData.bio } as any);
         }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle, Send, Loader2, Shield, XCircle, Clock } from 'lucide-react';
 import { fetchPublicAPI } from '../utils/api';
@@ -469,7 +469,7 @@ export const ReportData = () => {
 
         {/* Footer */}
         <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem', paddingTop: 24, flexShrink: 0 }}>
-          Powered by RICH LAND · DATA ROUTING ENGINE
+          Powered by IDEAS · DATA ROUTING ENGINE
         </div>
       </div>
 

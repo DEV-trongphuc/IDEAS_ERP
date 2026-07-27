@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/controllers/DepositController.php
 
 class DepositController {
@@ -739,13 +739,13 @@ class DepositController {
             
             require_once __DIR__ . '/../mailer.php';
             if ($ownerRow && !empty($ownerRow['email'])) {
-                $emailSubject = "[RICH LAND] Báo cáo hủy cọc / Bể cọc khách hàng: " . $ownerRow['contact_name'];
+                $emailSubject = "[IDEAS] Báo cáo hủy cọc / Bể cọc khách hàng: " . $ownerRow['contact_name'];
                 $emailTitle = "BÁO CÁO HỦY CỌC / BỂ CỌC";
                 $emailContent = "Chào <strong>" . htmlspecialchars($ownerRow['full_name']) . "</strong>,<br/><br/>" .
                                 "Phiếu đặt cọc của khách hàng <strong>" . htmlspecialchars($ownerRow['contact_name']) . "</strong> (Phiếu cọc #" . $id . ") đã bị hủy.<br/>" .
                                 "Lý do: <em>" . htmlspecialchars($reason) . "</em>.<br/>" .
                                 "Trạng thái khách hàng đã được " . ($approvedCount === 0 ? "hạ về <strong>Đặt chỗ (Booking)</strong>" : "giữ nguyên <strong>Đặt cọc (Customer)</strong> do đã phát sinh doanh thu thực tế") . ".<br/>" .
-                                "Vui lòng kiểm tra trên RICH LAND CRM.";
+                                "Vui lòng kiểm tra trên IDEAS CRM.";
                 sendEmailNotification($ownerRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
             }
 
@@ -830,7 +830,7 @@ class DepositController {
                             $stmtCust->execute([$dep['contact_id']]);
                             $custName = $stmtCust->fetchColumn() ?: "Khách hàng";
 
-                            $notifySubject = "[RICH LAND] Admin cập nhật tỷ lệ phân chia hoa hồng";
+                            $notifySubject = "[IDEAS] Admin cập nhật tỷ lệ phân chia hoa hồng";
                             $notifyTitle = "CẬP NHẬT TỶ LỆ PHÂN CHIA HOA HỒNG";
                             
                             $notifyContent = "Chào bạn,<br/><br/>" .

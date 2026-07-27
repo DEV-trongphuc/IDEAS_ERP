@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, Activity, Sun, Moon, Keyboard, ChevronDown, User, AlertTriangle, LogOut, Menu, LayoutGrid, LayoutDashboard, Users, Building2, Clock, Truck, Boxes, Receipt, Settings, CheckCircle2, Fingerprint, Bell, MessageSquare, Info, Trash2, Check, Eye, EyeOff, CheckSquare, FileText, ArrowLeft, ShieldAlert, Laptop } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,7 +46,7 @@ export const Header = ({
   pendingInboxCount?: number;
   onUnifiedInboxClick?: () => void;
 }) => {
-  const isDemo = localStorage.getItem('RICH LAND_DEMO_MODE') === 'true';
+  const isDemo = localStorage.getItem('IDEAS_DEMO_MODE') === 'true';
   const { user, logout } = useAuth();
   const { showConfirm } = useUIStore();
   const { language, setLanguage, t } = useLanguage();
@@ -160,7 +160,7 @@ export const Header = ({
         if (permission === 'granted') {
           toast.success('Đã kích hoạt thông báo trình duyệt thành công!');
           try {
-            new Notification('RICH LAND', {
+            new Notification('IDEAS', {
               body: 'Bạn đã kích hoạt nhận thông báo trình duyệt thành công.',
               icon: '/LOGO.jpg'
             });
@@ -195,7 +195,7 @@ export const Header = ({
       if (prev !== undefined && pendingInboxCount > prev) {
         if ('Notification' in window && Notification.permission === 'granted') {
           try {
-            new Notification('Hộp kiểm duyệt RICH LAND', {
+            new Notification('Hộp kiểm duyệt IDEAS', {
               body: `Có dữ liệu mới đang chờ xử lý trong Hộp kiểm duyệt (${pendingInboxCount} yêu cầu).`,
               icon: '/LOGO.jpg'
             });
@@ -267,7 +267,7 @@ export const Header = ({
             // Trigger desktop notification
             if ('Notification' in window && Notification.permission === 'granted') {
               try {
-                new Notification(latestNotif.title || 'Thông báo RICH LAND', {
+                new Notification(latestNotif.title || 'Thông báo IDEAS', {
                   body: latestNotif.body || 'Bạn có thông báo mới.',
                   icon: '/LOGO.jpg'
                 });
@@ -654,7 +654,7 @@ export const Header = ({
 
   // Listen to system changes if theme is not set and sync with external theme changes
   useEffect(() => {
-    const localTheme = localStorage.getItem('richland_theme') as 'light' | 'dark';
+    const localTheme = localStorage.getItem('Ideas_theme') as 'light' | 'dark';
     if (localTheme) {
       setTheme(localTheme);
       document.documentElement.setAttribute('data-theme', localTheme);
@@ -681,7 +681,7 @@ export const Header = ({
     if (!(document as any).startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setTheme(nextTheme);
       document.documentElement.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('richland_theme', nextTheme);
+      localStorage.setItem('Ideas_theme', nextTheme);
       window.dispatchEvent(new Event('theme-change'));
       return;
     }
@@ -698,7 +698,7 @@ export const Header = ({
     const transition = (document as any).startViewTransition(() => {
       setTheme(nextTheme);
       document.documentElement.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('richland_theme', nextTheme);
+      localStorage.setItem('Ideas_theme', nextTheme);
       window.dispatchEvent(new Event('theme-change'));
     });
 
@@ -2640,9 +2640,9 @@ export const Header = ({
                                   </span>
                                 </div>
                               ) : (
-                                /* Cảnh báo hệ thống / hoặc không có user → logo Richland */
+                                /* Cảnh báo hệ thống / hoặc không có user → logo IDEAS */
                                 <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--color-border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', flexShrink: 0 }}>
-                                  <img src="/LOGO.jpg" alt="Richland" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <img src="/LOGO.jpg" alt="IDEAS" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
                               )}
                             </div>

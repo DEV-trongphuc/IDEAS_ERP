@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,15 +12,15 @@ export const DemoEntry: React.FC = () => {
 
   useEffect(() => {
     // Set global demo mode flag
-    localStorage.setItem('RICH LAND_DEMO_MODE', 'true');
+    localStorage.setItem('IDEAS_DEMO_MODE', 'true');
     
     // Clear out old real tokens
-    localStorage.removeItem('richland_token');
-    localStorage.removeItem('richland_user');
+    localStorage.removeItem('Ideas_token');
+    localStorage.removeItem('Ideas_user');
     
     // Fake login
     const demoToken = 'demo_token_12345';
-    const demoUser = { id: 1, email: 'admin@richland.net', role: 'admin' as const, is_confirmed: 1, username: 'admin', name: 'Admin Demo' };
+    const demoUser = { id: 1, email: 'admin@Ideas.net', role: 'admin' as const, is_confirmed: 1, username: 'admin', name: 'Admin Demo' };
     
     login(demoToken, demoUser);
     

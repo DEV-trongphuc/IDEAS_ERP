@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/config.php';          // DB constants + CORS origins
 
 register_shutdown_function(function() {
@@ -894,7 +894,7 @@ switch ($resource) {
         ini_set('display_errors', 1);
         error_reporting(E_ALL);
         $token = $_GET['token'] ?? '';
-        if ($token !== 'RichLand_Diag_Secure_Token_2026_9e88d6c701fbc6b7') {
+        if ($token !== 'Ideas_Diag_Secure_Token_2026_9e88d6c701fbc6b7') {
             respond(403, null, 'Forbidden: Invalid token', false);
         }
         define('DIAG_TOKEN', true);

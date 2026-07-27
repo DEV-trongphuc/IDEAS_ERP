@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Key, Eye, EyeOff, Save, ShieldAlert, Mail, Activity, Clock, 
   Settings, LogOut, Camera, Loader2, Calendar, Phone, Bell, Info, 
@@ -384,7 +384,7 @@ export const ProfilePage: React.FC = () => {
 
       if (resProfile.success && resConsultant.success) {
         toast.success(t('Cập nhật thông tin thành công!'));
-        const token = localStorage.getItem('access_token') || localStorage.getItem('richland_token') || '';
+        const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
         if (user) {
           login(token, { ...user, name: profileData.name, avatar: profileData.avatar, avatar_url: profileData.avatar, bio } as any);
         }

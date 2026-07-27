@@ -1,4 +1,4 @@
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+﻿const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const BASE_URL = isLocal ? '/backend/api.php' : (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api.php` : '/backend/api.php');
 
 
@@ -28,7 +28,7 @@ export async function fetchAPI(action: string, options: RequestInit = {}) {
   
   // Transparent caching for get_settings action
   if (action === 'get_settings' && originalMethod === 'GET') {
-    const token = localStorage.getItem('richland_token');
+    const token = localStorage.getItem('Ideas_token');
     if (token !== cachedToken) {
       settingsCachePromise = null;
       cachedToken = token;
@@ -63,7 +63,7 @@ export async function fetchAPI(action: string, options: RequestInit = {}) {
     ...(options.headers as Record<string, string>),
   };
 
-  const token = localStorage.getItem('richland_token');
+  const token = localStorage.getItem('Ideas_token');
   const parts = action.split('?');
   const baseAction = parts[0];
   let url = `api.php?action=${baseAction}`;

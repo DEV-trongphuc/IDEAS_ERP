@@ -1,7 +1,7 @@
-/*!999999\- enable the sandbox mode */ 
+﻿/*!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.6.18-MariaDB, for Linux (x86_64)
 --
--- Host: localhost    Database: vhvxoigh_db_richland
+-- Host: localhost    Database: vhvxoigh_db_Ideas
 -- ------------------------------------------------------
 -- Server version	10.6.18-MariaDB-cll-lve-log
 
@@ -1764,27 +1764,27 @@ BEGIN
             INSERT INTO mail_queue (to_email, subject, body_html, status)
             VALUES (
                 user_email,
-                CONCAT('[Rich Land] ', NEW.title),
+                CONCAT('[IDEAS] ', NEW.title),
                 CONCAT(
                     '<div style="background-color: #f8fafc; padding: 40px 0; font-family: \'Inter\', Helvetica, Arial, sans-serif;">',
                     '  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">',
                     '    <div style="background: linear-gradient(135deg, #BD1D2D, #8C111E); padding: 30px 20px; text-align: center;">',
-                    '      <h1 style="color: #ffffff; font-size: 24px; margin: 0; font-weight: 900; letter-spacing: 2px;">RICH LAND</h1>',
+                    '      <h1 style="color: #ffffff; font-size: 24px; margin: 0; font-weight: 900; letter-spacing: 2px;">IDEAS</h1>',
                     '      <p style="color: rgba(255,255,255,0.9); font-size: 12px; margin: 6px 0 0; text-transform: uppercase; font-weight: 700;">THÔNG BÁO HỆ THỐNG</p>',
                     '    </div>',
                     '    <div style="padding: 40px 30px; color: #475569; font-size: 15px; line-height: 1.6;">',
                     '      <p>Xin chào,</p>',
-                    '      <p>Bạn có một thông báo mới từ hệ thống <strong>Rich Land</strong>:</p>',
+                    '      <p>Bạn có một thông báo mới từ hệ thống <strong>IDEAS</strong>:</p>',
                     '      <div style="background: #f1f5f9; border-left: 4px solid #BD1D2D; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">',
                     '        <h3 style="color: #0f172a; margin: 0 0 10px; font-size: 16px;">', NEW.title, '</h3>',
                     '        <p style="margin: 0; color: #334155;">', NEW.body, '</p>',
                     '      </div>',
                     '      <p style="margin-top: 30px; text-align: center;">',
-                    '        <a href="https://open.domation.net/richland/" style="display: inline-block; background-color: #BD1D2D; color: #ffffff; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: bold; font-size: 14px;">ĐĂNG NHẬP HỆ THỐNG</a>',
+                    '        <a href="https://open.domation.net/Ideas/" style="display: inline-block; background-color: #BD1D2D; color: #ffffff; text-decoration: none; padding: 10px 24px; border-radius: 6px; font-weight: bold; font-size: 14px;">ĐĂNG NHẬP HỆ THỐNG</a>',
                     '      </p>',
                     '    </div>',
                     '    <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px;">',
-                    '      © 2026 Rich Land Ecosystem. All rights reserved.',
+                    '      © 2026 IDEAS Ecosystem. All rights reserved.',
                     '    </div>',
                     '  </div>',
                     '</div>'

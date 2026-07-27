@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, RefreshCw, Upload, Edit3, Trash2, Check, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -396,7 +396,7 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
                 backgroundSize: '12px 12px'
               }}>
                 <img 
-                  src={initialSignatureUrl.startsWith('http') || initialSignatureUrl.startsWith('data:') ? initialSignatureUrl : `https://open.domation.net/richland/${initialSignatureUrl.replace(/^\/+/, '')}`} 
+                  src={initialSignatureUrl.startsWith('http') || initialSignatureUrl.startsWith('data:') ? initialSignatureUrl : `https://open.domation.net/Ideas/${initialSignatureUrl.replace(/^\/+/, '')}`} 
                   alt="Chữ ký mẫu đã lưu" 
                   style={{ maxHeight: '160px', objectFit: 'contain' }} 
                 />

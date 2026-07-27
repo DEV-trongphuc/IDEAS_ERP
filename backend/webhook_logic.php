@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // webhook_logic.php
 // Common routing and distribution logic for leads
 
@@ -1030,7 +1030,7 @@ function getNextConsultantInRound($conn, $roundId, $lead = null, $excludeIds = [
     $cRes = $cStmt->get_result();
 
     if ($cRes->num_rows === 0) {
-        error_log("RICH LAND ERROR: Round ID $roundId has no active consultants!");
+        error_log("IDEAS ERROR: Round ID $roundId has no active consultants!");
         $cStmt->close();
         return null;
     }
@@ -1107,7 +1107,7 @@ function getNextConsultantInRound($conn, $roundId, $lead = null, $excludeIds = [
         $gateResult = checkConsultantGates($conn, (int)$row['id'], $lead);
         $isGatePassed = ($gateResult === true);
         if ($gateResult !== true) {
-            error_log("RICH LAND INFO: Consultant ID " . $row['id'] . " failed gate check: " . $gateResult);
+            error_log("IDEAS INFO: Consultant ID " . $row['id'] . " failed gate check: " . $gateResult);
         }
 
         // Must be on duty (either in regular work hours OR active approved night shift OR active checked-in golden hours)
@@ -1669,7 +1669,7 @@ function sendDirectSaleLeadNotification($conn, $leadId, $assignedToId, $roundId 
             . "⏰ Vui lòng truy cập hệ thống CRM để TIẾP NHẬN LEAD NGAY!";
 
         // 4. Construct Email message for Sale
-        $emailSubj = "[Rich Land CRM] 🚨 Bạn vừa nhận được Lead mới: " . $custName;
+        $emailSubj = "[IDEAS CRM] 🚨 Bạn vừa nhận được Lead mới: " . $custName;
         $emailBody = "<h3>🚨 Thông báo Lead mới phân bổ!</h3>"
             . "<p>Chào <strong>" . htmlspecialchars($sale['name']) . "</strong>,</p>"
             . "<p>Hệ thống vừa tự động phân bổ cho bạn một Lead mới từ vòng chia:</p>"
@@ -1892,7 +1892,7 @@ function simulateNextConsultantInRound($conn, $roundId, $lead = null)
         $gateResult = checkConsultantGates($conn, (int)$row['id'], $lead);
         $isGatePassed = ($gateResult === true);
         if ($gateResult !== true) {
-            error_log("RICH LAND INFO (Sim): Consultant ID " . $row['id'] . " failed gate check: " . $gateResult);
+            error_log("IDEAS INFO (Sim): Consultant ID " . $row['id'] . " failed gate check: " . $gateResult);
         }
         $isAvailable = !$isOnVacation && $isGatePassed && ($isInWorkHours || $isNightShiftActive || $isGoldenHoursTime);
 
@@ -2679,7 +2679,7 @@ function executeTwoWaySyncActual($conn, $leadId, &$errorMsg = null)
                     ]);
                     curl_setopt($ch, CURLOPT_TIMEOUT, 3); // Timeout 3s tối đa
                     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 RICH LAND CRM Client");
+                    curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 IDEAS CRM Client");
                     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
                     $response = curl_exec($ch);
@@ -2769,7 +2769,7 @@ function executeTwoWaySyncActual($conn, $leadId, &$errorMsg = null)
         ]);
         curl_setopt($chM, CURLOPT_TIMEOUT, 3); // Timeout 3s tối đa
         curl_setopt($chM, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($chM, CURLOPT_USERAGENT, "Mozilla/5.0 RICH LAND CRM Client");
+        curl_setopt($chM, CURLOPT_USERAGENT, "Mozilla/5.0 IDEAS CRM Client");
         curl_setopt($chM, CURLOPT_SSL_VERIFYPEER, true);
 
         $responseM = curl_exec($chM);
@@ -3686,7 +3686,7 @@ function sendNewLeadApiNotificationToAdmins($conn, $connData, $leadId, $customer
         . "  - Sale phụ trách: " . $saleName . "\n"
         . "  - Chi tiết: " . ($distData['message'] ?? 'Không có');
 
-    $emailSubj = "[Rich Land API] Báo cáo Lead mới từ API - " . (!empty($customerData['name']) ? $customerData['name'] : 'Ẩn danh');
+    $emailSubj = "[IDEAS API] Báo cáo Lead mới từ API - " . (!empty($customerData['name']) ? $customerData['name'] : 'Ẩn danh');
     $emailBody = "<h3>Báo cáo Lead mới nhận từ API</h3>"
         . "<p><strong>Nguồn API:</strong> " . htmlspecialchars($connData['sheet_name'] ?? 'Không rõ') . " (Token: <code>" . htmlspecialchars($connData['webhook_token'] ?? '') . "</code>)</p>"
         . "<h4>Thông tin khách hàng:</h4>"

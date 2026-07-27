@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/telegram_webhook.php
 // Endpoint để nhận sự kiện từ Telegram Bot API
 
@@ -57,7 +57,7 @@ try {
 
     // --- COMMAND LẤY CHAT ID (Public Command) ---
     if ($textLower === '/chatid' || $textLower === '/id' || $textLower === '/info' || $textLower === '/start') {
-        $telegramMsg = "💬 <b>[ HỆ THỐNG RICH LAND ]</b>\n\n"
+        $telegramMsg = "💬 <b>[ HỆ THỐNG IDEAS ]</b>\n\n"
             . "• Chat ID của phòng này: <code>$chatId</code>\n\n"
             . "💡 Bạn hãy copy Chat ID này điền vào cấu hình <b>Telegram Chat ID</b> trong trang Hồ sơ cá nhân hoặc mục Cấu hình hệ thống để nhận các thông báo chia số, duyệt ticket và báo cáo.";
         sendTelegramMessage($botToken, $chatId, $telegramMsg);
@@ -78,7 +78,7 @@ if ($textLower === 'test_data' || $textLower === 'test_data_admin' || $textLower
             . "  • <b>Loại:</b> Quan tâm dịch vụ\n\n"
             . "❖ <b>GHI CHÚ:</b>\n"
             . "  <i>Khách gọi cần tư vấn gấp vào buổi sáng.</i>\n\n"
-            . "Báo lỗi Data tại đây: <a href=\"https://open.richland.test/.../\"><b>Link báo cáo lỗi</b></a>";
+            . "Báo lỗi Data tại đây: <a href=\"https://open.Ideas.test/.../\"><b>Link báo cáo lỗi</b></a>";
         sendTelegramMessage($botToken, $chatId, $telegramMsg);
     } else if ($textLower === 'test_data_admin') {
         $telegramMsg = "📢 <b>[ YÊU CẦU DUYỆT TICKET ]</b> 📢\n"
@@ -408,7 +408,7 @@ if (strpos($textLower, '/tools') === 0 || strpos($textLower, '/report') === 0 ||
         }
 
         if ($sale && $admin && $targetType === '') {
-            $errorMsg = "⚠️ <b>[ HỆ THỐNG RICH LAND DATA ]</b>\n\nEmail này đang được dùng cho cả tài khoản Quản trị viên và Tư vấn viên.\nĐể đảm bảo chính xác, vui lòng sử dụng Mã ID để liên kết:\n\n- Liên kết Admin: Gửi <code>A + Mã ID</code> (Ví dụ: <code>A" . $admin['id'] . "</code>)\n- Liên kết TVV: Gửi <code>Mã ID</code> (Ví dụ: <code>" . $sale['id'] . "</code>)";
+            $errorMsg = "⚠️ <b>[ HỆ THỐNG IDEAS DATA ]</b>\n\nEmail này đang được dùng cho cả tài khoản Quản trị viên và Tư vấn viên.\nĐể đảm bảo chính xác, vui lòng sử dụng Mã ID để liên kết:\n\n- Liên kết Admin: Gửi <code>A + Mã ID</code> (Ví dụ: <code>A" . $admin['id'] . "</code>)\n- Liên kết TVV: Gửi <code>Mã ID</code> (Ví dụ: <code>" . $sale['id'] . "</code>)";
             sendTelegramMessage($botToken, $chatId, $errorMsg);
             exit;
         }
@@ -481,7 +481,7 @@ if (strpos($textLower, '/tools') === 0 || strpos($textLower, '/report') === 0 ||
 
         if ($linkedAny && !empty($successMessages)) {
             $successMsg = "🎉 <b>[ LIÊN KẾT THÀNH CÔNG ]</b> 🎉\n━━━━━━━━━━━━━━━━━━━━━\n"
-                . "Hệ thống RICH LAND đã liên kết thành công tài khoản Telegram của bạn với:\n\n"
+                . "Hệ thống IDEAS đã liên kết thành công tài khoản Telegram của bạn với:\n\n"
                 . implode("\n", $successMessages)
                 . "\n\n💡 <i>Từ bây giờ, bạn sẽ nhận được thông báo chia số, nhắc lịch và báo cáo lỗi trực tiếp qua Telegram này. Chúc bạn chốt được nhiều deal!</i>\n"
                 . "━━━━━━━━━━━━━━━━━━━━━";
@@ -492,7 +492,7 @@ if (strpos($textLower, '/tools') === 0 || strpos($textLower, '/report') === 0 ||
     }
 
     // Không khớp lệnh hệ thống
-    sendTelegramMessage($botToken, $chatId, "⚠️ <b>Xin chào!</b> Tôi là Bot thông báo RICH LAND.\n\n• Gõ <code>/id</code> để xem Chat ID của bạn.\n• Gõ <code>/tools</code> để xem danh sách câu lệnh dành cho quản trị.\n• Để liên kết tài khoản: Nhập <b>Mã ID nhân viên</b> hoặc <b>Email</b> của bạn.");
+    sendTelegramMessage($botToken, $chatId, "⚠️ <b>Xin chào!</b> Tôi là Bot thông báo IDEAS.\n\n• Gõ <code>/id</code> để xem Chat ID của bạn.\n• Gõ <code>/tools</code> để xem danh sách câu lệnh dành cho quản trị.\n• Để liên kết tài khoản: Nhập <b>Mã ID nhân viên</b> hoặc <b>Email</b> của bạn.");
     echo json_encode(["status" => "ok"]);
 } catch (Throwable $e) {
     $dbNameInfo = 'unknown';

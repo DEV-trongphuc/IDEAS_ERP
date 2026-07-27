@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/test_send_zalo.php
 header('Content-Type: text/plain; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
@@ -12,7 +12,7 @@ echo "Target ChatId: $chatId\n\n";
 $url = "https://bot-api.zaloplatforms.com/bot" . $botToken . "/sendMessage";
 $payload = json_encode([
     "chat_id" => $chatId,
-    "text" => "Test message from Rich Land system at " . date('Y-m-d H:i:s')
+    "text" => "Test message from IDEAS system at " . date('Y-m-d H:i:s')
 ], JSON_UNESCAPED_UNICODE);
 
 $ch = curl_init($url);

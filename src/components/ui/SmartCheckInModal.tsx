@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Camera, AlertTriangle, CheckCircle2, Clock, Sparkles, RefreshCw, X, Fingerprint, MapPin } from 'lucide-react';
 import { CustomModal } from './CustomModal';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -80,7 +80,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
           const geoRes = await fetch(geoUrl, {
             headers: {
               'Accept-Language': 'vi',
-              'User-Agent': 'RichLandCRM/1.0'
+              'User-Agent': 'IdeasCRM/1.0'
             }
           });
           if (geoRes.ok) {

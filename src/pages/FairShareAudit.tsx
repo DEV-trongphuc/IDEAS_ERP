@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+﻿import { useEffect, useState, useMemo } from 'react';
 import { withRouterFreezer } from '../components/RouterFreezer';
 import {
   Scale, Users, AlertTriangle, BarChart2, Info,
@@ -28,12 +28,12 @@ const FairShareAuditInner = ({ forceActive = false, isActive: propActive, search
   const [rounds, setRounds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState(() => {
-    return localStorage.getItem('richland_global_date') || getDefaultDateFilter();
+    return localStorage.getItem('Ideas_global_date') || getDefaultDateFilter();
   });
 
   const handleUpdateDateFilter = (val: string) => {
     setDateFilter(val);
-    localStorage.setItem('richland_global_date', val);
+    localStorage.setItem('Ideas_global_date', val);
     window.dispatchEvent(new CustomEvent('global-date-change', { detail: val }));
   };
   const [roundFilter, setRoundFilter] = useState(() => {
@@ -359,7 +359,7 @@ const FairShareAuditInner = ({ forceActive = false, isActive: propActive, search
 
   useEffect(() => {
     if (isActive) {
-      const savedDate = localStorage.getItem('richland_global_date');
+      const savedDate = localStorage.getItem('Ideas_global_date');
       if (savedDate && savedDate !== dateFilter) {
         setDateFilter(savedDate);
       }

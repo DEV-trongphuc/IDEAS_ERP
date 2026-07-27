@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // backend/controllers/AuthController.php
 
 class AuthController {
@@ -71,13 +71,13 @@ class AuthController {
                     require_once __DIR__ . '/../mailer.php';
                     $bodyHtml = "
                         <p>Kính gửi <b>" . htmlspecialchars($user['full_name']) . "</b>,</p>
-                        <p>Mã xác thực 2 yếu tố (2FA OTP) để đăng nhập vào hệ thống Rich Land của bạn là:</p>
+                        <p>Mã xác thực 2 yếu tố (2FA OTP) để đăng nhập vào hệ thống IDEAS của bạn là:</p>
                         <div style='text-align: center; margin: 20px 0;'>
                             <span style='font-size: 28px; font-weight: 800; color: #BD1D2D; letter-spacing: 6px; padding: 10px 24px; background: #fff1f2; border: 1px dashed #f43f5e; border-radius: 10px; display: inline-block;'>" . $otpCode . "</span>
                         </div>
                         <p style='color: #64748b; font-size: 13px;'>Mã OTP này có hiệu lực trong <b>5 phút</b>. Không chia sẻ mã này cho bất kỳ ai.</p>
                     ";
-                    sendEmailNotification($user['email'], 'Mã xác thực 2FA đăng nhập Rich Land', 'Xác thực 2 yếu tố (2FA)', $bodyHtml, '', true);
+                    sendEmailNotification($user['email'], 'Mã xác thực 2FA đăng nhập IDEAS', 'Xác thực 2 yếu tố (2FA)', $bodyHtml, '', true);
                 } catch (Exception $e) {
                     error_log("Failed to send 2FA OTP Email: " . $e->getMessage());
                 }
@@ -193,14 +193,14 @@ class AuthController {
                 require_once __DIR__ . '/../mailer.php';
                 $bodyHtml = "
                     <p>Kính gửi <b>" . htmlspecialchars($user['full_name']) . "</b>,</p>
-                    <p>Bạn đã gửi yêu cầu đặt lại mật khẩu cho tài khoản hệ thống Rich Land.</p>
+                    <p>Bạn đã gửi yêu cầu đặt lại mật khẩu cho tài khoản hệ thống IDEAS.</p>
                     <p>Mã xác nhận OTP của bạn là:</p>
                     <div style='text-align: center; margin: 20px 0;'>
                         <span style='font-size: 28px; font-weight: 800; color: #BD1D2D; letter-spacing: 6px; padding: 10px 24px; background: #fff1f2; border: 1px dashed #f43f5e; border-radius: 10px; display: inline-block;'>" . $otpCode . "</span>
                     </div>
                     <p style='color: #64748b; font-size: 13px;'>Mã này có hiệu lực trong <b>10 phút</b>. Nếu không phải bạn gửi yêu cầu này, vui lòng bỏ qua email này.</p>
                 ";
-                sendEmailNotification($user['email'], 'Yêu cầu Đặt lại Mật khẩu Rich Land', 'Đặt lại mật khẩu', $bodyHtml, '', true);
+                sendEmailNotification($user['email'], 'Yêu cầu Đặt lại Mật khẩu IDEAS', 'Đặt lại mật khẩu', $bodyHtml, '', true);
             } catch (Exception $e) {
                 error_log("Failed to send forgot password email: " . $e->getMessage());
             }

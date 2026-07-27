@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+﻿import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/axios';
 
@@ -32,10 +32,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // One-time forced relogin trigger
-  if (!localStorage.getItem('richland_relogin_done_v4')) {
-    localStorage.setItem('richland_relogin_done_v4', 'true');
-    localStorage.removeItem('richland_token');
-    localStorage.removeItem('richland_user');
+  if (!localStorage.getItem('Ideas_relogin_done_v4')) {
+    localStorage.setItem('Ideas_relogin_done_v4', 'true');
+    localStorage.removeItem('Ideas_token');
+    localStorage.removeItem('Ideas_user');
   }
 
   const normalizeUser = (u: any): User | null => {
@@ -53,27 +53,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem('richland_user');
+    const storedUser = localStorage.getItem('Ideas_user');
     return storedUser ? normalizeUser(JSON.parse(storedUser)) : null;
   });
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('richland_token');
+    return localStorage.getItem('Ideas_token');
   });
 
   const login = useCallback((newToken: string, newUser: User) => {
     const normalized = normalizeUser(newUser);
     setToken(newToken);
     setUser(normalized);
-    localStorage.setItem('richland_token', newToken);
-    localStorage.setItem('richland_user', JSON.stringify(normalized));
+    localStorage.setItem('Ideas_token', newToken);
+    localStorage.setItem('Ideas_user', JSON.stringify(normalized));
   }, []);
 
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('richland_token');
-    localStorage.removeItem('richland_user');
-    localStorage.removeItem('RICH LAND_DEMO_MODE');
+    localStorage.removeItem('Ideas_token');
+    localStorage.removeItem('Ideas_user');
+    localStorage.removeItem('IDEAS_DEMO_MODE');
   }, []);
 
   const updateUser = useCallback((updatedUser: Partial<User>) => {
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const merged = { ...prev, ...updatedUser };
       const normalized = normalizeUser(merged);
       if (normalized) {
-        localStorage.setItem('richland_user', JSON.stringify(normalized));
+        localStorage.setItem('Ideas_user', JSON.stringify(normalized));
       }
       return normalized;
     });
