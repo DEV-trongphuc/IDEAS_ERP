@@ -74,6 +74,67 @@ export default function Approvals() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [directorySearch, setDirectorySearch] = useState('');
 
+  const [recentWorkflows, setRecentWorkflows] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const localKey = `recent_workflows_${user.id}`;
+    let saved = [];
+    try {
+      const stored = localStorage.getItem(localKey);
+      if (stored) {
+        saved = JSON.parse(stored);
+      }
+    } catch (e) {}
+
+    // If local storage is empty, initialize it from myRequestsList
+    if (saved.length === 0 && myRequestsList.length > 0) {
+      const derivedIds: string[] = [];
+      myRequestsList.forEach(item => {
+        const found = workflowList.find(w => {
+          if (item.type === 'leave' && w.id === 'leave_late') return true;
+          if (item.type === 'advance' && w.id === 'advance_money') return true;
+          if (item.type === 'checkin' && w.id === 'checkin_explain') return true;
+          if (item.type === 'expense') {
+            const cleanTitle = (item.title || '').replace('Yêu cầu chi phí: ', '').toLowerCase().trim();
+            return w.name.toLowerCase().trim() === cleanTitle;
+          }
+          return false;
+        });
+        if (found && !derivedIds.includes(found.id)) {
+          derivedIds.push(found.id);
+        }
+      });
+      saved = derivedIds.slice(0, 6);
+      if (saved.length > 0) {
+        localStorage.setItem(localKey, JSON.stringify(saved));
+      }
+    }
+
+    const matched = saved
+      .map(id => workflowList.find(w => w.id === id))
+      .filter(Boolean);
+    setRecentWorkflows(matched);
+  }, [myRequestsList, user]);
+
+  const handleSelectWorkflow = (workflowId: string) => {
+    if (!user) return;
+    const localKey = `recent_workflows_${user.id}`;
+    let saved = [];
+    try {
+      const stored = localStorage.getItem(localKey);
+      if (stored) saved = JSON.parse(stored);
+    } catch (e) {}
+
+    const newSaved = [workflowId, ...saved.filter(id => id !== workflowId)].slice(0, 6);
+    localStorage.setItem(localKey, JSON.stringify(newSaved));
+    
+    const matched = newSaved
+      .map(id => workflowList.find(w => w.id === id))
+      .filter(Boolean);
+    setRecentWorkflows(matched);
+  };
+
   // Form field states
   const [proposerUser, setProposerUser] = useState<any>(null);
   const [formType, setFormType] = useState<'leave' | 'advance' | 'expense' | 'general'>('expense');
@@ -176,9 +237,13 @@ export default function Approvals() {
   const loadData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'pending' && isAdmin) {
-        const res = await fetchAPI('hrm/approvals/pending');
-        setPendingList(res?.data || []);
+      if (isAdmin) {
+        const [pendingRes, myRequestsRes] = await Promise.all([
+          fetchAPI('hrm/approvals/pending'),
+          fetchAPI('hrm/approvals/my-requests')
+        ]);
+        setPendingList(pendingRes?.data || []);
+        setMyRequestsList(myRequestsRes?.data || []);
       } else {
         const res = await fetchAPI('hrm/approvals/my-requests');
         setMyRequestsList(res?.data || []);
@@ -841,6 +906,76 @@ export default function Approvals() {
                     background: 'var(--color-surface)'
                   }}>
                     
+                    
+                    {/* Category: QUY TRÌNH GẦN ĐÂY */}
+                    {recentWorkflows.length > 0 && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                            ⚡ {t('Quy trình gần đây')}
+                          </span>
+                          <div style={{ flex: 1, height: '1px', background: 'var(--color-primary-light, rgba(163, 20, 34, 0.1))' }} />
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1.25rem' }}>
+                          {recentWorkflows.map(item => {
+                            const IconComp = item.icon;
+                            return (
+                              <div
+                                key={`recent-${item.id}`}
+                                onClick={() => {
+                                  setSelectedWorkflowDef(item);
+                                  if (item.id === 'leave_late') setFormType('leave');
+                                  else if (item.id === 'advance_money') setFormType('advance');
+                                  else setFormType('general');
+                                  setExpenseTitle(item.name);
+                                  handleSelectWorkflow(item.id);
+                                }}
+                                className="hover-lift"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: '12px',
+                                  padding: '10px',
+                                  borderRadius: '12px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  background: 'var(--color-bg-light, #f8fafc)',
+                                  border: '1px solid var(--color-border-light, #e2e8f0)'
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                                  e.currentTarget.style.background = 'var(--color-surface)';
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.borderColor = 'var(--color-border-light, #e2e8f0)';
+                                  e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
+                                }}
+                              >
+                                <div style={{
+                                  width: '38px',
+                                  height: '38px',
+                                  borderRadius: '50%',
+                                  background: item.color,
+                                  color: '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0
+                                }}>
+                                  <IconComp size={16} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <strong style={{ fontSize: '0.85rem', color: 'var(--color-text)', display: 'block', marginBottom: '2px', fontWeight: 700 }}>{item.name}</strong>
+                                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'block', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Category: TÀI CHÍNH & KẾ TOÁN */}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
@@ -860,16 +995,29 @@ export default function Approvals() {
                                 setSelectedWorkflowDef(item);
                                 setFormType(item.id === 'advance_money' ? 'advance' : 'expense');
                                 setExpenseTitle(item.name);
+                                handleSelectWorkflow(item.id);
                               }}
                               className="hover-lift"
                               style={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
                                 gap: '12px',
-                                padding: '8px',
-                                borderRadius: '8px',
+                                padding: '12px',
+                                borderRadius: '12px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s ease-in-out',
+                                border: '1px solid transparent',
+                                background: 'transparent'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = 'var(--color-primary-light, rgba(163, 20, 34, 0.08))';
+                                e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = 'transparent';
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <div style={{
@@ -914,16 +1062,29 @@ export default function Approvals() {
                                 setSelectedWorkflowDef(item);
                                 setFormType(item.id === 'leave_late' ? 'leave' : 'general');
                                 setExpenseTitle(item.name);
+                                handleSelectWorkflow(item.id);
                               }}
                               className="hover-lift"
                               style={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
                                 gap: '12px',
-                                padding: '8px',
-                                borderRadius: '8px',
+                                padding: '12px',
+                                borderRadius: '12px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s ease-in-out',
+                                border: '1px solid transparent',
+                                background: 'transparent'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = 'var(--color-primary-light, rgba(163, 20, 34, 0.08))';
+                                e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = 'transparent';
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <div style={{
@@ -968,16 +1129,29 @@ export default function Approvals() {
                                 setSelectedWorkflowDef(item);
                                 setFormType('general');
                                 setExpenseTitle(item.name);
+                                handleSelectWorkflow(item.id);
                               }}
                               className="hover-lift"
                               style={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
                                 gap: '12px',
-                                padding: '8px',
-                                borderRadius: '8px',
+                                padding: '12px',
+                                borderRadius: '12px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s ease-in-out',
+                                border: '1px solid transparent',
+                                background: 'transparent'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = 'var(--color-primary-light, rgba(163, 20, 34, 0.08))';
+                                e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = 'transparent';
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <div style={{
