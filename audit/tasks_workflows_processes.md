@@ -33,6 +33,16 @@ Tệp tin này đặc tả kịch bản kiểm thử cho hệ thống giao việ
     *   Lịch sử tương tác của khách hàng (Timeline) ghi nhận sự kiện tạo task này.
     *   Hệ thống tự động nhắc nhở khi đến hạn (SLA reminders).
 
+### Kịch bản 1.4: Quyền Cập nhật & Thêm việc con cho Task chung (General Workspace Task Edit Bypass)
+*   **Tiền điều kiện**: Một task chung được tạo bởi Admin (hoặc hệ thống) và không có liên kết với Contact/Company/Deal cụ thể nào (`related_type` là NULL).
+*   **Các bước thực hiện**:
+    1. Đăng nhập bằng tài khoản nhân viên bất kỳ (không phải Admin, ví dụ: `sale_agent` hoặc `accountant`).
+    2. Mở chi tiết Task chung đó.
+    3. Thực hiện thêm một **công việc con (subtask)** và nhấn **"Lưu thay đổi"**.
+*   **Kết quả mong đợi**:
+    *   API trả về mã phản hồi `200 OK` (không bị chặn `403 Forbidden`).
+    *   Xác minh: Công việc con được tạo thành công trong CSDL và hiển thị chính xác trên giao diện người dùng.
+
 ---
 
 ## 🏷️ 2. Tương tác Thảo luận & Tagging (@mention)

@@ -25,6 +25,11 @@ Tài liệu này đặc tả chi tiết kỹ thuật các API endpoint, cấu tr
     *   *superadmin / admin / director / manager / accountant / hr*: Trả về `200 OK`.
     *   *sale / sales / marketing / viewer*: Trả về `403 Forbidden`.
 
+### 1.4. Module Công việc & Nhiệm vụ (`activities`)
+*   **API cập nhật chi tiết và thêm việc con (subtasks)**: `PUT /backend/api.php?action=activities/{id}`
+    *   *Tất cả nhân viên (sales, manager, hr, accountant, marketing, director, admin)*: Trả về `200 OK` đối với các công việc chung (không liên kết CRM với Contact/Company/Deal) hoặc công việc được giao/tạo/tham gia trong phòng ban.
+    *   *viewer*: Trả về `403 Forbidden` (quyền Read-only).
+
 ---
 
 ## 🛡️ 2. Kịch bản Kiểm thử Bảo mật & Payload Kiểm chứng
