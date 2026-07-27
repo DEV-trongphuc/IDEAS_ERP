@@ -140,6 +140,10 @@ const AppTabs = () => {
     if (!['admin', 'superadmin', 'super_admin', 'director', 'hr'].includes(user?.role || '')) {
       return <Navigate to="/" replace />;
     }
+  } else if (['/rounds', '/rules', '/integrations'].includes(currentPath)) {
+    if (!['admin', 'superadmin', 'super_admin', 'director', 'marketing'].includes(user?.role || '')) {
+      return <Navigate to="/" replace />;
+    }
   } else if (isAdminPath) {
     if (currentPath === '/settings') {
       if (!['admin', 'superadmin', 'super_admin'].includes(user?.role || '')) {
