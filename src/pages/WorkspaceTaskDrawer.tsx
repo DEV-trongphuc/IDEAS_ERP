@@ -92,6 +92,14 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Subtask comments state
+  const [selectedSubtask, setSelectedSubtask] = useState<any | null>(null);
+  const [subtaskComments, setSubtaskComments] = useState<any[]>([]);
+  const [loadingSubtaskComments, setLoadingSubtaskComments] = useState(false);
+  const [newSubtaskCommentText, setNewSubtaskCommentText] = useState('');
+  const [isSubmittingSubtaskComment, setIsSubmittingSubtaskComment] = useState(false);
+  const [subtaskCommentAttachments, setSubtaskCommentAttachments] = useState<any[]>([]);
+
   const [isMuted, setIsMuted] = useState(false);
   const [loadingMute, setLoadingMute] = useState(false);
   const [showMuteConfirmModal, setShowMuteConfirmModal] = useState(false);
@@ -510,6 +518,26 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       setLoadingComments(false);
     }
   };
+
+  const loadSubtaskComments = async (taskId: number, subtaskId: string) => {
+    setLoadingSubtaskComments(true);
+    try {
+      const res = await api.get(`/activities/${taskId}/comments?subtask_id=${subtaskId}`);
+      if (res.data && res.data.success) {
+        setSubtaskComments(res.data.data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingSubtaskComments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (task && task.id !== 'new' && selectedSubtask) {
+      loadSubtaskComments(Number(task.id), selectedSubtask.id);
+    }
+  }, [selectedSubtask]);
 
   useEffect(() => {
     if (comments.length > 0) {
@@ -1348,6 +1376,94 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       toast.error(t('Không thể gửi bình luận: ') + e.message);
     } finally {
       setIsSubmittingComment(false);
+      setUploadingFile(false);
+    }
+  };
+
+  // Subtask Comment Attachments Upload Helpers
+  const addLocalSubtaskCommentAttachment = (file: File) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t('Dung lượng tệp đính kèm không được vượt quá 10MB'));
+      return;
+    }
+    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
+    setSubtaskCommentAttachments(prev => [...prev, { file, name: file.name, previewUrl }]);
+    toast.success(t('Đã thêm tệp đính kèm!'));
+  };
+
+  const handleSubtaskCommentAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) addLocalSubtaskCommentAttachment(file);
+    e.target.value = '';
+  };
+
+  const removeSubtaskCommentAttachment = (index: number) => {
+    setSubtaskCommentAttachments(prev => {
+      const target = prev[index];
+      if (target?.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handlePostSubtaskComment = async () => {
+    if (!task || !selectedSubtask) return;
+    if (!newSubtaskCommentText.trim() && subtaskCommentAttachments.length === 0) return;
+    setIsSubmittingSubtaskComment(true);
+    setUploadingFile(true);
+
+    try {
+      const uploadedUrls: string[] = [];
+      for (const att of subtaskCommentAttachments) {
+        if (att.file) {
+          const sizeStr = (att.file.size / (1024 * 1024)).toFixed(1) + ' MB';
+          const taskId = startUpload(att.name, sizeStr);
+
+          const fd = new FormData();
+          fd.append('file', att.file);
+
+          updateProgress(taskId, 20, 'uploading');
+          const res = await api.post('/upload', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                updateProgress(taskId, percent, percent === 100 ? 'processing' : 'uploading');
+              }
+            }
+          });
+          const fileUrl = res.data?.data?.url || res.data?.url;
+          if (fileUrl) {
+            finishUpload(taskId, true);
+            uploadedUrls.push(fileUrl);
+            if (att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+          } else {
+            finishUpload(taskId, false, res.data?.message || t('Lỗi tải tệp lên'));
+            throw new Error(res.data?.message || t('Lỗi tải tệp lên'));
+          }
+        }
+      }
+
+      const commentText = newSubtaskCommentText.trim();
+      setNewSubtaskCommentText('');
+      setSubtaskCommentAttachments([]);
+
+      const res = await api.post(`/activities/${task.id}/comments`, {
+        content: commentText,
+        attachments: uploadedUrls,
+        subtask_id: selectedSubtask.id
+      });
+
+      if (res.data && res.data.success) {
+        loadSubtaskComments(Number(task.id), selectedSubtask.id);
+        toast.success(t('Đã thêm bình luận việc con!'));
+      }
+    } catch (e: any) {
+      toast.error(t('Không thể gửi bình luận: ') + e.message);
+    } finally {
+      setIsSubmittingSubtaskComment(false);
       setUploadingFile(false);
     }
   };
@@ -2350,6 +2466,32 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                               </div>
                             )}
                           </div>
+
+                          {/* Subtask Discussion / Comments Trigger */}
+                          {task?.id !== 'new' && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSubtask(item)}
+                              style={{
+                                border: '1px solid var(--color-border-light)',
+                                background: 'transparent',
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                padding: 0,
+                                color: 'var(--color-text-muted)',
+                                transition: 'all 0.15s ease'
+                              }}
+                              className="hover-scale hover-color-primary"
+                              title={t('Thảo luận / Bình luận việc con')}
+                            >
+                              <MessageSquare size={13} />
+                            </button>
+                          )}
 
                           {/* Delete Trash Can */}
                           {currentUser?.role !== 'viewer' && (
@@ -4460,6 +4602,203 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                       {t('Xác nhận tắt')}
                     </button>
                   </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Subtask Discussion Modal */}
+          <AnimatePresence>
+            {selectedSubtask && (
+              <div 
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(15, 23, 42, 0.45)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 99999,
+                  padding: '20px'
+                }}
+                onClick={() => setSelectedSubtask(null)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '20px',
+                    width: '100%',
+                    maxWidth: '650px',
+                    maxHeight: '85vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {/* Modal Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--color-border-light)', background: 'var(--color-surface-hover)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <MessageSquare size={18} color="var(--color-primary)" />
+                      <span style={{ fontSize: '0.925rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                        {t('Thảo luận việc con')}: <strong style={{ color: 'var(--color-primary)' }}>{selectedSubtask.title}</strong>
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedSubtask(null)} 
+                      style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Comments Feed - custom scrollbar */}
+                  <div 
+                    style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--color-bg)' }}
+                    className="custom-scrollbar"
+                  >
+                    {loadingSubtaskComments ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <StatRowSkeleton />
+                        <StatRowSkeleton />
+                        <StatRowSkeleton />
+                      </div>
+                    ) : subtaskComments.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem 1.5rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        <MessageSquare size={32} style={{ opacity: 0.25, marginBottom: '4px' }} />
+                        {t('Chưa có bình luận nào cho công việc con này.')}
+                      </div>
+                    ) : (
+                      subtaskComments.map((comment: any) => {
+                        const commUser = users.find(u => Number(u.id) === Number(comment.user_id));
+                        let commentParsedAtts = [];
+                        if (comment.attachments) {
+                          try {
+                            commentParsedAtts = typeof comment.attachments === 'string' ? JSON.parse(comment.attachments) : comment.attachments;
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }
+                        if (!Array.isArray(commentParsedAtts)) commentParsedAtts = [];
+
+                        return (
+                          <div 
+                            key={comment.id}
+                            style={{ 
+                              display: 'flex', 
+                              gap: '12px', 
+                              background: 'rgba(0, 0, 0, 0.01)', 
+                              border: '1px solid var(--color-border-light)', 
+                              padding: '12px 16px', 
+                              borderRadius: '14px'
+                            }}
+                          >
+                            <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={28} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
+                              </div>
+                              <div style={{ fontSize: '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
+                                {renderCommentContent(comment.content)}
+                              </div>
+                              {commentParsedAtts.length > 0 && (
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                  {commentParsedAtts.map((url: any, aIdx: number) => {
+                                    const name = typeof url === 'string' ? url.substring(url.lastIndexOf('/') + 1) : (url.name || 'File');
+                                    const rawHref = typeof url === 'string' ? url : (url.url || '#');
+
+                                    const apiBase = import.meta.env.VITE_API_URL || '/backend';
+                                    let href = rawHref;
+                                    if (rawHref && rawHref.startsWith('uploads/')) {
+                                      href = `${apiBase}/${rawHref}`;
+                                    } else if (rawHref && rawHref.startsWith('storage/uploads/')) {
+                                      href = `${apiBase}/${rawHref.replace('storage/uploads/', 'uploads/')}`;
+                                    }
+
+                                    const isImg = name.match(/\.(jpg|jpeg|png|gif|webp|svg)/i);
+                                    if (isImg) {
+                                      return (
+                                        <a key={aIdx} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'block', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border-light)' }}>
+                                          <img src={href} alt={name} style={{ maxHeight: '90px', maxWidth: '140px', objectFit: 'contain' }} />
+                                        </a>
+                                      );
+                                    }
+                                    return (
+                                      <a key={aIdx} href={href} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.03)', fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, border: '1px solid var(--color-border-light)' }} className="hover-opacity">
+                                        <Paperclip size={10} />
+                                        <span>{name}</span>
+                                      </a>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Modal Footer / Comment Input Area */}
+                  {currentUser?.role !== 'viewer' && (
+                    <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border-light)', background: 'var(--color-surface-hover)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ position: 'relative' }}>
+                        <MentionInput
+                          value={newSubtaskCommentText}
+                          onChange={e => setNewSubtaskCommentText(e.target.value)}
+                          onImagePaste={addLocalSubtaskCommentAttachment}
+                          onFilePaste={addLocalSubtaskCommentAttachment}
+                          placeholder={t('Viết bình luận việc con... (Dán ảnh trực tiếp Ctrl+V)')}
+                          style={{ minHeight: '65px', fontSize: '0.85rem', paddingRight: '40px' }}
+                          disabled={isSubmittingSubtaskComment || uploadingFile}
+                        />
+                        <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: (uploadingFile || isSubmittingSubtaskComment) ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
+                          <input type="file" onChange={handleSubtaskCommentAttachmentUpload} style={{ display: 'none' }} disabled={uploadingFile || isSubmittingSubtaskComment} />
+                          {uploadingFile ? <RefreshCw className="spin" size={18} /> : <Paperclip size={18} />}
+                        </label>
+                      </div>
+
+                      {/* Attachment Chips List */}
+                      {subtaskCommentAttachments.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '2px' }}>
+                          {subtaskCommentAttachments.map((att: any, idx: number) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', color: 'var(--color-text)' }}>
+                              {att.previewUrl ? (
+                                <img src={att.previewUrl} alt="preview" style={{ width: '22px', height: '22px', borderRadius: '4px', objectFit: 'cover' }} />
+                              ) : (
+                                <Paperclip size={11} color="var(--color-primary)" />
+                              )}
+                              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{att.name}</span>
+                              <button onClick={() => removeSubtaskCommentAttachment(idx)} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px' }}>
+                        <button
+                          onClick={handlePostSubtaskComment}
+                          disabled={isSubmittingSubtaskComment || uploadingFile || (!newSubtaskCommentText.trim() && subtaskCommentAttachments.length === 0)}
+                          className="btn primary sm"
+                          style={{ padding: '6px 18px', fontSize: '0.78rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
+                        >
+                          {isSubmittingSubtaskComment ? <RefreshCw className="spin" size={13} /> : <Send size={13} />}
+                          <span>{t('Gửi')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               </div>
             )}

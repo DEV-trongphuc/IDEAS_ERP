@@ -9,6 +9,9 @@ class ActivityController {
         try {
             $this->db->exec("ALTER TABLE activity_comments ADD COLUMN parent_id INT NULL DEFAULT NULL");
         } catch (Exception $e) {}
+        try {
+            $this->db->exec("ALTER TABLE activity_comments ADD COLUMN subtask_id VARCHAR(255) NULL DEFAULT NULL");
+        } catch (Exception $e) {}
     }
 
     private function getFirstImageUrl(array $activity): ?string {
@@ -1037,14 +1040,27 @@ class ActivityController {
             respond(403, null, 'Bạn không có quyền truy cập hoạt động này', false);
         }
 
-        $stmt = $this->db->prepare("
-            SELECT c.*, u.full_name as user_name, u.avatar_url 
-            FROM activity_comments c 
-            LEFT JOIN users u ON c.user_id = u.id 
-            WHERE c.activity_id = ? AND c.tenant_id = ? 
-            ORDER BY c.created_at DESC
-        ");
-        $stmt->execute([$id, $auth['tenant_id']]);
+        $subtaskId = isset($_GET['subtask_id']) && $_GET['subtask_id'] !== '' ? $_GET['subtask_id'] : null;
+
+        if ($subtaskId) {
+            $stmt = $this->db->prepare("
+                SELECT c.*, u.full_name as user_name, u.avatar_url 
+                FROM activity_comments c 
+                LEFT JOIN users u ON c.user_id = u.id 
+                WHERE c.activity_id = ? AND c.tenant_id = ? AND c.subtask_id = ?
+                ORDER BY c.created_at DESC
+            ");
+            $stmt->execute([$id, $auth['tenant_id'], $subtaskId]);
+        } else {
+            $stmt = $this->db->prepare("
+                SELECT c.*, u.full_name as user_name, u.avatar_url 
+                FROM activity_comments c 
+                LEFT JOIN users u ON c.user_id = u.id 
+                WHERE c.activity_id = ? AND c.tenant_id = ? AND c.subtask_id IS NULL
+                ORDER BY c.created_at DESC
+            ");
+            $stmt->execute([$id, $auth['tenant_id']]);
+        }
         
         $comments = array_map(function($row) {
             $row['attachments'] = $row['attachments'] ? json_decode($row['attachments'], true) : [];
@@ -1074,10 +1090,11 @@ class ActivityController {
         $attachments = !empty($b['attachments']) && is_array($b['attachments']) ? json_encode($b['attachments']) : null;
 
         $parentId = !empty($b['parent_id']) ? (int)$b['parent_id'] : null;
+        $subtaskId = !empty($b['subtask_id']) ? $b['subtask_id'] : null;
 
         $stmt = $this->db->prepare("
-            INSERT INTO activity_comments (tenant_id, activity_id, user_id, content, attachments, parent_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO activity_comments (tenant_id, activity_id, user_id, content, attachments, parent_id, subtask_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $auth['tenant_id'],
@@ -1085,7 +1102,8 @@ class ActivityController {
             $auth['user_id'],
             $b['content'] ?? null,
             $attachments,
-            $parentId
+            $parentId,
+            $subtaskId
         ]);
 
         $commentId = $this->db->lastInsertId();
