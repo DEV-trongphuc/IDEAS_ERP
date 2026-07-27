@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchAPI } from '../utils/api';
 import { 
   Users, Calendar, CreditCard, DollarSign, Check, X, ShieldAlert,
-  Send, Lock, Award, FileText, ChevronRight, Play, CheckCircle
+  Send, Lock, Award, FileText, ChevronLeft, ChevronRight, Play, CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -403,13 +403,38 @@ export default function HRM() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'var(--color-bg-secondary)', borderRadius: 12 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Tháng tính lương')}</label>
-                <input
-                  type="month"
-                  className="form-input"
-                  style={{ height: 38 }}
-                  value={payrollMonth}
-                  onChange={e => setPayrollMonth(e.target.value)}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface)', borderRadius: '10px', border: '1px solid var(--color-border)', padding: '2px', height: 38, boxShadow: 'var(--shadow-sm)' }}>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const [y, m] = payrollMonth.split('-').map(Number);
+                      const prevDate = new Date(y, m - 2, 1);
+                      setPayrollMonth(`${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`);
+                    }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, color: 'var(--color-text-light)', borderRadius: 6 }}
+                    className="hover-bg-secondary"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span style={{ padding: '0 12px', fontWeight: 700, fontSize: '0.875rem', minWidth: '110px', textAlign: 'center', color: 'var(--color-text)' }}>
+                    {(() => {
+                      const [y, m] = payrollMonth.split('-').map(Number);
+                      return `Tháng ${String(m).padStart(2, '0')}/${y}`;
+                    })()}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const [y, m] = payrollMonth.split('-').map(Number);
+                      const nextDate = new Date(y, m, 1);
+                      setPayrollMonth(`${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`);
+                    }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, color: 'var(--color-text-light)', borderRadius: 6 }}
+                    className="hover-bg-secondary"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Số ngày công chuẩn')}</label>

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '../utils/api';
 import { 
   FileText, Calendar, CheckCircle, ShieldCheck, PenTool,
-  Clock, DollarSign, Award, Percent, HelpCircle, Plus, Send
+  Clock, DollarSign, Award, Percent, HelpCircle, Plus, Send,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -299,14 +300,37 @@ export default function MyPayslips() {
         </div>
         
         {activeSubTab === 'payslip' && (
-          <div>
-            <input
-              type="month"
-              className="form-input"
-              style={{ height: 40 }}
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(e.target.value)}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface)', borderRadius: '10px', border: '1px solid var(--color-border)', padding: '2px', height: 40, boxShadow: 'var(--shadow-sm)' }}>
+            <button 
+              type="button"
+              onClick={() => {
+                const [y, m] = selectedMonth.split('-').map(Number);
+                const prevDate = new Date(y, m - 2, 1);
+                setSelectedMonth(`${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`);
+              }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, color: 'var(--color-text-light)', borderRadius: 6 }}
+              className="hover-bg-secondary"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span style={{ padding: '0 16px', fontWeight: 700, fontSize: '0.9rem', minWidth: '120px', textAlign: 'center', color: 'var(--color-text)' }}>
+              {(() => {
+                const [y, m] = selectedMonth.split('-').map(Number);
+                return `Tháng ${String(m).padStart(2, '0')}/${y}`;
+              })()}
+            </span>
+            <button 
+              type="button"
+              onClick={() => {
+                const [y, m] = selectedMonth.split('-').map(Number);
+                const nextDate = new Date(y, m, 1);
+                setSelectedMonth(`${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`);
+              }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, color: 'var(--color-text-light)', borderRadius: 6 }}
+              className="hover-bg-secondary"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
         )}
       </div>
