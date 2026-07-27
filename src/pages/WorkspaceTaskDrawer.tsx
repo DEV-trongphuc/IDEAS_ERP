@@ -1662,10 +1662,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   const hasChanges = originalHash !== currentHash;
 
-  const isApproverOrAdmin = currentUser && (
-    Number(currentUser.id) === Number(formData.approver_id) ||
-    ['admin', 'superadmin', 'super_admin', 'director', 'manager'].includes((currentUser.role || '').toLowerCase())
-  );
+  const isApproverOrAdmin = currentUser && Number(currentUser.id) === Number(formData.approver_id);
 
   const content = (
     <motion.div 
