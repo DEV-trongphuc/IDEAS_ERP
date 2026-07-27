@@ -30,6 +30,10 @@ Tài liệu này chứa bản đồ danh mục các cấu phần cần kiểm th
 *   **Tệp tin**: [notifications_zalo_telegram.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/notifications_zalo_telegram.md)
 *   **Nội dung**: Kiểm thử NotificationService gửi thời gian thực, Zalo Bot OTP/tin nhắn, Telegram Bot SLA thông báo quá hạn và hàng đợi gửi email tự động.
 
+### 📂 7. Quản lý Công việc & Quy trình tự động (Workflows & Tasks)
+*   **Tệp tin**: [tasks_workflows_processes.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/tasks_workflows_processes.md)
+*   **Nội dung**: Kiểm thử giao việc cá nhân (task lẻ), giao việc phòng ban/nhóm, task chăm sóc khách hàng (task sale), tag tên thành viên `@mention`, luồng phê duyệt trạng thái hoàn thành và quy trình mẫu tự động khi chuyển đổi Deal/Lead.
+
 ---
 
 ## 📋 Hướng dẫn thực thi & Tự động hóa
