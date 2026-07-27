@@ -40,6 +40,7 @@ $testUserId = 99999;
 $monthYear = '2026-07';
 
 try {
+    $pdo->exec("SET FOREIGN_KEY_CHECKS=0;");
     // Delete existing test logs if any
     $pdo->prepare("DELETE FROM check_ins WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_leave_requests WHERE user_id = ?")->execute([$testUserId]);
@@ -153,9 +154,11 @@ try {
     $pdo->prepare("DELETE FROM hrm_profiles WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$testUserId]);
 
+    $pdo->exec("SET FOREIGN_KEY_CHECKS=1;");
     assertTest("Đã dọn dẹp dữ liệu kiểm thử an toàn", true);
 
 } catch (Throwable $e) {
+    try { $pdo->exec("SET FOREIGN_KEY_CHECKS=1;"); } catch(Throwable $ex) {}
     echo "❌ LỖI TRONG QUÁ TRÌNH KIỂM THỬ: " . $e->getMessage() . "\n";
     assertTest("Toàn bộ quy trình kiểm thử hoàn tất không có ngoại lệ", false);
 }
