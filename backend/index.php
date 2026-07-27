@@ -105,7 +105,41 @@ set_exception_handler(function (Throwable $e) {
 });
 
 function getBody(): array {
-    return json_decode(file_get_contents('php://input'), true) ?? [];
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    // Sanitize dates and numbers recursively to prevent SQLSTATE / 500 errors
+    $sanitize = function (&$item, $key) {
+        if (is_string($item)) {
+            $trimmed = trim($item);
+            // 1. Clean empty/corrupted dates
+            $dateKeys = [
+                'dob', 'joined_date', 'start_date', 'end_date', 'approval_date', 
+                'leave_start', 'leave_end', 'check_in_date', 'created_at', 'updated_at', 
+                'due_date', 'payment_date', 'expiry_date', 'issued_date'
+            ];
+            if (in_array(strtolower($key), $dateKeys, true)) {
+                if ($trimmed === '' || $trimmed === '0000-00-00' || $trimmed === '1970-01-01') {
+                    $item = null;
+                    return;
+                }
+            }
+            
+            // 2. Clean numeric strings
+            $numKeys = [
+                'amount', 'price', 'expected_commission', 'base_salary', 'deal_salary', 
+                'allowance_meal', 'allowance_travel', 'allowance_phone', 'kpi_target'
+            ];
+            if (in_array(strtolower($key), $numKeys, true)) {
+                if ($trimmed === '') {
+                    $item = 0;
+                    return;
+                }
+            }
+        }
+    };
+    
+    array_walk_recursive($body, $sanitize);
+    return $body;
 }
 
 if (!function_exists('getBearerToken')) {

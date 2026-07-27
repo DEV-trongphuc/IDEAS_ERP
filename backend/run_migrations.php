@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 195;
+$targetVersion = 196;
 $currentVersion = 186;
 
 // Query current DB version
@@ -626,8 +626,55 @@ try {
         $logMsg("Nâng cấp lên phiên bản 195 hoàn tất.", "success");
     }
 
+    // 9.9. Performance indexes & data cleanup (Version 196)
+    if ($currentVersion < 196 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 196 (Tạo 9 chỉ mục hiệu năng và dọn dẹp dữ liệu)...", "info");
+
+        // 1. Clean up corrupted dates in main tables
+        $tables = [
+            'users' => ['dob'],
+            'hrm_profiles' => ['joined_date'],
+            'check_ins' => ['check_in_date'],
+            'hrm_leave_requests' => ['start_date', 'end_date']
+        ];
+        foreach ($tables as $table => $cols) {
+            foreach ($cols as $col) {
+                $conn->query("UPDATE `$table` SET `$col` = NULL WHERE `$col` = '0000-00-00' OR `$col` = '1970-01-01'");
+            }
+        }
+        $logMsg("Đã dọn dẹp các giá trị ngày tháng lỗi (0000-00-00, 1970-01-01) về NULL.", "success");
+
+        // 2. Add BTREE indexes for high-frequency queries
+        $indexes = [
+            'users' => ['idx_users_team' => 'team_id'],
+            'contacts' => ['idx_contacts_tenant_owner' => 'tenant_id, owner_id'],
+            'deals' => ['idx_deals_contact_tenant' => 'contact_id, tenant_id'],
+            'deposits' => ['idx_deposits_contact_creator' => 'contact_id, created_by'],
+            'deposit_milestones' => ['idx_milestones_deposit_status' => 'deposit_id, status'],
+            'invoices' => ['idx_invoices_contact_status' => 'contact_id, status'],
+            'expenses' => ['idx_expenses_tenant_status' => 'tenant_id, status'],
+            'activities' => ['idx_activities_contact_user' => 'contact_id, user_id'],
+            'comments' => ['idx_comments_entity' => 'entity_type(50), entity_id']
+        ];
+
+        foreach ($indexes as $table => $idxList) {
+            foreach ($idxList as $idxName => $columns) {
+                // Check if index already exists
+                $chk = $conn->query("SHOW INDEX FROM `$table` WHERE Key_name = '$idxName'");
+                if (!$chk || $chk->num_rows === 0) {
+                    $conn->query("ALTER TABLE `$table` ADD INDEX `$idxName` ($columns)");
+                    $logMsg("Đã tạo chỉ mục $idxName trên bảng $table.", "success");
+                } else {
+                    $logMsg("Chỉ mục $idxName đã tồn tại trên bảng $table.", "warning");
+                }
+            }
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 196 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '195') ON DUPLICATE KEY UPDATE setting_value = '195'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '196') ON DUPLICATE KEY UPDATE setting_value = '196'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
