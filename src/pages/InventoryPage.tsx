@@ -254,7 +254,7 @@ export default function InventoryPage() {
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (statusFilter && statusFilter !== 'all') params.set('stock_status', statusFilter);
     window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
-    addToast('Đang tải xuống danh sách căn hộ theo bộ lọc hiện tại...', 'info');
+    addToast('Đang tải xuống danh sách sản phẩm theo bộ lọc hiện tại...', 'info');
   };
 
   return (
@@ -263,8 +263,8 @@ export default function InventoryPage() {
         {/* Row 1: Title & Actions */}
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="page-title" style={{ margin: 0 }}>Giỏ hàng &amp; Căn hộ</h1>
-            <p className="page-subtitle" style={{ margin: '4px 0 0' }}>Quản lý giỏ hàng căn hộ, lô đất dự án và lịch sử giao dịch.</p>
+            <h1 className="page-title" style={{ margin: 0 }}>Kho hàng &amp; Sản phẩm</h1>
+            <p className="page-subtitle" style={{ margin: '4px 0 0' }}>Quản lý tồn kho sản phẩm, dịch vụ và lịch sử xuất nhập kho.</p>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
@@ -785,7 +785,7 @@ export default function InventoryPage() {
                 <table style={{ minWidth: 900 }}>
                   <thead>
                     <tr>
-                      <th>MÃ CĂN / DỰ ÁN <Tooltip content="Bảng giỏ hàng dự án bất động sản được đồng bộ theo dòng tiền cọc và giỏ hàng của Chủ đầu tư." /></th>
+                      <th>MÃ SẢN PHẨM / SKU <Tooltip content="Mã sản phẩm / SKU hàng hóa được đồng bộ theo danh mục sản phẩm của Nhà cung cấp." /></th>
                       <th>NGÀY KHAI BÁO / BÀN GIAO</th>
                       <th style={{ textAlign: 'right' }}>GIÁ BÁN (VND)</th>
                       <th style={{ textAlign: 'center' }}>DIỆN TÍCH (M²)</th>

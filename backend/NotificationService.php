@@ -495,27 +495,27 @@ class NotificationService {
                 $depAmount = number_format((float)($payload['amount'] ?? 0), 0, ',', '.') . 'đ';
                 return [
                     'recipients' => $recipients,
-                    'title' => "Yêu cầu duyệt đặt cọc mới",
-                    'body' => "Nhân viên " . $userName . " vừa tạo giao dịch đặt cọc cho khách hàng " . $customerName . " (" . $depAmount . ")",
+                    'title' => "Yêu cầu duyệt đơn hàng mới",
+                    'body' => "Nhân viên " . $userName . " vừa tạo đơn đặt hàng cho khách hàng " . $customerName . " (" . $depAmount . ")",
                     'type' => "deposit",
                     'link' => "/deposits",
-                    'zalo_msg' => "🏠 [ YÊU CẦU DUYỆT ĐẶT CỌC MỚI ]\n\n"
-                        . "Nhân viên $userName vừa tạo yêu cầu đặt cọc mới:\n"
-                        . "  • Mã cọc: #$depId\n"
+                    'zalo_msg' => "🏠 [ YÊU CẦU DUYỆT ĐƠN HÀNG MỚI ]\n\n"
+                        . "Nhân viên $userName vừa tạo yêu cầu đơn đặt hàng mới:\n"
+                        . "  • Mã đơn hàng: #$depId\n"
                         . "  • Khách hàng: $customerName\n"
                         . "  • Số tiền: $depAmount\n\n"
                         . "Vui lòng truy cập CRM để xem xét.",
-                    'tg_msg' => "🏠 <b>[ YÊU CẦU DUYỆT ĐẶT CỌC MỚI ]</b>\n\n"
-                        . "Nhân viên <b>$userName</b> vừa tạo yêu cầu đặt cọc mới:\n"
-                        . "  • Mã cọc: <b>#$depId</b>\n"
+                    'tg_msg' => "🏠 <b>[ YÊU CẦU DUYỆT ĐƠN HÀNG MỚI ]</b>\n\n"
+                        . "Nhân viên <b>$userName</b> vừa tạo yêu cầu đơn đặt hàng mới:\n"
+                        . "  • Mã đơn hàng: <b>#$depId</b>\n"
                         . "  • Khách hàng: <b>" . htmlspecialchars($customerName) . "</b>\n"
                         . "  • Số tiền: <b>$depAmount</b>\n\n"
                         . "Vui lòng truy cập CRM để xem xét.",
-                    'email_subject' => "[IDEAS] Yêu cầu duyệt Đặt cọc mới #$depId",
-                    'email_title' => "DUYỆT ĐẶT CỌC MỚI",
+                    'email_subject' => "[IDEAS] Yêu cầu duyệt Đơn đặt hàng mới #$depId",
+                    'email_title' => "DUYỆT ĐƠN ĐẶT HÀNG MỚI",
                     'email_content' => "Chào quản trị viên,<br/><br/>" .
-                                    "Nhân viên <strong>$userName</strong> vừa tạo giao dịch đặt cọc mới cho khách hàng <strong>" . htmlspecialchars($customerName) . "</strong>.<br/>" .
-                                    "Số tiền cọc: <strong>$depAmount</strong>.<br/>" .
+                                    "Nhân viên <strong>$userName</strong> vừa tạo đơn đặt hàng mới cho khách hàng <strong>" . htmlspecialchars($customerName) . "</strong>.<br/>" .
+                                    "Số tiền: <strong>$depAmount</strong>.<br/>" .
                                     "Vui lòng truy cập CRM để xem xét."
                 ];
 
@@ -526,22 +526,22 @@ class NotificationService {
                 $depId = $payload['deposit_id'] ?? '0';
                 return [
                     'recipients' => $recipients,
-                    'title' => "Cập nhật giao dịch đặt cọc #$depId",
-                    'body' => "Giao dịch cọc cho khách hàng $customerName đã $statusText",
+                    'title' => "Cập nhật đơn đặt hàng #$depId",
+                    'body' => "Đơn đặt hàng cho khách hàng $customerName đã $statusText",
                     'type' => "deposit",
                     'link' => "/deposits",
-                    'zalo_msg' => "💳 [ CẬP NHẬT GIAO DỊCH CỌC ]\n\n"
-                        . "Giao dịch cọc #$depId (KH $customerName) đã $statusText.\n"
+                    'zalo_msg' => "💳 [ CẬP NHẬT ĐƠN ĐẶT HÀNG ]\n\n"
+                        . "Đơn đặt hàng #$depId (KH $customerName) đã $statusText.\n"
                         . (!empty($reason) ? "  • Ghi chú: \"$reason\"\n" : "")
                         . "\nVui lòng xem chi tiết trên CRM.",
-                    'tg_msg' => "💳 <b>[ CẬP NHẬT GIAO DỊCH CỌC ]</b>\n\n"
-                        . "Giao dịch cọc <b>#$depId</b> (KH <b>" . htmlspecialchars($customerName) . "</b>) đã <b>$statusText</b>.\n"
+                    'tg_msg' => "💳 <b>[ CẬP NHẬT ĐƠN ĐẶT HÀNG ]</b>\n\n"
+                        . "Đơn đặt hàng <b>#$depId</b> (KH <b>" . htmlspecialchars($customerName) . "</b>) đã <b>$statusText</b>.\n"
                         . (!empty($reason) ? "  • Ghi chú: <i>\"" . htmlspecialchars($reason) . "\"</i>\n" : "")
                         . "\nVui lòng xem chi tiết trên CRM.",
-                    'email_subject' => "[IDEAS] Cập nhật giao dịch cọc #$depId - $customerName",
-                    'email_title' => "CẬP NHẬT GIAO DỊCH ĐẶT CỌC",
+                    'email_subject' => "[IDEAS] Cập nhật đơn đặt hàng #$depId - $customerName",
+                    'email_title' => "CẬP NHẬT ĐƠN ĐẶT HÀNG",
                     'email_content' => "Chào bạn,<br/><br/>" .
-                                    "Giao dịch cọc #$depId của khách hàng <strong>" . htmlspecialchars($customerName) . "</strong> đã <strong>$statusText</strong>.<br/>" .
+                                    "Đơn đặt hàng #$depId của khách hàng <strong>" . htmlspecialchars($customerName) . "</strong> đã <strong>$statusText</strong>.<br/>" .
                                     (!empty($reason) ? "Ghi chú: <em>\"" . htmlspecialchars($reason) . "\"</em><br/>" : "") .
                                     "Vui lòng kiểm tra trên CRM."
                 ];

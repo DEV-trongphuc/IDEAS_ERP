@@ -111,7 +111,7 @@ export const SuppliersPage: React.FC = () => {
       setSuppliers(data.items || []);
       setTotal(data.total || 0);
     } catch (err: any) {
-      addToast('Lỗi khi tải danh sách chủ đầu tư', 'error');
+      addToast('Lỗi khi tải danh sách nhà cung cấp', 'error');
     } finally {
       setLoading(false);
     }
@@ -170,10 +170,10 @@ export const SuppliersPage: React.FC = () => {
       setIsSaving(true);
       if (selectedSupplier) {
         await api.put(`/suppliers/${selectedSupplier.id}`, formData);
-        addToast('Đã cập nhật chủ đầu tư', 'success');
+        addToast('Đã cập nhật nhà cung cấp', 'success');
       } else {
         await api.post('/suppliers', formData);
-        addToast('Đã thêm chủ đầu tư mới', 'success');
+        addToast('Đã thêm nhà cung cấp mới', 'success');
       }
       setShowModal(false);
       fetchSuppliers();
@@ -186,16 +186,16 @@ export const SuppliersPage: React.FC = () => {
 
   const handleDelete = (id: number) => {
     showConfirm({
-      title: 'Xóa chủ đầu tư',
-      message: 'Bạn có chắc chắn muốn xóa chủ đầu tư này?',
+      title: 'Xóa nhà cung cấp',
+      message: 'Bạn có chắc chắn muốn xóa nhà cung cấp này?',
       isDanger: true,
       onConfirm: async () => {
         try {
           await api.delete(`/suppliers/${id}`);
           setSuppliers(prev => prev.filter(s => s.id !== id));
-          addToast('Đã xóa chủ đầu tư', 'success');
+          addToast('Đã xóa nhà cung cấp', 'success');
         } catch (e: any) {
-          addToast('Lỗi khi xóa chủ đầu tư', 'error');
+          addToast('Lỗi khi xóa nhà cung cấp', 'error');
         } finally {
           closeConfirm();
         }
@@ -210,8 +210,8 @@ export const SuppliersPage: React.FC = () => {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Quản lý Chủ đầu tư</h1>
-          <p className="page-subtitle">Quản lý danh sách các chủ đầu tư dự án bất động sản</p>
+          <h1 className="page-title">Quản lý Nhà cung cấp</h1>
+          <p className="page-subtitle">Quản lý danh sách đối tác và các nhà cung cấp sản phẩm/dịch vụ</p>
         </div>
         <div className="flex gap-3">
           <button className="btn outline" onClick={() => addToast('Tính năng đang phát triển', 'info')}>
@@ -219,7 +219,7 @@ export const SuppliersPage: React.FC = () => {
           </button>
           {!isSale && (
             <button className="btn primary" onClick={() => handleOpenModal()}>
-              <Plus size={18} /> Thêm chủ đầu tư
+              <Plus size={18} /> Thêm nhà cung cấp
             </button>
           )}
         </div>
@@ -258,7 +258,7 @@ export const SuppliersPage: React.FC = () => {
           <Search size={14} style={{ color: 'var(--color-text-muted)', opacity: 0.7 }} />
           <input 
             type="text"
-            placeholder="Tìm kiếm theo tên chủ đầu tư hoặc người liên hệ..." 
+            placeholder="Tìm kiếm theo tên nhà cung cấp hoặc người liên hệ..." 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{
@@ -341,7 +341,7 @@ export const SuppliersPage: React.FC = () => {
             alignItems: 'center',
             boxSizing: 'border-box'
           }}>
-            Hiển thị <strong style={{ color: 'var(--color-primary)', marginLeft: '4px', marginRight: '4px' }}>{total}</strong> chủ đầu tư
+            Hiển thị <strong style={{ color: 'var(--color-primary)', marginLeft: '4px', marginRight: '4px' }}>{total}</strong> nhà cung cấp
           </div>
         </div>
       </div>
@@ -353,8 +353,8 @@ export const SuppliersPage: React.FC = () => {
       ) : total === 0 ? (
         <EmptyCard 
           icon={<Truck size={48} />}
-          title="Chưa có chủ đầu tư nào"
-          description="Bắt đầu thêm các chủ đầu tư dự án để quản lý."
+          title="Chưa có nhà cung cấp nào"
+          description="Bắt đầu thêm các đối tác, nhà cung cấp để quản lý."
           actionText={isSale ? undefined : "Thêm ngay"}
           onAction={isSale ? undefined : () => handleOpenModal()}
         />
@@ -586,7 +586,7 @@ export const SuppliersPage: React.FC = () => {
                       {isReadOnly ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
                           <div>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>Tên chủ đầu tư / đối tác</span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>Tên nhà cung cấp / đối tác</span>
                             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)' }}>{formData.name || '—'}</span>
                           </div>
 
@@ -637,10 +637,10 @@ export const SuppliersPage: React.FC = () => {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
                           <div className="form-group">
-                            <label className="form-label">Tên doanh nghiệp / Chủ đầu tư <span className="text-danger">*</span></label>
+                            <label className="form-label">Tên nhà cung cấp / Doanh nghiệp <span className="text-danger">*</span></label>
                             <input 
                               className="form-input" 
-                              placeholder="Ví dụ: Vingroup, Novaland..."
+                              placeholder="Ví dụ: Công ty Cổ phần A, Công ty TNHH B..."
                               required 
                               value={formData.name}
                               onChange={e => setFormData({...formData, name: e.target.value})}
@@ -1055,7 +1055,7 @@ export const SuppliersPage: React.FC = () => {
                           ) : (
                             <textarea 
                               className="form-textarea" 
-                              placeholder="Thông tin thêm về chủ đầu tư..."
+                              placeholder="Thông tin thêm về nhà cung cấp..."
                               value={formData.notes || ''}
                               onChange={e => setFormData({...formData, notes: e.target.value})}
                               rows={4}

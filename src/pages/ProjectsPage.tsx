@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { fetchAPI } from '../utils/api';
@@ -1711,7 +1711,7 @@ export default function ProjectsPage() {
                       <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700, display: 'block', fontFamily: 'monospace' }}>{editingProject?.code}</span>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Chủ đầu tư</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Nhà cung cấp / Đối tác</span>
                       <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700, display: 'block' }}>{editingProject?.developer || 'Chưa cập nhật'}</span>
                     </div>
                     <div>
@@ -4364,7 +4364,7 @@ export default function ProjectsPage() {
                       {proj.developer && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Briefcase size={13} /></span>
-                          <span>Chủ đầu tư: <strong style={{ color: 'var(--color-text)' }}>{proj.developer}</strong></span>
+                          <span>Nhà cung cấp: <strong style={{ color: 'var(--color-text)' }}>{proj.developer}</strong></span>
                         </div>
                       )}
                       {proj.location && (
@@ -4946,7 +4946,7 @@ export default function ProjectsPage() {
                     <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block', fontFamily: 'monospace' }}>{editingProject?.code}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Chủ đầu tư</span>
+                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Nhà cung cấp / Đối tác</span>
                     <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingProject?.developer || 'Chưa cập nhật'}</span>
                   </div>
                   <div>
@@ -5375,11 +5375,11 @@ export default function ProjectsPage() {
                   </div>
 
                   <div>
-                    <label className="form-label">Chủ đầu tư</label>
+                    <label className="form-label">Nhà cung cấp / Đối tác</label>
                     {developers.length === 0 ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-                          Chưa có chủ đầu tư nào!
+                          Chưa có nhà cung cấp nào!
                         </span>
                         <button
                           type="button"
@@ -5390,7 +5390,7 @@ export default function ProjectsPage() {
                           className="btn primary sm"
                           style={{ width: '100%', height: '38px', fontSize: '0.75rem' }}
                         >
-                          Thêm chủ đầu tư trước
+                          Thêm nhà cung cấp trước
                         </button>
                       </div>
                     ) : (
@@ -5399,7 +5399,7 @@ export default function ProjectsPage() {
                         options={developers.map(d => ({ value: d.name, label: d.name }))}
                         value={editingProject?.developer || ''}
                         onChange={val => setEditingProject(prev => ({ ...prev, developer: String(val) }))}
-                        placeholder="Chọn chủ đầu tư..."
+                        placeholder="Chọn nhà cung cấp / đối tác..."
                       />
                     )}
                   </div>
