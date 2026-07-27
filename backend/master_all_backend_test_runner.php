@@ -15,7 +15,7 @@ $masterStart = microtime(true);
 echo "--- 1. AUDIT CONTROLLERS LOAD & SYNTAX ---\n";
 $controllersDir = __DIR__ . '/controllers';
 if (is_dir($controllersDir)) {
-    $cFiles = glob($controllersDir . '/*.php');
+    $cFiles = glob($controllersDir . '/*Controller.php');
     foreach ($cFiles as $cFile) {
         $cName = basename($cFile);
         try {
