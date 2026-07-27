@@ -241,7 +241,7 @@ class CampaignController {
     }
 
     public function update(array $auth, int $id): void {
-        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director'], true);
+        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing'], true);
         if (!$isAuthorized) {
             $stmtLeader = $this->db->prepare("SELECT 1 FROM teams WHERE leader_id = ? LIMIT 1");
             $stmtLeader->execute([(int)$auth['user_id']]);
@@ -405,7 +405,7 @@ class CampaignController {
             respond(404, null, 'Chiến dịch không tồn tại', false);
         }
         $name = $camp['name'];
-        $isAdminOrDirector = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director'], true);
+        $isAdminOrDirector = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director', 'marketing'], true);
         if (!$isAdminOrDirector) {
             $creatorId = $camp['created_by'];
             $mgrs = array_filter(array_map('intval', explode(',', $camp['manager_ids'] ?? '')));

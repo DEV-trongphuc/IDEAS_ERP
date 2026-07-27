@@ -109,7 +109,7 @@ class ProjectController {
         $stmtProj->execute([$projectId]);
         $proj = $stmtProj->fetch(PDO::FETCH_ASSOC);
         
-        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director'], true);
+        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director', 'marketing'], true);
         if ($proj) {
             if ($proj['created_by'] && (int)$proj['created_by'] === (int)$auth['user_id']) {
                 $isAuthorized = true;
@@ -439,12 +439,12 @@ class ProjectController {
     }
 
     public function destroy(array $auth, int $id): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing']);
         
         $stmtProj = $this->db->prepare("SELECT created_by FROM projects WHERE id = ? AND tenant_id = ?");
         $stmtProj->execute([$id, $auth['tenant_id']]);
         $creatorId = $stmtProj->fetchColumn();
-            $isAdminOrDirector = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director'], true);
+            $isAdminOrDirector = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director', 'marketing'], true);
             if (!$isAdminOrDirector && (int)$creatorId !== (int)$auth['user_id']) {
                 respond(403, null, 'Chỉ Admin, Director hoặc người tạo dự án mới được xóa', false);
             }
@@ -492,7 +492,7 @@ class ProjectController {
     }
 
     public function updateRoster(array $auth, int $projectId): void {
-        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director'], true);
+        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director', 'marketing'], true);
         if (!$isAuthorized) {
             $isManagerOrLeader = ($auth['role'] === 'manager');
             if (!$isManagerOrLeader) {

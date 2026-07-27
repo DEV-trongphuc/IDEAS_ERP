@@ -206,9 +206,10 @@ function getModulePermissionScope($conn, $auth, $module, $action)
 
     $permissionsJson = $auth['permissions'] ?? null;
     if ($permissionsJson === null) {
+        $userId = $auth['id'] ?? $auth['user_id'] ?? 0;
         $stmt = $conn->prepare("SELECT permissions_json FROM users WHERE id = ? LIMIT 1");
         if ($stmt) {
-            $stmt->bind_param("i", $auth['user_id']);
+            $stmt->bind_param("i", $userId);
             $stmt->execute();
             $res = $stmt->get_result()->fetch_assoc();
             $stmt->close();
@@ -227,6 +228,33 @@ function getModulePermissionScope($conn, $auth, $module, $action)
 
     // Default fallbacks based on role
     $role = $auth['role'];
+    if ($role === 'hr') {
+        if (in_array($module, ['hrm', 'attendance', 'users'], true)) {
+            return 'all';
+        }
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'own';
+    }
+    if ($role === 'accountant') {
+        if (in_array($module, ['deposits', 'expenses', 'finance', 'invoices', 'quotes'], true)) {
+            return 'all';
+        }
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'own';
+    }
+    if ($role === 'marketing') {
+        if (in_array($module, ['leads', 'campaigns', 'projects'], true)) {
+            return 'all';
+        }
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'own';
+    }
     if ($role === 'director') {
         if ($module === 'settings') {
             return 'none';
@@ -11913,7 +11941,7 @@ switch ($action) {
 
 
     case 'get_accounts':
-        if ($decodedUser['role'] !== 'admin' && $decodedUser['role'] !== 'superadmin' && $decodedUser['role'] !== 'super_admin' && $decodedUser['role'] !== 'manager' && $decodedUser['role'] !== 'director') {
+        if ($decodedUser['role'] !== 'admin' && $decodedUser['role'] !== 'superadmin' && $decodedUser['role'] !== 'super_admin' && $decodedUser['role'] !== 'manager' && $decodedUser['role'] !== 'director' && $decodedUser['role'] !== 'hr') {
             // Find current user's team
             $uStmt = $conn->prepare("SELECT team_id FROM users WHERE id = ?");
             $uStmt->bind_param("i", $decodedUser['id']);
