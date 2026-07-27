@@ -336,8 +336,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           overflow: 'hidden',
           ...(size === 'sm' ? {
             minHeight: '38px',
-            height: '38px',
-            padding: '6px 12px',
+            height: multiple ? 'auto' : '38px',
+            padding: multiple ? '4px 12px' : '6px 12px',
             fontSize: '0.875rem',
             borderRadius: 'var(--radius-md)'
           } : {}),
@@ -346,7 +346,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           } : {})
         }}
       >
-        <span className={(multiple && Array.isArray(value) && value.length > 0) || selectedOption ? styles.selectedValue : styles.placeholder}>
+        <span 
+          className={(multiple && Array.isArray(value) && value.length > 0) || selectedOption ? styles.selectedValue : styles.placeholder}
+          style={multiple ? { whiteSpace: 'normal', overflow: 'visible', display: 'block', width: '100%' } : {}}
+        >
           {renderTriggerContent()}
         </span>
         <ChevronDown size={size === 'sm' ? 14 : 16} className={`${styles.icon} ${isOpen ? styles.iconOpen : ''}`} />
