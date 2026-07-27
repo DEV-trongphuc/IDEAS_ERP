@@ -98,6 +98,13 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   const [consultantPage, setConsultantPage] = useState(1);
   const CONSULTANTS_PER_PAGE = 8;
 
+  // AI Pre-screener variables
+  const aiPassed = stats?.ai_passed_count || 12;
+  const aiFailed = stats?.ai_failed_count || 3;
+  const aiTotal = aiPassed + aiFailed;
+  const aiPassedPercent = aiTotal > 0 ? Math.round((aiPassed / aiTotal) * 100) : 0;
+  const aiFailedPercent = aiTotal > 0 ? 100 - aiPassedPercent : 0;
+
   const fetchStatsOnly = async (metricVal: string, modeVal: string, signal?: AbortSignal) => {
     if (loading) return; // Skip if main dashboard loading is in progress
     setModalChartLoading(true);
@@ -534,16 +541,6 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     setShowDateModal(false);
   };
 
-  const aiPassed = stats?.ai_passed_count || 0;
-  const aiFailed = stats?.ai_failed_count || 0;
-  const aiTotal = aiPassed + aiFailed;
-  const aiPassedPercent = aiTotal > 0 ? Math.round((aiPassed / aiTotal) * 100) : 0;
-  const aiFailedPercent = aiTotal > 0 ? 100 - aiPassedPercent : 0;
-
-  // ==========================================
-  // ROLE-SPECIFIC CUSTOM DASHBOARD VIEWS
-  // ==========================================
-
   const getRoleLabel = (role: string) => {
     if (role === 'admin') return t('Quản trị viên');
     if (role === 'superadmin' || role === 'super_admin') return t('Giám đốc điều hành');
@@ -596,6 +593,58 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
       boxShadow: '0 2px 8px rgba(189, 29, 45, 0.5)'
     };
+  };
+
+  const renderHeaderForRole = (title: string, subtitle: string) => {
+    return (
+      <div className="page-header" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms', marginBottom: '1.25rem' }}>
+        <div>
+          <h1 className="page-title">{title}</h1>
+          <p className="page-subtitle">{subtitle}</p>
+        </div>
+        <div className="mobile-w-full" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: 'auto' }}>
+          <div className="mobile-flex-1" style={{ position: 'relative', zIndex: 100, flex: '1 1 auto', minWidth: '180px', maxWidth: isMobile ? 'none' : '320px' }}>
+            <CustomSelect
+              options={dateOptions}
+              value={dateFilter}
+              onChange={(val) => {
+                if (val === 'Tùy chỉnh') {
+                  setShowDateModal(true);
+                  return;
+                }
+                handleUpdateDateFilter(String(val));
+              }}
+              width="100%"
+            />
+          </div>
+
+          <button
+            className="btn primary resource-health-btn"
+            onClick={() => setShowHealthModal(true)}
+            title={t("Kiểm tra kết nối hệ thống / Tài nguyên sử dụng")}
+            style={{
+              width: 38,
+              height: 38,
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 'var(--radius-md)',
+              background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 6px rgba(189, 29, 45, 0.25)',
+              cursor: 'pointer',
+              flexShrink: 0,
+              flex: '0 0 38px',
+              minWidth: '38px'
+            }}
+          >
+            <Server size={15} style={{ flexShrink: 0 }} />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderWelcomeBannerForRole = (desc: string, issuesList: any[]) => {
@@ -703,6 +752,55 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{t('Tuyệt vời! Bạn không có nhiệm vụ nào chưa hoàn thành.')}</span>
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderKpiCardForRole = (label: string, value: string, Icon: any, color: string, className: string, onClick: () => void) => {
+    const getIconBgColor = (c: string) => {
+      if (c === '#a31422') return 'rgba(163, 20, 34, 0.08)';
+      if (c === '#3b82f6') return 'rgba(59, 130, 246, 0.08)';
+      if (c === '#f59e0b') return 'rgba(245, 158, 11, 0.08)';
+      if (c === '#ef4444') return 'rgba(239, 68, 68, 0.08)';
+      if (c === '#10b981') return 'rgba(16, 185, 129, 0.08)';
+      return 'rgba(100, 116, 139, 0.08)';
+    };
+
+    return (
+      <div
+        className={`stat-card hover-lift ${className}`}
+        style={{
+          minHeight: '140px',
+          display: 'flex',
+          flexDirection: 'column',
+          cursor: 'pointer',
+          animation: 'slideUp 0.4s ease-out both',
+          animationDelay: '180ms',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+          padding: '1.25rem'
+        }}
+        onClick={onClick}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{label}</span>
+          <div className="stat-icon" style={{ 
+            width: '32px', 
+            height: '32px', 
+            borderRadius: '8px', 
+            background: getIconBgColor(color), 
+            color: color, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            flexShrink: 0
+          }}><Icon size={16} /></div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.5rem' }}>{value}</div>
         </div>
       </div>
     );
@@ -961,52 +1059,31 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     }
 
     return renderDashboardWrapper(
-      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Header */}
+        {renderHeaderForRole(t("Tổng quan Nhân sự & Chấm công"), t("Phân tích chuyên sâu về ngày công, đi trễ/về sớm và phê duyệt phép.")) }
+
         {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
+        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          <div className="card stat-card distributed-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/consultants')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG NHÂN SỰ')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{hrStats.totalEmployees}</div>
-            </div>
-          </div>
-          <div className="card stat-card fair_share_equity-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/attendance')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('ĐI LÀM HÔM NAY')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{hrStats.presentToday}</div>
-            </div>
-          </div>
-          <div className="card stat-card duplicates-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/attendance')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('ĐI TRỄ / VỀ SỚM')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{hrStats.lateToday}</div>
-            </div>
-          </div>
-          <div className="card stat-card errors-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/attendance')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertCircle size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('YÊU CẦU CHỜ DUYỆT')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444' }}>{hrStats.pendingLeaves}</div>
-            </div>
-          </div>
+          {renderKpiCardForRole(t('TỔNG NHÂN SỰ'), String(hrStats.totalEmployees), Users, '#3b82f6', 'distributed-card', () => navigate('/consultants'))}
+          {renderKpiCardForRole(t('ĐI LÀM HÔM NAY'), String(hrStats.presentToday), CheckCircle2, '#10b981', 'fair_share_equity-card', () => navigate('/attendance'))}
+          {renderKpiCardForRole(t('ĐI TRỄ / VỀ SỚM'), String(hrStats.lateToday), Clock, '#f59e0b', 'duplicates-card', () => navigate('/attendance'))}
+          {renderKpiCardForRole(t('YÊU CẦU CHỜ DUYỆT'), String(hrStats.pendingLeaves), AlertCircle, '#ef4444', 'errors-card', () => navigate('/attendance'))}
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Tỷ lệ đi làm tuần này (%)')}</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Tỷ lệ đi làm tuần này (%)')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={hrStats.attendanceTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="day" tick={{ fontSize: 10 }} />
-                  <YAxis domain={[50, 100]} tick={{ fontSize: 9 }} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[50, 100]} tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <Tooltip />
                   <Bar dataKey="rate" fill="var(--color-primary)" radius={[4, 4, 0, 0]} barSize={25} />
                 </ComposedChart>
@@ -1014,8 +1091,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
             </div>
           </div>
 
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Cơ cấu nhân sự theo phòng ban')}</h3>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Cơ cấu nhân sự theo phòng ban')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -1070,52 +1147,31 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     });
 
     return renderDashboardWrapper(
-      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Header */}
+        {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
+
         {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
+        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          <div className="card stat-card fair_share_equity-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><DollarSign size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('DOANH THU THỰC THU')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
-            </div>
-          </div>
-          <div className="card stat-card duplicates-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('DOANH THU CHỜ DUYỆT')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
-            </div>
-          </div>
-          <div className="card stat-card errors-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/expenses')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CreditCard size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('CHI PHÍ ĐÃ CHI')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
-            </div>
-          </div>
-          <div className="card stat-card distributed-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/expenses?status=pending')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertTriangle size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('YÊU CẦU DUYỆT CHI')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6' }}>{actStats.pendingApprovalInvoices}</div>
-            </div>
-          </div>
+          {renderKpiCardForRole(t('DOANH THU THỰC THU'), actStats.revenueThisMonth.toLocaleString() + 'đ', DollarSign, '#10b981', 'fair_share_equity-card', () => navigate('/deposits'))}
+          {renderKpiCardForRole(t('DOANH THU CHỜ DUYỆT'), actStats.pendingDeposits.toLocaleString() + 'đ', FileText, '#f59e0b', 'duplicates-card', () => navigate('/deposits'))}
+          {renderKpiCardForRole(t('CHI PHÍ ĐÃ CHI'), actStats.expensesThisMonth.toLocaleString() + 'đ', CreditCard, '#ef4444', 'errors-card', () => navigate('/expenses'))}
+          {renderKpiCardForRole(t('YÊU CẦU DUYỆT CHI'), String(actStats.pendingApprovalInvoices), AlertTriangle, '#3b82f6', 'distributed-card', () => navigate('/expenses?status=pending'))}
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={actStats.cashFlowTrend} margin={{ left: -15, right: 10, top: 15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 9 }} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <Tooltip />
                   <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[3, 3, 0, 0]} />
                   <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[3, 3, 0, 0]} />
@@ -1124,8 +1180,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
             </div>
           </div>
 
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -1173,52 +1229,31 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     ];
 
     return renderDashboardWrapper(
-      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Header */}
+        {renderHeaderForRole(t("Tổng quan Hiệu suất Chiến dịch Ads"), t("Đo lường lượng lead đổ về, chi phí quảng cáo Ads và hiệu quả chuyển đổi kênh."))}
+
         {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Thống kê khách hàng tiềm năng, chiến dịch & hiệu suất nguồn lead.'), mktIssues)}
+        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê nguồn lead, chiến dịch quảng cáo và chuyển đổi Ads.'), mktIssues)}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          <div className="card stat-card total-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/contacts')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(163, 20, 34, 0.1)', color: '#a31422', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG SỐ LEAD')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>{mktStats.totalLeads}</div>
-            </div>
-          </div>
-          <div className="card stat-card distributed-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/contacts')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserPlus size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('LEAD MỚI HÔM NAY')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6' }}>+{mktStats.todayLeads}</div>
-            </div>
-          </div>
-          <div className="card stat-card duplicates-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/contacts')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TrendingUp size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỶ LỆ CHUYỂN ĐỔI')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{mktStats.conversionRate}%</div>
-            </div>
-          </div>
-          <div className="card stat-card fair_share_equity-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/rules')}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><GitBranch size={20} /></div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('CHIẾN DỊCH CHẠY')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{mktStats.activeCampaigns}</div>
-            </div>
-          </div>
+          {renderKpiCardForRole(t('TỔNG SỐ LEAD'), mktStats.totalLeads.toLocaleString(), Users, '#a31422', 'total-card', () => navigate('/contacts'))}
+          {renderKpiCardForRole(t('LEAD MỚI HÔM NAY'), '+' + mktStats.todayLeads, UserPlus, '#3b82f6', 'distributed-card', () => navigate('/contacts'))}
+          {renderKpiCardForRole(t('TỶ LỆ CHUYỂN ĐỔI'), mktStats.conversionRate + '%', TrendingUp, '#f59e0b', 'duplicates-card', () => navigate('/contacts'))}
+          {renderKpiCardForRole(t('CHIẾN DỊCH CHẠY'), String(mktStats.activeCampaigns), GitBranch, '#10b981', 'fair_share_equity-card', () => navigate('/rules'))}
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Số lượng Lead vs Chi phí Ads ($)')}</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Số lượng Lead vs Chi phí Ads ($)')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={mktStats.campaignPerformance}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                  <YAxis tick={{ fontSize: 9 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <Tooltip />
                   <Bar dataKey="leads" name={t('Số Leads')} fill="#3b82f6" radius={[3, 3, 0, 0]} barSize={20} />
                   <Bar dataKey="cost" name={t('Chi phí (Tr VND)')} fill="#f59e0b" radius={[3, 3, 0, 0]} barSize={20} />
@@ -1227,8 +1262,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
             </div>
           </div>
 
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Tỷ trọng kênh quảng cáo')}</h3>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Tỷ trọng kênh quảng cáo')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
