@@ -12064,32 +12064,20 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>{t('Chứng chỉ môi giới')}</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={editBrokerLicense}
-                          onChange={(e) => setEditBrokerLicense(e.target.value)}
-                          placeholder="Mã số chứng chỉ (nếu có)"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>{t('Trình độ học vấn')}</label>
-                        <CustomSelect
-                          options={[
-                            { value: 'undergraduate', label: t('Trung cấp / Cao đẳng') },
-                            { value: 'graduate', label: t('Đại học') },
-                            { value: 'postgraduate', label: t('Thạc sĩ / Tiến sĩ') },
-                            { value: 'other', label: t('Khác') }
-                          ]}
-                          value={editDegree}
-                          onChange={val => setEditDegree(String(val))}
-                          placeholder={t('Chọn trình độ...')}
-                        />
-                      </div>
-                    </div>
+                     <div className="form-group">
+                       <label className="form-label" style={{ fontWeight: 600 }}>{t('Trình độ học vấn')}</label>
+                       <CustomSelect
+                         options={[
+                           { value: 'undergraduate', label: t('Trung cấp / Cao đẳng') },
+                           { value: 'graduate', label: t('Đại học') },
+                           { value: 'postgraduate', label: t('Thạc sĩ / Tiến sĩ') },
+                           { value: 'other', label: t('Khác') }
+                         ]}
+                         value={editDegree}
+                         onChange={val => setEditDegree(String(val))}
+                         placeholder={t('Chọn trình độ...')}
+                       />
+                     </div>
                 </div>
               </div>
             )}

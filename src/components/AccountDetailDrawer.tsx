@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -1965,10 +1965,6 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                           placeholder={t('Chọn địa điểm làm việc...')}
                           disabled={readOnly}
                         />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">{t('Chứng chỉ môi giới')}</label>
-                        <input className="form-input" value={brokerLicense} onChange={e => setBrokerLicense(e.target.value)} placeholder={t('Số chứng chỉ hành nghề')} />
                       </div>
                     </div>
 

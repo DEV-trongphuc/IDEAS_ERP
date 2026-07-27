@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User, Key, Eye, EyeOff, Save, ShieldAlert, Mail, Activity, Clock, 
   Settings, LogOut, Camera, Loader2, Calendar, Phone, Bell, Info, 
@@ -744,21 +744,15 @@ export const ProfilePage: React.FC = () => {
                   <input type="text" className="form-input" value={workplace} onChange={e => setWorkplace(e.target.value)} placeholder="VD: Trụ sở chính TP.HCM..." />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Chứng chỉ môi giới')}</label>
-                    <input type="text" className="form-input" value={brokerLicense} onChange={e => setBrokerLicense(e.target.value)} placeholder="Mã số chứng chỉ (nếu có)" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Trình độ học vấn')}</label>
-                    <select className="form-input" value={degree} onChange={e => setDegree(e.target.value)}>
-                      <option value="undergraduate">{t('Trung cấp / Cao đẳng')}</option>
-                      <option value="graduate">{t('Đại học')}</option>
-                      <option value="postgraduate">{t('Thạc sĩ / Tiến sĩ')}</option>
-                      <option value="other">{t('Khác')}</option>
-                    </select>
-                  </div>
-                </div>
+                 <div className="form-group">
+                   <label className="form-label" style={{ fontWeight: 600 }}>{t('Trình độ học vấn')}</label>
+                   <select className="form-input" value={degree} onChange={e => setDegree(e.target.value)}>
+                     <option value="undergraduate">{t('Trung cấp / Cao đẳng')}</option>
+                     <option value="graduate">{t('Đại học')}</option>
+                     <option value="postgraduate">{t('Thạc sĩ / Tiến sĩ')}</option>
+                     <option value="other">{t('Khác')}</option>
+                   </select>
+                 </div>
               </div>
             )}
           </div>
