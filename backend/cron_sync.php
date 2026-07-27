@@ -1138,7 +1138,8 @@ if (!function_exists('releasePendingWorkHoursLeads')) {
 }
 if (!function_exists('recallInactiveLeads')) {
     function recallInactiveLeads($conn) {
-        logSync("Checking for inactive unaccepted leads to recall...");
+        logSync("Checking for inactive unaccepted leads to recall... Disabled for IDEAS education model.");
+        return;
         
         $sql = "SELECT l.id as lead_id, l.name as lead_name, l.phone as lead_phone, l.email as lead_email,
                        l.source as lead_source, l.type as lead_type, l.note as lead_note,
@@ -2336,7 +2337,8 @@ foreach ($connections as $connItem) {
 }
 
 function releaseExpiredLeadsToKho($conn) {
-    logSync("Running releaseExpiredLeadsToKho...");
+    logSync("Running releaseExpiredLeadsToKho... Disabled for IDEAS education model.");
+    return;
 
     $triggerStatus = get_system_setting($conn, 'parallel_assignment_trigger_status') ?: 'chua_xac_dinh';
 

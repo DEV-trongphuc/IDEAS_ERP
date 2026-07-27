@@ -44,7 +44,6 @@ import { TableSkeleton, StatRowSkeleton, CalendarSkeleton, CardSkeleton, Skeleto
 import { SignaturePadModal } from '../components/ui/SignaturePadModal';
 import { Edit3, ExternalLink, Briefcase } from 'lucide-react';
 const FairShareAudit = lazy(() => import('./FairShareAudit').then(module => ({ default: module.FairShareAudit })));
-const InvoicesPage = lazy(() => import('./InvoicesPage').then(module => ({ default: module.InvoicesPage })));
 const ProjectsPage = lazy(() => import('./ProjectsPage'));
 const FilesPage = lazy(() => import('./FilesPage').then(module => ({ default: module.FilesPage })));
 const Consultants = lazy(() => import('./Consultants').then(module => ({ default: module.Consultants })));
@@ -219,7 +218,7 @@ interface SalePortalProps {
   searchParams?: URLSearchParams;
   setSearchParams?: any;
   location?: any;
-  activeTabProp?: 'dashboard' | 'workspace' | 'data' | 'tickets' | 'schedule' | 'calendar' | 'fair-share' | 'databank' | 'invoices' | 'projects' | 'files' | 'consultants' | 'attendance-portal';
+  activeTabProp?: 'dashboard' | 'workspace' | 'data' | 'tickets' | 'schedule' | 'calendar' | 'fair-share' | 'projects' | 'files' | 'consultants' | 'attendance-portal';
   embedMode?: boolean;
 }
 
@@ -527,7 +526,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   const [profileDrawerTab, setProfileDrawerTab] = useState<string>('info');
 
   // Tab & Layout states
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'workspace' | 'data' | 'tickets' | 'schedule' | 'calendar' | 'fair-share' | 'databank' | 'invoices' | 'projects' | 'files' | 'consultants' | 'attendance-portal'>(activeTabProp || 'dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workspace' | 'data' | 'tickets' | 'schedule' | 'calendar' | 'fair-share' | 'projects' | 'files' | 'consultants' | 'attendance-portal'>(activeTabProp || 'dashboard');
   const [sourceViewMode, setSourceViewMode] = useState<'connection' | 'lead'>('connection');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -3331,11 +3330,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     };
   }, [token]);
 
-  useEffect(() => {
-    if (activeTab === 'databank') {
-      fetchPublicLeads();
-    }
-  }, [activeTab, showDeletedFilter]);
+
 
   const handleSubmitCheckIn = async (fileToUpload?: File) => {
     setCheckInSubmitting(true);
@@ -7989,13 +7984,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 {t('Chấm công')}
               </button>
             )}
-            <button 
-              onClick={() => setActiveTab('databank')}
-              className="welcome-action-btn outline-btn"
-            >
-              <Database size={14} />
-              {t('Nhận data')}
-            </button>
+
           </div>
         </div>
 
@@ -14824,8 +14813,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   title: 'TỔNG QUAN',
                   items: [
                     { name: 'Tổng quan', key: 'dashboard', icon: LayoutDashboard },
-                    { name: 'Bàn làm việc', key: 'workspace', icon: CheckSquare },
-                    { name: 'Kho Databank', key: 'databank', icon: Layers }
+                    { name: 'Bàn làm việc', key: 'workspace', icon: CheckSquare }
                   ]
                 },
                 {
@@ -14855,8 +14843,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 {
                   title: 'TÀI CHÍNH',
                   items: [
-                    { name: 'Hóa đơn', key: 'invoices', icon: Receipt },
-                    { name: 'Phiếu hợp tác', key: 'cooperation-slips', icon: Scale, route: '/cooperation-slips' },
                     { name: 'Chi phí', key: 'expenses', icon: CreditCard, route: '/expenses' }
                   ]
                 },
@@ -15094,8 +15080,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   title: 'TỔNG QUAN',
                   items: [
                     { name: 'Tổng quan', key: 'dashboard', icon: LayoutDashboard },
-                    { name: 'Bàn làm việc', key: 'workspace', icon: CheckSquare },
-                    { name: 'Kho Databank', key: 'databank', icon: Layers }
+                    { name: 'Bàn làm việc', key: 'workspace', icon: CheckSquare }
                   ]
                 },
                 {
@@ -15125,8 +15110,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 {
                   title: 'TÀI CHÍNH',
                   items: [
-                    { name: 'Hóa đơn', key: 'invoices', icon: Receipt },
-                    { name: 'Phiếu hợp tác', key: 'cooperation-slips', icon: Scale, route: '/cooperation-slips' },
                     { name: 'Chi phí', key: 'expenses', icon: CreditCard, route: '/expenses' }
                   ]
                 },
@@ -15663,7 +15646,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               {activeTab === 'dashboard' && renderDashboardView()}
               {activeTab === 'workspace' && renderWorkspaceView()}
               {activeTab === 'data' && renderDataView()}
-              {activeTab === 'databank' && renderDatabankView()}
               {activeTab === 'calendar' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {/* Title */}
@@ -15830,11 +15812,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               )}
               {activeTab === 'tickets' && renderTicketsView()}
               {activeTab === 'schedule' && renderScheduleView()}
-              {activeTab === 'invoices' && (
-                <Suspense fallback={null}>
-                  <InvoicesPage />
-                </Suspense>
-              )}
               {activeTab === 'projects' && (
                 <Suspense fallback={null}>
                   <ProjectsPage />
@@ -16311,7 +16288,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               const myTaker = activeDetailLead.takers && activeDetailLead.takers.find((t: any) => Number(t.id) === Number(user?.id) || Number(t.id) === Number(user?.consultant_id));
               const isAssignee = Number(activeDetailLead.assigned_to) === Number(user?.consultant_id) || Number(activeDetailLead.assigned_to) === Number(user?.id);
               const isClaimer = !!myTaker || isAssignee;
-              const canRelease = isClaimer && activeDetailLead.status !== 'databank' && activeDetailLead.status !== 'released_to_kho' && activeDetailLead.is_public !== 1 && Number(activeDetailLead.is_public) !== 1;
+              const canRelease = false;
 
               return canRelease ? (
                 <button

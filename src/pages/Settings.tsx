@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dbSchemaJson from '../assets/db_schema.json';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -248,7 +248,6 @@ const SettingsInner = () => {
     { id: 'business_limits', tab: 'business_limits', category: t('Phân phối & Nghiệp vụ'), subtab: t('Nghiệp vụ & Hạn mức'), title: t('Số ngày tự động rớt nhiệt (Decay)'), desc: t('Tự động thu hồi lead khi không tương tác quá số ngày quy định'), keywords: ['nhiệt', 'decay', 'thu hồi', 'tương tác', 'ngày'] },
     { id: 'sla_timeout', tab: 'business_limits', category: t('Phân phối & Nghiệp vụ'), subtab: t('Nghiệp vụ & Hạn mức'), title: t('Thời gian chờ nhận lead & SLA Phản hồi'), desc: t('Quy định số phút chờ tiếp nhận lead giờ hành chính và tăng ca'), keywords: ['sla', 'timeout', 'chờ', 'phản hồi', 'tiếp nhận', 'hành chính'] },
     { id: 'backpressure', tab: 'business_limits', category: t('Phân phối & Nghiệp vụ'), subtab: t('Nghiệp vụ & Hạn mức'), title: t('Hạn mức chống ôm (Backpressure)'), desc: t('Giới hạn số lead Chưa XĐ tối đa trước khi chặn chia lead mới'), keywords: ['chống ôm', 'backpressure', 'hạn mức', 'chưa xác định'] },
-    { id: 'databank_limits', tab: 'business_limits', category: t('Phân phối & Nghiệp vụ'), subtab: t('Nghiệp vụ & Hạn mức'), title: t('Hạn mức rút data Databank (Giờ/Ngày/Tháng)'), desc: t('Giới hạn số data tối đa Sale được chủ động lấy từ kho data chung'), keywords: ['databank', 'kho data', 'rút data', 'hạn mức kho'] },
     { id: 'deposit_demote', tab: 'business_limits', category: t('Phân phối & Nghiệp vụ'), subtab: t('Nghiệp vụ & Hạn mức'), title: t('Quy tắc cọc & Bể cọc (Demote status)'), desc: t('Xử lý hạ cấp trạng thái khách hàng khi hủy cọc trước hoặc sau khi có doanh thu'), keywords: ['cọc', 'bể cọc', 'hủy cọc', 'tụt', 'hạ cấp'] },
 
     // Thời gian & Lịch trình
@@ -460,6 +459,7 @@ const SettingsInner = () => {
   const [fallbackRoundId, setFallbackRoundId] = useState('');
   const [duplicateCheckMonths, setDuplicateCheckMonths] = useState(6);
   const [reassignIfOwnerInactive, setReassignIfOwnerInactive] = useState(true);
+  const [requireLeadClaim, setRequireLeadClaim] = useState(false);
   const [starvationPreventionEnabled, setStarvationPreventionEnabled] = useState(false);
   const [starvationMaxLeadsPerHour, setStarvationMaxLeadsPerHour] = useState(3);
   const [dbVersion, setDbVersion] = useState('');
@@ -838,6 +838,11 @@ const SettingsInner = () => {
           });
         }
         setReassignIfOwnerInactive(json.data.reassign_if_owner_inactive === undefined || json.data.reassign_if_owner_inactive === '1' || json.data.reassign_if_owner_inactive === 1);
+        if (json.data.require_lead_claim !== undefined) {
+          setRequireLeadClaim(json.data.require_lead_claim === '1' || json.data.require_lead_claim === 1);
+        } else {
+          setRequireLeadClaim(false);
+        }
         if (json.data.starvation_prevention_enabled !== undefined) {
           setStarvationPreventionEnabled(json.data.starvation_prevention_enabled === '1' || json.data.starvation_prevention_enabled === 1);
         }
@@ -5020,172 +5025,8 @@ function doPost(e) {
 
                   </div>
 
-                  {/* Nhóm 3: Hạn mức nhận Databank */}
-                  <div style={{ background: 'var(--color-bg-secondary)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                      <Shield size={15} style={{ color: 'var(--color-primary)' }} />
-                      <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Hạn mức nhận khách hàng từ Databank')}</h4>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-                      <div>
-                        <label className="form-label">{t('Hạn mức nhận / Ngày')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ paddingRight: '4.5rem' }}
-                            value={databankLimitPerDay}
-                            onChange={e => setDatabankLimitPerDay(Number(e.target.value))}
-                            min={0}
-                          />
-                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('lead / ngày')}</span>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>
-                          {t('Số lead databank tối đa Sale được nhận/ngày.')}
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="form-label">{t('Hạn mức nhận / Giờ')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ paddingRight: '4.5rem' }}
-                            value={databankLimitPerHour}
-                            onChange={e => setDatabankLimitPerHour(Number(e.target.value))}
-                            min={0}
-                          />
-                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('lead / giờ')}</span>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>
-                          {t('Số lead databank tối đa Sale được nhận/giờ.')}
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="form-label">{t('Hạn mức nhận / Tháng')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ paddingRight: '5.5rem' }}
-                            value={databankLimitPerMonth}
-                            onChange={e => setDatabankLimitPerMonth(Number(e.target.value))}
-                            min={0}
-                          />
-                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('lead / tháng')}</span>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>
-                          {t('Số lead databank tối đa Sale được nhận/tháng.')}
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="form-label">{t('Số Sale tối đa nhận trùng 1 khách')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ paddingRight: '4.5rem' }}
-                            value={maxParallelSalesPerClient}
-                            onChange={e => setMaxParallelSalesPerClient(Number(e.target.value))}
-                            min={1}
-                          />
-                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Sale / khách')}</span>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>
-                          {t('Số lượng Sale tối đa được claim trùng chăm sóc song song.')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Nhóm 4: Nguồn ra kho & Khóa trùng Databank */}
-                  <div style={{ background: 'var(--color-bg-secondary)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)', marginTop: '1.25rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
-                      <Clock size={15} style={{ color: 'var(--color-primary)' }} />
-                      <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Cấu hình Nguồn ra kho & Khóa trùng Databank')}</h4>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                      <div>
-                        <label className="form-label">{t('Nguồn lead áp dụng ra kho')}</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={databankApplicableSources}
-                          onChange={e => setDatabankApplicableSources(e.target.value)}
-                        />
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block' }}>
-                          {t('Các nguồn lead cách nhau bằng dấu phẩy (ví dụ: R3_Fb,R3,R2,broadcast).')}
-                        </span>
-                        {availableSources.length > 0 && (
-                          <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', width: '100%', marginBottom: '2px' }}>{t('Nguồn hiện có trong hệ thống (Click để bật/tắt):')}</span>
-                            {availableSources.map(src => {
-                              const activeSources = databankApplicableSources.split(',').map(s => s.trim()).filter(Boolean);
-                              const isActive = activeSources.includes(src);
-                              return (
-                                <button
-                                  key={src}
-                                  type="button"
-                                  onClick={() => {
-                                    if (isActive) {
-                                      const filtered = activeSources.filter(s => s !== src);
-                                      setDatabankApplicableSources(filtered.join(','));
-                                    } else {
-                                      const updated = [...activeSources, src];
-                                      setDatabankApplicableSources(updated.join(','));
-                                    }
-                                  }}
-                                  style={{
-                                    background: isActive ? 'var(--color-primary-light)' : 'var(--color-bg)',
-                                    color: isActive ? 'var(--color-primary)' : 'var(--color-text-light)',
-                                    border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                                    borderRadius: '6px',
-                                    padding: '3px 8px',
-                                    fontSize: '0.725rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s',
-                                    outline: 'none'
-                                  }}
-                                  onMouseEnter={e => {
-                                    if (!isActive) e.currentTarget.style.borderColor = 'var(--color-text-muted)';
-                                  }}
-                                  onMouseLeave={e => {
-                                    if (!isActive) e.currentTarget.style.borderColor = 'var(--color-border)';
-                                  }}
-                                >
-                                  {src} {isActive ? '✓' : '+'}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="form-label">{t('Khóa trùng lý do lỗi (Databank)')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ paddingRight: '3.5rem' }}
-                            value={lockoutReasonCountThreshold}
-                            onChange={e => setLockoutReasonCountThreshold(Number(e.target.value))}
-                            min={1}
-                          />
-                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('lần')}</span>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
-                          {t('Số lần báo lỗi trùng lý do trong chiến dịch trước khi khóa vĩnh viễn lead ra kho.')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
+                  
+                  {/* Kho Databank đã được lược bỏ */}
                   {/* Nhóm 5: Quy tắc cọc & Bể cọc */}
                   <div style={{ background: 'var(--color-bg-secondary)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)', marginTop: '1.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>

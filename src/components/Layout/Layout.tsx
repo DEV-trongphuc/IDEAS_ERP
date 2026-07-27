@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -896,59 +896,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           onUnifiedInboxClick={() => setIsUnifiedInboxOpen(true)}
         />
 
-        {user && consultantProfile && !consultantProfile.telegram_chat_id && !dismissTelegramReminder && (
-          <div style={{
-            background: 'linear-gradient(90deg, #0088cc 0%, #00a8ff 100%)',
-            color: '#fff',
-            padding: '8px 1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '0.85rem',
-            fontWeight: 500,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-            zIndex: 30
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/3840px-Telegram_logo.svg.png" alt="Telegram" style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', padding: 1 }} />
-              <span>
-                Bạn chưa liên kết tài khoản với <b>Telegram Bot</b> để nhận các thông báo, cảnh báo quan trọng từ hệ thống. 
-                <span 
-                  style={{ 
-                    display: isMobile ? 'block' : 'inline-block',
-                    marginLeft: isMobile ? 0 : 8,
-                    marginTop: isMobile ? '4px' : 0,
-                    textDecoration: 'underline', 
-                    cursor: 'pointer', 
-                    fontWeight: 700, 
-                    color: '#fff' 
-                  }} 
-                  onClick={() => setIsTelegramModalOpen(true)}
-                >
-                  Liên kết ngay →
-                </span>
-              </span>
-            </div>
-            <button 
-              onClick={() => {
-                setDismissTelegramReminder(true);
-                sessionStorage.setItem('dismiss_telegram_reminder', '1');
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-                padding: '0 5px',
-                lineHeight: 1
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        )}
 
 
         <main className="responsive-main" style={{ flex: 1, overflow: 'auto', padding: '1.25rem 1.75rem', position: 'relative', zIndex: 10 }}>

@@ -1623,31 +1623,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
               >
                 <Calendar size={13} /> <span className="hide-on-mobile">{t('Lịch biểu')}</span>
               </button>
-              <button
-                type="button"
-                className={`btn-toggle-view ${viewMode === 'databank' ? 'active' : ''}`}
-                onClick={() => {
-                  setLocalViewMode('databank');
-                  navigate('/data?view=databank');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: viewMode === 'databank' ? 'var(--color-primary)' : 'transparent',
-                  color: viewMode === 'databank' ? 'white' : 'var(--color-text-muted)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  height: '28px'
-                }}
-              >
-                <Database size={13} /> <span className="hide-on-mobile">{t('Kho chung (Databank)')}</span>
-              </button>
+/* databank tab disabled */
             </div>
 
             {/* Separator line */}
@@ -2863,11 +2839,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                     {(() => {
                       const myTaker = selectedLead.takers && selectedLead.takers.find((t: any) => Number(t.id) === Number(user?.id) || Number(t.id) === Number(user?.consultant_id));
                       const isClaimer = !!myTaker;
-                      const canRelease = isAdmin ? (
-                        selectedLead.status !== 'databank' && selectedLead.status !== 'released_to_kho' && selectedLead.is_public !== 1 && Number(selectedLead.is_public) !== 1 && !isAdminEditingLead
-                      ) : (
-                        isClaimer && selectedLead.status !== 'databank' && selectedLead.status !== 'released_to_kho' && selectedLead.is_public !== 1 && Number(selectedLead.is_public) !== 1
-                      );
+                      const canRelease = false;
 
                       return canRelease ? (
                         <button

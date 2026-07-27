@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Layout } from './components/Layout/Layout';
@@ -39,16 +39,13 @@ const DealsPage = lazy(() => import('./pages/DealsPage').then(module => ({ defau
 const QuotesPage = lazy(() => import('./pages/QuotesPage').then(module => ({ default: module.QuotesPage })));
 const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage').then(module => ({ default: module.ActivitiesPage })));
 const ProductsPage = lazy(() => import('./pages/ProductsPage').then(module => ({ default: module.ProductsPage })));
-const InvoicesPage = lazy(() => import('./pages/InvoicesPage').then(module => ({ default: module.InvoicesPage })));
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage').then(module => ({ default: module.ExpensesPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then(module => ({ default: module.ReportsPage })));
 const SuppliersPage = lazy(() => import('./pages/SuppliersPage').then(module => ({ default: module.SuppliersPage })));
 const FilesPage = lazy(() => import('./pages/FilesPage').then(module => ({ default: module.FilesPage })));
 const InventoryPage = lazy(() => import('./pages/InventoryPage').then(module => ({ default: module.default })));
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
-const CooperationSlipsPage = lazy(() => import('./pages/CooperationSlipsPage'));
 const DepositsPage = lazy(() => import('./pages/DepositsPage'));
-const CapiPage = lazy(() => import('./pages/CapiPage'));
 const AttendancePage = lazy(() => import('./pages/AttendancePage').then(module => ({ default: module.AttendancePage })));
 const TicketsPage = lazy(() => import('./pages/TicketsPage').then(module => ({ default: module.TicketsPage })));
 const DownloadPage = lazy(() => import('./pages/DownloadPage').then(module => ({ default: module.DownloadPage })));
@@ -84,7 +81,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training'];
-  const userPaths = ['/', '/workspace', '/data', '/calendar', '/databank', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/invoices', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/cooperation-slips', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account'];
+  const userPaths = ['/', '/workspace', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -109,14 +106,7 @@ const AppTabs = () => {
     if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'deposit')) {
       return <Navigate to="/" replace />;
     }
-  } else if (currentPath === '/cooperation-slips') {
-    if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'cooperation')) {
-      return <Navigate to="/" replace />;
-    }
-  } else if (currentPath === '/invoices') {
-    if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'quote_invoice')) {
-      return <Navigate to="/" replace />;
-    }
+
   } else if (currentPath === '/quotes') {
     if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'quote_invoice')) {
       return <Navigate to="/" replace />;
@@ -169,8 +159,6 @@ const AppTabs = () => {
           : <DataList key="data" />;
       case '/calendar':
         return user?.role === 'sale' ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" /> : <DataList key="calendar" />;
-      case '/databank':
-        return <SalePortal embedMode={true} activeTabProp="databank" key="databank" />;
       case '/contacts':
         return <ContactsPage key="contacts" />;
       case '/companies':
@@ -183,8 +171,6 @@ const AppTabs = () => {
         return <Navigate to="/" replace />;
       case '/products':
         return <ProductsPage key="products" />;
-      case '/invoices':
-        return <InvoicesPage key="invoices" />;
       case '/expenses':
         return <ExpensesPage key="expenses" />;
       case '/reports-crm':
@@ -215,16 +201,12 @@ const AppTabs = () => {
         return <Gatekeeper key="gatekeeper" />;
       case '/fair-share':
         return user?.role === 'sale' ? <SalePortal embedMode={true} activeTabProp="fair-share" key="fair-share" /> : <FairShareAudit key="fair-share" />;
-      case '/capi':
-        return <CapiPage key="capi" />;
       case '/ai-training':
         return <AITrainingPage key="ai-training" />;
       case '/attendance':
         return <AttendancePage key="attendance" />;
       case '/projects':
         return <ProjectsPage key="projects" />;
-      case '/cooperation-slips':
-        return <CooperationSlipsPage key="cooperation-slips" />;
       case '/deposits':
         return <DepositsPage key="deposits" />;
       default:

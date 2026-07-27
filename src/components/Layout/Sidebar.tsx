@@ -27,8 +27,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { name: 'Dashboard', href: '/', icon: LayoutDashboard, end: true },
       { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-      { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2 },
-      { name: 'Kho Databank', href: '/databank', icon: Layers, hideForRoles: ['viewer'] }
+      { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2 }
     ]
   },
   {
@@ -59,8 +58,6 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { name: 'Báo giá', href: '/quotes', icon: FileText, hideForRoles: ['viewer'] },
       { name: 'Phiếu đặt cọc', href: '/deposits', icon: Receipt, hideForRoles: ['viewer'], badgeKey: 'pendingDeposits' },
-      { name: 'Phiếu hợp tác', href: '/cooperation-slips', icon: Scale, hideForRoles: ['viewer'], badgeKey: 'coopSlips' },
-      { name: 'Hóa đơn', href: '/invoices', icon: Receipt, hideForRoles: ['viewer'] },
       { name: 'Chi phí', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer'], badgeKey: 'pendingExpenses' }
     ]
   },
@@ -84,8 +81,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Quản lý tài khoản', href: '/accounts', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
       { name: 'Vòng phân bổ', href: '/rounds', icon: GitBranch, adminOnly: true, hideForRoles: ['manager', 'assistant', 'sale', 'sales'] },
       { name: 'Quy tắc định tuyến', href: '/rules', icon: Webhook, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
-      { name: 'Tích hợp Data', href: '/integrations', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] },
-      { name: 'CAPI', href: '/capi', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] }
+      { name: 'Tích hợp Data', href: '/integrations', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales'] }
     ]
   }
 ];
