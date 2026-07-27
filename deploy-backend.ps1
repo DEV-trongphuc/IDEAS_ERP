@@ -9,7 +9,7 @@ Write-Host "1. Compressing backend files to system temp directory..." -Foregroun
 tar -czf "$tempBackend" -C backend .
 
 Write-Host "2. Uploading backend archive and applying remote migrations in a single session..." -ForegroundColor Yellow
-cmd /c "ssh -4 -p 2210 -o StrictHostKeyChecking=no vhvxoigh@chiefaiofficer.vn ""tar -xzf - -C open.domation.net/ideas/ && php open.domation.net/ideas/run_migrations.php --apply"" < ""$tempBackend"""
+cmd /c "ssh -i C:\Users\LENOVO\.ssh\id_ed25519 -4 -p 2210 -o StrictHostKeyChecking=no vhvxoigh@chiefaiofficer.vn ""tar -xzf - -C open.domation.net/ideas/ && php open.domation.net/ideas/run_migrations.php --apply"" < ""$tempBackend"""
 
 $sshExit = $LASTEXITCODE
 
