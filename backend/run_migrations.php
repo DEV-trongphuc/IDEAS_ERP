@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 193;
+$targetVersion = 194;
 $currentVersion = 186;
 
 // Query current DB version
@@ -549,8 +549,23 @@ try {
         $logMsg("Nâng cấp lên phiên bản 193 hoàn tất.", "success");
     }
 
+    // 9.7. Add custom_fields_json to hrm_profiles (Version 194)
+    if ($currentVersion < 194 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 194 (Thêm cột custom_fields_json vào hrm_profiles)...", "info");
+        
+        $checkCol = $conn->query("SHOW COLUMNS FROM `hrm_profiles` LIKE 'custom_fields_json'");
+        if (!$checkCol || $checkCol->num_rows === 0) {
+            $conn->query("ALTER TABLE `hrm_profiles` ADD COLUMN `custom_fields_json` TEXT NULL AFTER `kpi_multiplier_rules`");
+            $logMsg("Đã thêm cột custom_fields_json vào bảng hrm_profiles.", "success");
+        } else {
+            $logMsg("Cột custom_fields_json đã tồn tại trong bảng hrm_profiles.", "warning");
+        }
+        
+        $logMsg("Nâng cấp lên phiên bản 194 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '193') ON DUPLICATE KEY UPDATE setting_value = '193'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '194') ON DUPLICATE KEY UPDATE setting_value = '194'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

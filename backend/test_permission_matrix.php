@@ -8,16 +8,17 @@ echo "====================================================\n";
 echo "🔐 BAT DAU KIEM THU MA TRAN PHAN QUYEN THUC TE (LIVE DB & PAYLOAD RBAC)\n";
 echo "====================================================\n\n";
 
-$roles = ['superadmin', 'admin', 'director', 'manager', 'assistant', 'sale', 'viewer'];
+$roles = ['superadmin', 'admin', 'director', 'manager', 'assistant', 'sale', 'viewer', 'hr', 'accountant', 'marketing'];
 
 // Helper function to check role access against permission rules
 function checkPermission(string $role, string $module, string $action): bool {
     $adminRoles = ['superadmin', 'super_admin', 'admin', 'director'];
-    $managementRoles = ['superadmin', 'super_admin', 'admin', 'director', 'manager'];
     
     switch ("{$module}:{$action}") {
         case 'user:create':
         case 'user:delete':
+            return in_array($role, array_merge($adminRoles, ['hr']), true);
+
         case 'setting:update':
         case 'round:update':
             return in_array($role, $adminRoles, true);
@@ -31,7 +32,7 @@ function checkPermission(string $role, string $module, string $action): bool {
         case 'contact:create':
         case 'contact:update':
         case 'lead:update':
-            return $role !== 'viewer';
+            return !in_array($role, ['viewer', 'hr', 'accountant'], true) || ($module === 'lead' && $role === 'marketing');
 
         case 'contact:delete':
         case 'lead:delete':
@@ -39,10 +40,20 @@ function checkPermission(string $role, string $module, string $action): bool {
 
         case 'deposit:approve':
         case 'deposit:reject':
-            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'assistant'], true);
+            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'assistant', 'accountant'], true);
 
         case 'lead:propose_not_lead':
             return in_array($role, ['sale', 'sales', 'manager', 'director', 'admin', 'superadmin'], true);
+
+        case 'expense:approve':
+            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'manager', 'accountant', 'hr'], true);
+
+        case 'hrm:view':
+        case 'hrm:update':
+            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'hr'], true);
+
+        case 'campaign:update':
+            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'marketing'], true);
 
         default:
             return false;
@@ -95,17 +106,21 @@ echo "\n";
 // ----------------------------------------------------
 // 2. CHOK MULTI-ROLE MATRIX VERIFICATION
 // ----------------------------------------------------
-echo "--- 2. KIEM THU BANG LOGIC ROLES (7 ROLES) ---\n";
+echo "--- 2. KIEM THU BANG LOGIC ROLES (10 ROLES) ---\n";
 foreach ($roles as $r) {
     $canCreateUser = checkPermission($r, 'user', 'create');
     $canUpdateSelf = checkPermission($r, 'user', 'update_self');
     $canApproveDeposit = checkPermission($r, 'deposit', 'approve');
     $canProposeNotLead = checkPermission($r, 'lead', 'propose_not_lead');
+    $canApproveExpense = checkPermission($r, 'expense', 'approve');
+    $canManageHrm = checkPermission($r, 'hrm', 'update');
 
     assertTest("[{$r}] Update thong tin ca nhan", $canUpdateSelf === ($r !== 'viewer'));
-    assertTest("[{$r}] Quyen Quan tri (Create User / Setting)", $canCreateUser === in_array($r, ['superadmin', 'admin', 'director'], true));
-    assertTest("[{$r}] Quyen Duyet Coc (Assistant/Admin)", $canApproveDeposit === in_array($r, ['superadmin', 'admin', 'director', 'assistant'], true));
+    assertTest("[{$r}] Quyen Quan tri (Create User)", $canCreateUser === in_array($r, ['superadmin', 'admin', 'director', 'hr'], true));
+    assertTest("[{$r}] Quyen Duyet Coc (Assistant/Admin/Accountant)", $canApproveDeposit === in_array($r, ['superadmin', 'admin', 'director', 'assistant', 'accountant'], true));
     assertTest("[{$r}] Quyen De xuat Not Lead (Sale/Manager/Director)", $canProposeNotLead === in_array($r, ['sale', 'manager', 'director', 'admin', 'superadmin'], true));
+    assertTest("[{$r}] Quyen Duyet Chi phi (HR/Accountant/Admin/Manager)", $canApproveExpense === in_array($r, ['superadmin', 'admin', 'director', 'manager', 'accountant', 'hr'], true));
+    assertTest("[{$r}] Quyen Quan ly HRM (HR/Admin)", $canManageHrm === in_array($r, ['superadmin', 'admin', 'director', 'hr'], true));
 }
 
 printTestSummary();

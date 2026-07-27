@@ -206,9 +206,7 @@ class CampaignController {
             }
         }
 
-        if (!$isProjectManager) {
-            requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director']);
-        }
+            requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing']);
 
         if ($project_id === null && !empty($project_ids)) {
             $pNames = array_filter(array_map('trim', explode(',', $project_ids)));
@@ -393,7 +391,7 @@ class CampaignController {
     }
 
     public function destroy(array $auth, int $id): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing']);
         
         $tenantId = $auth['tenant_id'] ?? 1;
         $userId = $auth['user_id'] ?? $auth['id'] ?? 1;

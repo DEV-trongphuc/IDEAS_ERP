@@ -790,7 +790,7 @@ class DepositController {
 
         $this->db->beginTransaction();
         try {
-            $isAdmin = in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant'], true);
+            $isAdmin = in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'accountant'], true);
             if ($isAdmin) {
                 if (isset($input['expected_commission'])) {
                     $expComm = (float)$input['expected_commission'];

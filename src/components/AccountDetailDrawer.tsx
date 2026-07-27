@@ -149,9 +149,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   const isSuperAdmin = currentUser?.role === 'superadmin' || (currentUser?.role as string) === 'super_admin';
   const isAdmin = currentUser?.role === 'admin' || isSuperAdmin;
   const isViewingOtherUser = Boolean(account && currentUser && String(account.id) !== String(currentUser.id));
-  const effectiveReadOnly = readOnly || (isViewingOtherUser && !isAdmin && !isSuperAdmin);
   const isOwnProfile = account && currentUser && String(account.id) === String(currentUser.id);
   const isHRorAdmin = currentUser && ['hr', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(currentUser.role).toLowerCase());
+  const effectiveReadOnly = readOnly || (isViewingOtherUser && !isHRorAdmin);
   const showSalaryTab = isOwnProfile || isHRorAdmin;
   const canEditSalary = isHRorAdmin;
 
@@ -198,6 +198,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   const [allowanceTravel, setAllowanceTravel] = useState(0);
   const [allowancePhone, setAllowancePhone] = useState(0);
   const [kpiTarget, setKpiTarget] = useState(0);
+  const [customAllowances, setCustomAllowances] = useState<{ name: string, value: number }[]>([]);
 
   // Collapsible sections
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -553,6 +554,14 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                 setAllowanceTravel(Number(found.allowance_travel || 0));
                 setAllowancePhone(Number(found.allowance_phone || 0));
                 setKpiTarget(Number(found.kpi_target || 0));
+                try {
+                  const customList = found.custom_fields_json 
+                    ? (typeof found.custom_fields_json === 'string' ? JSON.parse(found.custom_fields_json) : found.custom_fields_json) 
+                    : [];
+                  setCustomAllowances(Array.isArray(customList) ? customList : []);
+                } catch(e) {
+                  setCustomAllowances([]);
+                }
               }
             }
           }
@@ -1049,7 +1058,8 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
             allowance_meal: allowanceMeal,
             allowance_travel: allowanceTravel,
             allowance_phone: allowancePhone,
-            kpi_target: kpiTarget
+            kpi_target: kpiTarget,
+            custom_fields_json: JSON.stringify(customAllowances)
           })
         });
       }
@@ -1181,7 +1191,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                   <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09xxxxxxx" autoComplete="off" />
                 </div>
 
-                {isAdmin && (
+                {isHRorAdmin && (
                   <div className="form-group">
                     <label className="form-label">{t('Phân quyền')} <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                     <CustomSelect 
@@ -2246,7 +2256,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         <input className="form-input" value={telegramChatId} disabled style={{ backgroundColor: 'var(--color-bg-light)', cursor: 'not-allowed' }} placeholder={t('Chưa liên kết Telegram')} />
                       </div>
 
-                      {isAdmin && (
+                      {isHRorAdmin && (
                         <>
                           <div className="form-group">
                             <label className="form-label">{t('Phân quyền')} <span style={{ color: 'var(--color-danger)' }}>*</span></label>
@@ -2424,7 +2434,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                       </div>
                     )}
 
-                    {isAdmin && account && (
+                    {isHRorAdmin && account && (
                       <div style={{
                         marginTop: '2rem',
                         paddingTop: '1.5rem',
@@ -4165,6 +4175,80 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                       <label htmlFor="drawer_has_insurance" style={{ fontWeight: 600, fontSize: '0.85rem', cursor: canEditSalary ? 'pointer' : 'default', color: 'var(--color-text)' }}>
                         {t('Đóng bảo hiểm xã hội bắt buộc')}
                       </label>
+                    </div>
+
+                    {/* Divider line */}
+                    <div style={{ height: '1px', backgroundColor: 'var(--color-border-light)', margin: '15px 0' }} />
+
+                    {/* Custom Allowances Section */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', margin: 0 }}>
+                          {t('Phụ cấp & Chỉ số bổ sung')}
+                        </label>
+                        {canEditSalary && (
+                          <button
+                            type="button"
+                            className="btn primary sm"
+                            onClick={() => setCustomAllowances([...customAllowances, { name: '', value: 0 }])}
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', height: '28px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '6px' }}
+                          >
+                            <Plus size={12} /> {t('Thêm khoản')}
+                          </button>
+                        )}
+                      </div>
+
+                      {customAllowances.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '1.25rem', border: '1px dashed var(--color-border-light)', borderRadius: '10px', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                          {t('Chưa có phụ cấp hoặc chỉ số bổ sung.')}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {customAllowances.map((item, index) => (
+                            <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                style={{ flex: 2, height: '34px', fontSize: '0.8125rem' }}
+                                value={item.name}
+                                onChange={e => {
+                                  const updated = [...customAllowances];
+                                  updated[index].name = e.target.value;
+                                  setCustomAllowances(updated);
+                                }}
+                                placeholder={t('Tên phụ cấp/chỉ số (ví dụ: Độc hại, Thâm niên)')}
+                                disabled={!canEditSalary}
+                              />
+                              <input
+                                type="number"
+                                className="form-input"
+                                style={{ flex: 1, height: '34px', fontSize: '0.8125rem' }}
+                                value={item.value || ''}
+                                onChange={e => {
+                                  const updated = [...customAllowances];
+                                  updated[index].value = Number(e.target.value);
+                                  setCustomAllowances(updated);
+                                }}
+                                placeholder={t('Số tiền')}
+                                disabled={!canEditSalary}
+                              />
+                              {canEditSalary && (
+                                <button
+                                  type="button"
+                                  className="btn outline sm"
+                                  onClick={() => {
+                                    const updated = customAllowances.filter((_, i) => i !== index);
+                                    setCustomAllowances(updated);
+                                  }}
+                                  style={{ padding: '6px', borderRadius: '6px', minWidth: 'auto', height: '34px', color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

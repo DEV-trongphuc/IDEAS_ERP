@@ -190,7 +190,7 @@ export default function DepositsPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const isAdmin = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director'].includes(user.role);
+  const isAdmin = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);
   const canEditMilestones = isAdmin || (selectedDepForManage && (
     String(selectedDepForManage.created_by) === String(user?.id) ||
     String(selectedDepForManage.contact_owner_id) === String(user?.id)
@@ -893,7 +893,7 @@ export default function DepositsPage() {
                           {dep.status !== 'cancelled' && (() => {
                             const isCreator = String(dep.created_by) === String(user?.id);
                             const isOwner = String(dep.contact_owner_id) === String(user?.id);
-                            const isStaff = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director'].includes(user.role);
+                            const isStaff = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);
                             
                             if (isStaff || isCreator || isOwner) {
                               return (
@@ -930,7 +930,7 @@ export default function DepositsPage() {
                           {dep.status !== 'cancelled' && (() => {
                             const isCreator = String(dep.created_by) === String(user?.id);
                             const isOwner = String(dep.contact_owner_id) === String(user?.id);
-                            const isStaff = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director'].includes(user.role);
+                            const isStaff = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);
                             
                             if (isStaff || isCreator || isOwner) {
                               return (

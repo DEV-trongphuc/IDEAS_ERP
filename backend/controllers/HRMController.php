@@ -17,7 +17,7 @@ class HRMController {
 
         $stmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.dob, u.gender, u.citizen_id, u.address, u.bank_name, u.bank_account,
-                   p.joined_date, p.base_salary, p.deal_salary, p.has_insurance, p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.kpi_multiplier_rules
+                   p.joined_date, p.base_salary, p.deal_salary, p.has_insurance, p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.kpi_multiplier_rules, p.custom_fields_json
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
             WHERE u.tenant_id = ?
@@ -35,8 +35,8 @@ class HRMController {
         }
 
         $stmt = $this->db->prepare("
-            INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, kpi_multiplier_rules)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, kpi_multiplier_rules, custom_fields_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 joined_date = VALUES(joined_date),
                 base_salary = VALUES(base_salary),
@@ -46,7 +46,8 @@ class HRMController {
                 allowance_travel = VALUES(allowance_travel),
                 allowance_phone = VALUES(allowance_phone),
                 kpi_target = VALUES(kpi_target),
-                kpi_multiplier_rules = VALUES(kpi_multiplier_rules)
+                kpi_multiplier_rules = VALUES(kpi_multiplier_rules),
+                custom_fields_json = VALUES(custom_fields_json)
         ");
 
         $stmt->execute([
@@ -59,7 +60,8 @@ class HRMController {
             (float)($b['allowance_travel'] ?? 0),
             (float)($b['allowance_phone'] ?? 0),
             (float)($b['kpi_target'] ?? 0),
-            isset($b['kpi_multiplier_rules']) ? (is_array($b['kpi_multiplier_rules']) ? json_encode($b['kpi_multiplier_rules']) : $b['kpi_multiplier_rules']) : null
+            isset($b['kpi_multiplier_rules']) ? (is_array($b['kpi_multiplier_rules']) ? json_encode($b['kpi_multiplier_rules']) : $b['kpi_multiplier_rules']) : null,
+            isset($b['custom_fields_json']) ? (is_array($b['custom_fields_json']) ? json_encode($b['custom_fields_json']) : $b['custom_fields_json']) : null
         ]);
 
         respond(200, ['success' => true]);
@@ -443,7 +445,7 @@ class HRMController {
         // Fetch all employees in tenant
         $empStmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.gender, p.base_salary, p.deal_salary, p.has_insurance,
-                   p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date
+                   p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date, p.custom_fields_json
             FROM users u
             JOIN hrm_profiles p ON u.id = p.user_id
             WHERE u.tenant_id = ? AND u.is_active = 1
@@ -514,6 +516,16 @@ class HRMController {
 
             // 5. Allowances
             $allowanceTotal = (float)$emp['allowance_meal'] + (float)$emp['allowance_travel'] + (float)$emp['allowance_phone'];
+            if (!empty($emp['custom_fields_json'])) {
+                $customFields = json_decode($emp['custom_fields_json'], true);
+                if (is_array($customFields)) {
+                    foreach ($customFields as $field) {
+                        if (isset($field['value'])) {
+                            $allowanceTotal += (float)$field['value'];
+                        }
+                    }
+                }
+            }
 
             // 6. Thưởng KPI based on revenue collected in approved milestones for YYYY-MM
             $kpiBonus = 0.0;

@@ -229,7 +229,7 @@ function getModulePermissionScope($conn, $auth, $module, $action)
     // Default fallbacks based on role
     $role = $auth['role'];
     if ($role === 'hr') {
-        if (in_array($module, ['hrm', 'attendance', 'users'], true)) {
+        if (in_array($module, ['hrm', 'attendance', 'users', 'expenses'], true)) {
             return 'all';
         }
         if ($module === 'settings') {
