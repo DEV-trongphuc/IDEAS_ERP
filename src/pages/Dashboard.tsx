@@ -5,7 +5,7 @@ import {
   GitBranch, UserPlus, Zap, Calendar, BarChart2, Scale,
   FileSpreadsheet, MessageCircle, Database, Server, ExternalLink, Clock, CheckCircle, Cpu,
   ShieldAlert, Filter, Ticket as TicketIcon,
-  FileText, CheckSquare, AlertCircle, CheckCircle2, Settings, DollarSign, Send, CreditCard, TrendingUp
+  FileText, CheckSquare, AlertCircle, CheckCircle2, Settings, DollarSign, Send, CreditCard, TrendingUp, Receipt
 } from 'lucide-react';
 import {
   Bar, XAxis, YAxis, CartesianGrid,
@@ -543,14 +543,397 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   // ==========================================
   // ROLE-SPECIFIC CUSTOM DASHBOARD VIEWS
   // ==========================================
-  
+
+  const getRoleLabel = (role: string) => {
+    if (role === 'admin') return t('Quản trị viên');
+    if (role === 'superadmin' || role === 'super_admin') return t('Giám đốc điều hành');
+    if (role === 'director') return t('Giám đốc');
+    if (role === 'manager') return t('Quản lý');
+    if (role === 'hr') return t('Nhân sự');
+    if (role === 'accountant') return t('Kế toán');
+    if (role === 'marketing') return t('Marketing');
+    return role;
+  };
+
+  const getRoleBadgeStyle = (role: string) => {
+    if (role === 'superadmin' || role === 'super_admin') {
+      return {
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+      };
+    }
+    if (role === 'director') {
+      return {
+        background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
+      };
+    }
+    if (role === 'manager') {
+      return {
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+        boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)'
+      };
+    }
+    if (role === 'hr') {
+      return {
+        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+        boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
+      };
+    }
+    if (role === 'accountant') {
+      return {
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+      };
+    }
+    if (role === 'marketing') {
+      return {
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+      };
+    }
+    return {
+      background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
+      boxShadow: '0 2px 8px rgba(189, 29, 45, 0.5)'
+    };
+  };
+
+  const renderWelcomeBannerForRole = (desc: string, issuesList: any[]) => {
+    return (
+      <div className="welcome-banner">
+        {/* Left section: Welcome Info */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: isMobile ? '1.25rem' : '1.5rem', 
+          flex: isMobile ? '1 1 100%' : '1 1 340px', 
+          minWidth: 0,
+          borderBottom: isMobile ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+          paddingBottom: isMobile ? '12px' : 0,
+          marginBottom: isMobile ? '12px' : 0
+        }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <Avatar 
+              name={user?.name || 'User'} 
+              src={user?.avatar} 
+              size={isMobile ? 58 : 68} 
+              style={{ border: '2px solid rgba(189, 29, 45, 0.45)', boxShadow: '0 0 12px rgba(189, 29, 45, 0.25)' }}
+            />
+            <span className="animate-pulse" style={{
+              position: 'absolute',
+              bottom: 1,
+              right: 1,
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              backgroundColor: '#10b981',
+              border: '2px solid #181515',
+              boxShadow: '0 0 8px #10b981'
+            }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '4px' : '8px' }}>
+              <h2 className="welcome-banner-title" style={{ fontSize: isMobile ? '1.05rem' : '1.25rem' }}>
+                {t('Chào mừng trở lại,')} {user?.name || ''}
+              </h2>
+              {isMobile && (
+                <span style={{ 
+                  fontSize: '0.625rem', 
+                  fontWeight: 900, 
+                  color: '#ffffff', 
+                  padding: '2px 8px', 
+                  borderRadius: '20px', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  ...getRoleBadgeStyle(user?.role || '')
+                }}>
+                  {getRoleLabel(user?.role || '')}
+                </span>
+              )}
+            </div>
+            
+            <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: 0 }}>{desc}</p>
+            
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 500 }}>
+              <Clock size={11} style={{ color: '#ff4d5a' }} />
+              {getCurrentDateVi()}
+            </span>
+
+            {!isMobile && (
+              <div style={{ display: 'flex' }}>
+                <span style={{ 
+                  fontSize: '0.625rem', 
+                  fontWeight: 900, 
+                  color: '#ffffff', 
+                  padding: '2px 8px', 
+                  borderRadius: '20px', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  ...getRoleBadgeStyle(user?.role || '')
+                }}>
+                  {getRoleLabel(user?.role || '')}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Middle section: Issues/Tasks */}
+        <div style={{ flex: isMobile ? '1 1 100%' : '2 1 380px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: isMobile ? '100%' : '280px' }}>
+          <h4 style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#f4f4f5', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
+            {t('Nhiệm vụ & Phê duyệt tồn đọng')}
+          </h4>
+          {issuesList.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {issuesList.map((issue, index) => (
+                <div 
+                  key={index} 
+                  onClick={issue.action}
+                  className="welcome-task-row"
+                  style={{ padding: isMobile ? '8px 12px' : '10px 16px' }}
+                >
+                  {issue.icon}
+                  <span style={{ flex: 1, fontSize: '0.78rem' }}>{issue.text}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '12px' }}>
+              <CheckSquare size={14} style={{ color: '#10b981' }} />
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{t('Tuyệt vời! Bạn không có nhiệm vụ nào chưa hoàn thành.')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDashboardWrapper = (children: React.ReactNode) => {
+    return (
+      <div style={{ position: 'relative' }}>
+        {/* Background loading bar indicator */}
+        {loading && stats && (
+          <div className="page-loading-bar">
+            <div style={{ width: '30%', height: '100%', background: 'var(--color-primary)', borderRadius: 'inherit', animation: 'loadingBar 1.5s infinite ease-in-out' }} />
+          </div>
+        )}
+        <style>{`
+          .page-loading-bar {
+            position: absolute;
+            top: -2rem;
+            left: -3rem;
+            right: -3rem;
+            height: 3px;
+            background: var(--color-primary-light);
+            z-index: 9999;
+            overflow: hidden;
+          }
+          @media (max-width: 1024px) {
+            .page-loading-bar {
+              top: -1.5rem;
+              left: -1.5rem;
+              right: -1.5rem;
+            }
+          }
+          @media (max-width: 768px) {
+            .page-loading-bar {
+              top: -1rem;
+              left: -1rem;
+              right: -1rem;
+            }
+          }
+          @keyframes loadingBar {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(330%); }
+          }
+          @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+          }
+          .ping-dot {
+            animation: pulse 2s infinite;
+          }
+          .top-consultant-item {
+            cursor: pointer;
+          }
+          .top-consultant-item:hover .consultant-name {
+            color: var(--color-primary);
+          }
+          .top-consultant-item:hover .consultant-chart-icon {
+            opacity: 1 !important;
+            transform: scale(1.1);
+          }
+          .consultant-chart-icon {
+            transition: all 0.2s ease-in-out;
+          }
+          .stat-card {
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .stat-card.total-card:hover {
+            box-shadow: 0 6px 16px rgba(163, 20, 34, 0.15) !important;
+            border-color: #a31422 !important;
+          }
+          .stat-card.distributed-card:hover {
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15) !important;
+            border-color: #3b82f6 !important;
+          }
+          .stat-card.duplicates-card:hover {
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.15) !important;
+            border-color: #f59e0b !important;
+          }
+          .stat-card.errors-card:hover {
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15) !important;
+            border-color: #ef4444 !important;
+          }
+          .stat-card.out_of_hours-card:hover {
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.15) !important;
+            border-color: #f59e0b !important;
+          }
+          .stat-card.fair_share_equity-card:hover {
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.15) !important;
+            border-color: #10b981 !important;
+          }
+          .dashboard-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+          }
+          @media (max-width: 1024px) {
+            .dashboard-kpi-grid {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+          @media (max-width: 640px) {
+            .dashboard-kpi-grid {
+              grid-template-columns: repeat(2, 1fr);
+              gap: 0.75rem;
+            }
+          }
+          .welcome-banner {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #181515 0%, #381f21 50%, #121010 100%) !important;
+            border: 1px solid rgba(189, 29, 45, 0.4) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+            padding: 1.75rem 2.25rem !important;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+          }
+          .welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(189, 29, 45, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+          }
+          .welcome-banner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 35px rgba(189, 29, 45, 0.22), 0 1px 0 rgba(255, 255, 255, 0.12) inset !important;
+            border-color: rgba(189, 29, 45, 0.55) !important;
+          }
+          .welcome-action-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            cursor: pointer;
+            border-radius: 12px !important;
+            padding: 10px 20px !important;
+            font-size: 0.8rem !important;
+            font-weight: 750 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            height: 38px !important;
+          }
+          .welcome-action-btn.primary-btn {
+            background: linear-gradient(135deg, #BD1D2D 0%, #a31422 100%) !important;
+            border: none !important;
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(189, 29, 45, 0.45) !important;
+          }
+          .welcome-action-btn.primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(189, 29, 45, 0.6) !important;
+            filter: brightness(1.15);
+          }
+          .welcome-action-btn.outline-btn {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            color: #ffffff !important;
+          }
+          .welcome-action-btn.outline-btn:hover {
+            background: rgba(189, 29, 45, 0.18) !important;
+            border-color: rgba(189, 29, 45, 0.5) !important;
+            color: #ffffff !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(189, 29, 45, 0.25) !important;
+          }
+          .welcome-task-row {
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 12px !important;
+            padding: 10px 16px !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.825rem;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+          }
+          .welcome-task-row:hover {
+            background: rgba(189, 29, 45, 0.15) !important;
+            border-color: rgba(189, 29, 45, 0.4) !important;
+            color: #ffffff !important;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(189, 29, 45, 0.25) !important;
+          }
+          .welcome-banner-title {
+            font-size: 1.15rem !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            margin: 0 !important;
+            letter-spacing: -0.3px !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+            line-height: 1.3 !important;
+          }
+          @media (max-width: 768px) {
+            .welcome-banner {
+              padding: 0.875rem 1.125rem !important;
+              gap: 0.875rem !important;
+              border-radius: 16px !important;
+            }
+            .welcome-banner-title {
+              font-size: 0.95rem !important;
+            }
+          }
+        `}</style>
+        {children}
+      </div>
+    );
+  };
+
   if (user?.role === 'hr') {
     const hrStats = {
       totalEmployees: 32,
       presentToday: 28,
       lateToday: 4,
       onLeave: 2,
-      pendingLeaves: pendingCheckInsCount || 1,
+      pendingLeaves: pendingCheckInsCount || 0,
       departmentData: [
         { name: t('Kinh doanh'), count: 18 },
         { name: t('Marketing'), count: 6 },
@@ -568,51 +951,54 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       ]
     };
 
-    return (
+    const hrIssues = [];
+    if (pendingCheckInsCount > 0) {
+      hrIssues.push({
+        icon: <Clock size={14} style={{ color: '#ff8a8a' }} />,
+        text: `${pendingCheckInsCount} ${t('yêu cầu chấm công/đi trễ cần duyệt.')}`,
+        action: () => navigate('/attendance')
+      });
+    }
+
+    return renderDashboardWrapper(
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner */}
-        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
-          <div>
-            <h1 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{t('Chào mừng trở lại,')} {user.name}!</h1>
-            <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '4px 0 0 0' }}>{t('Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.')}</p>
-          </div>
-          <span style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '6px 14px', borderRadius: '99px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Nhân sự')}</span>
-        </div>
+        {renderWelcomeBannerForRole(t('Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card distributed-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/consultants')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG NHÂN SỰ')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{hrStats.totalEmployees}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{hrStats.totalEmployees}</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card fair_share_equity-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/attendance')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckCircle2 size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('ĐI LÀM HÔM NAY')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{hrStats.presentToday}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{hrStats.presentToday}</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card duplicates-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/attendance')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('ĐI TRỄ / VỀ SỚM')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{hrStats.lateToday}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{hrStats.lateToday}</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card errors-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/attendance')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertCircle size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('YÊU CẦU CHỜ DUYỆT')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{hrStats.pendingLeaves}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444' }}>{hrStats.pendingLeaves}</div>
             </div>
           </div>
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Tỷ lệ đi làm tuần này (%)')}</h3>
             <div style={{ height: 260 }}>
@@ -669,51 +1055,59 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       ]
     };
 
-    return (
+    const actIssues = [];
+    if (pendingExpensesCount > 0) {
+      actIssues.push({
+        icon: <CreditCard size={14} style={{ color: '#ef4444' }} />,
+        text: `${pendingExpensesCount} ${t('yêu cầu thanh toán chi phí cần duyệt.')}`,
+        action: () => navigate('/expenses?status=pending')
+      });
+    }
+    actIssues.push({
+      icon: <Receipt size={14} style={{ color: '#fbbf24' }} />,
+      text: `2 ${t('đơn đặt cọc/UNC đang chờ đối soát.')}`,
+      action: () => navigate('/deposits')
+    });
+
+    return renderDashboardWrapper(
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner */}
-        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
-          <div>
-            <h1 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{t('Chào mừng trở lại,')} {user.name}!</h1>
-            <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '4px 0 0 0' }}>{t('Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.')}</p>
-          </div>
-          <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '6px 14px', borderRadius: '99px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Kế toán')}</span>
-        </div>
+        {renderWelcomeBannerForRole(t('Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card fair_share_equity-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><DollarSign size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('DOANH THU THỰC THU')}</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card duplicates-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('DOANH THU CHỜ DUYỆT')}</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card errors-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/expenses')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CreditCard size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('CHI PHÍ ĐÃ CHI')}</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ef4444' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertTriangle size={20} /></div>
+          <div className="card stat-card distributed-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/expenses?status=pending')}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><AlertTriangle size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('YÊU CẦU DUYỆT CHI')}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#8b5cf6' }}>{actStats.pendingApprovalInvoices}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6' }}>{actStats.pendingApprovalInvoices}</div>
             </div>
           </div>
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
             <div style={{ height: 260 }}>
@@ -763,58 +1157,60 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         { name: 'TikTok Ads', value: 100 }
       ],
       campaignPerformance: [
-        { name: 'Camp A (Sài Gòn)', leads: 220, cost: 12 },
-        { name: 'Camp B (Hà Nội)', leads: 180, cost: 9 },
-        { name: 'Camp C (BĐS Thử)', leads: 140, cost: 7 },
-        { name: 'Camp D (Tỉnh lẻ)', leads: 90, cost: 5 }
+        { name: 'Q1', leads: 450, cost: 45 },
+        { name: 'Q2', leads: 620, cost: 58 },
+        { name: 'Q3', leads: 850, cost: 72 },
+        { name: 'Q4', leads: 950, cost: 85 }
       ]
     };
 
-    return (
+    const mktIssues = [
+      {
+        icon: <GitBranch size={14} style={{ color: '#3b82f6' }} />,
+        text: t('6 chiến dịch Ads đang hoạt động hiệu quả.'),
+        action: () => navigate('/contacts')
+      }
+    ];
+
+    return renderDashboardWrapper(
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner */}
-        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
-          <div>
-            <h1 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{t('Chào mừng trở lại,')} {user.name}!</h1>
-            <p style={{ fontSize: '0.825rem', color: '#94a3b8', margin: '4px 0 0 0' }}>{t('Thống kê nguồn lead, chiến dịch quảng cáo và chuyển đổi Ads.')}</p>
-          </div>
-          <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', border: '1px solid rgba(139, 92, 246, 0.3)', padding: '6px 14px', borderRadius: '99px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Marketing')}</span>
-        </div>
+        {renderWelcomeBannerForRole(t('Thống kê khách hàng tiềm năng, chiến dịch & hiệu suất nguồn lead.'), mktIssues)}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Database size={20} /></div>
+          <div className="card stat-card total-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/contacts')}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(163, 20, 34, 0.1)', color: '#a31422', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG SỐ LEAD')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{mktStats.totalLeads.toLocaleString()}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>{mktStats.totalLeads}</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Zap size={20} /></div>
+          <div className="card stat-card distributed-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/contacts')}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserPlus size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('LEAD MỚI HÔM NAY')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{mktStats.todayLeads}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b82f6' }}>+{mktStats.todayLeads}</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card duplicates-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/contacts')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TrendingUp size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỶ LỆ CHUYỂN ĐỔI')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{mktStats.conversionRate}%</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b' }}>{mktStats.conversionRate}%</div>
             </div>
           </div>
-          <div className="card stat-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+          <div className="card stat-card fair_share_equity-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => navigate('/rules')}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><GitBranch size={20} /></div>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('CHIẾN DỊCH CHẠY')}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{mktStats.activeCampaigns}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>{mktStats.activeCampaigns}</div>
             </div>
           </div>
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.5rem' }}>
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
             <h3 style={{ fontSize: '0.875rem', fontWeight: 800, margin: 0 }}>{t('Số lượng Lead vs Chi phí Ads ($)')}</h3>
             <div style={{ height: 260 }}>
@@ -853,7 +1249,6 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Background loading bar indicator */}
       {loading && stats && (
         <div className="page-loading-bar">
           <div style={{ width: '30%', height: '100%', background: 'var(--color-primary)', borderRadius: 'inherit', animation: 'loadingBar 1.5s infinite ease-in-out' }} />
