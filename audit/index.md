@@ -54,6 +54,10 @@ Tài liệu này chứa bản đồ danh mục các cấu phần cần kiểm th
 *   **Tệp tin**: [accounting_finance_invoices_expenses.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/accounting_finance_invoices_expenses.md)
 *   **Nội dung**: Kiểm thử xuất bản hóa đơn thu tiền từ phiếu đặt cọc, xác nhận thanh toán hóa đơn (Mark Paid), quy trình nhân viên gửi đề xuất chi phí, Kế toán và Admin phê duyệt đề xuất chi giải ngân và báo cáo đối soát dòng tiền ròng (Net cash flow).
 
+### 📂 13. Đề xuất cải tiến UI/UX & Tính năng bổ trợ Công việc (UI/UX & Workflow Suggestions)
+*   **Tệp tin**: [suggestions_uiux_enhancements.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/suggestions_uiux_enhancements.md)
+*   **Nội dung**: Đề xuất cải tiến trải nghiệm trực quan như bảng Kanban kéo thả, Dark Mode, phím tắt nhanh, quét OCR hóa đơn tự động bằng AI, dạng xem Lịch biểu tích hợp (Calendar) và game hóa hiệu suất công việc (Gamification).
+
 ---
 
 ## 📋 Hướng dẫn thực thi & Tự động hóa
