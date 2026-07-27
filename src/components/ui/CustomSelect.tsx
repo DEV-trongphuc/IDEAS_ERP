@@ -154,64 +154,54 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       const selectedOpts = options.filter(o => arr.some(v => String(v) === String(o.value)));
       if (selectedOpts.length > 0) {
         if (avatarsOnly) {
+          const maxVisible = 5;
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', padding: '2px 0' }}>
-              {selectedOpts.map(opt => (
-                <div
-                  key={String(opt.value)}
-                  title={t(opt.label)}
-                  style={{
-                    position: 'relative',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    cursor: 'pointer'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelect(opt, e);
-                  }}
-                >
-                  {opt.avatar ? (
-                    <Avatar src={opt.avatar} name={t(opt.label)} size={26} />
-                  ) : opt.icon ? (
-                    <div style={{
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {selectedOpts.slice(0, maxVisible).map((opt, idx) => (
+                  <div
+                    key={String(opt.value)}
+                    title={t(opt.label)}
+                    style={{
+                      marginLeft: idx === 0 ? 0 : -8,
+                      border: '2px solid var(--color-surface)',
+                      borderRadius: '50%',
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                      zIndex: 10 - idx,
+                      display: 'flex'
+                    }}
+                  >
+                    {opt.avatar ? (
+                      <Avatar src={opt.avatar} name={t(opt.label)} size={26} />
+                    ) : (
+                      <Avatar name={t(opt.label)} size={26} />
+                    )}
+                  </div>
+                ))}
+                {selectedOpts.length > maxVisible && (
+                  <div
+                    style={{
+                      marginLeft: -8,
                       width: 26,
                       height: 26,
                       borderRadius: '50%',
                       background: 'var(--color-primary-light, #eff6ff)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid var(--color-border-light)'
-                    }}>
-                      {opt.icon}
-                    </div>
-                  ) : (
-                    <Avatar name={t(opt.label)} size={26} />
-                  )}
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '-3px',
-                      right: '-3px',
-                      width: '14px',
-                      height: '14px',
-                      borderRadius: '50%',
-                      background: '#ef4444',
-                      color: '#ffffff',
-                      fontSize: '10px',
+                      color: 'var(--color-primary)',
+                      fontSize: '0.7rem',
                       fontWeight: 800,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1.5px solid var(--color-surface, #ffffff)',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.15)'
+                      border: '2px solid var(--color-surface)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                      zIndex: 5
                     }}
                   >
-                    ×
-                  </span>
-                </div>
-              ))}
+                    +{selectedOpts.length - maxVisible}
+                  </div>
+                )}
+              </div>
             </div>
           );
         }

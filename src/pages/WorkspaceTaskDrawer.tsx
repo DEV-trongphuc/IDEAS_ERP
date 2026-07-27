@@ -3928,6 +3928,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 multiple
                 searchable
                 showAvatars
+                avatarsOnly
                 options={users.map(u => ({
                   value: String(u.id),
                   label: u.full_name,
