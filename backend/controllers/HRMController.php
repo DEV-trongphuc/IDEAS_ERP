@@ -885,7 +885,7 @@ class HRMController {
 
         // 4. Pending Checkins
         $stmtCheckins = $this->db->prepare("
-            SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, c.created_at
+            SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, CONCAT(c.check_in_date, ' ', c.check_in_time) as created_at
             FROM check_ins c
             JOIN users u ON c.user_id = u.id
             WHERE u.tenant_id = ? AND c.status = 'pending_approval'
@@ -983,7 +983,7 @@ class HRMController {
 
         // 4. My Checkins
         $stmtCheckins = $this->db->prepare("
-            SELECT c.id, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, c.created_at
+            SELECT c.id, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, CONCAT(c.check_in_date, ' ', c.check_in_time) as created_at
             FROM check_ins c
             WHERE c.user_id = ? AND c.late_minutes > 0
         ");
