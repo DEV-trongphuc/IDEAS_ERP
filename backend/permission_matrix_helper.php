@@ -104,7 +104,13 @@ if (!function_exists('getActionModuleAndType')) {
         
         $module = 'settings';
         
-        if (in_array($action, [
+        if (strpos($action, 'hrm') !== false) {
+            $module = 'hrm';
+        } else if (strpos($action, 'attendance') !== false || strpos($action, 'checkin') !== false || strpos($action, 'check_in') !== false) {
+            $module = 'attendance';
+        } else if (strpos($action, 'account') !== false) {
+            $module = 'users';
+        } else if (in_array($action, [
             'get_reports', 'approve_report', 'reject_report', 'get_my_activity_logs', 
             'compensate_approved_no_comp', 'get_active_compensation_logs', 'get_sale_portal_data',
             'get_sse_updates', 'get_dashboard_stats', 'get_logs'
@@ -118,7 +124,7 @@ if (!function_exists('getActionModuleAndType')) {
             } else {
                 $module = 'tickets';
             }
-        } else if (strpos($action, 'account') !== false || strpos($action, 'zalo') !== false) {
+        } else if (strpos($action, 'zalo') !== false) {
             $module = 'settings';
         } else if (in_array($action, ['get_connections', 'add_connection', 'edit_connection', 'delete_connection', 'toggle_connection', 'toggle_require_both', 'toggle_notify_admin', 'add_mapping', 'edit_mapping', 'delete_mapping', 'force_sync', 'test_master_sync'])) {
             $module = 'settings';
