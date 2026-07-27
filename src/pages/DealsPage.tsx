@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Pagination } from '../components/ui/Pagination';
 import { Plus, GripVertical, Pencil, Trash2, Calendar, Target, DollarSign, MessageSquare, Building2, Loader2, Search, Filter, Users, User, CheckCircle2, Phone, Mail, LayoutGrid, List, Clock, Download, RefreshCw, X, AlertCircle, AlertTriangle, ShieldAlert, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -546,13 +546,7 @@ export const DealsPage: React.FC = () => {
       return;
     }
 
-    if (pipelineView === 'contacts' && toIdx >= 2) {
-      const item = items[fromStage]?.find(d => d.id === itemId);
-      if (item && Number(item.ttl1_completed) !== 1) {
-        addToast('Trước khi sang giai đoạn Đồng ý gặp, bạn bắt buộc phải điền đầy đủ thông tin Form TTL1', 'error');
-        return;
-      }
-    }
+
 
     setTransitionModal({
       isOpen: true,

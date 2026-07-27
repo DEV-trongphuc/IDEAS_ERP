@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Users, Phone, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2 } from 'lucide-react';
@@ -211,7 +211,6 @@ const TABS = [
   { id: 'docs', label: 'Hồ sơ & Tài liệu', icon: <Paperclip size={16} /> },
   { id: 'timeline', label: 'Lịch sử tương tác', icon: <History size={16} /> },
   { id: 'scoring', label: 'Scoring', icon: <Target size={16} /> },
-  { id: 'ttl1', label: 'Xác minh TTL1', icon: <UserCheck size={16} /> },
   { id: 'invoices', label: 'Hóa đơn', icon: <FileText size={16} /> },
   { id: 'deals', label: 'Phiếu đặt cọc', icon: <CreditCard size={16} /> },
   { id: 'quotes', label: 'Báo giá', icon: <ShoppingCart size={16} /> },
@@ -229,7 +228,6 @@ const renderColoredTabIcon = (tabId: string, IconComponent: any) => {
     case 'docs': bgColor = '#8b5cf6'; break;
     case 'timeline': bgColor = '#3b82f6'; break;
     case 'scoring': bgColor = '#06b6d4'; break;
-    case 'ttl1': bgColor = '#14b8a6'; break;
     case 'invoices': bgColor = '#f43f5e'; break;
     case 'deals': bgColor = '#eab308'; break;
     case 'quotes': bgColor = '#10b981'; break;
@@ -4671,15 +4669,6 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       addToast('Chặn đóng deal: Khách hàng chưa từng có tương tác nào! Vui lòng tạo ghi chú cuộc gọi, email hoặc hoạt động trước.', 'error');
       return;
     }
-
-    // Check TTL1 constraint: moving to status index >= 2 (e.g. 'dong_y_gap' / 'Đồng Ý Gặp' or later)
-    if (targetIdx >= 2) {
-      const count = Object.values(ttl1Data).filter(Boolean).length;
-      if (count < 4) {
-        addToast('Chặn chuyển giai đoạn: Yêu cầu hoàn thành tối thiểu 4/5 nhóm thông tin trong Form TTL1!', 'error');
-        return;
-      }
-    }
     
     setPipelineModal({ isOpen: true, targetId, targetLabel: targetName, note: '' });
   };
@@ -5824,7 +5813,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               const tabGroups = [
                                 {
                                   title: 'Thông tin & Nhật ký',
-                                  tabs: ['info', 'tags', 'ttl1', 'tasks', 'timeline', 'scoring']
+                                  tabs: ['info', 'tags', 'tasks', 'timeline', 'scoring']
                                 },
                                 {
                                   title: 'Giao dịch & Tài liệu',
@@ -5910,7 +5899,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               const tabGroups = [
                                 {
                                   title: 'Thông tin & Nhật ký',
-                                  tabs: ['info', 'tags', 'ttl1', 'tasks', 'timeline', 'scoring']
+                                  tabs: ['info', 'tags', 'tasks', 'timeline', 'scoring']
                                 },
                                 {
                                   title: 'Giao dịch & Tài liệu',
@@ -8746,116 +8735,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     </div>
                   )}
 
-                  {/* TTL1 VERIFICATION TAB */}
-                  {activeTab === 'ttl1' && (
-                    <div className="animate-fade">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <div>
-                          <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Form xác minh điều kiện gặp (TTL1)</h3>
-                          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                            Yêu cầu đạt tối thiểu <strong>4/5 nhóm thông tin</strong> để chuyển sang giai đoạn Đồng Ý Gặp hoặc cao hơn.
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="card-panel" style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                          
-                          {/* Group 1 */}
-                          <label style={{ display: 'flex', gap: '12px', cursor: isViewer ? 'not-allowed' : 'pointer', alignItems: 'flex-start' }}>
-                            <CustomCheckbox
-                              checked={ttl1Data.group1}
-                              onChange={(e) => setTtl1Data(p => ({ ...p, group1: e.target.checked }))}
-                              disabled={isViewer}
-                            />
-                            <div>
-                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>Nhóm 1: Nhân khẩu học (Demographics)</p>
-                              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Có đầy đủ Họ tên, Ngày sinh, Nghề nghiệp và thông tin liên hệ chính thống.</p>
-                            </div>
-                          </label>
-
-                          {/* Group 2 */}
-                          <label style={{ display: 'flex', gap: '12px', cursor: isViewer ? 'not-allowed' : 'pointer', alignItems: 'flex-start' }}>
-                            <CustomCheckbox
-                              checked={ttl1Data.group2}
-                              onChange={(e) => setTtl1Data(p => ({ ...p, group2: e.target.checked }))}
-                              disabled={isViewer}
-                            />
-                            <div>
-                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>Nhóm 2: Khả năng tài chính (Financial Readiness)</p>
-                              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Xác định nguồn ngân sách đầu tư rõ ràng, có khả năng chứng minh vốn tự có hoặc bảo lãnh vay.</p>
-                            </div>
-                          </label>
-
-                          {/* Group 3 */}
-                          <label style={{ display: 'flex', gap: '12px', cursor: isViewer ? 'not-allowed' : 'pointer', alignItems: 'flex-start' }}>
-                            <CustomCheckbox
-                              checked={ttl1Data.group3}
-                              onChange={(e) => setTtl1Data(p => ({ ...p, group3: e.target.checked }))}
-                              disabled={isViewer}
-                            />
-                            <div>
-                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>Nhóm 3: Mức độ cấp thiết (Urgency)</p>
-                              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Nhu cầu mua hàng thật sự, có lộ trình ra quyết định trong thời hạn 1 - 3 tháng tới.</p>
-                            </div>
-                          </label>
-
-                          {/* Group 4 */}
-                          <label style={{ display: 'flex', gap: '12px', cursor: isViewer ? 'not-allowed' : 'pointer', alignItems: 'flex-start' }}>
-                            <CustomCheckbox
-                              checked={ttl1Data.group4}
-                              onChange={(e) => setTtl1Data(p => ({ ...p, group4: e.target.checked }))}
-                              disabled={isViewer}
-                            />
-                            <div>
-                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>Nhóm 4: Mức độ phù hợp với dự án (Project Fit)</p>
-                              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Dòng sản phẩm của dự án phù hợp với yêu cầu diện tích, vị trí và mục tiêu sinh lời của khách hàng.</p>
-                            </div>
-                          </label>
-
-                          {/* Group 5 */}
-                          <label style={{ display: 'flex', gap: '12px', cursor: isViewer ? 'not-allowed' : 'pointer', alignItems: 'flex-start' }}>
-                            <CustomCheckbox
-                              checked={ttl1Data.group5}
-                              onChange={(e) => setTtl1Data(p => ({ ...p, group5: e.target.checked }))}
-                              disabled={isViewer}
-                            />
-                            <div>
-                              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>Nhóm 5: Vai trò quyết định (Decision Role)</p>
-                              <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>Xác định người đứng tên cọc/hợp đồng hoặc có vai trò quyết định mua hàng cuối cùng.</p>
-                            </div>
-                          </label>
-                          
-
-
-                        </div>
-
-                        {/* Status Summary & Action */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border-light)', paddingTop: '1.25rem', marginTop: '1.5rem' }}>
-                          <div>
-                            <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                              Tổng điều kiện đạt: <strong>{Object.values(ttl1Data).filter(Boolean).length}/5</strong>
-                            </span>
-                            <span style={{
-                              marginLeft: '12px', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700,
-                              background: Object.values(ttl1Data).filter(Boolean).length >= 4 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                              color: Object.values(ttl1Data).filter(Boolean).length >= 4 ? '#059669' : '#dc2626'
-                            }}>
-                              {Object.values(ttl1Data).filter(Boolean).length >= 4 ? 'Đủ điều kiện chuyển giai đoạn' : 'Chưa đủ điều kiện'}
-                            </span>
-                          </div>
-                          <button
-                            className="btn primary sm"
-                            onClick={() => handleSaveTTL1(ttl1Data)}
-                            disabled={isSavingTTL1 || isViewer}
-                          >
-                            {isSavingTTL1 ? 'Đang lưu...' : (isViewer ? 'Bạn không có quyền chỉnh sửa' : 'Lưu Form TTL1')}
-                          </button>
-                        </div>
-
-                      </div>
-                    </div>
-                  )}
 
                   {/* DEALS TAB */}
                   {activeTab === 'deals' && (
