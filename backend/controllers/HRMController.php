@@ -766,6 +766,14 @@ class HRMController {
         if (!$this->isAdmin($auth)) respond(403, null, 'Quyền admin là bắt buộc', false);
         $b = getBody();
         $monthYear = $b['month_year'] ?? '';
+        if (empty($monthYear)) respond(400, null, 'Thiếu tháng khóa lương', false);
+
+        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'locked' WHERE month_year = ?");
+        $stmt->execute([$monthYear]);
+
+        respond(200, ['success' => true]);
+    }
+
     public function getPendingApprovals(array $auth): void {
         $pending = [];
         $userId = $auth['user_id'];
