@@ -54,7 +54,7 @@ export default function Approvals() {
   const { user } = useAuth();
   const isMobile = window.innerWidth < 768;
   
-  const isAdmin = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager'].includes(String(user?.role).toLowerCase());
+  const isAdmin = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr'].includes(String(user?.role).toLowerCase());
   const [activeTab, setActiveTab] = useState<'pending' | 'my_requests'>(isAdmin ? 'pending' : 'my_requests');
   
   const [pendingList, setPendingList] = useState<ApprovalItem[]>([]);

@@ -778,7 +778,7 @@ class HRMController {
         $pending = [];
         $userId = $auth['user_id'];
         $role = strtolower($auth['role']);
-        $isGlobalAdmin = in_array($role, ['admin', 'superadmin', 'super_admin', 'director']);
+        $isGlobalAdmin = in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr']);
 
         // 1. Pending Leaves
         $stmtLeaves = $this->db->prepare("
