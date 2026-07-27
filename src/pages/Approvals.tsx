@@ -122,6 +122,11 @@ export default function Approvals() {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Approval step visibility overrides (can be deleted/excluded by user)
+  const [showStepManager, setShowStepManager] = useState(true);
+  const [showStepAccountant, setShowStepAccountant] = useState(true);
+  const [showStepDirector, setShowStepDirector] = useState(true);
+
   // Timeline custom approver overrides
   const [customApprover1, setCustomApprover1] = useState<any>(null);
   const [customApprover2, setCustomApprover2] = useState<any>(null);
@@ -139,6 +144,24 @@ export default function Approvals() {
       }
     }
   }, [user, users]);
+
+  // Set default steps whenever the form type changes
+  useEffect(() => {
+    if (formType === 'leave') {
+      setShowStepManager(true);
+      setShowStepAccountant(false);
+      setShowStepDirector(false);
+    } else if (formType === 'advance' || formType === 'general') {
+      setShowStepManager(true);
+      setShowStepAccountant(true);
+      setShowStepDirector(false);
+    } else {
+      // expense
+      setShowStepManager(true);
+      setShowStepAccountant(true);
+      setShowStepDirector(true);
+    }
+  }, [formType]);
 
   useEffect(() => {
     fetchAPI('users?all=1').then(res => {
@@ -1096,6 +1119,18 @@ export default function Approvals() {
                         onClick={async () => {
                           setSubmitting(true);
                           try {
+                            // Resolve the last active step in the approval chain as finalApproverId
+                            let finalApproverId = 1003;
+                            if (showStepDirector) {
+                              finalApproverId = customApprover3?.id || users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()))?.id || 1003;
+                            } else if (showStepAccountant) {
+                              finalApproverId = customApprover2?.id || users.find(u => String(u.role).toLowerCase() === 'accountant')?.id || 1003;
+                            } else if (showStepManager) {
+                              finalApproverId = customApprover1?.id || users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()))?.id || 1003;
+                            } else {
+                              finalApproverId = proposerUser?.id || 1003;
+                            }
+
                             if (formType === 'leave') {
                               let leaveReasonStr = leaveReason;
                               if (isRecurring) {
@@ -1109,7 +1144,7 @@ export default function Approvals() {
                                   reason: leaveReasonStr,
                                   from_date: leaveFrom,
                                   to_date: leaveTo,
-                                  approver_id: customApprover1?.id || users.find(u => String(u.role).toLowerCase() === 'manager')?.id || 1003
+                                  approver_id: finalApproverId
                                 })
                               });
                             } else if (formType === 'advance') {
@@ -1123,7 +1158,7 @@ export default function Approvals() {
                                 body: JSON.stringify({
                                   amount: Number(paymentDetails) || 0,
                                   reason: advReasonStr,
-                                  approver_id: customApprover1?.id || users.find(u => String(u.role).toLowerCase() === 'manager')?.id || 1003
+                                  approver_id: finalApproverId
                                 })
                               });
                             } else if (formType === 'general') {
@@ -1136,7 +1171,7 @@ export default function Approvals() {
                                 description: generalDesc,
                                 amount: 0,
                                 status: 'pending',
-                                approver_id: customApprover3?.id || customApprover1?.id || 1003
+                                approver_id: finalApproverId
                               });
                             } else {
                               let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
@@ -1152,7 +1187,7 @@ export default function Approvals() {
                                 description: finalDesc,
                                 amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
                                 status: 'pending',
-                                approver_id: customApprover3?.id || customApprover1?.id || 1003
+                                approver_id: finalApproverId
                               });
                             }
                             toast.success(t('Gửi đề xuất thành công!'));
@@ -1995,174 +2030,215 @@ export default function Approvals() {
                           {t('Các bước duyệt áp dụng')}
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '12px', position: 'relative', paddingLeft: '30px' }}>
-                          <div style={{ position: 'absolute', left: '10px', top: '10px', bottom: '10px', width: '2px', background: 'var(--color-border-light)' }} />
-                          
-                          {/* Step 1: Submitter */}
-                          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{
-                              position: 'absolute',
-                              left: '-30px',
-                              top: '0px',
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              background: 'var(--color-primary)',
-                              color: '#ffffff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              zIndex: 2
-                            }}>
-                              1
-                            </div>
-                            <div>
-                              <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block' }}>{t('Lập đề xuất & gửi')}</strong>
-                              <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>
-                                {proposerUser?.full_name || t('Người lập')}
-                              </span>
-                            </div>
-                          </div>
+                        {(() => {
+                          let currentStepIndex = 1;
+                          const stepIndex1 = currentStepIndex++;
+                          const stepIndex2 = showStepManager ? currentStepIndex++ : null;
+                          const stepIndex3 = showStepAccountant ? currentStepIndex++ : null;
+                          const stepIndex4 = showStepDirector ? currentStepIndex++ : null;
 
-                          {/* Step 2: Department Manager */}
-                          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{
-                              position: 'absolute',
-                              left: '-30px',
-                              top: '0px',
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              background: app1User ? 'var(--color-primary)' : 'var(--color-surface)',
-                              border: `2px solid ${app1User ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                              color: app1User ? '#ffffff' : 'var(--color-text-muted)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              zIndex: 2
-                            }}>
-                              2
-                            </div>
-                            <div style={{ width: '100%' }}>
-                              <strong style={{ fontSize: '0.8rem', color: app1User ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'block' }}>{t('Trưởng phòng phê duyệt')}</strong>
-                              <div style={{ marginTop: '4px' }}>
-                                <CustomSelect
-                                  options={users.map(u => ({
-                                    value: String(u.id),
-                                    label: `${u.full_name || u.name} (${u.role || 'Trưởng phòng'})`,
-                                    avatar: u.avatar || u.avatar_url
-                                  }))}
-                                  value={app1User ? String(app1User.id) : ''}
-                                  onChange={val => {
-                                    const u = users.find(x => String(x.id) === String(val));
-                                    if (u) setCustomApprover1(u);
-                                  }}
-                                  placeholder={t('Chọn trưởng phòng...')}
-                                  searchable
-                                  showAvatars
-                                  width="100%"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Step 3: Accountant */}
-                          {formType !== 'leave' && (
-                            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                              <div style={{
-                                position: 'absolute',
-                                left: '-30px',
-                                top: '0px',
-                                width: '22px',
-                                height: '22px',
-                                borderRadius: '50%',
-                                background: accountantUser ? 'var(--color-primary)' : 'var(--color-surface)',
-                                border: `2px solid ${accountantUser ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                                color: accountantUser ? '#ffffff' : 'var(--color-text-muted)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.72rem',
-                                fontWeight: 800,
-                                zIndex: 2
-                              }}>
-                                3
-                              </div>
-                              <div style={{ width: '100%' }}>
-                                <strong style={{ fontSize: '0.8rem', color: accountantUser ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'block' }}>{t('Kế toán kiểm tra')}</strong>
-                                <div style={{ marginTop: '4px' }}>
-                                  <CustomSelect
-                                    options={users.map(u => ({
-                                      value: String(u.id),
-                                      label: `${u.full_name || u.name} (${u.role || 'Kế toán'})`,
-                                      avatar: u.avatar || u.avatar_url
-                                    }))}
-                                    value={accountantUser ? String(accountantUser.id) : ''}
-                                    onChange={val => {
-                                      const u = users.find(x => String(x.id) === String(val));
-                                      if (u) setCustomApprover2(u);
-                                    }}
-                                    placeholder={t('Chọn kế toán...')}
-                                    searchable
-                                    showAvatars
-                                    width="100%"
-                                  />
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '12px', position: 'relative', paddingLeft: '30px' }}>
+                              <div style={{ position: 'absolute', left: '10px', top: '10px', bottom: '10px', width: '2px', background: 'var(--color-border-light)' }} />
+                              
+                              {/* Step 1: Submitter */}
+                              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{
+                                  position: 'absolute',
+                                  left: '-30px',
+                                  top: '0px',
+                                  width: '22px',
+                                  height: '22px',
+                                  borderRadius: '50%',
+                                  background: 'var(--color-primary)',
+                                  color: '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  zIndex: 2
+                                }}>
+                                  {stepIndex1}
+                                </div>
+                                <div>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block' }}>{t('Lập đề xuất & gửi')}</strong>
+                                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>
+                                    {proposerUser?.full_name || t('Người lập')}
+                                  </span>
                                 </div>
                               </div>
-                            </div>
-                          )}
 
-                          {/* Step 4: Director */}
-                          {formType === 'expense' && (
-                            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                              <div style={{
-                                position: 'absolute',
-                                left: '-30px',
-                                top: '0px',
-                                width: '22px',
-                                height: '22px',
-                                borderRadius: '50%',
-                                background: directorUser ? 'var(--color-primary)' : 'var(--color-surface)',
-                                border: `2px solid ${directorUser ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                                color: directorUser ? '#ffffff' : 'var(--color-text-muted)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.72rem',
-                                fontWeight: 800,
-                                zIndex: 2
-                              }}>
-                                4
-                              </div>
-                              <div style={{ width: '100%' }}>
-                                <strong style={{ fontSize: '0.8rem', color: directorUser ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'block' }}>{t('Ban giám đốc phê duyệt')}</strong>
-                                <div style={{ marginTop: '4px' }}>
-                                  <CustomSelect
-                                    options={users.map(u => ({
-                                      value: String(u.id),
-                                      label: `${u.full_name || u.name} (${u.role || 'Giám đốc'})`,
-                                      avatar: u.avatar || u.avatar_url
-                                    }))}
-                                    value={directorUser ? String(directorUser.id) : ''}
-                                    onChange={val => {
-                                      const u = users.find(x => String(x.id) === String(val));
-                                      if (u) setCustomApprover3(u);
-                                    }}
-                                    placeholder={t('Chọn ban giám đốc...')}
-                                    searchable
-                                    showAvatars
-                                    width="100%"
-                                  />
+                              {/* Step 2: Department Manager */}
+                              {showStepManager && (
+                                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-30px',
+                                    top: '0px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '50%',
+                                    background: app1User ? 'var(--color-primary)' : 'var(--color-surface)',
+                                    border: `2px solid ${app1User ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                                    color: app1User ? '#ffffff' : 'var(--color-text-muted)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    zIndex: 2
+                                  }}>
+                                    {stepIndex2}
+                                  </div>
+                                  <div style={{ width: '100%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                      <strong style={{ fontSize: '0.8rem', color: app1User ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Trưởng phòng phê duyệt')}</strong>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowStepManager(false)}
+                                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '0 4px', display: 'flex', alignItems: 'center' }}
+                                        title={t('Xóa bước')}
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </div>
+                                    <div style={{ marginTop: '4px' }}>
+                                      <CustomSelect
+                                        options={users.map(u => ({
+                                          value: String(u.id),
+                                          label: `${u.full_name || u.name} (${u.role || 'Trưởng phòng'})`,
+                                          avatar: u.avatar || u.avatar_url
+                                        }))}
+                                        value={app1User ? String(app1User.id) : ''}
+                                        onChange={val => {
+                                          const u = users.find(x => String(x.id) === String(val));
+                                          if (u) setCustomApprover1(u);
+                                        }}
+                                        placeholder={t('Chọn trưởng phòng...')}
+                                        searchable
+                                        showAvatars
+                                        width="100%"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          )}
+                              )}
 
-                        </div>
+                              {/* Step 3: Accountant */}
+                              {showStepAccountant && (
+                                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-30px',
+                                    top: '0px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '50%',
+                                    background: accountantUser ? 'var(--color-primary)' : 'var(--color-surface)',
+                                    border: `2px solid ${accountantUser ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                                    color: accountantUser ? '#ffffff' : 'var(--color-text-muted)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    zIndex: 2
+                                  }}>
+                                    {stepIndex3}
+                                  </div>
+                                  <div style={{ width: '100%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                      <strong style={{ fontSize: '0.8rem', color: accountantUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Kế toán kiểm tra')}</strong>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowStepAccountant(false)}
+                                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '0 4px', display: 'flex', alignItems: 'center' }}
+                                        title={t('Xóa bước')}
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </div>
+                                    <div style={{ marginTop: '4px' }}>
+                                      <CustomSelect
+                                        options={users.map(u => ({
+                                          value: String(u.id),
+                                          label: `${u.full_name || u.name} (${u.role || 'Kế toán'})`,
+                                          avatar: u.avatar || u.avatar_url
+                                        }))}
+                                        value={accountantUser ? String(accountantUser.id) : ''}
+                                        onChange={val => {
+                                          const u = users.find(x => String(x.id) === String(val));
+                                          if (u) setCustomApprover2(u);
+                                        }}
+                                        placeholder={t('Chọn kế toán...')}
+                                        searchable
+                                        showAvatars
+                                        width="100%"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Step 4: Director */}
+                              {showStepDirector && (
+                                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-30px',
+                                    top: '0px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '50%',
+                                    background: directorUser ? 'var(--color-primary)' : 'var(--color-surface)',
+                                    border: `2px solid ${directorUser ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                                    color: directorUser ? '#ffffff' : 'var(--color-text-muted)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    zIndex: 2
+                                  }}>
+                                    {stepIndex4}
+                                  </div>
+                                  <div style={{ width: '100%' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                      <strong style={{ fontSize: '0.8rem', color: directorUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Ban giám đốc phê duyệt')}</strong>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowStepDirector(false)}
+                                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '0 4px', display: 'flex', alignItems: 'center' }}
+                                        title={t('Xóa bước')}
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </div>
+                                    <div style={{ marginTop: '4px' }}>
+                                      <CustomSelect
+                                        options={users.map(u => ({
+                                          value: String(u.id),
+                                          label: `${u.full_name || u.name} (${u.role || 'Giám đốc'})`,
+                                          avatar: u.avatar || u.avatar_url
+                                        }))}
+                                        value={directorUser ? String(directorUser.id) : ''}
+                                        onChange={val => {
+                                          const u = users.find(x => String(x.id) === String(val));
+                                          if (u) setCustomApprover3(u);
+                                        }}
+                                        placeholder={t('Chọn ban giám đốc...')}
+                                        searchable
+                                        showAvatars
+                                        width="100%"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         <div style={{
                           marginTop: '0.75rem',
