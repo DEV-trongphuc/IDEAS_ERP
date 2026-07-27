@@ -730,22 +730,30 @@ const AccountsInner = () => {
 
 
   const getRoleBadge = (role: string) => {
-    if (role === 'superadmin' || role === 'super_admin') return <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Super Admin</span>;
-    if (role === 'admin') return <span style={{ background: 'rgba(163, 20, 34, 0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Admin</span>;
-    if (role === 'director') return <span style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Director</span>;
-    if (role === 'manager') return <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Manager</span>;
-    if (role === 'assistant') return <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Assistant</span>;
-    if (role === 'sale' || role === 'sales') return <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Sales</span>;
+    const r = role ? role.toLowerCase() : '';
+    if (r === 'superadmin' || r === 'super_admin') return <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Super Admin</span>;
+    if (r === 'admin') return <span style={{ background: 'rgba(163, 20, 34, 0.1)', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Admin</span>;
+    if (r === 'director') return <span style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Director</span>;
+    if (r === 'manager') return <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Manager</span>;
+    if (r === 'assistant') return <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Assistant</span>;
+    if (r === 'sale' || r === 'sales') return <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Sales</span>;
+    if (r === 'hr') return <span style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>HR</span>;
+    if (r === 'accountant') return <span style={{ background: 'rgba(14, 165, 233, 0.1)', color: '#0ea5e9', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Accountant</span>;
+    if (r === 'marketing') return <span style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Marketing</span>;
     return <span style={{ background: 'rgba(100, 116, 139, 0.1)', color: '#64748b', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Viewer</span>;
   };
 
   const getRoleLabelText = (role: string) => {
-    if (role === 'superadmin' || role === 'super_admin') return 'Super Admin';
-    if (role === 'admin') return 'Admin';
-    if (role === 'director') return 'Director';
-    if (role === 'manager') return 'Manager';
-    if (role === 'assistant') return 'Assistant';
-    if (role === 'sale' || role === 'sales') return 'Sales';
+    const r = role ? role.toLowerCase() : '';
+    if (r === 'superadmin' || r === 'super_admin') return 'Super Admin';
+    if (r === 'admin') return 'Admin';
+    if (r === 'director') return 'Director';
+    if (r === 'manager') return 'Manager';
+    if (r === 'assistant') return 'Assistant';
+    if (r === 'sale' || r === 'sales') return 'Sales';
+    if (r === 'hr') return 'HR';
+    if (r === 'accountant') return 'Accountant';
+    if (r === 'marketing') return 'Marketing';
     return t('Chỉ xem');
   };
 
@@ -951,6 +959,9 @@ const AccountsInner = () => {
                     { value: 'manager', label: t('Trưởng phòng / Trưởng nhóm (Manager)') },
                     { value: 'assistant', label: t('Trợ lý (Assistant)') },
                     { value: 'sale', label: t('Sale / Nhân viên (Sales)') },
+                    { value: 'hr', label: t('Nhân sự (HR)') },
+                    { value: 'accountant', label: t('Kế toán (Accountant)') },
+                    { value: 'marketing', label: t('Marketing') },
                     { value: 'viewer', label: t('Chỉ xem dữ liệu (Viewer)') }
                   ]}
                   value={formData.role}

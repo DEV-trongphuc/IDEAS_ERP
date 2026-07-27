@@ -1484,6 +1484,24 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)'
             };
           }
+          if (role === 'hr') {
+            return {
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
+            };
+          }
+          if (role === 'accountant') {
+            return {
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+            };
+          }
+          if (role === 'marketing') {
+            return {
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+            };
+          }
           return {
             background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
             boxShadow: '0 2px 8px rgba(189, 29, 45, 0.5)'

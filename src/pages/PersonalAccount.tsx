@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User, Key, Eye, EyeOff, Save, ShieldAlert, Mail, Activity, Clock, Settings, ChevronDown, ChevronUp, LogOut, Edit3, Package } from 'lucide-react';
 import { SignaturePadModal } from '../components/ui/SignaturePadModal';
@@ -242,6 +242,17 @@ const PersonalAccountInner = () => {
         return { label: 'Director', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' };
       case 'manager':
         return { label: 'Manager', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.1)' };
+      case 'assistant':
+        return { label: 'Assistant', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
+      case 'sale':
+      case 'sales':
+        return { label: 'Sales', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' };
+      case 'hr':
+        return { label: 'HR', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' };
+      case 'accountant':
+        return { label: 'Accountant', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.1)' };
+      case 'marketing':
+        return { label: 'Marketing', color: '#4f46e5', bg: 'rgba(79, 70, 229, 0.1)' };
       default:
         return { label: role || 'User', color: '#4b5563', bg: 'rgba(75, 85, 99, 0.1)' };
     }
