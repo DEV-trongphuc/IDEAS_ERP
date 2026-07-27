@@ -2766,6 +2766,201 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
     );
   };
 
+  const renderDetailFields = () => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
+          <div className="spinner sm" style={{ margin: '0 auto 10px auto' }}></div>
+          {t('Đang tải chi tiết đề xuất...')}
+        </div>
+      );
+    }
+
+    const typeLabels: Record<string, string> = {
+      leave: t('Đơn xin nghỉ phép'),
+      advance: t('Đề xuất tạm ứng lương'),
+      expense: t('Yêu cầu thanh toán chi phí'),
+      checkin: t('Giải trình đi trễ/về sớm')
+    };
+
+    const displayStatus = detail?.status || item.status || 'pending';
+    const statusMeta: Record<string, { label: string, bg: string, color: string }> = {
+      pending: { label: t('Chờ duyệt'), bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
+      approved: { label: t('Đã duyệt'), bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
+      rejected: { label: t('Từ chối'), bg: 'rgba(239, 68, 68, 0.08)', color: '#ef4444' },
+      level1_approved: { label: t('Đã duyệt Cấp 1'), bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' }
+    };
+    const meta = statusMeta[displayStatus] || statusMeta.pending;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Header summary card */}
+        <div style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border-light)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              padding: '4px 10px',
+              borderRadius: '20px',
+              background: 'var(--color-primary-light, rgba(163, 20, 34, 0.05))',
+              color: 'var(--color-primary)'
+            }}>
+              {typeLabels[item.type] || t('Yêu cầu phê duyệt')}
+            </span>
+            <span style={{
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              padding: '4px 12px',
+              borderRadius: '20px',
+              background: meta.bg,
+              color: meta.color
+            }}>
+              {meta.label}
+            </span>
+          </div>
+
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 1rem 0', color: 'var(--color-text)', lineHeight: 1.35 }}>
+            {item.title}
+          </h2>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0.75rem 0', borderTop: '1px solid var(--color-border-light)' }}>
+            <Avatar src={getEmployeeAvatar()} name={getEmployeeName()} size={36} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{getEmployeeName()}</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{t('Người tạo yêu cầu')}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Details values card */}
+        <div style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border-light)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          boxShadow: 'var(--shadow-sm)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem'
+        }}>
+          <h3 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('Chi tiết thông tin')}
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem 1rem' }}>
+            {item.type === 'leave' && (
+              <>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Hình thức nghỉ')}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {detail?.leave_type === 'annual' ? t('Nghỉ phép năm') : 
+                     detail?.leave_type === 'sick' ? t('Nghỉ ốm') : 
+                     detail?.leave_type === 'compensatory' ? t('Nghỉ bù') :
+                     detail?.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Nghỉ không lương')}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Số ngày nghỉ')}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>{detail?.total_days || item.description?.match(/([\d\.]+)\s*ngày/)?.[1] || 1} {t('ngày')}</span>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Thời gian nghỉ')}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {detail?.start_date ? `${new Date(detail.start_date).toLocaleDateString('vi-VN')} -> ${new Date(detail.end_date).toLocaleDateString('vi-VN')}` : item.description?.match(/Thời gian:\s*([^\.]+)/)?.[1] || ''}
+                  </span>
+                </div>
+              </>
+            )}
+
+            {item.type === 'advance' && (
+              <>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Số tiền tạm ứng')}</span>
+                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    {Number(detail?.amount || item.description?.match(/Số tiền:\s*([\d\.,]+)/)?.[1]?.replace(/\./g, '') || 0).toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+                {detail?.request_date && (
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Ngày đề nghị')}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{new Date(detail.request_date).toLocaleDateString('vi-VN')}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {item.type === 'expense' && (
+              <>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Số tiền thanh toán')}</span>
+                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    {Number(detail?.amount || item.description?.match(/Số tiền:\s*([\d\.,]+)/)?.[1]?.replace(/\./g, '') || 0).toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+                {detail?.category && (
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Danh mục chi')}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{detail.category}</span>
+                  </div>
+                )}
+                {detail?.date && (
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Ngày chứng từ')}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{new Date(detail.date).toLocaleDateString('vi-VN')}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {item.type === 'checkin' && (
+              <>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Ngày check-in')}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{detail?.check_in_date || item.description?.match(/ngày\s*([\d\-]+)/)?.[1] || ''}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Giờ check-in')}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{detail?.check_in_time || item.description?.match(/lúc\s*([\d:]+)/)?.[1] || ''}</span>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Thời gian đi trễ')}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>{detail?.late_minutes || item.description?.match(/trễ\s*(\d+)\s*phút/)?.[1] || 0} {t('phút')}</span>
+                </div>
+              </>
+            )}
+
+            <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Nội dung lý do')}</span>
+              <p style={{
+                margin: 0,
+                fontSize: '0.825rem',
+                color: 'var(--color-text-light)',
+                lineHeight: 1.5,
+                background: 'var(--color-bg-secondary)',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                borderLeft: '3px solid var(--color-primary)',
+                whiteSpace: 'pre-wrap',
+                fontStyle: 'italic',
+                textAlign: 'left'
+              }}>
+                "{detail?.reason || detail?.notes || item.description?.match(/Lý do:\s*\"([^\"]+)\"/)?.[1] || item.description?.match(/Ghi chú:\s*\"([^\"]+)\"/)?.[1] || t('Không có lý do chi tiết')}"
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return createPortal(
     <>
       <style>{`
@@ -2788,7 +2983,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
         top: 0,
         right: 0,
         bottom: 0,
-        width: isMobile ? '100%' : '550px',
+        width: isMobile ? '100%' : '900px',
         maxWidth: '100%',
         background: 'var(--color-surface)',
         boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
@@ -2853,108 +3048,183 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
           </div>
         </div>
 
-        {/* Drawer Body */}
+        {/* Drawer Body (Split layout) */}
         <div className="custom-scrollbar" style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '1.5rem 1.5rem 3rem 1.5rem'
+          padding: '1.5rem',
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1.1fr 0.9fr',
+          gap: '1.5rem',
+          background: 'var(--color-bg-light, #f8fafc)'
         }}>
-          <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.5px' }}>
-            {t('CÁC BƯỚC THỰC HIỆN')}
-          </h3>
-          
-          {renderTimeline()}
-
-          {/* Discussion / Comments Section */}
-          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)' }}>
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.5px' }}>
-              {t('THẢO LUẬN & HOẠT ĐỘNG')}
-            </h3>
-
-            {/* List of comments */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1.25rem' }}>
-              {localComments.length === 0 ? (
-                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                  {t('Chưa có bình luận nào.')}
-                </span>
-              ) : (
-                localComments.map((c: any) => (
-                  <div key={c.id} style={{
-                    display: 'flex',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    background: 'var(--color-bg)',
-                    borderRadius: '14px',
-                    border: '1px solid var(--color-border-light)',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.01)'
-                  }}>
-                    <Avatar name={c.author} size={28} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                        <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{c.author}</strong>
-                        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>{c.time}</span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>{c.text}</p>
-                      
-                      {/* Attached files chips list for comments */}
-                      {c.attachments && c.attachments.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                          {c.attachments.map((att: any, idx: number) => (
-                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '3px 8px', borderRadius: '8px', fontSize: '0.72rem', color: 'var(--color-text)' }}>
-                              <Paperclip size={11} style={{ color: 'var(--color-text-muted)' }} />
-                              <span>{att.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Comment input with MentionInput and attach file button */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ position: 'relative' }}>
-                <MentionInput
-                  value={newComment}
-                  onChange={e => setNewComment(e.target.value)}
-                  placeholder={t('Viết bình luận... Gõ @ để nhắc tên')}
-                  style={{ minHeight: '65px', fontSize: '0.8rem', paddingRight: '40px' }}
-                  users={users}
-                  disabled={uploadingFile}
-                />
-                <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: uploadingFile ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
-                  <input type="file" onChange={handleCommentFileChange} style={{ display: 'none' }} disabled={uploadingFile} />
-                  {uploadingFile ? <Clock className="spin" size={16} /> : <Paperclip size={16} />}
-                </label>
-              </div>
-
-              {/* Uploaded comment attachments list */}
-              {commentAttachments.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {commentAttachments.map((file, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', color: 'var(--color-primary)' }}>
-                      <Paperclip size={11} />
-                      <span>{file.name}</span>
-                      <button type="button" onClick={() => setCommentAttachments(commentAttachments.filter((_, i) => i !== idx))} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', paddingLeft: '4px', fontWeight: 700 }}>&times;</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleAddComment}
-                className="btn primary"
-                style={{ alignSelf: 'flex-end', height: '30px', padding: '0 14px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <Send size={12} />
-                <span>{t('Gửi')}</span>
-              </button>
-            </div>
+          {/* Left Column: Detailed Proposal Fields */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem'
+          }}>
+            {renderDetailFields()}
           </div>
 
+          {/* Right Column: Timeline & Comments */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            background: 'var(--color-surface)',
+            padding: '1.25rem',
+            borderRadius: '16px',
+            border: '1px solid var(--color-border-light)',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <div>
+              <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                {t('CÁC BƯỚC THỰC HIỆN')}
+              </h3>
+              {renderTimeline()}
+            </div>
+
+            {/* Discussion / Comments Section */}
+            <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)' }}>
+              <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                {t('THẢO LUẬN & HOẠT ĐỘNG')}
+              </h3>
+
+              {/* List of comments */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1.25rem' }}>
+                {localComments.length === 0 ? (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                    {t('Chưa có bình luận nào.')}
+                  </span>
+                ) : (
+                  localComments.map((c: any) => (
+                    <div key={c.id} style={{
+                      display: 'flex',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      background: 'var(--color-bg)',
+                      borderRadius: '14px',
+                      border: '1px solid var(--color-border-light)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.01)'
+                    }}>
+                      <Avatar name={c.author} size={28} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{c.author}</strong>
+                          <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>{c.time}</span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left' }}>{c.text}</p>
+                        
+                        {/* Attached files chips list for comments */}
+                        {c.attachments && c.attachments.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                            {c.attachments.map((file: any, index: number) => (
+                              <div key={index} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: 'var(--color-surface)',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: '6px',
+                                padding: '4px 8px',
+                                fontSize: '0.72rem',
+                                color: 'var(--color-text-light)'
+                              }}>
+                                <span>📄</span>
+                                <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {file.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Comment Input Field Area */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '12px',
+                  background: 'var(--color-surface)',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <textarea
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    placeholder={t('Viết bình luận... Gõ @ để nhắc tên')}
+                    style={{
+                      width: '100%',
+                      minHeight: '60px',
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      resize: 'none',
+                      fontSize: '0.8rem',
+                      color: 'var(--color-text)',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  
+                  {commentAttachments.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid var(--color-border-light)', paddingTop: '8px' }}>
+                      {commentAttachments.map((file, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '0.72rem'
+                        }}>
+                          <span>📄</span>
+                          <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {file.name}
+                          </span>
+                          <button
+                            onClick={() => setCommentAttachments(commentAttachments.filter((_, i) => i !== index))}
+                            style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                      <Paperclip size={14} />
+                      <input 
+                        type="file" 
+                        onChange={handleCommentFileChange} 
+                        style={{ display: 'none' }} 
+                      />
+                      <span>{uploadingFile ? t('Đang tải...') : t('Đính kèm')}</span>
+                    </label>
+                    
+                    <button
+                      onClick={handleAddComment}
+                      className="btn primary"
+                      style={{ alignSelf: 'flex-end', height: '30px', padding: '0 14px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Send size={12} />
+                      <span>{t('Gửi')}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Drawer Footer Actions (Pending only) */}
