@@ -34,6 +34,10 @@ Tài liệu này chứa bản đồ danh mục các cấu phần cần kiểm th
 *   **Tệp tin**: [tasks_workflows_processes.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/tasks_workflows_processes.md)
 *   **Nội dung**: Kiểm thử giao việc cá nhân (task lẻ), giao việc phòng ban/nhóm, task chăm sóc khách hàng (task sale), tag tên thành viên `@mention`, luồng phê duyệt trạng thái hoàn thành và quy trình mẫu tự động khi chuyển đổi Deal/Lead.
 
+### 📂 8. Kho sản phẩm, Hợp tác chia phí & Báo cáo (Inventory, Splits & Analytics)
+*   **Tệp tin**: [inventory_cooperation_reports.md](file:///d:/GITHUB_SPACE/IDEAS_ERP/audit/inventory_cooperation_reports.md)
+*   **Nội dung**: Kiểm thử giỏ hàng dự án, cơ chế giữ chỗ căn hộ trực tuyến (khóa giỏ hàng 15 phút), chia sẻ hoa hồng dự án (Cooperation slips), các biểu đồ thống kê hiệu suất Sale / phễu chuyển đổi và lưu vết kiểm toán (Audit logs).
+
 ---
 
 ## 📋 Hướng dẫn thực thi & Tự động hóa
