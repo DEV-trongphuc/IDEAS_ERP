@@ -739,10 +739,11 @@ class NotificationService {
                 $recipients = self::getRecipientById($db, $payload['user_id'] ?? 0);
                 $authorName = $payload['author_name'] ?? 'Đồng nghiệp';
                 $commentText = $payload['comment'] ?? 'đã nhắc tên bạn';
+                $commentTextPlain = strip_tags($commentText); // strip html tags for cleaner view
                 return [
                     'recipients' => $recipients,
                     'title' => "$authorName vừa nhắc tên bạn",
-                    'body' => "$authorName: \"$commentText\"",
+                    'body' => "$authorName đã nhắc tên bạn trong bình luận: \"$commentTextPlain\"",
                     'type' => "mention",
                     'link' => $payload['link'] ?? '/',
                     'zalo_msg' => "🏷️ [ ĐƯỢC TAG TÊN / MENTION ]\n\n"
@@ -764,13 +765,15 @@ class NotificationService {
             case 'WORKFLOW_TASK_ASSIGNED':
                 $recipients = self::getRecipientById($db, $payload['user_id'] ?? 0);
                 $taskTitle = $payload['task_title'] ?? 'Nhiệm vụ mới';
+                $reason = $payload['reason'] ?? '';
                 $dueDate = $payload['due_date'] ?? '';
+                $bodyText = $reason ? $reason : "Bạn được giao công việc: $taskTitle" . ($dueDate ? " (Hạn: $dueDate)" : "");
                 return [
                     'recipients' => $recipients,
-                    'title' => "Công việc CRM mới được giao",
-                    'body' => "Bạn được giao công việc: $taskTitle" . ($dueDate ? " (Hạn: $dueDate)" : ""),
+                    'title' => $taskTitle,
+                    'body' => $bodyText,
                     'type' => "task",
-                    'link' => "/activities",
+                    'link' => $payload['link'] ?? "/activities",
                     'zalo_msg' => "📋 [ GÁN CÔNG VIỆC MỚI ]\n\n"
                         . "Bạn vừa được giao nhiệm vụ CRM mới:\n"
                         . "  • Tiêu đề: $taskTitle\n"

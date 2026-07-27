@@ -1153,14 +1153,31 @@ class ActivityController {
         // Parse mentions in comment content
         $content = $b['content'] ?? '';
         $mentions = [];
+
+        // 1. First, parse by data-user-id (HTML editor mentions)
+        if (preg_match_all('/data-user-id="(\d+)"/i', (string)$content, $matches)) {
+            $uids = array_filter(array_map('intval', $matches[1]));
+            foreach ($uids as $uid) {
+                if ($uid !== (int)$auth['user_id']) {
+                    $stmtUser = $this->db->prepare("SELECT id, email, full_name FROM users WHERE tenant_id=? AND id=?");
+                    $stmtUser->execute([$auth['tenant_id'], $uid]);
+                    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                    if ($userRow) {
+                        $mentions[$uid] = $userRow;
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback to traditional @name parsing for plaintext comments
         $matches = [];
         preg_match_all('/@([a-zA-Z0-9_\x{00C0}-\x{1EF9}()]+)/u', (string)$content, $matches);
         $names = is_array($matches[1] ?? null) ? $matches[1] : [];
         if (!empty($names)) {
             foreach ($names as $nameWithUnderscores) {
                 $fullName = str_replace('_', ' ', $nameWithUnderscores);
-                $stmtUser = $this->db->prepare("SELECT id, email, full_name FROM users WHERE tenant_id=? AND full_name=?");
-                $stmtUser->execute([$auth['tenant_id'], $fullName]);
+                $stmtUser = $this->db->prepare("SELECT id, email, full_name FROM users WHERE tenant_id=? AND (full_name=? OR REPLACE(full_name, ' ', '_')=?)");
+                $stmtUser->execute([$auth['tenant_id'], $fullName, $nameWithUnderscores]);
                 $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
                 if ($userRow) {
                     $uid = (int)$userRow['id'];
@@ -1528,7 +1545,8 @@ class ActivityController {
             NotificationService::send($this->db, $tenantId, 'WORKFLOW_TASK_ASSIGNED', [
                 'user_id' => $userId,
                 'task_title' => $title,
-                'reason' => $body
+                'reason' => $body,
+                'link' => $link
             ]);
 
             // Send Email

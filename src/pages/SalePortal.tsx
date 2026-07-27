@@ -4692,7 +4692,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     ];
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: wsViewMode === 'focus' ? '0' : '1.25rem', paddingBottom: isMobile ? '100px' : '0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: wsViewMode === 'focus' ? '0' : '1.25rem', paddingBottom: isMobile ? '300px' : '200px' }}>
         {wsViewMode !== 'focus' && (
           <>
             {/* Workspace Header */}

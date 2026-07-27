@@ -1117,31 +1117,40 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   // Checklist Actions
   const handleAddChecklistItem = () => {
-    if (!newSubTitle.trim()) {
+    const titles = newSubTitle.split('\n').map(t => t.trim()).filter(Boolean);
+    if (titles.length === 0) {
       toast.error(t('Vui lòng nhập tên công việc con'));
       return;
     }
-    const newItem = {
-      id: 'sub_' + Date.now(),
-      title: newSubTitle.trim(),
-      assignee_id: newSubAssignee ? Number(newSubAssignee) : null,
-      due_date: newSubDeadline || null,
-      priority: newSubPriority || 'medium',
-      done: false
-    };
+    
+    let currentParticipantIds = getParticipantIds(formData.participant_ids);
+    const newItems = titles.map((title, idx) => {
+      const itemId = 'sub_' + (Date.now() + idx);
+      const assigneeId = newSubAssignee ? Number(newSubAssignee) : null;
+      if (assigneeId) {
+        const idStr = String(assigneeId);
+        if (!currentParticipantIds.includes(idStr)) {
+          currentParticipantIds.push(idStr);
+        }
+      }
+      return {
+        id: itemId,
+        title: title,
+        assignee_id: assigneeId,
+        due_date: newSubDeadline || null,
+        priority: newSubPriority || 'medium',
+        done: false
+      };
+    });
 
-    const newChecklist = [...(erpMeta.checklist || []), newItem];
+    const newChecklist = [...(erpMeta.checklist || []), ...newItems];
     const updatedMeta = { ...erpMeta, checklist: newChecklist };
     handleSaveMeta(updatedMeta);
 
-    if (newItem.assignee_id) {
-      const current = getParticipantIds(formData.participant_ids);
-      if (!current.includes(String(newItem.assignee_id))) {
-        const next = [...current, String(newItem.assignee_id)];
-        const nextString = next.join(',');
-        setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
-        handleUpdateField('participant_ids', nextString);
-      }
+    const nextString = currentParticipantIds.join(',');
+    if (formData.participant_ids !== nextString) {
+      setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
+      handleUpdateField('participant_ids', nextString);
     }
 
     // Reset input
@@ -1644,6 +1653,13 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     });
   })();
 
+  const handleImageClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG' && target.closest('.rich-comment-content')) {
+      target.classList.toggle('zoomed');
+    }
+  };
+
   const hasChanges = originalHash !== currentHash;
 
   const isApproverOrAdmin = currentUser && (
@@ -1653,6 +1669,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   const content = (
     <motion.div 
+      onClick={handleImageClick}
       className={`${embedMode ? '' : styles.drawer} ${embedMode ? 'focus-right-column' : ''}`}
       {...drawerMotionProps}
       style={embedMode ? {
@@ -1918,6 +1935,26 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   margin: 8px 0 !important;
                   display: block !important;
                 }
+                .rich-comment-content img {
+                  max-width: 150px !important;
+                  max-height: 120px !important;
+                  border-radius: 8px !important;
+                  cursor: pointer !important;
+                  transition: transform 0.2s ease, max-width 0.25s ease, max-height 0.25s ease !important;
+                  object-fit: cover !important;
+                  display: block !important;
+                  margin: 6px 0 !important;
+                }
+                .rich-comment-content img:hover {
+                  transform: scale(1.02) !important;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+                }
+                .rich-comment-content img.zoomed {
+                  max-width: 100% !important;
+                  max-height: 600px !important;
+                  object-fit: contain !important;
+                  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+                }
               `}</style>
               <label style={cardLabelStyle}>
                 {t('Mô tả chi tiết')}
@@ -2162,11 +2199,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   {/* Row 1: Title */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tên công việc con')}</span>
-                    <input
-                      type="text"
+                    <textarea
                       className="form-input"
-                      style={{ fontSize: '0.8rem', padding: '8px 12px', height: '38px', borderRadius: '8px', border: '1px solid var(--color-border)', width: '100%' }}
-                      placeholder={t('Ví dụ: Gửi hợp đồng cho khách...')}
+                      style={{ fontSize: '0.8rem', padding: '8px 12px', minHeight: '60px', borderRadius: '8px', border: '1px solid var(--color-border)', width: '100%', resize: 'vertical', fontFamily: 'inherit' }}
+                      placeholder={t('Nhập công việc con (Có thể xuống dòng để thêm nhiều mục cùng lúc...)')}
                       value={newSubTitle}
                       onChange={(e) => setNewSubTitle(e.target.value)}
                     />
@@ -2246,7 +2282,9 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   </div>
                 ) : (
                   erpMeta.checklist.map((item: any) => {
-                    const itemUser = users.find(u => Number(u.id) === Number(item.assignee_id));
+                    const assignedIds = item.assignee_id ? String(item.assignee_id).split(',').map(id => id.trim()).filter(Boolean) : [];
+                    const itemUsers = users.filter(u => assignedIds.includes(String(u.id)));
+                    const itemUser = itemUsers[0] || null;
                     const isEditingThis = editingChecklistId === item.id;
                     const isAssigneeDropdownOpen = activeAssigneeDropdownId === item.id;
                     const isCommentsOpen = selectedSubtask?.id === item.id;
@@ -2399,7 +2437,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                               {/* Subtitle Assignee & Due Date Row */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                                 <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
-                                  {t('Giao cho')}: <strong style={{ color: itemUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{itemUser ? (itemUser.full_name || itemUser.name) : t('Chưa phân công')}</strong>
+                                  {t('Giao cho')}: <strong style={{ color: itemUsers.length > 0 ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{itemUsers.length > 0 ? itemUsers.map(u => u.full_name || u.name).join(', ') : t('Chưa phân công')}</strong>
                                 </span>
                                 {item.due_date && (
                                   <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
@@ -2412,38 +2450,76 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
                           {/* Right Actions */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                            {/* Round User Assignee Icon Button */}
-                            <div style={{ position: 'relative' }}>
-                              <button
-                                type="button"
-                                onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
-                                disabled={currentUser?.role === 'viewer'}
-                                style={{
-                                  border: itemUser ? '1.5px solid var(--color-primary-light)' : '1px solid var(--color-border-light)',
-                                  background: itemUser ? 'transparent' : 'rgba(163, 20, 34, 0.06)',
-                                  width: '28px',
-                                  height: '28px',
-                                  borderRadius: '50%',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
-                                  padding: 0,
-                                  transition: 'all 0.15s ease'
-                                }}
-                                className="hover-scale"
-                                title={itemUser ? `${t('Giao cho')}: ${itemUser.full_name || itemUser.name}` : t('Phân công người thực hiện')}
-                              >
-                                {itemUser ? (
-                                  <Avatar 
-                                    src={itemUser.avatar || itemUser.avatar_url} 
-                                    name={itemUser.full_name || itemUser.name} 
-                                    size={26} 
-                                  />
-                                ) : (
-                                  <UserPlus size={14} color="var(--color-primary)" />
-                                )}
-                              </button>
+                             {/* Round User Assignee Icon Button & Stack */}
+                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                               {itemUsers.length > 0 && (
+                                 <div 
+                                   onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
+                                   style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                                   title={itemUsers.map(u => u.full_name || u.name).join(', ')}
+                                 >
+                                   {itemUsers.slice(0, 3).map((u, idx) => (
+                                     <div 
+                                       key={u.id} 
+                                       style={{ 
+                                         marginLeft: idx === 0 ? 0 : -8, 
+                                         border: '1.5px solid var(--color-surface)',
+                                         borderRadius: '50%',
+                                         overflow: 'hidden',
+                                         zIndex: 10 - idx,
+                                         boxShadow: 'var(--shadow-sm)',
+                                         display: 'flex'
+                                       }}
+                                     >
+                                       <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={22} />
+                                     </div>
+                                   ))}
+                                   {itemUsers.length > 3 && (
+                                     <div 
+                                       style={{ 
+                                         marginLeft: -8, 
+                                         width: '22px', 
+                                         height: '22px', 
+                                         borderRadius: '50%', 
+                                         background: 'var(--color-primary-light)', 
+                                         color: 'var(--color-primary)', 
+                                         fontSize: '0.625rem', 
+                                         fontWeight: 800, 
+                                         display: 'flex', 
+                                         alignItems: 'center', 
+                                         justifyContent: 'center',
+                                         border: '1.5px solid var(--color-surface)',
+                                         zIndex: 5
+                                       }}
+                                     >
+                                       +{itemUsers.length - 3}
+                                     </div>
+                                   )}
+                                 </div>
+                               )}
+
+                               <button
+                                 type="button"
+                                 onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
+                                 disabled={currentUser?.role === 'viewer'}
+                                 style={{
+                                   border: '1px dashed var(--color-primary)',
+                                   background: 'rgba(163, 20, 34, 0.04)',
+                                   width: '24px',
+                                   height: '24px',
+                                   borderRadius: '50%',
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   justifyContent: 'center',
+                                   cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
+                                   padding: 0,
+                                   transition: 'all 0.15s ease'
+                                 }}
+                                 className="hover-scale"
+                                 title={t('Phân công người thực hiện')}
+                               >
+                                 <UserPlus size={12} color="var(--color-primary)" />
+                               </button>
 
                               {/* User selection dropdown popup */}
                               {isAssigneeDropdownOpen && (
@@ -2491,33 +2567,42 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                     <span>✕ {t('Bỏ phân công (Chưa ai làm)')}</span>
                                   </div>
 
-                                  {users.map((u: any) => (
-                                    <div
-                                      key={u.id}
-                                      onClick={() => {
-                                        handleUpdateChecklistItemAssignee(item.id, String(u.id));
-                                        setActiveAssigneeDropdownId(null);
-                                      }}
-                                      style={{
-                                        padding: '6px 8px',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '0.75rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        background: String(u.id) === String(item.assignee_id) ? 'var(--color-primary-light)' : 'transparent',
-                                        color: String(u.id) === String(item.assignee_id) ? 'var(--color-primary)' : 'var(--color-text)',
-                                        fontWeight: String(u.id) === String(item.assignee_id) ? 700 : 500
-                                      }}
-                                      className="hover-bg-alt"
-                                    >
-                                      <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={18} />
-                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {u.full_name || u.name}
-                                      </span>
-                                    </div>
-                                  ))}
+                                  {users.map((u: any) => {
+                                    const isAssigned = assignedIds.includes(String(u.id));
+                                    return (
+                                      <div
+                                        key={u.id}
+                                        onClick={() => {
+                                          const nextAssignees = isAssigned
+                                            ? assignedIds.filter(id => id !== String(u.id))
+                                            : [...assignedIds, String(u.id)];
+                                          handleUpdateChecklistItemAssignee(item.id, nextAssignees.join(','));
+                                        }}
+                                        style={{
+                                          padding: '6px 8px',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
+                                          fontSize: '0.75rem',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          gap: '8px',
+                                          background: isAssigned ? 'var(--color-primary-light)' : 'transparent',
+                                          color: isAssigned ? 'var(--color-primary)' : 'var(--color-text)',
+                                          fontWeight: isAssigned ? 700 : 500
+                                        }}
+                                        className="hover-bg-alt"
+                                      >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                          <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={18} />
+                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {u.full_name || u.name}
+                                          </span>
+                                        </div>
+                                        {isAssigned && <Check size={12} color="var(--color-primary)" />}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
@@ -2659,9 +2744,17 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                             <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
                                             <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)' }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
                                           </div>
-                                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                            {renderCommentContent(comment.content)}
-                                          </div>
+                                          {comment.content && /<[a-z][\s\S]*>/i.test(comment.content) ? (
+                                            <div 
+                                              className="rich-comment-content"
+                                              dangerouslySetInnerHTML={{ __html: comment.content }}
+                                              style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.4' }}
+                                            />
+                                          ) : (
+                                            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.4', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                              {renderCommentContent(comment.content)}
+                                            </div>
+                                          )}
                                           {commentParsedAtts.length > 0 && (
                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px' }}>
                                               {commentParsedAtts.map((url: any, aIdx: number) => {
@@ -3828,77 +3921,26 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
             {/* Người liên quan */}
             <div className="card" style={cardStyle}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={cardLabelStyle}>
-                  {t('Người liên quan')}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowParticipantsModal(true)}
-                  className="btn outline sm hover-lift"
-                  style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Users size={12} />
-                  {t('Quản lý')}
-                </button>
-              </div>
-
-              {/* Avatar Stack */}
-              <div 
-                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }}
-                onClick={() => setShowParticipantsModal(true)}
-              >
-                {participants.length === 0 ? (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                    {t('Chưa có người liên quan.')}
-                  </span>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      {participants.slice(0, 3).map((u: any, idx: number) => (
-                        <div 
-                          key={u.id} 
-                          style={{ 
-                            marginLeft: idx === 0 ? 0 : -8, 
-                            border: '2px solid var(--color-surface)', 
-                            borderRadius: '50%',
-                            overflow: 'hidden',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                            zIndex: 10 - idx
-                          }}
-                        >
-                          <Avatar src={u.avatar_url || u.avatar} name={u.full_name} size={28} />
-                        </div>
-                      ))}
-                      {participants.length > 3 && (
-                        <div 
-                          style={{ 
-                            marginLeft: -8, 
-                            width: 28, 
-                            height: 28, 
-                            borderRadius: '50%', 
-                            background: 'var(--color-border-light)', 
-                            color: 'var(--color-text)', 
-                            fontSize: '0.7rem', 
-                            fontWeight: 800, 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            border: '2px solid var(--color-surface)',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                            zIndex: 5
-                          }}
-                        >
-                          +{participants.length - 3}
-                        </div>
-                      )}
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', marginLeft: '8px' }}>
-                      ({participants.length} {t('người')})
-                    </span>
-                  </div>
-                )}
-              </div>
+              <label style={cardLabelStyle}>
+                {t('Người liên quan')}
+              </label>
+              <CustomSelect
+                multiple
+                searchable
+                showAvatars
+                options={users.map(u => ({
+                  value: String(u.id),
+                  label: u.full_name,
+                  avatar: u.avatar || u.avatar_url
+                }))}
+                value={getParticipantIds(formData.participant_ids)}
+                onChange={(vals) => {
+                  const nextString = vals.join(',');
+                  setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
+                  handleUpdateField('participant_ids', nextString);
+                }}
+                placeholder={t('Chọn người liên quan...')}
+              />
             </div>
 
             {/* Lặp lại định kỳ */}

@@ -505,12 +505,8 @@ export const Header = ({
       } else {
         const fallbackActivityMatch = targetLink.match(/^\/activities\/(\d+)$/) || targetLink.match(/\/activities\?(?:task_id|id)=(\d+)/);
         if (fallbackActivityMatch) {
-          if (['sale', 'sales'].includes(user?.role || '')) {
-            urlObj.searchParams.set('task_id', fallbackActivityMatch[1]);
-            targetLink = `/workspace?${urlObj.searchParams.toString()}`;
-          } else {
-            targetLink = `/`;
-          }
+          urlObj.searchParams.set('task_id', fallbackActivityMatch[1]);
+          targetLink = `/workspace?${urlObj.searchParams.toString()}`;
         }
         const projectMatch = targetLink.match(/^\/projects\/(\d+)$/) || targetLink.match(/\/projects\?(?:id)=(\d+)/);
         if (projectMatch) {

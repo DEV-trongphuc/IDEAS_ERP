@@ -31,3 +31,6 @@
 ## 8. Quy tắc Bắt buộc Đối soát CSDL từ xa (Remote Database Structure Verification)
 * **Rule**: Bất kỳ thay đổi, cập nhật hoặc phân tích nào liên quan đến Cơ sở dữ liệu Backend (truy vấn, cấu trúc bảng, thêm trường mới), Agent bắt buộc phải sử dụng cổng kết nối CSDL từ xa `exec_db_query.php` (hoặc các tập tin test_bootstrap) để chạy truy vấn đối soát cấu trúc thực tế trên Staging, đảm bảo các trường dữ liệu và kiểu dữ liệu hoàn toàn khớp nhau trước khi hoàn tất công việc.
 
+## 9. Quy tắc Tuyệt đối Cấm truy cập RICHLAND (RICHLAND Access Prohibition)
+* **Rule**: Tác nhân AI (Agent) tuyệt đối không được phép thực hiện bất kỳ hành động đọc, viết, liệt kê tệp tin, chạy lệnh terminal, chỉnh sửa code hoặc can thiệp dưới bất kỳ hình thức nào đối với thư mục `D:\RICH_LAND_DATA_UI` hoặc bất kỳ tài nguyên nào liên quan đến Richland. Mọi hoạt động của Agent chỉ được giới hạn bên trong thư mục dự án chỉ định `IDEAS_ERP`.
+
