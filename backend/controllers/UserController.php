@@ -27,7 +27,8 @@ class UserController {
     }
 
     public function index(array $auth): void {
-        if (!in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director', 'manager', 'sales', 'sale', 'hr'], true)) respond(403, null, 'Quyền admin là bắt buộc', false);
+        // Allow all authenticated users within the same tenant to retrieve the user list (e.g., for task assignment and mentions)
+        
         
         $where = ["tenant_id = ?"];
         $params = [$auth['tenant_id']];

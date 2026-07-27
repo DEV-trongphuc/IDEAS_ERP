@@ -721,7 +721,7 @@ switch ($resource) {
         if     ($resourceId === '2fa-setup' && $method === 'GET') $ctrl->setup2FA($auth);
         elseif ($resourceId === '2fa-enable' && $method === 'POST') $ctrl->enable2FA($auth);
         elseif ($resourceId === '2fa-disable' && $method === 'POST') $ctrl->disable2FA($auth);
-        elseif (!$resourceId && $method === 'GET')    { requireRole($auth, ['admin', 'super_admin', 'superadmin', 'manager', 'sales', 'sale', 'director']); $ctrl->index($auth); }
+        elseif (!$resourceId && $method === 'GET')    $ctrl->index($auth);
         elseif (!$resourceId && $method === 'POST')   { requireRole($auth, ['admin', 'super_admin', 'director']); $ctrl->store($auth); }
         elseif ($resourceId  && $method === 'GET')    $ctrl->show($auth, (int)$resourceId);
         elseif ($resourceId  && ($method === 'PUT' || $method === 'PATCH'))    $ctrl->update($auth, (int)$resourceId);
