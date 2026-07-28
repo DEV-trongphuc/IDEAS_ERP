@@ -1,0 +1,50 @@
+      {/* Manage Milestones Drawer (Wide dual-pane layout) */}
+      <AnimatePresence>
+        {showManageModal && selectedDepForManage && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowManageModal(false)}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                backdropFilter: 'blur(4px)'
+              }}
+            />
+            {/* Drawer panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              style={{
+                position: 'relative',
+                width: '95%',
+                maxWidth: '1200px',
+                height: '100%',
+                backgroundColor: 'var(--color-surface)',
+                boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 10000
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid var(--color-border)',
+                background: 'var(--color-surface)'
+              }}>
+                <div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
+                    Chi tiết & Lịch trình thanh toán - Căn {selectedDepForManage.unit_code}
+                  </h2>
+                  <p style={{ margin: '4
+<truncated 43953 bytes>

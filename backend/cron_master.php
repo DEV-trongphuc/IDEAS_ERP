@@ -89,6 +89,8 @@ echo "[" . date('Y-m-d H:i:s') . "] Using PHP binary: " . $phpBin . "\n";
 // cron_mailer.php sẽ gửi email và tin nhắn Zalo bất đồng bộ từ hàng đợi gửi tin
 $tasks = [
     'cron_sync.php',
+    'cron_recurring_tasks.php',
+    'cron_deposit_reminders.php',
     'cron_mailer.php'
 ];
 

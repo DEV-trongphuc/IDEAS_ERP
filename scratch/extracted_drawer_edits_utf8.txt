@@ -1,0 +1,692 @@
+
+========================================
+STEP INDEX: 1923
+TOOL: replace_file_content
+DESCRIPTION: "Add activeViewTab state and expected_pay_date to milestonesInput in DepositsPage.tsx."
+START LINE: 78
+END LINE: 85
+TARGET CONTENT:
+"  const [showInfoModal, setShowInfoModal] = useState(false);"
+REPLACEMENT CONTENT:
+"  const [showInfoModal, setShowInfoModal] = useState(false);\n  const [activeViewTab, setActiveViewTab] = useState<'list' | 'stats'>('list');"
+
+========================================
+STEP INDEX: 1925
+TOOL: replace_file_content
+DESCRIPTION: "Initialize milestonesInput with expected_pay_date."
+START LINE: 119
+END LINE: 123
+TARGET CONTENT:
+"  const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string }[]>([\n    { name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }\n  ]);"
+REPLACEMENT CONTENT:
+"  const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([\n    { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }\n  ]);"
+
+========================================
+STEP INDEX: 1931
+TOOL: replace_file_content
+DESCRIPTION: "Allow milestones sum to be less than or equal to price."
+START LINE: 344
+END LINE: 350
+TARGET CONTENT:
+"    // Verify milestones total sum\n    const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);\n    if (Math.abs(totalM - parseFloat(price)) > 1) {\n      addToast(`Tổng tiền các đợt (${totalM.toLocaleString()} VND) phải bằng đúng Giá bán (${parseFloat(price).toLocaleString()} VND)`, 'error');\n      return;\n    }"
+REPLACEMENT CONTENT:
+"    // Verify milestones total sum\n    const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);\n    if (totalM > parseFloat(price)) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(price).toLocaleString()} VND)`, 'error');\n      return;\n    }"
+
+========================================
+STEP INDEX: 1935
+TOOL: replace_file_content
+DESCRIPTION: "Reset milestonesInput with expected_pay_date in DepositsPage.tsx."
+START LINE: 391
+END LINE: 394
+TARGET CONTENT:
+"        setMilestonesInput([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }]);"
+REPLACEMENT CONTENT:
+"        setMilestonesInput([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);"
+
+========================================
+STEP INDEX: 1943
+TOOL: replace_file_content
+DESCRIPTION: "Add expected_pay_date when adding new milestones in DepositsPage.tsx."
+START LINE: 329
+END LINE: 332
+TARGET CONTENT:
+"  const handleAddMilestoneInput = () => {\n    setMilestonesInput(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '' }]);\n  };"
+REPLACEMENT CONTENT:
+"  const handleAddMilestoneInput = () => {\n    setMilestonesInput(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '', expected_pay_date: '' }]);\n  };"
+
+========================================
+STEP INDEX: 1945
+TOOL: replace_file_content
+DESCRIPTION: "Add date input to milestonesInput list in creation modal."
+START LINE: 1130
+END LINE: 1170
+TARGET CONTENT:
+"              {milestonesInput.map((m, idx) => (\n                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>\n                  <input\n                    type=\"text\"\n                    required\n                    placeholder={`Tên đợt ${idx + 1}`}\n                    value={m.name}\n                    onChange={e =>\n                      setMilestonesInput(prev =>\n                        prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))\n                      )\n                    }\n                    className=\"form-input\"\n                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1 }}\n                  />\n                  <div style={{ width: '150px', flexShrink: 0 }}>\n                    <CurrencyInput\n                      value={m.amount}\n                      required\n                      onChange={val =>\n                        setMilestonesInput(prev =>\n                          prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))\n                        )\n                      }\n                      placeholder=\"Số tiền (VND)\"\n                      showTextHelper={false}\n                    />\n                  </div>\n                  {milestonesInput.length > 1 && (\n                    <button\n                      type=\"button\"\n                      onClick={() => handleRemoveMilestoneInput(idx)}\n                      style={{ padding: '6px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex' }}\n                    >\n                      <Trash2 size={14} />\n                    </button>\n                  )}\n                </div>\n              ))}"
+REPLACEMENT CONTENT:
+"              {milestonesInput.map((m, idx) => (\n                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>\n                  <input\n                    type=\"text\"\n                    required\n                    placeholder={`Tên đợt ${idx + 1}`}\n                    value={m.name}\n                    onChange={e =>\n                      setMilestonesInput(prev =>\n                        prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))\n                      )\n                    }\n                    className=\"form-input\"\n                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1 }}\n                  />\n                  <div style={{ width: '140px', flexShrink: 0 }}>\n                    <CurrencyInput\n                      value={m.amount}\n                      required\n                      onChange={val =>\n                        setMilestonesInput(prev =>\n                          prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))\n                        )\n                      }\n                      placeholder=\"Số tiền (VND)\"\n                      showTextHelper={false}\n                    />\n                  </div>\n                  <input\n                    type=\"date\"\n                    required\n                    value={m.expected_pay_date || ''}\n                    onChange={e =>\n                      setMilestonesInput(prev =>\n                        prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))\n                      )\n                    }\n                    className=\"form-input\"\n                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}\n                  />\n                  {milestonesInput.length > 1 && (\n                    <button\n                      type=\"button\"\n                      onClick=
+<truncated 355 bytes>
+
+========================================
+STEP INDEX: 1947
+TOOL: replace_file_content
+DESCRIPTION: "Enforce proof upload on paid/approved milestones."
+START LINE: 646
+END LINE: 652
+TARGET CONTENT:
+"    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');\n    if (!hasProof) {\n      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');\n      return;\n    }"
+REPLACEMENT CONTENT:
+"    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');\n    if (!hasProof) {\n      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');\n      return;\n    }\n\n    for (let m of tempMilestones) {\n      if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {\n        addToast(`Đợt thanh toán \"${m.milestone_name}\" ở trạng thái đã đóng/đã duyệt bắt buộc phải có file minh chứng đính kèm.`, 'error');\n        return;\n      }\n    }"
+
+========================================
+STEP INDEX: 1951
+TOOL: replace_file_content
+DESCRIPTION: "Replace Ngày tạo with expected_pay_date picker in milestones list."
+START LINE: 1669
+END LINE: 1728
+TARGET CONTENT:
+"                {/* Table Header */}\n                <div style={{\n                  display: 'grid',\n                  gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1fr 1.5fr',\n                  gap: '12px',\n                  alignItems: 'center',\n                  padding: '8px 12px',\n                  background: 'var(--color-surface-hover)',\n                  borderBottom: '2px solid var(--color-border)',\n                  fontSize: '0.75rem',\n                  fontWeight: 700,\n                  color: 'var(--color-text-muted)',\n                  textTransform: 'uppercase',\n                  letterSpacing: '0.5px'\n                }}>\n                  <div>Tên đợt thanh toán</div>\n                  <div>Ngày tạo</div>\n                  <div>Số tiền (VND)</div>\n                  <div style={{ textAlign: 'center' }}>Trạng thái</div>\n                  <div style={{ textAlign: 'center' }}>Minh chứng</div>\n                  <div style={{ textAlign: 'right' }}>Thao tác</div>\n                </div>\n\n                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto', paddingRight: 4 }}>\n                  {tempMilestones.map((m, idx) => {\n                    const isLocked = m.status === 'approved' || m.status === 'paid';\n                    return (\n                      <div\n                        key={m.tempId || m.id}\n                        style={{\n                          display: 'grid',\n                          gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1fr 1.5fr',\n                          gap: '12px',\n                          alignItems: 'center',\n                          padding: '10px 12px',\n                          background: 'var(--color-surface)',\n                          border: '1px solid var(--color-border-light)',\n                          borderRadius: '8px',\n                          transition: 'all 0.2s',\n                          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'\n      
+<truncated 1098 bytes>
+REPLACEMENT CONTENT:
+"                {/* Table Header */}\n                <div style={{\n                  display: 'grid',\n                  gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1fr 1.5fr',\n                  gap: '12px',\n                  alignItems: 'center',\n                  padding: '8px 12px',\n                  background: 'var(--color-surface-hover)',\n                  borderBottom: '2px solid var(--color-border)',\n                  fontSize: '0.75rem',\n                  fontWeight: 700,\n                  color: 'var(--color-text-muted)',\n                  textTransform: 'uppercase',\n                  letterSpacing: '0.5px'\n                }}>\n                  <div>Tên đợt thanh toán</div>\n                  <div>Hạn thanh toán</div>\n                  <div>Số tiền (VND)</div>\n                  <div style={{ textAlign: 'center' }}>Trạng thái</div>\n                  <div style={{ textAlign: 'center' }}>Minh chứng</div>\n                  <div style={{ textAlign: 'right' }}>Thao tác</div>\n                </div>\n\n                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto', paddingRight: 4 }}>\n                  {tempMilestones.map((m, idx) => {\n                    const isLocked = m.status === 'approved' || m.status === 'paid';\n                    return (\n                      <div\n                        key={m.tempId || m.id}\n                        style={{\n                          display: 'grid',\n                          gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1fr 1.5fr',\n                          gap: '12px',\n                          alignItems: 'center',\n                          padding: '10px 12px',\n                          background: 'var(--color-surface)',\n                          border: '1px solid var(--color-border-light)',\n                          borderRadius: '8px',\n                          transition: 'all 0.2s',\n                          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'\n
+<truncated 1470 bytes>
+
+========================================
+STEP INDEX: 1955
+TOOL: replace_file_content
+DESCRIPTION: "Add projectedReceivables calculation and update page title in DepositsPage.tsx."
+START LINE: 691
+END LINE: 710
+TARGET CONTENT:
+"      setIsSavingMilestones(false);\n    }\n  };\n\n  return (\n    <div className=\"page-container anim-fade-up\" style={{ color: 'var(--color-text)' }}>\n      {/* Notifications */}\n\n      {/* Header */}\n      <div className=\"page-header\">\n        <div>\n          <h1 className=\"page-title\" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n            {t(\"Quản Lý Đơn Đặt Hàng (Sales Orders)\")}\n            <button\n              onClick={() => setShowInfoModal(true)}\n              style={{\n                background: 'rgba(0, 0, 0, 0.02)',\n                border: '1px solid var(--color-border)',\n                padding: '3px 8px',\n                borderRadius: '20px',\n                display: 'flex',\n                alignItems: 'center',\n                gap: '4px',\n                cursor: 'pointer',\n                color: 'var(--color-text-muted)',\n                transition: 'all 0.2s',\n                height: '24px'\n              }}"
+REPLACEMENT CONTENT:
+"      setIsSavingMilestones(false);\n    }\n  };\n\n  const projectedReceivables = React.useMemo(() => {\n    const todayStr = new Date().toISOString().substring(0, 10);\n    const map: Record<string, { date: string; totalAmount: number; milestones: any[] }> = {};\n\n    deposits.forEach(d => {\n      if (d.milestones && d.milestones.length > 0) {\n        d.milestones.forEach(m => {\n          if (m.status !== 'approved' && m.expected_pay_date) {\n            const dateStr = m.expected_pay_date.substring(0, 10);\n            if (dateStr >= todayStr) {\n              if (!map[dateStr]) {\n                map[dateStr] = {\n                  date: dateStr,\n                  totalAmount: 0,\n                  milestones: []\n                };\n              }\n              map[dateStr].totalAmount += Number(m.expected_amount) || 0;\n              map[dateStr].milestones.push({\n                ...m,\n                customerName: `${d.last_name} ${d.first_name}`,\n                phone: d.phone,\n                unitCode: d.unit_code,\n                projectName: d.project_name\n              });\n            }\n          }\n        });\n      }\n    });\n\n    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));\n  }, [deposits]);\n\n  return (\n    <div className=\"page-container anim-fade-up\" style={{ color: 'var(--color-text)' }}>\n      {/* Notifications */}\n\n      {/* Header */}\n      <div className=\"page-header\">\n        <div>\n          <h1 className=\"page-title\" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n            {t(\"Quản Lý Thanh Toán (Payments)\")}\n            <button\n              onClick={() => setShowInfoModal(true)}\n              style={{\n                background: 'rgba(0, 0, 0, 0.02)',\n                border: '1px solid var(--color-border)',\n                padding: '3px 8px',\n                borderRadius: '20px',\n                display: 'flex',\n                alignItems: 'center',\n                gap: '4px',\n               
+<truncated 162 bytes>
+
+========================================
+STEP INDEX: 1967
+TOOL: replace_file_content
+DESCRIPTION: "Add activeViewTab switcher and Thống kê dự thu stats tab panel in DepositsPage.tsx."
+START LINE: 751
+END LINE: 1085
+TARGET CONTENT:
+"      {/* List */}\n      {loading ? (\n        <TableSkeleton rows={5} cols={5} />\n      ) : filteredDepositsList.length === 0 ? (\n        <EmptyCard\n          icon={<CreditCard />}\n          title=\"Chưa có phiếu cọc nào\"\n          description=\"Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC).\"\n          actionText={isViewer ? undefined : \"Tạo đơn hàng mới\"}\n          onAction={isViewer ? undefined : () => setIsCreateOpen(true)}\n        />\n      ) : (\n        <div className=\"card\" style={{ padding: 0, borderRadius: '16px', border: '1px solid var(--color-border-light)', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>\n          <div className=\"table-wrap\" style={{ maxHeight: '480px', overflowY: 'auto', overflowX: 'auto' }}>\n            <table className=\"w-full text-left\" style={{ borderCollapse: 'collapse', minWidth: 900 }}>\n              <thead>\n                <tr>\n                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '110px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã sản phẩm / SKU</th>\n                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chiến dịch & Khách hàng</th>\n                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>\n                  <th style={{ pad
+<truncated 13397 bytes>
+REPLACEMENT CONTENT:
+"      {/* Tab Switcher */}\n      {isAdmin && (\n        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem' }}>\n          <button\n            onClick={() => setActiveViewTab('list')}\n            style={{\n              padding: '8px 16px',\n              fontSize: '0.85rem',\n              fontWeight: 700,\n              background: activeViewTab === 'list' ? 'var(--color-primary-light)' : 'none',\n              color: activeViewTab === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)',\n              border: 'none',\n              borderRadius: '8px',\n              cursor: 'pointer'\n            }}\n          >\n            Danh sách thanh toán\n          </button>\n          <button\n            onClick={() => setActiveViewTab('stats')}\n            style={{\n              padding: '8px 16px',\n              fontSize: '0.85rem',\n              fontWeight: 700,\n              background: activeViewTab === 'stats' ? 'var(--color-primary-light)' : 'none',\n              color: activeViewTab === 'stats' ? 'var(--color-primary)' : 'var(--color-text-muted)',\n              border: 'none',\n              borderRadius: '8px',\n              cursor: 'pointer'\n            }}\n          >\n            Thống kê dự thu\n          </button>\n        </div>\n      )}\n\n      {activeViewTab === 'list' ? (\n        <>\n          {/* List */}\n          {loading ? (\n            <TableSkeleton rows={5} cols={5} />\n          ) : filteredDepositsList.length === 0 ? (\n            <EmptyCard\n              icon={<CreditCard />}\n              title=\"Chưa có phiếu thanh toán nào\"\n              description=\"Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC).\"\n              actionText={isViewer ? undefined : \"Tạo đơn hàng mới\"}\n              onAction={isViewer ? undefined : () => setIsCreateOpen(true)}\n            />\n          ) : (\n            <div className=\"
+<truncated 21362 bytes>
+
+========================================
+STEP INDEX: 1977
+TOOL: multi_replace_file_content
+DESCRIPTION: "Add activeViewTab and update milestonesInput state."
+START LINE: undefined
+END LINE: undefined
+TARGET CONTENT:
+undefined
+REPLACEMENT CONTENT:
+undefined
+
+========================================
+STEP INDEX: 1981
+TOOL: multi_replace_file_content
+DESCRIPTION: "Update creation milestone handlers and validation."
+START LINE: undefined
+END LINE: undefined
+TARGET CONTENT:
+undefined
+REPLACEMENT CONTENT:
+undefined
+
+========================================
+STEP INDEX: 1987
+TOOL: replace_file_content
+DESCRIPTION: "Update create modal labels and title to rename fields."
+START LINE: 1045
+END LINE: 1100
+TARGET CONTENT:
+"      <CustomModal\n        isOpen={isCreateOpen}\n        onClose={() => setIsCreateOpen(false)}\n        title=\"Khởi tạo phiếu đặt cọc\"\n        width=\"620px\"\n      >\n        <div style={{ padding: '0.5rem 0' }}>\n          <form onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '4px' }}>\n            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>\n              <div className=\"form-group\" style={{ margin: 0 }}>\n                <label className=\"form-label\">Khách hàng</label>\n                <CustomSelect\n                  options={contacts.map(c => ({\n                    value: String(c.id),\n                    label: `${c.last_name} ${c.first_name} (${c.phone})`,\n                    avatar: (c as any).avatar_url || (c as any).avatar\n                  }))}\n                  value={selectedContactId}\n                  onChange={val => setSelectedContactId(val.toString())}\n                  placeholder=\"-- Chọn khách hàng --\"\n                  showAvatars\n                  searchable\n                />\n              </div>\n              <div className=\"form-group\" style={{ margin: 0 }}>\n                <label className=\"form-label\">Chiến dịch / Nhóm</label>\n                <CustomSelect\n                  options={projects.map(p => ({\n                    value: String(p.id),\n                    label: p.name\n                  }))}\n                  value={selectedProjectId}\n                  onChange={val => setSelectedProjectId(val.toString())}\n                  placeholder=\"-- Chọn chiến dịch/nhóm --\"\n                  searchable\n                />\n              </div>\n            </div>\n\n            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>\n              <div className=\"form-group\" style={{ margin: 0 }}>\n                <label className=\"form-label\">Mã sản p
+<truncated 647 bytes>
+REPLACEMENT CONTENT:
+"      <CustomModal\n        isOpen={isCreateOpen}\n        onClose={() => setIsCreateOpen(false)}\n        title=\"Khởi tạo phiếu thanh toán\"\n        width=\"620px\"\n      >\n        <div style={{ padding: '0.5rem 0' }}>\n          <form onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '4px' }}>\n            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>\n              <div className=\"form-group\" style={{ margin: 0 }}>\n                <label className=\"form-label\">Khách hàng</label>\n                <CustomSelect\n                  options={contacts.map(c => ({\n                    value: String(c.id),\n                    label: `${c.last_name} ${c.first_name} (${c.phone})`,\n                    avatar: (c as any).avatar_url || (c as any).avatar\n                  }))}\n                  value={selectedContactId}\n                  onChange={val => setSelectedContactId(val.toString())}\n                  placeholder=\"-- Chọn khách hàng --\"\n                  showAvatars\n                  searchable\n                />\n              </div>\n              <div className=\"form-group\" style={{ margin: 0 }}>\n                <label className=\"form-label\">Chương trình / Chiến dịch</label>\n                <CustomSelect\n                  options={projects.map(p => ({\n                    value: String(p.id),\n                    label: p.name\n                  }))}\n                  value={selectedProjectId}\n                  onChange={val => setSelectedProjectId(val.toString())}\n                  placeholder=\"-- Chọn chương trình/chiến dịch --\"\n                  searchable\n                />\n              </div>\n            </div>\n\n            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>\n              <div className=\"form-group\" style={{ margin: 0 }}>\n                <label className=\"form-
+<truncated 692 bytes>
+
+========================================
+STEP INDEX: 1991
+TOOL: replace_file_content
+DESCRIPTION: "Enforce proof upload on paid/approved milestones in handleSaveMilestones."
+START LINE: 648
+END LINE: 653
+TARGET CONTENT:
+"    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');\n    if (!hasProof) {\n      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');\n      return;\n    }"
+REPLACEMENT CONTENT:
+"    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');\n    if (!hasProof) {\n      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');\n      return;\n    }\n\n    for (let m of tempMilestones) {\n      if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {\n        addToast(`Đợt thanh toán \"${m.milestone_name}\" ở trạng thái đã đóng/đã duyệt bắt buộc phải có file minh chứng đính kèm.`, 'error');\n        return;\n      }\n    }"
+
+========================================
+STEP INDEX: 1995
+TOOL: replace_file_content
+DESCRIPTION: "Add date input inside milestonesInput row in creation modal."
+START LINE: 1138
+END LINE: 1175
+TARGET CONTENT:
+"              {milestonesInput.map((m, idx) => (\n                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>\n                  <input\n                    type=\"text\"\n                    required\n                    placeholder={`Tên đợt ${idx + 1}`}\n                    value={m.name}\n                    onChange={e =>\n                      setMilestonesInput(prev =>\n                        prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))\n                      )\n                    }\n                    className=\"form-input\"\n                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1 }}\n                  />\n                  <div style={{ width: '150px', flexShrink: 0 }}>\n                    <CurrencyInput\n                      value={m.amount}\n                      required\n                      onChange={val =>\n                        setMilestonesInput(prev =>\n                          prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))\n                        )\n                      }\n                      placeholder=\"Số tiền (VND)\"\n                      showTextHelper={false}\n                    />\n                  </div>\n                  {milestonesInput.length > 1 && (\n                    <button\n                      type=\"button\"\n                      onClick={() => handleRemoveMilestoneInput(idx)}\n                      style={{ padding: '6px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex' }}\n                    >\n                      <Trash2 size={14} />\n                    </button>\n                  )}\n                </div>\n              ))}"
+REPLACEMENT CONTENT:
+"              {milestonesInput.map((m, idx) => (\n                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>\n                  <input\n                    type=\"text\"\n                    required\n                    placeholder={`Tên đợt ${idx + 1}`}\n                    value={m.name}\n                    onChange={e =>\n                      setMilestonesInput(prev =>\n                        prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))\n                      )\n                    }\n                    className=\"form-input\"\n                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1 }}\n                  />\n                  <div style={{ width: '140px', flexShrink: 0 }}>\n                    <CurrencyInput\n                      value={m.amount}\n                      required\n                      onChange={val =>\n                        setMilestonesInput(prev =>\n                          prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))\n                        )\n                      }\n                      placeholder=\"Số tiền (VND)\"\n                      showTextHelper={false}\n                    />\n                  </div>\n                  <input\n                    type=\"date\"\n                    required\n                    value={m.expected_pay_date || ''}\n                    onChange={e =>\n                      setMilestonesInput(prev =>\n                        prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))\n                      )\n                    }\n                    className=\"form-input\"\n                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}\n                  />\n                  {milestonesInput.length > 1 && (\n                    <button\n                      type=\"button\"\n                      onClick=
+<truncated 355 bytes>
+
+========================================
+STEP INDEX: 1999
+TOOL: replace_file_content
+DESCRIPTION: "Replace Created Date with expected pay date picker in milestones list."
+START LINE: 1675
+END LINE: 1728
+TARGET CONTENT:
+"                  padding: '8px 12px',\n                  background: 'var(--color-surface-hover)',\n                  borderBottom: '2px solid var(--color-border)',\n                  fontSize: '0.75rem',\n                  fontWeight: 700,\n                  color: 'var(--color-text-muted)',\n                  textTransform: 'uppercase',\n                  letterSpacing: '0.5px'\n                }}>\n                  <div>Tên đợt thanh toán</div>\n                  <div>Ngày tạo</div>\n                  <div>Số tiền (VND)</div>\n                  <div style={{ textAlign: 'center' }}>Trạng thái</div>\n                  <div style={{ textAlign: 'center' }}>Minh chứng</div>\n                  <div style={{ textAlign: 'right' }}>Thao tác</div>\n                </div>\n\n                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto', paddingRight: 4 }}>\n                  {tempMilestones.map((m, idx) => {\n                    const isLocked = m.status === 'approved' || m.status === 'paid';\n                    return (\n                      <div\n                        key={m.tempId || m.id}\n                        style={{\n                          display: 'grid',\n                          gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1fr 1.5fr',\n                          gap: '12px',\n                          alignItems: 'center',\n                          padding: '10px 12px',\n                          background: 'var(--color-surface)',\n                          border: '1px solid var(--color-border-light)',\n                          borderRadius: '8px',\n                          transition: 'all 0.2s',\n                          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'\n                        }}\n                      >\n                        {/* Name input */}\n                        <div>\n                          <input\n                            type=\"text\"\n                            placeholder=\"Tên đợ
+<truncated 847 bytes>
+REPLACEMENT CONTENT:
+"                  padding: '8px 12px',\n                  background: 'var(--color-surface-hover)',\n                  borderBottom: '2px solid var(--color-border)',\n                  fontSize: '0.75rem',\n                  fontWeight: 700,\n                  color: 'var(--color-text-muted)',\n                  textTransform: 'uppercase',\n                  letterSpacing: '0.5px'\n                }}>\n                  <div>Tên đợt thanh toán</div>\n                  <div>Hạn thanh toán</div>\n                  <div>Số tiền (VND)</div>\n                  <div style={{ textAlign: 'center' }}>Trạng thái</div>\n                  <div style={{ textAlign: 'center' }}>Minh chứng</div>\n                  <div style={{ textAlign: 'right' }}>Thao tác</div>\n                </div>\n\n                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto', paddingRight: 4 }}>\n                  {tempMilestones.map((m, idx) => {\n                    const isLocked = m.status === 'approved' || m.status === 'paid';\n                    return (\n                      <div\n                        key={m.tempId || m.id}\n                        style={{\n                          display: 'grid',\n                          gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1fr 1.5fr',\n                          gap: '12px',\n                          alignItems: 'center',\n                          padding: '10px 12px',\n                          background: 'var(--color-surface)',\n                          border: '1px solid var(--color-border-light)',\n                          borderRadius: '8px',\n                          transition: 'all 0.2s',\n                          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'\n                        }}\n                      >\n                        {/* Name input */}\n                        <div>\n                          <input\n                            type=\"text\"\n                            placeholder=\"Tên
+<truncated 1219 bytes>
+
+========================================
+STEP INDEX: 2003
+TOOL: replace_file_content
+DESCRIPTION: "Inject projectedReceivables calculation and update page title in DepositsPage.tsx."
+START LINE: 691
+END LINE: 710
+TARGET CONTENT:
+"      setIsSavingMilestones(false);\n    }\n  };\n\n  return (\n    <div className=\"page-container anim-fade-up\" style={{ color: 'var(--color-text)' }}>\n      {/* Notifications */}\n\n      {/* Header */}\n      <div className=\"page-header\">\n        <div>\n          <h1 className=\"page-title\" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n            {t(\"Quản Lý Đơn Đặt Hàng (Sales Orders)\")}\n            <button\n              onClick={() => setShowInfoModal(true)}\n              style={{\n                background: 'rgba(0, 0, 0, 0.02)',\n                border: '1px solid var(--color-border)',\n                padding: '3px 8px',\n                borderRadius: '20px',\n                display: 'flex',\n                alignItems: 'center',\n                gap: '4px',\n                cursor: 'pointer',\n                color: 'var(--color-text-muted)',\n                transition: 'all 0.2s',\n                height: '24px'\n              }}"
+REPLACEMENT CONTENT:
+"      setIsSavingMilestones(false);\n    }\n  };\n\n  const projectedReceivables = React.useMemo(() => {\n    const todayStr = new Date().toISOString().substring(0, 10);\n    const map: Record<string, { date: string; totalAmount: number; milestones: any[] }> = {};\n\n    deposits.forEach(d => {\n      if (d.milestones && d.milestones.length > 0) {\n        d.milestones.forEach(m => {\n          if (m.status !== 'approved' && m.expected_pay_date) {\n            const dateStr = m.expected_pay_date.substring(0, 10);\n            if (dateStr >= todayStr) {\n              if (!map[dateStr]) {\n                map[dateStr] = {\n                  date: dateStr,\n                  totalAmount: 0,\n                  milestones: []\n                };\n              }\n              map[dateStr].totalAmount += Number(m.expected_amount) || 0;\n              map[dateStr].milestones.push({\n                ...m,\n                customerName: `${d.last_name} ${d.first_name}`,\n                phone: d.phone,\n                unitCode: d.unit_code,\n                projectName: d.project_name\n              });\n            }\n          }\n        });\n      }\n    });\n\n    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));\n  }, [deposits]);\n\n  return (\n    <div className=\"page-container anim-fade-up\" style={{ color: 'var(--color-text)' }}>\n      {/* Notifications */}\n\n      {/* Header */}\n      <div className=\"page-header\">\n        <div>\n          <h1 className=\"page-title\" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n            {t(\"Quản Lý Thanh Toán (Payments)\")}\n            <button\n              onClick={() => setShowInfoModal(true)}\n              style={{\n                background: 'rgba(0, 0, 0, 0.02)',\n                border: '1px solid var(--color-border)',\n                padding: '3px 8px',\n                borderRadius: '20px',\n                display: 'flex',\n                alignItems: 'center',\n                gap: '4px',\n               
+<truncated 162 bytes>
+
+========================================
+STEP INDEX: 2009
+TOOL: replace_file_content
+DESCRIPTION: "Add tab switcher and update main list table headers in DepositsPage.tsx."
+START LINE: 785
+END LINE: 810
+TARGET CONTENT:
+"      {/* List */}\n      {loading ? (\n        <TableSkeleton rows={5} cols={5} />\n      ) : filteredDepositsList.length === 0 ? (\n        <EmptyCard\n          icon={<CreditCard />}\n          title=\"Chưa có phiếu cọc nào\"\n          description=\"Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC).\"\n          actionText={isViewer ? undefined : \"Tạo đơn hàng mới\"}\n          onAction={isViewer ? undefined : () => setIsCreateOpen(true)}\n        />\n      ) : (\n        <div className=\"card\" style={{ padding: 0, borderRadius: '16px', border: '1px solid var(--color-border-light)', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>\n          <div className=\"table-wrap\" style={{ maxHeight: '480px', overflowY: 'auto', overflowX: 'auto' }}>\n            <table className=\"w-full text-left\" style={{ borderCollapse: 'collapse', minWidth: 900 }}>\n              <thead>\n                <tr>\n                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '110px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã sản phẩm / SKU</th>\n                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chiến dịch & Khách hàng</th>\n                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>\n                  <th style={{ pad
+<truncated 1109 bytes>
+REPLACEMENT CONTENT:
+"      {/* Tab Switcher */}\n      {isAdmin && (\n        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem' }}>\n          <button\n            onClick={() => setActiveViewTab('list')}\n            style={{\n              padding: '8px 16px',\n              fontSize: '0.85rem',\n              fontWeight: 700,\n              background: activeViewTab === 'list' ? 'var(--color-primary-light)' : 'none',\n              color: activeViewTab === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)',\n              border: 'none',\n              borderRadius: '8px',\n              cursor: 'pointer'\n            }}\n          >\n            Danh sách thanh toán\n          </button>\n          <button\n            onClick={() => setActiveViewTab('stats')}\n            style={{\n              padding: '8px 16px',\n              fontSize: '0.85rem',\n              fontWeight: 700,\n              background: activeViewTab === 'stats' ? 'var(--color-primary-light)' : 'none',\n              color: activeViewTab === 'stats' ? 'var(--color-primary)' : 'var(--color-text-muted)',\n              border: 'none',\n              borderRadius: '8px',\n              cursor: 'pointer'\n            }}\n          >\n            Thống kê dự thu\n          </button>\n        </div>\n      )}\n\n      {activeViewTab === 'list' ? (\n        <>\n          {/* List */}\n          {loading ? (\n            <TableSkeleton rows={5} cols={5} />\n          ) : filteredDepositsList.length === 0 ? (\n            <EmptyCard\n              icon={<CreditCard />}\n              title=\"Chưa có phiếu thanh toán nào\"\n              description=\"Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC).\"\n              actionText={isViewer ? undefined : \"Tạo đơn hàng mới\"}\n              onAction={isViewer ? undefined : () => setIsCreateOpen(true)}\n            />\n          ) : (\n            <div className=\"
+<truncated 2665 bytes>
+
+========================================
+STEP INDEX: 2019
+TOOL: replace_file_content
+DESCRIPTION: "Add expected_pay_date field to Milestone interface in DepositsPage.tsx."
+START LINE: 44
+END LINE: 53
+TARGET CONTENT:
+"interface Milestone {\n  id: number;\n  deposit_id: number;\n  milestone_name: string;\n  expected_amount: number;\n  unc_file_path: string | null;\n  status: 'pending' | 'paid' | 'approved' | 'failed';\n  approval_date: string | null;\n}"
+REPLACEMENT CONTENT:
+"interface Milestone {\n  id: number;\n  deposit_id: number;\n  milestone_name: string;\n  expected_amount: number;\n  unc_file_path: string | null;\n  status: 'pending' | 'paid' | 'approved' | 'failed';\n  approval_date: string | null;\n  expected_pay_date?: string | null;\n}"
+
+========================================
+STEP INDEX: 2023
+TOOL: replace_file_content
+DESCRIPTION: "Close activeViewTab list block and render stats block in DepositsPage.tsx."
+START LINE: 1118
+END LINE: 1125
+TARGET CONTENT:
+"              </div>\n            </div>\n          )}\n        </div>\n      )}\n\n      {/* Create Modal */}"
+REPLACEMENT CONTENT:
+"              </div>\n            </div>\n          )}\n        </>\n      ) : (\n        <div className=\"animate-fade\" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>\n          {/* Summary Cards */}\n          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>\n            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.01) 100%)', border: '1px solid rgba(37, 99, 235, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>\n              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự thu 7 ngày tới</span>\n              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2563eb' }}>\n                {parseFloat(projectedReceivables.filter(r => {\n                  const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);\n                  return diff <= 7;\n                }).reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND\n              </span>\n            </div>\n            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.01) 100%)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>\n              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự thu 30 ngày tới</span>\n              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>\n                {parseFloat(projectedReceivables.filter(r => {\n                  const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);\n                  return diff <= 30;\n                }).reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND\n              </s
+<truncated 3851 bytes>
+
+========================================
+STEP INDEX: 2375
+TOOL: multi_replace_file_content
+DESCRIPTION: "Fix nested JSX fragment and curly braces syntax in DepositsPage.tsx."
+START LINE: undefined
+END LINE: undefined
+TARGET CONTENT:
+undefined
+REPLACEMENT CONTENT:
+undefined
+
+========================================
+STEP INDEX: 2388
+TOOL: replace_file_content
+DESCRIPTION: "Fix missing closing tag for pagination wrapper div."
+START LINE: 1116
+END LINE: 1124
+TARGET CONTENT:
+"                </button>\n              </div>\n          )}\n            </>\n          )}\n        </>"
+REPLACEMENT CONTENT:
+"                </button>\n              </div>\n            </div>\n          )}\n            </>\n          )}\n        </>"
+
+========================================
+STEP INDEX: 2375
+TOOL: multi_replace_file_content
+DESCRIPTION: "Fix nested JSX fragment and curly braces syntax in DepositsPage.tsx."
+START LINE: undefined
+END LINE: undefined
+TARGET CONTENT:
+undefined
+REPLACEMENT CONTENT:
+undefined
+
+========================================
+STEP INDEX: 2388
+TOOL: replace_file_content
+DESCRIPTION: "Fix missing closing tag for pagination wrapper div."
+START LINE: 1116
+END LINE: 1124
+TARGET CONTENT:
+"                </button>\n              </div>\n          )}\n            </>\n          )}\n        </>"
+REPLACEMENT CONTENT:
+"                </button>\n              </div>\n            </div>\n          )}\n            </>\n          )}\n        </>"
+
+========================================
+STEP INDEX: 2428
+TOOL: replace_file_content
+DESCRIPTION: "Remove duplicate closing div tag."
+START LINE: 1117
+END LINE: 1122
+TARGET CONTENT:
+"              </div>\n            </div>\n            </div>\n          )}"
+REPLACEMENT CONTENT:
+"              </div>\n            </div>\n          )}"
+
+========================================
+STEP INDEX: 2466
+TOOL: replace_file_content
+DESCRIPTION: "Close card wrapper div."
+START LINE: 1052
+END LINE: 1056
+TARGET CONTENT:
+"            </table>\n          </div>"
+REPLACEMENT CONTENT:
+"            </table>\n          </div>\n        </div>"
+
+========================================
+STEP INDEX: 2581
+TOOL: replace_file_content
+DESCRIPTION: "Validate total milestones sum against expected price."
+START LINE: 640
+END LINE: 648
+TARGET CONTENT:
+"  const handleSaveMilestones = async () => {\n    if (!selectedDepForManage) return;\n    for (let m of tempMilestones) {\n      if (!m.milestone_name.trim()) {\n        addToast('Tên đợt không được để trống.', 'error');\n        return;\n      }\n    }\n\n    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');"
+REPLACEMENT CONTENT:
+"    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);\n    if (totalM > parseFloat(String(selectedDepForManage.price))) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');\n      return;\n    }\n\n    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');"
+
+========================================
+STEP INDEX: 2585
+TOOL: replace_file_content
+DESCRIPTION: "Restore function header and name validation for handleSaveMilestones."
+START LINE: 639
+END LINE: 645
+TARGET CONTENT:
+"    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);\n    if (totalM > parseFloat(String(selectedDepForManage.price))) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');\n      return;\n    }"
+REPLACEMENT CONTENT:
+"  const handleSaveMilestones = async () => {\n    if (!selectedDepForManage) return;\n    for (let m of tempMilestones) {\n      if (!m.milestone_name.trim()) {\n        addToast('Tên đợt không được để trống.', 'error');\n        return;\n      }\n    }\n\n    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);\n    if (totalM > parseFloat(String(selectedDepForManage.price))) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');\n      return;\n    }"
+
+========================================
+STEP INDEX: 2466
+TOOL: replace_file_content
+DESCRIPTION: "Close card wrapper div."
+START LINE: 1052
+END LINE: 1056
+TARGET CONTENT:
+"            </table>\n          </div>"
+REPLACEMENT CONTENT:
+"            </table>\n          </div>\n        </div>"
+
+========================================
+STEP INDEX: 2581
+TOOL: replace_file_content
+DESCRIPTION: "Validate total milestones sum against expected price."
+START LINE: 640
+END LINE: 648
+TARGET CONTENT:
+"  const handleSaveMilestones = async () => {\n    if (!selectedDepForManage) return;\n    for (let m of tempMilestones) {\n      if (!m.milestone_name.trim()) {\n        addToast('Tên đợt không được để trống.', 'error');\n        return;\n      }\n    }\n\n    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');"
+REPLACEMENT CONTENT:
+"    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);\n    if (totalM > parseFloat(String(selectedDepForManage.price))) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');\n      return;\n    }\n\n    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');"
+
+========================================
+STEP INDEX: 2585
+TOOL: replace_file_content
+DESCRIPTION: "Restore function header and name validation for handleSaveMilestones."
+START LINE: 639
+END LINE: 645
+TARGET CONTENT:
+"    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);\n    if (totalM > parseFloat(String(selectedDepForManage.price))) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');\n      return;\n    }"
+REPLACEMENT CONTENT:
+"  const handleSaveMilestones = async () => {\n    if (!selectedDepForManage) return;\n    for (let m of tempMilestones) {\n      if (!m.milestone_name.trim()) {\n        addToast('Tên đợt không được để trống.', 'error');\n        return;\n      }\n    }\n\n    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);\n    if (totalM > parseFloat(String(selectedDepForManage.price))) {\n      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');\n      return;\n    }"
+
+========================================
+STEP INDEX: 4203
+TOOL: replace_file_content
+DESCRIPTION: "Add creator_avatar field to Deposit interface."
+START LINE: 38
+END LINE: 39
+TARGET CONTENT:
+"  creator_name: string;\n  milestones: Milestone[];"
+REPLACEMENT CONTENT:
+"  creator_name: string;\n  creator_avatar?: string;\n  milestones: Milestone[];"
+
+========================================
+STEP INDEX: 4205
+TOOL: replace_file_content
+DESCRIPTION: "Change page title from Quản Lý Thanh Toán (Payments) to Quản lý thanh toán."
+START LINE: 745
+END LINE: 748
+TARGET CONTENT:
+"          <h1 className=\"page-title\" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n            {t(\"Quản Lý Thanh Toán (Payments)\")}"
+REPLACEMENT CONTENT:
+"          <h1 className=\"page-title\" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n            {t(\"Quản lý thanh toán\")}"
+
+========================================
+STEP INDEX: 4209
+TOOL: replace_file_content
+DESCRIPTION: "Import Search icon from lucide-react."
+START LINE: 8
+END LINE: 8
+TARGET CONTENT:
+"import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2 } from 'lucide-react';"
+REPLACEMENT CONTENT:
+"import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search } from 'lucide-react';"
+
+========================================
+STEP INDEX: 4213
+TOOL: replace_file_content
+DESCRIPTION: "Declare searchQuery, filterProjectId, filterStatus states and use them to filter deposits list."
+START LINE: 90
+END LINE: 103
+TARGET CONTENT:
+"  const [currentPage, setCurrentPage] = useState(1);\n  const ITEMS_PER_PAGE = 8;\n\n  const filteredDepositsList = React.useMemo(() => {\n    if (user?.role === 'sale') {\n      return deposits.filter((d: any) => \n        String(d.created_by) === String(user.id) || \n        String(d.owner_id) === String(user.id) || \n        (d.contact_owner_id && String(d.contact_owner_id) === String(user.id)) ||\n        (d.shareholders && Array.isArray(d.shareholders) && d.shareholders.some((sh: any) => String(sh.user_id) === String(user.id)))\n      );\n    }\n    return deposits;\n  }, [deposits, user]);"
+REPLACEMENT CONTENT:
+"  const [currentPage, setCurrentPage] = useState(1);\n  const ITEMS_PER_PAGE = 8;\n\n  const [searchQuery, setSearchQuery] = useState('');\n  const [filterProjectId, setFilterProjectId] = useState('');\n  const [filterStatus, setFilterStatus] = useState('');\n\n  const filteredDepositsList = React.useMemo(() => {\n    let list = deposits;\n    if (user?.role === 'sale') {\n      list = deposits.filter((d: any) => \n        String(d.created_by) === String(user.id) || \n        String(d.owner_id) === String(user.id) || \n        (d.contact_owner_id && String(d.contact_owner_id) === String(user.id)) ||\n        (d.shareholders && Array.isArray(d.shareholders) && d.shareholders.some((sh: any) => String(sh.user_id) === String(user.id)))\n      );\n    }\n\n    return list.filter((d: any) => {\n      const clientName = `${d.last_name || ''} ${d.first_name || ''}`.toLowerCase();\n      const matchesSearch = !searchQuery.trim() ? true : \n        clientName.includes(searchQuery.toLowerCase()) || \n        (d.phone && d.phone.includes(searchQuery)) || \n        (d.unit_code && d.unit_code.toLowerCase().includes(searchQuery.toLowerCase()));\n\n      const matchesProject = !filterProjectId ? true : String(d.project_id) === filterProjectId;\n      const matchesStatus = !filterStatus ? true : d.status === filterStatus;\n\n      return matchesSearch && matchesProject && matchesStatus;\n    });\n  }, [deposits, user, searchQuery, filterProjectId, filterStatus]);"
+
+========================================
+STEP INDEX: 4219
+TOOL: replace_file_content
+DESCRIPTION: "Add search and filter bar, and add Sale column header to deposits table."
+START LINE: 846
+END LINE: 870
+TARGET CONTENT:
+"      {activeViewTab === 'list' ? (\n        <>\n          {/* List */}\n          {loading ? (\n            <TableSkeleton rows={5} cols={5} />\n          ) : filteredDepositsList.length === 0 ? (\n            <EmptyCard\n              icon={<CreditCard />}\n              title=\"Chưa có phiếu thanh toán nào\"\n              description=\"Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC).\"\n              actionText={isViewer ? undefined : \"Tạo đơn hàng mới\"}\n              onAction={isViewer ? undefined : () => setIsCreateOpen(true)}\n            />\n          ) : (\n            <>\n            <div className=\"card\" style={{ padding: 0, borderRadius: '16px', border: '1px solid var(--color-border-light)', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>\n              <div className=\"table-wrap\" style={{ maxHeight: '480px', overflowY: 'auto', overflowX: 'auto' }}>\n                <table className=\"w-full text-left\" style={{ borderCollapse: 'collapse', minWidth: 900 }}>\n                  <thead>\n                    <tr>\n                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '150px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã Học viên / Khách</th>\n                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chương trình & Khách hàng</th>\n                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zI
+<truncated 119 bytes>
+REPLACEMENT CONTENT:
+"      {activeViewTab === 'list' ? (\n        <>\n          {/* Search & Filter Bar */}\n          <div style={{ \n            display: 'flex', \n            flexWrap: 'wrap', \n            gap: '12px', \n            marginBottom: '1.25rem', \n            alignItems: 'center',\n            background: 'var(--color-surface)',\n            padding: '12px',\n            borderRadius: '12px',\n            border: '1px solid var(--color-border-light)'\n          }}>\n            <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>\n              <input\n                type=\"text\"\n                placeholder={t(\"Tìm kiếm theo khách hàng, số điện thoại, căn hộ...\")}\n                value={searchQuery}\n                onChange={(e) => setSearchQuery(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', paddingLeft: '2.5rem', height: '38px', borderRadius: '10px', margin: 0 }}\n              />\n              <Search style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--color-text-muted)' }} size={16} />\n            </div>\n\n            {/* Project Filter */}\n            <div style={{ width: '200px' }}>\n              <select\n                value={filterProjectId}\n                onChange={(e) => setFilterProjectId(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}\n              >\n                <option value=\"\">{t(\"Tất cả chương trình\")}</option>\n                {projects.map(p => (\n                  <option key={p.id} value={p.id}>{p.name}</option>\n                ))}\n              </select>\n            </div>\n\n            {/* Status Filter */}\n            <div style={{ width: '180px' }}>\n              <select\n                value={filterStatus}\n                onChange={(e) => setFilterStatus(e.target.value)}\n                className=\"form-input\"\n                sty
+<truncated 2945 bytes>
+
+========================================
+STEP INDEX: 4225
+TOOL: replace_file_content
+DESCRIPTION: "Add Sale column data and customize Client and Milestones display in deposits table."
+START LINE: 968
+END LINE: 1049
+TARGET CONTENT:
+"                      {/* Project & Client */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>{dep.project_name}</div>\n                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>\n                          <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size=\"sm\" style={{ width: 24, height: 24, fontSize: 10 }} />\n                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>\n                            Khách: <strong style={{ color: 'var(--color-text)' }}>{dep.last_name} {dep.first_name}</strong> ({dep.phone})\n                          </span>\n                        </div>\n                      </td>\n\n                      {/* Value / Commission */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>\n                          {formatMoney(dep.price)}\n                        </div>\n                        <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '2px', fontWeight: 600 }}>\n                          HH: {formatMoney(dep.expected_commission)}\n                        </div>\n                      </td>\n\n                      {/* Status */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle', textAlign: 'center' }}>\n                        <span\n                          style={{\n                            background: statusBg,\n                            color: statusColor,\n                            border: `1px solid ${statusColor}18`,\n                            padding: '4px 10px',\n                            borderRadius: '9999px',\n                            fontSize: '0.725rem',\n                            fontWeight: 700,\n              
+<truncated 2700 bytes>
+REPLACEMENT CONTENT:
+"                      {/* Project & Client */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>{dep.project_name}</div>\n                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>\n                          <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size=\"sm\" style={{ width: 24, height: 24, fontSize: 10 }} />\n                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>\n                            <strong style={{ color: 'var(--color-text)' }}>{dep.last_name} {dep.first_name}</strong> ({dep.phone})\n                          </span>\n                        </div>\n                      </td>\n\n                      {/* Sale */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n                          <Avatar src={dep.creator_avatar} name={dep.creator_name || 'Sale'} size=\"sm\" style={{ width: 24, height: 24, fontSize: 10 }} />\n                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>\n                            {dep.creator_name || '—'}\n                          </span>\n                        </div>\n                      </td>\n\n                      {/* Value / Commission */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>\n                          {formatMoney(dep.price)}\n                        </div>\n                        <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '2px', fontWeight: 600 }}>\n                          HH: {formatMoney(dep.expected_commission)}\n                        </
+<truncated 3439 bytes>
+
+========================================
+STEP INDEX: 4763
+TOOL: replace_file_content
+DESCRIPTION: "Import motion, AnimatePresence, MessageSquare, Clock, and Send in DepositsPage.tsx"
+START LINE: 1
+END LINE: 8
+TARGET CONTENT:
+"import React, { useEffect, useState, lazy, Suspense } from 'react';\nimport { fetchAPI } from '../utils/api';\nimport { compressToWebP } from '../utils/imageCompress';\nimport { useAuth } from '../contexts/AuthContext';\nimport { useUIStore } from '../store/uiStore';\nimport { CustomModal } from '../components/ui/CustomModal';\nimport { CustomSelect } from '../components/ui/CustomSelect';\nimport { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search } from 'lucide-react';"
+REPLACEMENT CONTENT:
+"import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';\nimport { fetchAPI } from '../utils/api';\nimport { compressToWebP } from '../utils/imageCompress';\nimport { useAuth } from '../contexts/AuthContext';\nimport { useUIStore } from '../store/uiStore';\nimport { CustomModal } from '../components/ui/CustomModal';\nimport { CustomSelect } from '../components/ui/CustomSelect';\nimport { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send } from 'lucide-react';\nimport { motion, AnimatePresence } from 'framer-motion';"
+
+========================================
+STEP INDEX: 4769
+TOOL: replace_file_content
+DESCRIPTION: "Add comments, logs, and layout states for Deposit Drawer in DepositsPage.tsx"
+START LINE: 154
+END LINE: 160
+TARGET CONTENT:
+"  // Manage Milestones State\n  const [showManageModal, setShowManageModal] = useState(false);\n  const [selectedDepForManage, setSelectedDepForManage] = useState<Deposit | null>(null);\n  const [tempMilestones, setTempMilestones] = useState<any[]>([]);\n  const [isSavingMilestones, setIsSavingMilestones] = useState(false);\n  const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);\n  const [actioningType, setActioningType] = useState<'approve' | 'reject' | null>(null);"
+REPLACEMENT CONTENT:
+"  // Manage Milestones State\n  const [showManageModal, setShowManageModal] = useState(false);\n  const [selectedDepForManage, setSelectedDepForManage] = useState<Deposit | null>(null);\n  const [tempMilestones, setTempMilestones] = useState<any[]>([]);\n  const [isSavingMilestones, setIsSavingMilestones] = useState(false);\n  const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);\n  const [actioningType, setActioningType] = useState<'approve' | 'reject' | null>(null);\n\n  const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('comments');\n  const [comments, setComments] = useState<any[]>([]);\n  const [newCommentText, setNewCommentText] = useState('');\n  const [isSubmittingComment, setIsSubmittingComment] = useState(false);\n  const [historyLogs, setHistoryLogs] = useState<any[]>([]);\n  const [loadingHistory, setLoadingHistory] = useState(false);\n  const [loadingComments, setLoadingComments] = useState(false);\n  const commentEndRef = useRef<HTMLDivElement>(null);"
+
+========================================
+STEP INDEX: 4773
+TOOL: replace_file_content
+DESCRIPTION: "Add comments/history loading and posting logic to DepositsPage.tsx"
+START LINE: 264
+END LINE: 267
+TARGET CONTENT:
+"  useEffect(() => {\n    loadData();\n  }, []);"
+REPLACEMENT CONTENT:
+"  useEffect(() => {\n    loadData();\n  }, []);\n\n  const loadComments = async () => {\n    if (!selectedDepForManage?.id) return;\n    setLoadingComments(true);\n    try {\n      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/comments`);\n      if (res.success) {\n        setComments(res.data || []);\n        setTimeout(() => commentEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);\n      }\n    } catch (err) {\n      console.error(\"Error loading comments:\", err);\n    } finally {\n      setLoadingComments(false);\n    }\n  };\n\n  const loadHistory = async () => {\n    if (!selectedDepForManage?.id) return;\n    setLoadingHistory(true);\n    try {\n      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/history`);\n      if (res.success) {\n        setHistoryLogs(res.data || []);\n      }\n    } catch (err) {\n      console.error(\"Error loading history:\", err);\n    } finally {\n      setLoadingHistory(false);\n    }\n  };\n\n  useEffect(() => {\n    if (showManageModal && selectedDepForManage?.id) {\n      loadComments();\n      loadHistory();\n    }\n  }, [showManageModal, selectedDepForManage?.id]);\n\n  const handleAddComment = async (e: React.FormEvent) => {\n    e.preventDefault();\n    if (!newCommentText.trim() || !selectedDepForManage?.id || isSubmittingComment) return;\n    setIsSubmittingComment(true);\n    try {\n      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/comments`, {\n        method: 'POST',\n        body: JSON.stringify({ body: newCommentText })\n      });\n      if (res.success) {\n        setNewCommentText('');\n        addToast('Gửi bình luận thành công!', 'success');\n        await Promise.all([loadComments(), loadHistory()]);\n      } else {\n        addToast(res.message || 'Lỗi gửi bình luận', 'error');\n      }\n    } catch (err: any) {\n      addToast(err.message || 'Lỗi kết nối', 'error');\n    } finally {\n      setIsSubmittingComment(false);\n    }\n  };"
+
+========================================
+STEP INDEX: 4787
+TOOL: replace_file_content
+DESCRIPTION: "Replace showManageModal CustomModal with a double-pane wide Drawer containing comments and changelog history."
+START LINE: 1771
+END LINE: 2259
+TARGET CONTENT:
+"      {/* Manage Milestones Modal */}\n      <CustomModal\n        isOpen={showManageModal}\n        onClose={() => setShowManageModal(false)}\n        title={`Chi tiết & Lịch trình thanh toán - Căn ${selectedDepForManage?.unit_code}`}\n        width=\"980px\"\n      >\n        {selectedDepForManage && (\n          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>\n            {/* Brief Info with Customer Details and Sales Team */}\n            <div style={{\n              display: 'grid',\n              gridTemplateColumns: '1.2fr 1fr',\n              gap: '1.5rem',\n              background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%)',\n              padding: '1.5rem',\n              borderRadius: '12px',\n              border: '1px solid var(--color-border-light)',\n              boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)'\n            }}>\n              {/* Left Column: Customer details */}\n              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderRight: '1px solid var(--color-border-light)', paddingRight: '1.5rem' }}>\n                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>\n                  <div\n                    onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}\n                    style={{ cursor: 'pointer', transition: 'transform 0.2s' }}\n                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}\n                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}\n                  >\n                    <Avatar\n                      src={selectedDepForManage.avatar_url}\n                      name={`${selectedDepForManage.last_name} ${selectedDepForManage.first_name}`}\n                      size=\"lg\"\n                    />\n                  </div>\n                  <div>\n                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', font
+<truncated 25214 bytes>
+REPLACEMENT CONTENT:
+"      {/* Manage Milestones Drawer (Wide dual-pane layout) */}\n      <AnimatePresence>\n        {showManageModal && selectedDepForManage && (\n          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end' }}>\n            {/* Overlay */}\n            <motion.div\n              initial={{ opacity: 0 }}\n              animate={{ opacity: 1 }}\n              exit={{ opacity: 0 }}\n              onClick={() => setShowManageModal(false)}\n              style={{\n                position: 'absolute',\n                inset: 0,\n                backgroundColor: 'rgba(15, 23, 42, 0.4)',\n                backdropFilter: 'blur(4px)'\n              }}\n            />\n            {/* Drawer panel */}\n            <motion.div\n              initial={{ x: '100%' }}\n              animate={{ x: 0 }}\n              exit={{ x: '100%' }}\n              transition={{ type: 'spring', damping: 25, stiffness: 200 }}\n              style={{\n                position: 'relative',\n                width: '95%',\n                maxWidth: '1200px',\n                height: '100%',\n                backgroundColor: 'var(--color-surface)',\n                boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',\n                display: 'flex',\n                flexDirection: 'column',\n                zIndex: 10000\n              }}\n            >\n              {/* Header */}\n              <div style={{\n                display: 'flex',\n                justifyContent: 'space-between',\n                alignItems: 'center',\n                padding: '1.25rem 1.5rem',\n                borderBottom: '1px solid var(--color-border)',\n                background: 'var(--color-surface)'\n              }}>\n                <div>\n                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>\n                    Chi tiết & Lịch trình thanh toán - Căn {selectedDepForManage.unit_code}\n                  </h2>\n                  <p style={{ margin: '4
+<truncated 43953 bytes>
+
+========================================
+STEP INDEX: 4849
+TOOL: replace_file_content
+DESCRIPTION: "Update handleConfirmCancel toast message and close detail drawer on cancel."
+START LINE: 570
+END LINE: 600
+TARGET CONTENT:
+"  const handleOpenCancel = (depositId: number) => {\n    setCancelDepositId(depositId);\n    setCancelReason('');\n    setIsCancelOpen(true);\n  };\n\n  const handleConfirmCancel = async () => {\n    if (!cancelDepositId || !cancelReason || isSaving) return;\n\n    try {\n      setIsSaving(true);\n      const res = await fetchAPI(`deposits/${cancelDepositId}/cancel`, {\n        method: 'POST',\n        body: JSON.stringify({ reason: cancelReason })\n      });\n\n      if (res.success) {\n        addToast('Đã báo cáo bể cọc thành công', 'success');\n        setIsCancelOpen(false);\n        loadData();\n      } else {\n        addToast(res.message || 'Lỗi báo hủy', 'error');\n      }\n    } catch (e: any) {\n      addToast(e.message || 'Lỗi kết nối', 'error');\n    } finally {\n      setIsSaving(false);\n    }\n  };"
+REPLACEMENT CONTENT:
+"  const handleOpenCancel = (depositId: number) => {\n    setCancelDepositId(depositId);\n    setCancelReason('');\n    setIsCancelOpen(true);\n  };\n\n  const handleConfirmCancel = async () => {\n    if (!cancelDepositId || !cancelReason || isSaving) return;\n\n    try {\n      setIsSaving(true);\n      const res = await fetchAPI(`deposits/${cancelDepositId}/cancel`, {\n        method: 'POST',\n        body: JSON.stringify({ reason: cancelReason })\n      });\n\n      if (res.success) {\n        addToast('Đã hủy giao dịch thành công', 'success');\n        setIsCancelOpen(false);\n        setShowManageModal(false);\n        loadData();\n      } else {\n        addToast(res.message || 'Lỗi báo hủy', 'error');\n      }\n    } catch (e: any) {\n      addToast(e.message || 'Lỗi kết nối', 'error');\n    } finally {\n      setIsSaving(false);\n    }\n  };"
+
+========================================
+STEP INDEX: 4853
+TOOL: replace_file_content
+DESCRIPTION: "Update search bar, status dropdown options, header text and cancelled status labels in DepositsPage.tsx"
+START LINE: 932
+END LINE: 1015
+TARGET CONTENT:
+"            <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>\n              <input\n                type=\"text\"\n                placeholder={t(\"Tìm kiếm theo khách hàng, số điện thoại, căn hộ...\")}\n                value={searchQuery}\n                onChange={(e) => setSearchQuery(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', paddingLeft: '2.5rem', height: '38px', borderRadius: '10px', margin: 0 }}\n              />\n              <Search style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--color-text-muted)' }} size={16} />\n            </div>\n\n            {/* Project Filter */}\n            <div style={{ width: '200px' }}>\n              <select\n                value={filterProjectId}\n                onChange={(e) => setFilterProjectId(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}\n              >\n                <option value=\"\">{t(\"Tất cả chương trình\")}</option>\n                {projects.map(p => (\n                  <option key={p.id} value={p.id}>{p.name}</option>\n                ))}\n              </select>\n            </div>\n\n            {/* Status Filter */}\n            <div style={{ width: '180px' }}>\n              <select\n                value={filterStatus}\n                onChange={(e) => setFilterStatus(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}\n              >\n                <option value=\"\">{t(\"Tất cả trạng thái\")}</option>\n                <option value=\"pending_admin\">{t(\"Đang giao dịch\")}</option>\n                <option value=\"approved\">{t(\"Hoàn tất cọc\")}</option>\n                <option value=\"cancelled\">{t(\"Bể cọc\")}</option>\n              </select>\n            </
+<truncated 4191 bytes>
+REPLACEMENT CONTENT:
+"            <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>\n              <input\n                type=\"text\"\n                placeholder={t(\"Tìm kiếm theo khách hàng, số điện thoại...\")}\n                value={searchQuery}\n                onChange={(e) => setSearchQuery(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', paddingRight: '2.5rem', paddingLeft: '12px', height: '38px', borderRadius: '10px', margin: 0 }}\n              />\n              <Search style={{ position: 'absolute', right: '12px', top: '11px', color: 'var(--color-text-muted)' }} size={16} />\n            </div>\n\n            {/* Project Filter */}\n            <div style={{ width: '200px' }}>\n              <select\n                value={filterProjectId}\n                onChange={(e) => setFilterProjectId(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}\n              >\n                <option value=\"\">{t(\"Tất cả chương trình\")}</option>\n                {projects.map(p => (\n                  <option key={p.id} value={p.id}>{p.name}</option>\n                ))}\n              </select>\n            </div>\n\n            {/* Status Filter */}\n            <div style={{ width: '180px' }}>\n              <select\n                value={filterStatus}\n                onChange={(e) => setFilterStatus(e.target.value)}\n                className=\"form-input\"\n                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}\n              >\n                <option value=\"\">{t(\"Tất cả trạng thái\")}</option>\n                <option value=\"pending_admin\">{t(\"Đang giao dịch\")}</option>\n                <option value=\"approved\">{t(\"Hoàn tất cọc\")}</option>\n                <option value=\"cancelled\">{t(\"Đã hủy\")}</option>\n              </select>\n  
+<truncated 4185 bytes>
+
+========================================
+STEP INDEX: 4857
+TOOL: replace_file_content
+DESCRIPTION: "Update table row columns rendering for date, unit badge, milestones ratio and clean up table actions in DepositsPage.tsx"
+START LINE: 1025
+END LINE: 1212
+TARGET CONTENT:
+"                      {/* Unit code */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <span style={{ \n                          padding: '5px 9px', \n                          background: 'rgba(189, 29, 45, 0.06)', \n                          color: 'var(--color-primary)', \n                          borderRadius: '8px', \n                          fontWeight: 800, \n                          fontSize: '0.8rem',\n                          display: 'inline-block'\n                        }}>\n                          {dep.unit_code}\n                        </span>\n                      </td>\n\n                      {/* Project & Client */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>{dep.project_name}</div>\n                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>\n                          <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size=\"sm\" style={{ width: 24, height: 24, fontSize: 10 }} />\n                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>\n                            <strong style={{ color: 'var(--color-text)' }}>{dep.last_name} {dep.first_name}</strong> ({dep.phone})\n                          </span>\n                        </div>\n                      </td>\n\n                      {/* Sale */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>\n                          <Avatar src={dep.creator_avatar} name={dep.creator_name || 'Sale'} size=\"sm\" style={{ width: 24, height: 24, fontSize: 10 }} />\n                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>\n                          
+<truncated 8598 bytes>
+REPLACEMENT CONTENT:
+"                      {/* Date Created */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <span style={{ \n                          fontSize: '0.8rem', \n                          fontWeight: 700, \n                          color: 'var(--color-text)',\n                          display: 'block'\n                        }}>\n                          {new Date(dep.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}\n                        </span>\n                        <span style={{ \n                          fontSize: '0.725rem', \n                          color: 'var(--color-text-muted)',\n                          display: 'block',\n                          marginTop: '2px'\n                        }}>\n                          {new Date(dep.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}\n                        </span>\n                      </td>\n\n                      {/* Project & Client with unit code badge */}\n                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>\n                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>\n                          <span>{dep.project_name}</span>\n                          <span style={{ \n                            padding: '2px 6px', \n                            background: 'rgba(189, 29, 45, 0.05)', \n                            color: 'var(--color-primary)', \n                            borderRadius: '4px', \n                            fontWeight: 700, \n                            fontSize: '0.725rem'\n                          }}>\n                            {dep.unit_code}\n                          </span>\n                        </div>\n                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>\n                          <Avatar src={d
+<truncated 6502 bytes>
+
+========================================
+STEP INDEX: 4862
+TOOL: replace_file_content
+DESCRIPTION: "Place Hủy giao dịch button on the left side of the Drawer footer in DepositsPage.tsx"
+START LINE: 2490
+END LINE: 2507
+TARGET CONTENT:
+"              {/* Drawer Footer */}\n              <div style={{\n                display: 'flex',\n                justifyContent: 'flex-end',\n                gap: '8px',\n                borderTop: '1px solid var(--color-border)',\n                padding: '0.875rem 1.5rem',\n                background: 'var(--color-surface)'\n              }}>\n                <button className=\"btn\" onClick={() => setShowManageModal(false)} style={{ minWidth: 80 }}>\n                  Hủy\n                </button>\n                {canEditMilestones && (\n                  <button className=\"btn primary\" onClick={handleSaveMilestones} style={{ minWidth: 100 }} disabled={isSavingMilestones}>\n                    {isSavingMilestones ? 'Đang lưu...' : 'Lưu lịch trình'}\n                  </button>\n                )}\n              </div>"
+REPLACEMENT CONTENT:
+"              {/* Drawer Footer */}\n              <div style={{\n                display: 'flex',\n                justifyContent: 'flex-end',\n                gap: '8px',\n                borderTop: '1px solid var(--color-border)',\n                padding: '0.875rem 1.5rem',\n                background: 'var(--color-surface)'\n              }}>\n                {selectedDepForManage.status !== 'cancelled' && (() => {\n                  const isCreator = String(selectedDepForManage.created_by) === String(user?.id);\n                  const isOwner = String(selectedDepForManage.contact_owner_id) === String(user?.id);\n                  const isStaff = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);\n                  if (isStaff || isCreator || isOwner) {\n                    return (\n                      <button\n                        onClick={() => handleOpenCancel(selectedDepForManage.id)}\n                        style={{\n                          marginRight: 'auto',\n                          padding: '6px 14px',\n                          height: '38px',\n                          background: 'rgba(239, 68, 68, 0.08)',\n                          border: '1px solid rgba(239, 68, 68, 0.2)',\n                          color: '#ef4444',\n                          borderRadius: '8px',\n                          display: 'inline-flex',\n                          alignItems: 'center',\n                          gap: '6px',\n                          fontSize: '0.8125rem',\n                          fontWeight: 700,\n                          cursor: 'pointer',\n                          transition: 'all 0.15s ease'\n                        }}\n                        onMouseEnter={e => {\n                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';\n                        }}\n                        onMouseLeave={e => {\n                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';\n 
+<truncated 782 bytes>
+
+========================================
+STEP INDEX: 4870
+TOOL: replace_file_content
+DESCRIPTION: "Change Cancel Modal title and labels in DepositsPage.tsx to Hủy giao dịch"
+START LINE: 1597
+END LINE: 1628
+TARGET CONTENT:
+"      {/* Cancel Modal */}\n      <CustomModal\n        isOpen={isCancelOpen}\n        onClose={() => setIsCancelOpen(false)}\n        title=\"Báo cáo bể cọc / Hủy mua\"\n        width=\"400px\"\n      >\n        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>\n          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>\n            <strong>Lưu ý:</strong> Nếu chưa được duyệt bất kỳ đợt thanh toán nào, hệ thống sẽ tự động hạ 1 mức nhiệt của KHTN (decay) và chuyển trạng thái về Booking.\n          </p>\n          <div>\n            <label className=\"form-label\">Lý do hủy cọc</label>\n            <textarea\n              required\n              placeholder=\"Nhập lý do chi tiết...\"\n              value={cancelReason}\n              onChange={e => setCancelReason(e.target.value)}\n              className=\"form-input\"\n              style={{ height: '96px', resize: 'none' }}\n            />\n          </div>\n          <button\n            onClick={handleConfirmCancel}\n            disabled={isSaving}\n            className=\"btn primary w-full\"\n            style={{ height: '38px', backgroundColor: 'var(--color-danger)', border: 'none', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}\n          >\n            {isSaving ? 'Đang xử lý...' : 'Xác nhận bể cọc'}\n          </button>\n        </div>\n      </CustomModal>"
+REPLACEMENT CONTENT:
+"      {/* Cancel Modal */}\n      <CustomModal\n        isOpen={isCancelOpen}\n        onClose={() => setIsCancelOpen(false)}\n        title=\"Yêu cầu hủy giao dịch\"\n        width=\"400px\"\n      >\n        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>\n          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>\n            <strong>Lưu ý:</strong> Nếu chưa được duyệt bất kỳ đợt thanh toán nào, hệ thống sẽ tự động hạ 1 mức nhiệt của KHTN (decay) và chuyển trạng thái về Booking.\n          </p>\n          <div>\n            <label className=\"form-label\">Lý do hủy giao dịch</label>\n            <textarea\n              required\n              placeholder=\"Nhập lý do chi tiết...\"\n              value={cancelReason}\n              onChange={e => setCancelReason(e.target.value)}\n              className=\"form-input\"\n              style={{ height: '96px', resize: 'none' }}\n            />\n          </div>\n          <button\n            onClick={handleConfirmCancel}\n            disabled={isSaving}\n            className=\"btn primary w-full\"\n            style={{ height: '38px', backgroundColor: 'var(--color-danger)', border: 'none', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}\n          >\n            {isSaving ? 'Đang xử lý...' : 'Xác nhận hủy giao dịch'}\n          </button>\n        </div>\n      </CustomModal>"
+
+========================================
+STEP INDEX: 5102
+TOOL: replace_file_content
+DESCRIPTION: "Add reminder policy fields to Deposit and Milestone interfaces in DepositsPage.tsx"
+START LINE: 34
+END LINE: 55
+TARGET CONTENT:
+"  first_name: string;\n  last_name: string;\n  phone: string;\n  avatar_url?: string;\n  project_name: string;\n  creator_name: string;\n  creator_avatar?: string;\n  milestones: Milestone[];\n  created_by?: number;\n  contact_owner_id?: number;\n}\n\ninterface Milestone {\n  id: number;\n  deposit_id: number;\n  milestone_name: string;\n  expected_amount: number;\n  unc_file_path: string | null;\n  status: 'pending' | 'paid' | 'approved' | 'failed';\n  approval_date: string | null;\n  expected_pay_date?: string | null;"
+REPLACEMENT CONTENT:
+"  first_name: string;\n  last_name: string;\n  phone: string;\n  email?: string;\n  avatar_url?: string;\n  project_name: string;\n  creator_name: string;\n  creator_avatar?: string;\n  milestones: Milestone[];\n  created_by?: number;\n  contact_owner_id?: number;\n  auto_remind?: number;\n  remind_days_before?: number;\n  remind_at_hour?: number;\n  remind_target?: number;\n}\n\ninterface Milestone {\n  id: number;\n  deposit_id: number;\n  milestone_name: string;\n  expected_amount: number;\n  unc_file_path: string | null;\n  status: 'pending' | 'paid' | 'approved' | 'failed';\n  approval_date: string | null;\n  expected_pay_date?: string | null;\n  last_reminded_at?: string | null;"
+
+========================================
+STEP INDEX: 5106
+TOOL: replace_file_content
+DESCRIPTION: "Add state hooks for auto_remind, remind_days_before, remind_at_hour, remind_target in DepositsPage.tsx"
+START LINE: 140
+END LINE: 142
+TARGET CONTENT:
+"  // Creation State\n  const [isCreateOpen, setIsCreateOpen] = useState(false);\n  const [selectedContactId, setSelectedContactId] = useState('');"
+REPLACEMENT CONTENT:
+"  // Creation State\n  const [isCreateOpen, setIsCreateOpen] = useState(false);\n  const [selectedContactId, setSelectedContactId] = useState('');\n  const [autoRemind, setAutoRemind] = useState(true);\n  const [remindDaysBefore, setRemindDaysBefore] = useState(3);\n  const [remindAtHour, setRemindAtHour] = useState(8);\n  const [remindTarget, setRemindTarget] = useState(1);\n\n  const [autoRemindManage, setAutoRemindManage] = useState(true);\n  const [remindDaysBeforeManage, setRemindDaysBeforeManage] = useState(3);\n  const [remindAtHourManage, setRemindAtHourManage] = useState(8);\n  const [remindTargetManage, setRemindTargetManage] = useState(1);"
+
+========================================
+STEP INDEX: 5110
+TOOL: replace_file_content
+DESCRIPTION: "Set default activeDrawerTab to history in DepositsPage.tsx"
+START LINE: 177
+END LINE: 177
+TARGET CONTENT:
+"  const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('comments');"
+REPLACEMENT CONTENT:
+"  const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('history');"
+
+========================================
+STEP INDEX: 5114
+TOOL: replace_file_content
+DESCRIPTION: "Initialize autoRemindManage, remindDaysBeforeManage, remindAtHourManage, remindTargetManage states when opening drawer"
+START LINE: 212
+END LINE: 217
+TARGET CONTENT:
+"  useEffect(() => {\n    if (selectedDepForManage) {\n      setSharesData([]);\n      setTempExpectedCommission(Number(selectedDepForManage.expected_commission) || 0);\n      setTempSharesData([]);\n      fetchAPI(`cooperation-slips?contact_id=${selectedDepForManage.contact_id}`)"
+REPLACEMENT CONTENT:
+"  useEffect(() => {\n    if (selectedDepForManage) {\n      setSharesData([]);\n      setTempExpectedCommission(Number(selectedDepForManage.expected_commission) || 0);\n      setTempSharesData([]);\n      setAutoRemindManage(selectedDepForManage.auto_remind !== 0);\n      setRemindDaysBeforeManage(Number(selectedDepForManage.remind_days_before) || 3);\n      setRemindAtHourManage(Number(selectedDepForManage.remind_at_hour) || 8);\n      setRemindTargetManage(Number(selectedDepForManage.remind_target) || 1);\n      fetchAPI(`cooperation-slips?contact_id=${selectedDepForManage.contact_id}`)"
+
+========================================
+STEP INDEX: 5124
+TOOL: replace_file_content
+DESCRIPTION: "Include reminder policy values in milestones update PUT request payload"
+START LINE: 785
+END LINE: 798
+TARGET CONTENT:
+"    try {\n      setIsSavingMilestones(true);\n      const payload: any = { milestones: tempMilestones };\n      if (isAdmin) {\n        payload.expected_commission = tempExpectedCommission;\n        payload.shares = tempSharesData.map(sh => ({\n          user_id: sh.user_id,\n          percentage: sh.percentage\n        }));\n      }\n      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/milestones`, {\n        method: 'PUT',\n        body: JSON.stringify(payload)\n      });"
+REPLACEMENT CONTENT:
+"    try {\n      setIsSavingMilestones(true);\n      const payload: any = {\n        milestones: tempMilestones,\n        auto_remind: autoRemindManage ? 1 : 0,\n        remind_days_before: remindDaysBeforeManage,\n        remind_at_hour: remindAtHourManage,\n        remind_target: remindTargetManage\n      };\n      if (isAdmin) {\n        payload.expected_commission = tempExpectedCommission;\n        payload.shares = tempSharesData.map(sh => ({\n          user_id: sh.user_id,\n          percentage: sh.percentage\n        }));\n      }\n      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/milestones`, {\n        method: 'PUT',\n        body: JSON.stringify(payload)\n      });"
+
+========================================
+STEP INDEX: 5130
+TOOL: replace_file_content
+DESCRIPTION: "Send auto_remind, remind_days_before, remind_at_hour, remind_target payload in handleCreateDeposit in DepositsPage.tsx"
+START LINE: 475
+END LINE: 506
+TARGET CONTENT:
+"        body: JSON.stringify({\n          contact_id: selectedContactId,\n          project_id: selectedProjectId,\n          unit_code: unitCode,\n          price: parseFloat(price),\n          expected_commission: parseFloat(expectedCommission) || 0,\n          milestones: milestonesInput,\n          is_cooperation: isCooperation,\n          collaborators: isCooperation\n            ? Object.entries(collaboratorShares).map(([uid, pct]) => ({\n                user_id: uid,\n                percentage: pct\n              }))\n            : []\n        })\n      });\n\n      if (res.success) {\n        addToast('Tạo đơn đặt hàng và lịch thanh toán thành công!', 'success');\n        setIsCreateOpen(false);\n        // Reset Form\n        setSelectedContactId('');\n        setSelectedProjectId('');\n        setUnitCode('');\n        setPrice('');\n        setExpectedCommission('');\n        setMilestonesInput([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);\n        setIsCooperation(false);\n        setAllowedCollaborators([]);\n        setCollaboratorShares({});\n        loadData();"
+REPLACEMENT CONTENT:
+"        body: JSON.stringify({\n          contact_id: selectedContactId,\n          project_id: selectedProjectId,\n          unit_code: unitCode,\n          price: parseFloat(price),\n          expected_commission: parseFloat(expectedCommission) || 0,\n          milestones: milestonesInput,\n          is_cooperation: isCooperation,\n          collaborators: isCooperation\n            ? Object.entries(collaboratorShares).map(([uid, pct]) => ({\n                user_id: uid,\n                percentage: pct\n              }))\n            : [],\n          auto_remind: autoRemind ? 1 : 0,\n          remind_days_before: remindDaysBefore,\n          remind_at_hour: remindAtHour,\n          remind_target: remindTarget\n        })\n      });\n\n      if (res.success) {\n        addToast('Tạo đơn đặt hàng và lịch thanh toán thành công!', 'success');\n        setIsCreateOpen(false);\n        // Reset Form\n        setSelectedContactId('');\n        setSelectedProjectId('');\n        setUnitCode('');\n        setPrice('');\n        setExpectedCommission('');\n        setMilestonesInput([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);\n        setIsCooperation(false);\n        setAllowedCollaborators([]);\n        setCollaboratorShares({});\n        setAutoRemind(true);\n        setRemindDaysBefore(3);\n        setRemindAtHour(8);\n        setRemindTarget(1);\n        loadData();"
+
+========================================
+STEP INDEX: 5134
+TOOL: replace_file_content
+DESCRIPTION: "Add automated reminders checkbox, warning label, and fields to the Create Deposit Modal"
+START LINE: 1613
+END LINE: 1620
+TARGET CONTENT:
+"                  )}\n                </div>\n              )}\n            </div>\n\n            <button\n              type=\"submit\"\n              disabled={isSaving}"
+REPLACEMENT CONTENT:
+"            {/* Cấu hình nhắc lịch thanh toán tự động */}\n            <div style={{\n              display: 'flex',\n              flexDirection: 'column',\n              gap: '10px',\n              padding: '12px 16px',\n              background: 'var(--color-surface-hover)',\n              borderRadius: '12px',\n              border: '1px solid var(--color-border-light)',\n              marginTop: '0.5rem'\n            }}>\n              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>\n                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>\n                  Bật nhắc lịch thanh toán tự động\n                </span>\n                <label style={{\n                  position: 'relative',\n                  display: 'inline-block',\n                  width: '40px',\n                  height: '22px',\n                  cursor: 'pointer'\n                }}>\n                  <input\n                    type=\"checkbox\"\n                    checked={autoRemind}\n                    onChange={e => setAutoRemind(e.target.checked)}\n                    style={{ opacity: 0, width: 0, height: 0 }}\n                  />\n                  <span style={{\n                    position: 'absolute',\n                    inset: 0,\n                    backgroundColor: autoRemind ? 'var(--color-primary)' : '#cbd5e1',\n                    borderRadius: '34px',\n                    transition: '0.3s'\n                  }}>\n                    <span style={{\n                      position: 'absolute',\n                      content: '\"\"',\n                      height: '16px',\n                      width: '16px',\n                      left: autoRemind ? '20px' : '3px',\n                      bottom: '3px',\n                      backgroundColor: 'white',\n                      borderRadius: '50%',\n                      transition: '0.3s'\n                    }} />\n                  </span>\n               
+<truncated 4213 bytes>
+
+========================================
+STEP INDEX: 5140
+TOOL: replace_file_content
+DESCRIPTION: "Improve z-index, overlay, panel width, and move actions to the top right header inside the milestones Drawer"
+START LINE: 1890
+END LINE: 1959
+TARGET CONTENT:
+"          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', justifyContent: 'flex-end' }}>\n            {/* Overlay */}\n            <motion.div\n              initial={{ opacity: 0 }}\n              animate={{ opacity: 1 }}\n              exit={{ opacity: 0 }}\n              onClick={() => setShowManageModal(false)}\n              style={{\n                position: 'absolute',\n                inset: 0,\n                backgroundColor: 'rgba(15, 23, 42, 0.4)',\n                backdropFilter: 'blur(4px)'\n              }}\n            />\n            {/* Drawer panel */}\n            <motion.div\n              initial={{ x: '100%' }}\n              animate={{ x: 0 }}\n              exit={{ x: '100%' }}\n              transition={{ type: 'spring', damping: 25, stiffness: 200 }}\n              style={{\n                position: 'relative',\n                width: '95%',\n                maxWidth: '1200px',\n                height: '100%',\n                backgroundColor: 'var(--color-surface)',\n                boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',\n                display: 'flex',\n                flexDirection: 'column',\n                zIndex: 10000\n              }}\n            >\n              {/* Header */}\n              <div style={{\n                display: 'flex',\n                justifyContent: 'space-between',\n                alignItems: 'center',\n                padding: '1.25rem 1.5rem',\n                borderBottom: '1px solid var(--color-border)',\n                background: 'var(--color-surface)'\n              }}>\n                <div>\n                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>\n                    Chi tiết & Lịch trình thanh toán - Căn {selectedDepForManage.unit_code}\n                  </h2>\n                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>\n                    Mã đơn đặt hàng: #{selectedDepF
+<truncated 915 bytes>
+REPLACEMENT CONTENT:
+"          <div style={{ position: 'fixed', inset: 0, zIndex: 1000300, display: 'flex', justifyContent: 'flex-end' }}>\n            {/* Overlay */}\n            <motion.div\n              initial={{ opacity: 0 }}\n              animate={{ opacity: 1 }}\n              exit={{ opacity: 0 }}\n              onClick={() => setShowManageModal(false)}\n              style={{\n                position: 'absolute',\n                inset: 0,\n                backgroundColor: 'rgba(15, 23, 42, 0.4)',\n                backdropFilter: 'blur(4px)',\n                zIndex: 1000300\n              }}\n            />\n            {/* Drawer panel */}\n            <motion.div\n              initial={{ x: '100%' }}\n              animate={{ x: 0 }}\n              exit={{ x: '100%' }}\n              transition={{ type: 'spring', damping: 25, stiffness: 200 }}\n              style={{\n                position: 'relative',\n                width: 'calc(100% - 260px)',\n                maxWidth: 'none',\n                height: '100%',\n                backgroundColor: 'var(--color-surface)',\n                boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',\n                display: 'flex',\n                flexDirection: 'column',\n                zIndex: 1000400\n              }}\n            >\n              {/* Header */}\n              <div style={{\n                display: 'flex',\n                justifyContent: 'space-between',\n                alignItems: 'center',\n                padding: '1.25rem 1.5rem',\n                borderBottom: '1px solid var(--color-border)',\n                background: 'var(--color-surface)'\n              }}>\n                <div>\n                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>\n                    Chi tiết & Lịch trình thanh toán - Căn {selectedDepForManage.unit_code}\n                  </h2>\n                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>\n      
+<truncated 3948 bytes>
+
+========================================
+STEP INDEX: 5146
+TOOL: replace_file_content
+DESCRIPTION: "Add reminder settings panel inside the milestones Drawer Left Pane"
+START LINE: 2195
+END LINE: 2199
+TARGET CONTENT:
+"                  </div>\n\n                  {/* Milestones List */}\n                  <div>\n                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>"
+REPLACEMENT CONTENT:
+"                  </div>\n\n                  {/* Automated Reminders Config in Drawer */}\n                  <div style={{\n                    display: 'flex',\n                    flexDirection: 'column',\n                    gap: '10px',\n                    padding: '16px',\n                    background: 'var(--color-surface-hover)',\n                    borderRadius: '12px',\n                    border: '1px solid var(--color-border-light)'\n                  }}>\n                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>\n                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>\n                        <Clock size={16} style={{ color: 'var(--color-primary)' }} />\n                        Cài đặt nhắc lịch thanh toán tự động\n                      </span>\n                      <label style={{\n                        position: 'relative',\n                        display: 'inline-block',\n                        width: '40px',\n                        height: '22px',\n                        cursor: canEditMilestones ? 'pointer' : 'not-allowed'\n                      }}>\n                        <input\n                          type=\"checkbox\"\n                          disabled={!canEditMilestones}\n                          checked={autoRemindManage}\n                          onChange={e => setAutoRemindManage(e.target.checked)}\n                          style={{ opacity: 0, width: 0, height: 0 }}\n                        />\n                        <span style={{\n                          position: 'absolute',\n                          inset: 0,\n                          backgroundColor: autoRemindManage ? 'var(--color-primary)' : '#cbd5e1',\n                          borderRadius: '34px',\n                          transition: '0.3s'\n                        }}>\n                          <span style={{\n                          
+<truncated 5107 bytes>
+
+========================================
+STEP INDEX: 5154
+TOOL: replace_file_content
+DESCRIPTION: "Import Bell icon from lucide-react in DepositsPage.tsx"
+START LINE: 8
+END LINE: 8
+TARGET CONTENT:
+"import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send } from 'lucide-react';"
+REPLACEMENT CONTENT:
+"import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell } from 'lucide-react';"
+
+========================================
+STEP INDEX: 5158
+TOOL: replace_file_content
+DESCRIPTION: "Add sendingReminderId state in DepositsPage.tsx"
+START LINE: 174
+END LINE: 175
+TARGET CONTENT:
+"  const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);\n  const [actioningType, setActioningType] = useState<'approve' | 'reject' | null>(null);"
+REPLACEMENT CONTENT:
+"  const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);\n  const [actioningType, setActioningType] = useState<'approve' | 'reject' | null>(null);\n  const [sendingReminderId, setSendingReminderId] = useState<number | null>(null);"
+
+========================================
+STEP INDEX: 5164
+TOOL: replace_file_content
+DESCRIPTION: "Add handleSendManualReminder method to DepositsPage.tsx"
+START LINE: 823
+END LINE: 828
+TARGET CONTENT:
+"    } finally {\n      setIsSavingMilestones(false);\n    }\n  };\n\n  const projectedReceivables = React.useMemo(() => {"
+REPLACEMENT CONTENT:
+"    } finally {\n      setIsSavingMilestones(false);\n    }\n  };\n\n  const handleSendManualReminder = async (milestoneId: number) => {\n    if (!selectedDepForManage || sendingReminderId !== null) return;\n    try {\n      setSendingReminderId(milestoneId);\n      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/milestones/${milestoneId}/remind`, {\n        method: 'POST'\n      });\n      if (res.success) {\n        addToast(res.message || 'Đã gửi email nhắc thanh toán thành công!', 'success');\n      } else {\n        addToast(res.message || 'Lỗi gửi nhắc nhở thanh toán', 'error');\n      }\n    } catch (e: any) {\n      addToast(e.message || 'Lỗi kết nối', 'error');\n    } finally {\n      setSendingReminderId(null);\n    }\n  };\n\n  const projectedReceivables = React.useMemo(() => {"
+
+========================================
+STEP INDEX: 5172
+TOOL: replace_file_content
+DESCRIPTION: "Insert manual reminder bell button in milestone row status cell"
+START LINE: 2446
+END LINE: 2467
+TARGET CONTENT:
+"                              {/* Status + dates */}\n                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>\n                                <span style={{\n                                  fontSize: '0.7rem',\n                                  fontWeight: 700,\n                                  padding: '4px 8px',\n                                  borderRadius: '9999px',\n                                  background: m.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : m.status === 'paid' ? 'rgba(37, 99, 235, 0.12)' : m.status === 'failed' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(107, 114, 128, 0.12)',\n                                  color: m.status === 'approved' ? '#10b981' : m.status === 'paid' ? '#2563eb' : m.status === 'failed' ? '#ef4444' : '#6b7280',\n                                  textAlign: 'center',\n                                  display: 'inline-block',\n                                  whiteSpace: 'nowrap'\n                                }}>\n                                  {m.status === 'approved' ? 'Đã duyệt' : m.status === 'paid' ? 'Chờ duyệt' : m.status === 'failed' ? 'Từ chối' : 'Chờ nộp'}\n                                </span>\n                                {m.approval_date && m.status === 'approved' && (\n                                  <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>\n                                    {new Date(m.approval_date).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '')}\n                                  </span>\n                                )}\n                              </div>"
+REPLACEMENT CONTENT:
+"                              {/* Status + dates + Remind Bell */}\n                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>\n                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>\n                                  <span style={{\n                                    fontSize: '0.7rem',\n                                    fontWeight: 700,\n                                    padding: '4px 8px',\n                                    borderRadius: '9999px',\n                                    background: m.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : m.status === 'paid' ? 'rgba(37, 99, 235, 0.12)' : m.status === 'failed' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(107, 114, 128, 0.12)',\n                                    color: m.status === 'approved' ? '#10b981' : m.status === 'paid' ? '#2563eb' : m.status === 'failed' ? '#ef4444' : '#6b7280',\n                                    textAlign: 'center',\n                                    display: 'inline-block',\n                                    whiteSpace: 'nowrap'\n                                  }}>\n                                    {m.status === 'approved' ? 'Đã duyệt' : m.status === 'paid' ? 'Chờ duyệt' : m.status === 'failed' ? 'Từ chối' : 'Chờ nộp'}\n                                  </span>\n                                  {m.approval_date && m.status === 'approved' && (\n                                    <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>\n                                      {new Date(m.approval_date).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '')}\n                                    </span>\n                                  )}\n                                </div>\n                                {m.id && m.status !== '
+<truncated 1895 bytes>
+
+========================================
+STEP INDEX: 5180
+TOOL: replace_file_content
+DESCRIPTION: "Remove old duplicate drawer footer buttons"
+START LINE: 2871
+END LINE: 2926
+TARGET CONTENT:
+"              {/* Drawer Footer */}\n              <div style={{\n                display: 'flex',\n                justifyContent: 'flex-end',\n                gap: '8px',\n                borderTop: '1px solid var(--color-border)',\n                padding: '0.875rem 1.5rem',\n                background: 'var(--color-surface)'\n              }}>\n                {selectedDepForManage.status !== 'cancelled' && (() => {\n                  const isCreator = String(selectedDepForManage.created_by) === String(user?.id);\n                  const isOwner = String(selectedDepForManage.contact_owner_id) === String(user?.id);\n                  const isStaff = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);\n                  if (isStaff || isCreator || isOwner) {\n                    return (\n                      <button\n                        onClick={() => handleOpenCancel(selectedDepForManage.id)}\n                        style={{\n                          marginRight: 'auto',\n                          padding: '6px 14px',\n                          height: '38px',\n                          background: 'rgba(239, 68, 68, 0.08)',\n                          border: '1px solid rgba(239, 68, 68, 0.2)',\n                          color: '#ef4444',\n                          borderRadius: '8px',\n                          display: 'inline-flex',\n                          alignItems: 'center',\n                          gap: '6px',\n                          fontSize: '0.8125rem',\n                          fontWeight: 700,\n                          cursor: 'pointer',\n                          transition: 'all 0.15s ease'\n                        }}\n                        onMouseEnter={e => {\n                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';\n                        }}\n                        onMouseLeave={e => {\n                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';\n 
+<truncated 782 bytes>
+REPLACEMENT CONTENT:
+""

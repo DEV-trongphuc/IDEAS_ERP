@@ -12,7 +12,7 @@ class DepositController {
         $tid = $auth['tenant_id'];
 
         $sql = "
-            SELECT d.*, c.first_name, c.last_name, c.phone, c.avatar_url, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
+            SELECT d.*, c.first_name, c.last_name, c.phone, c.avatar_url, c.email, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
                    c.owner_id as contact_owner_id
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
@@ -163,12 +163,16 @@ class DepositController {
                 }
             }
 
+            $autoRemind = isset($b['auto_remind']) ? (int)$b['auto_remind'] : 1;
+            $remindDaysBefore = isset($b['remind_days_before']) ? (int)$b['remind_days_before'] : 3;
+            $remindAtHour = isset($b['remind_at_hour']) ? (int)$b['remind_at_hour'] : 8;
+
             // Insert deposit record
             $stmt = $this->db->prepare("
-                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by)
-                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?)
+                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour)
+                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?)
             ");
-            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id']]);
+            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour]);
             $depositId = $this->db->lastInsertId();
 
             // Insert milestones (default to Đợt 1 if empty)
@@ -791,12 +795,29 @@ class DepositController {
 
         $this->db->beginTransaction();
         try {
+            if (isset($input['auto_remind'])) {
+                $autoRem = (int)$input['auto_remind'];
+                $stmtRem = $this->db->prepare("UPDATE deposits SET auto_remind = ? WHERE id = ?");
+                $stmtRem->execute([$autoRem, $id]);
+            }
+            if (isset($input['remind_days_before'])) {
+                $remDays = (int)$input['remind_days_before'];
+                $stmtRemDays = $this->db->prepare("UPDATE deposits SET remind_days_before = ? WHERE id = ?");
+                $stmtRemDays->execute([$remDays, $id]);
+            }
+            if (isset($input['remind_at_hour'])) {
+                $remHour = (int)$input['remind_at_hour'];
+                $stmtRemHour = $this->db->prepare("UPDATE deposits SET remind_at_hour = ? WHERE id = ?");
+                $stmtRemHour->execute([$remHour, $id]);
+            }
+
             $isAdmin = in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'accountant'], true);
             if ($isAdmin) {
                 if (isset($input['expected_commission'])) {
                     $expComm = (float)$input['expected_commission'];
                     $stmtComm = $this->db->prepare("UPDATE deposits SET expected_commission = ? WHERE id = ?");
                     $stmtComm->execute([$expComm, $id]);
+                    logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_COMMISSION', 'deposit', $id, "Cập nhật hoa hồng dự kiến: " . number_format($expComm) . " VND");
                 }
                 
                 if (isset($input['shares'])) {
@@ -826,6 +847,7 @@ class DepositController {
                             $stmtUpdCs->execute([$newSharesJson, $id, $coopId]);
                             
                             logActivity($this->db, $tid, $auth['user_id'], 'ADMIN_UPDATE_COOP_SHARES', 'cooperation_slip', $coopId, "Admin đã cập nhật lại tỷ lệ hoa hồng cho phiếu cọc #$id");
+                            logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_SHARES', 'deposit', $id, "Cập nhật lại tỷ lệ chia sẻ hoa hồng: " . json_encode($sharesMap, JSON_UNESCAPED_UNICODE));
 
                             $stmtCust = $this->db->prepare("SELECT CONCAT(first_name, ' ', COALESCE(last_name,'')) FROM contacts WHERE id = ?");
                             $stmtCust->execute([$dep['contact_id']]);
@@ -931,11 +953,180 @@ class DepositController {
             }
 
             $this->db->commit();
+            logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_MILESTONES', 'deposit', $id, "Cập nhật danh sách các đợt thanh toán");
             respond(200, null, 'Cập nhật lịch trình thanh toán thành công');
         } catch (Exception $e) {
             $this->db->rollBack();
             respond(500, null, $e->getMessage(), false);
         }
+    }
+
+    public function triggerRemind(array $auth, int $id, int $milestoneId): void {
+        // Fetch deposit and contact details
+        $stmt = $this->db->prepare("
+            SELECT d.*, m.milestone_name, m.expected_amount, m.expected_pay_date, m.status as milestone_status,
+                   c.first_name, c.last_name, c.email as contact_email, c.phone as contact_phone,
+                   u.email as creator_email, u.full_name as creator_name,
+                   o.email as owner_email, o.full_name as owner_name,
+                   p.name as project_name
+            FROM deposits d
+            JOIN deposit_milestones m ON d.id = m.deposit_id
+            JOIN contacts c ON d.contact_id = c.id
+            JOIN projects p ON d.project_id = p.id
+            JOIN users u ON d.created_by = u.id
+            LEFT JOIN users o ON c.owner_id = o.id
+            WHERE d.id = ? AND m.id = ? AND c.tenant_id = ?
+        ");
+        $stmt->execute([$id, $milestoneId, $auth['tenant_id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            respond(404, null, 'Không tìm thấy đợt thanh toán tương ứng', false);
+        }
+
+        if ($row['milestone_status'] === 'approved' || $row['milestone_status'] === 'paid') {
+            respond(400, null, 'Đợt thanh toán này đã đóng tiền hoặc đã được duyệt', false);
+        }
+
+        $custName = trim($row['first_name'] . ' ' . ($row['last_name'] ?? ''));
+        $payDateStr = !empty($row['expected_pay_date']) 
+            ? date('d/m/Y', strtotime($row['expected_pay_date'])) 
+            : 'Chưa thiết lập';
+        $amountStr = number_format($row['expected_amount']) . ' VND';
+
+        require_once __DIR__ . '/../mailer.php';
+
+        $remindTarget = (int)($row['remind_target'] ?? 1);
+        $saleEmail = !empty($row['owner_email']) ? $row['owner_email'] : $row['creator_email'];
+        $saleName = !empty($row['owner_name']) ? $row['owner_name'] : $row['creator_name'];
+
+        if ($remindTarget === 2) {
+            // Option 2: Remind caretaker sale directly
+            if (empty($saleEmail)) {
+                respond(400, null, 'Không tìm thấy email của Sale chăm sóc để gửi nhắc nhở', false);
+            }
+
+            $emailSubject = "[IDEAS] Nhắc lịch thanh toán của học viên: " . $custName;
+            $emailTitle = "NHẮC NHỞ TƯ VẤN VIÊN CHĂM SÓC";
+            $emailContent = "Chào <strong>" . htmlspecialchars($saleName) . "</strong>,<br/><br/>" .
+                            "Hệ thống gửi thông báo nhắc lịch thanh toán của học viên <strong>" . htmlspecialchars($custName) . "</strong> (SĐT: " . htmlspecialchars($row['contact_phone'] ?? '—') . ").<br/>" .
+                            "Vui lòng chủ động liên hệ nhắc nhở khách hàng thanh toán đợt: <strong>" . htmlspecialchars($row['milestone_name']) . "</strong>.<br/>" .
+                            "Số tiền cần thanh toán: <strong>" . $amountStr . "</strong>.<br/>" .
+                            "Hạn thanh toán: <strong>" . $payDateStr . "</strong>.<br/>" .
+                            "Chương trình: <strong>" . htmlspecialchars($row['project_name']) . "</strong> (Căn " . htmlspecialchars($row['unit_code']) . ").";
+
+            sendEmailNotification($saleEmail, $emailSubject, $emailTitle, $emailContent, '', false);
+
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'REMIND_SALE_DIRECT', 'deposit', $id, "Gửi email nhắc nhở trực tiếp cho Sale $saleName về hạn của khách $custName");
+
+            $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET last_reminded_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmtUpd->execute([$milestoneId]);
+
+            respond(200, null, 'Đã gửi email nhắc nhở tới Sale chăm sóc thành công');
+        } else {
+            // Option 1: Remind student (fallback to sale if no email)
+            $hasEmail = !empty(trim($row['contact_email'] ?? ''));
+            if ($hasEmail) {
+                // Remind the customer directly
+                $emailSubject = "[IDEAS] Nhắc nhở thanh toán đợt cọc: " . $row['milestone_name'];
+                $emailTitle = "NHẮC NHỞ THANH TOÁN";
+                $emailContent = "Chào <strong>" . htmlspecialchars($custName) . "</strong>,<br/><br/>" .
+                                "Đây là thông báo nhắc lịch thanh toán cho đợt: <strong>" . htmlspecialchars($row['milestone_name']) . "</strong>.<br/>" .
+                                "Chương trình: <strong>" . htmlspecialchars($row['project_name']) . "</strong> (Căn " . htmlspecialchars($row['unit_code']) . ").<br/>" .
+                                "Số tiền cần đóng: <strong>" . $amountStr . "</strong>.<br/>" .
+                                "Hạn thanh toán: <strong>" . $payDateStr . "</strong>.<br/><br/>" .
+                                "Vui lòng hoàn tất thanh toán và tải hình ảnh Ủy nhiệm chi (UNC) lên hệ thống. Xin cảm ơn!";
+                
+                sendEmailNotification($row['contact_email'], $emailSubject, $emailTitle, $emailContent, '', false);
+                
+                logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'REMIND_CUSTOMER_PAYMENT', 'deposit', $id, "Gửi email nhắc nhở thanh toán đợt " . $row['milestone_name'] . " cho khách hàng $custName");
+                
+                $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET last_reminded_at = CURRENT_TIMESTAMP WHERE id = ?");
+                $stmtUpd->execute([$milestoneId]);
+                
+                respond(200, null, 'Đã gửi email nhắc thanh toán thành công tới học viên');
+            } else {
+                // Fallback: Remind caretaker sale instead
+                if (empty($saleEmail)) {
+                    respond(400, null, 'Khách hàng không có email và không tìm thấy email của Sale chăm sóc để gửi nhắc nhở', false);
+                }
+
+                $emailSubject = "[IDEAS] [Fallback] Nhắc nhở chăm sóc khách hàng thanh toán: " . $custName;
+                $emailTitle = "FALLBACK: NHẮC NHỞ TƯ VẤN VIÊN CHĂM SÓC";
+                $emailContent = "Chào <strong>" . htmlspecialchars($saleName) . "</strong>,<br/><br/>" .
+                                "Hệ thống ghi nhận học viên/khách hàng <strong>" . htmlspecialchars($custName) . "</strong> (SĐT: " . htmlspecialchars($row['contact_phone'] ?? '—') . ") <strong>không có địa chỉ email</strong>.<br/>" .
+                                "Vui lòng chủ động liên hệ nhắc nhở khách hàng thanh toán đợt: <strong>" . htmlspecialchars($row['milestone_name']) . "</strong>.<br/>" .
+                                "Số tiền cần thanh toán: <strong>" . $amountStr . "</strong>.<br/>" .
+                                "Hạn thanh toán: <strong>" . $payDateStr . "</strong>.<br/>" .
+                                "Chương trình: <strong>" . htmlspecialchars($row['project_name']) . "</strong> (Căn " . htmlspecialchars($row['unit_code']) . ").";
+
+                sendEmailNotification($saleEmail, $emailSubject, $emailTitle, $emailContent, '', false);
+
+                logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'REMIND_SALE_FALLBACK', 'deposit', $id, "Gửi email nhắc nhở fallback cho Sale $saleName chăm sóc khách hàng $custName do khách không có email");
+                
+                $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET last_reminded_at = CURRENT_TIMESTAMP WHERE id = ?");
+                $stmtUpd->execute([$milestoneId]);
+                
+                respond(200, null, 'Khách hàng không có email. Đã gửi email nhắc nhở cho Sale chăm sóc thay thế');
+            }
+        }
+    }
+
+    public function getComments(array $auth, int $id): void {
+        $stmt = $this->db->prepare("
+            SELECT c.*, u.full_name as user_name, u.avatar_url 
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.entity_type = 'deposit' AND c.entity_id = ? AND c.tenant_id = ?
+            ORDER BY c.created_at DESC
+        ");
+        $stmt->execute([$id, $auth['tenant_id']]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $comments = array_map(function($row) {
+            if (!empty($row['attachments'])) {
+                $decoded = json_decode($row['attachments'], true);
+                $row['attachments'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $row['attachments'] = [];
+            }
+            return $row;
+        }, $rows);
+        respond(200, $comments, 'Lấy danh sách bình luận thành công');
+    }
+
+    public function addComment(array $auth, int $id): void {
+        $b = getBody();
+        $body = trim($b['body'] ?? '');
+        $attachments = !empty($b['attachments']) && is_array($b['attachments']) ? json_encode($b['attachments'], JSON_UNESCAPED_UNICODE) : null;
+        if (!$body && !$attachments) {
+            respond(422, null, 'Nội dung hoặc tệp đính kèm bình luận là bắt buộc', false);
+        }
+        $parentId = !empty($b['parent_id']) ? (int)$b['parent_id'] : null;
+
+        $stmt = $this->db->prepare("
+            INSERT INTO comments (tenant_id, entity_type, entity_id, user_id, body, attachments, parent_id) 
+            VALUES (?, 'deposit', ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$auth['tenant_id'], $id, $auth['user_id'], $body, $attachments, $parentId]);
+        $newId = $this->db->lastInsertId();
+
+        respond(200, ['id' => $newId], 'Thêm bình luận thành công');
+    }
+
+    public function getHistory(array $auth, int $id): void {
+        $stmt = $this->db->prepare("
+            SELECT a.id, a.action, a.new_data, a.created_at, u.full_name as user_name, u.avatar_url
+            FROM audit_logs a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.tenant_id = ? AND (
+                (a.resource = 'deposit' AND a.resource_id = ?)
+                OR (a.resource = 'deposit_milestone' AND a.resource_id IN (SELECT id FROM deposit_milestones WHERE deposit_id = ?))
+            )
+            ORDER BY a.created_at DESC
+        ");
+        $stmt->execute([$auth['tenant_id'], $id, $id]);
+        $logs = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        respond(200, $logs, 'Lấy lịch sử chỉnh sửa thành công');
     }
 
     private function getSetting(string $key, string $default): string {

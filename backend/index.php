@@ -1064,6 +1064,7 @@ switch ($resource) {
         $ctrl = new DepositController($db);
         if ($resourceId && $subResource === 'milestones' && ($segments[3] ?? '') !== '' && ($segments[4] ?? '') === 'approve' && $method === 'POST') $ctrl->approveMilestone($auth, (int)$resourceId, (int)$segments[3]);
         elseif ($resourceId && $subResource === 'milestones' && ($segments[3] ?? '') !== '' && ($segments[4] ?? '') === 'reject' && $method === 'POST') $ctrl->rejectMilestone($auth, (int)$resourceId, (int)$segments[3]);
+        elseif ($resourceId && $subResource === 'milestones' && ($segments[3] ?? '') !== '' && ($segments[4] ?? '') === 'remind' && $method === 'POST') $ctrl->triggerRemind($auth, (int)$resourceId, (int)$segments[3]);
         elseif ($resourceId && $subResource === 'milestones' && ($segments[3] ?? '') !== '' && $method === 'POST') {
             // Upload UNC standard POST
             $ctrl->uploadUnc($auth, (int)$resourceId, (int)$segments[3]);
@@ -1072,6 +1073,9 @@ switch ($resource) {
             $ctrl->updateMilestones($auth, (int)$resourceId);
         }
         elseif ($resourceId && $subResource === 'cancel' && $method === 'POST') $ctrl->cancelDeposit($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'comments' && $method === 'GET') $ctrl->getComments($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'comments' && $method === 'POST') $ctrl->addComment($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'history' && $method === 'GET') $ctrl->getHistory($auth, (int)$resourceId);
         elseif (!$resourceId && $method === 'GET')    $ctrl->index($auth);
         elseif (!$resourceId && $method === 'POST')   $ctrl->store($auth);
         else respond(404, null, 'Route không tồn tại', false);
