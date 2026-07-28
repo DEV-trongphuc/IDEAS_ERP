@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { 
   FileText, Calendar, CheckCircle, ShieldCheck, PenTool,
   Clock, DollarSign, Award, Percent, HelpCircle, Plus, Send,
-  ChevronLeft, ChevronRight, XCircle, CheckCircle2
+  ChevronLeft, ChevronRight, XCircle, CheckCircle2, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
