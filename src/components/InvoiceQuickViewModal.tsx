@@ -70,7 +70,7 @@ export const InvoiceQuickViewModal: React.FC<InvoiceQuickViewModalProps> = ({
           inset: 0,
           background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(4px)',
-          zIndex: 3000020,
+          zIndex: 2000000020,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -144,7 +144,7 @@ export const InvoiceQuickViewModal: React.FC<InvoiceQuickViewModalProps> = ({
             style={{ 
               width: '90%', 
               maxWidth: 700, 
-              zIndex: 3000030, 
+              zIndex: 2000000030, 
               padding: 0, 
               borderRadius: 'var(--radius-2xl)', 
               margin: 'auto', 
@@ -252,6 +252,13 @@ export const InvoiceQuickViewModal: React.FC<InvoiceQuickViewModalProps> = ({
                   </tr>
                 </tfoot>
               </table>
+
+              {previewItem.notes && (
+                <div className="no-print" style={{ padding: '1rem', background: 'var(--color-bg)', borderRadius: 'var(--radius-lg)', marginBottom: '1.5rem', border: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>
+                  <strong>Ghi chú / Thông tin bổ sung:</strong>
+                  <p style={{ margin: '4px 0 0 0' }}>{previewItem.notes}</p>
+                </div>
+              )}
 
               <div className="no-print" style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
                 <button className="btn ghost" onClick={onClose}>Đóng</button>

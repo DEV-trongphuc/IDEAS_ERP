@@ -1566,7 +1566,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 150px)', minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: viewMode === 'calendar' ? 'auto' : 'calc(100vh - 150px)', minHeight: 0 }}>
       {/* Header */}
       <div className="page-header" style={{ marginBottom: '1.25rem', flexShrink: 0 }}>
         <div>
@@ -1935,7 +1935,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
       {/* Table */}
       {viewMode === 'calendar' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }} className="fade-in-view">
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'visible' }} className="fade-in-view">
           {/* Calendar Header / Control */}
           <div className="mobile-stack" style={{
             display: 'flex',
@@ -2136,8 +2136,8 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
           )}
 
           {/* Calendar Body */}
-          <div className="responsive-table-wrap" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, minWidth: 700, overflow: 'hidden' }}>
+          <div className="responsive-table-wrap" style={{ display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: 0, minWidth: 700, overflow: 'visible' }}>
               {/* Calendar Grid Header */}
               <div style={{
                 display: 'grid',
@@ -2157,12 +2157,11 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
               {/* Calendar Days */}
               <div style={{
-                flex: 1,
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
                 gridAutoRows: 'minmax(110px, 1fr)',
-                overflowY: 'auto'
-              }} className="custom-scrollbar">
+                overflowY: 'visible'
+              }}>
                 {calendarLoading ? (
                   <div style={{ gridColumn: 'span 7' }}>
                     <CalendarSkeleton />
@@ -4736,7 +4735,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 <TableSkeleton rows={6} cols={4} />
               </div>
             ) : dayDetails ? (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '580px', margin: '-1.5rem', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', margin: '-1.5rem' }}>
                 {/* Modal Tabs */}
                 <div style={{
                   display: 'flex',
@@ -4938,7 +4937,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 </div>
 
                 {/* Modal Content */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '0 1.5rem 1.5rem 1.5rem' }} className="custom-scrollbar">
+                <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
                   {activeModalTab === 'sales' && (
                     <div>
                       {dayDetails.sales && dayDetails.sales.length > 0 ? (
