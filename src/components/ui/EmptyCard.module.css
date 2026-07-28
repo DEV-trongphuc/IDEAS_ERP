@@ -5,11 +5,11 @@
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-2xl, 16px);
+  background: transparent;
+  border: none;
+  border-radius: 0;
   margin: 1.5rem 0;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
@@ -18,30 +18,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: rgba(189, 29, 45, 0.05);
-  color: var(--color-primary);
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(189, 29, 45, 0.04);
+  color: var(--color-text-muted, #64748b);
+  margin-bottom: 1rem;
 }
 
 .iconWrapper svg {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
 }
 
 .title {
   font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--color-text);
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
   margin-bottom: 0.5rem;
   letter-spacing: -0.01em;
 }
 
 .description {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #64748b);
   font-size: 0.875rem;
   max-width: 420px;
   line-height: 1.6;

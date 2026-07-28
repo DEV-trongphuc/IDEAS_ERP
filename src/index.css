@@ -1551,6 +1551,9 @@ select:focus {
 }
 
 .filter-search input {
+  order: 1 !important;
+  flex: 1 !important;
+  min-width: 0 !important;
   border: none !important;
   background: transparent !important;
   outline: none !important;
@@ -1561,6 +1564,16 @@ select:focus {
   padding: 0 !important;
   margin: 0 !important;
   box-shadow: none !important;
+}
+
+.filter-search button {
+  order: 2 !important;
+}
+
+.filter-search svg {
+  order: 3 !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
 }
 
 .filter-search input:not([type="checkbox"]):not([type="radio"]) {
@@ -5314,14 +5327,14 @@ a,
 
 .coop-filter-search-icon {
   position: absolute;
-  left: 12px;
+  right: 12px;
   color: var(--color-text-muted);
   pointer-events: none;
 }
 
 .coop-filter-search-input {
   width: 100%;
-  padding: 9px 12px 9px 36px;
+  padding: 9px 36px 9px 12px;
   border-radius: 10px;
   border: 1px solid var(--color-border);
   background: var(--color-bg);
