@@ -21,16 +21,16 @@ if (!function_exists('getBody')) {
 }
 
 class RespondException extends Exception {
-    public int $code;
-    public $data;
-    public string $msg;
-    public bool $success;
+    public int $statusCode;
+    public $responseData;
+    public string $responseMsg;
+    public bool $isSuccess;
     public function __construct(int $code, $data, string $msg, bool $success) {
         parent::__construct($msg, $code);
-        $this->code = $code;
-        $this->data = $data;
-        $this->msg = $msg;
-        $this->success = $success;
+        $this->statusCode = $code;
+        $this->responseData = $data;
+        $this->responseMsg = $msg;
+        $this->isSuccess = $success;
     }
 }
 
