@@ -337,6 +337,7 @@ export default function Approvals() {
         status: openStatus || 'pending',
         created_at: new Date().toISOString()
       });
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
