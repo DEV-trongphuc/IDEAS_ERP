@@ -98,6 +98,11 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   const [consultantPage, setConsultantPage] = useState(1);
   const CONSULTANTS_PER_PAGE = 8;
 
+  // Accountant Dashboard specific states
+  const [poList, setPoList] = useState<any[]>([]);
+  const [soList, setSoList] = useState<any[]>([]);
+  const [activeOrderType, setActiveOrderType] = useState<'so' | 'po'>('so');
+
   // HR Dashboard specific states
   const [hrProfiles, setHrProfiles] = useState<any[]>([]);
   const [hrLeaves, setHrLeaves] = useState<any[]>([]);
@@ -331,8 +336,22 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       fetchAPI('expenses?status=pending&limit=1')
         .then(res => { if (res.success) setPendingExpensesCount(res.data?.total ?? 0); })
         .catch(e => console.error(e));
+
+      if (user?.role === 'accountant') {
+        fetchAPI('purchase-orders')
+          .then(res => {
+            setPoList(res?.data || res || []);
+          })
+          .catch(e => console.error(e));
+
+        fetchAPI('deposits')
+          .then(res => {
+            setSoList(res?.data || res || []);
+          })
+          .catch(e => console.error(e));
+      }
     }
-  }, [isActive]);
+  }, [isActive, user?.role]);
 
   useEffect(() => {
     if (isActive) {
@@ -1465,6 +1484,11 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       action: () => navigate('/deposits')
     });
 
+    const formatVND = (n: any) => {
+      const num = Math.round(Number(n || 0));
+      return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
+    };
+
     return renderDashboardWrapper(
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Header */}
@@ -1473,12 +1497,75 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         {/* Welcome Banner */}
         {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
 
-        {/* KPIs */}
-        <div className="dashboard-kpi-grid">
-          {renderKpiCardForRole(t('DOANH THU THỰC THU'), actStats.revenueThisMonth.toLocaleString() + 'đ', DollarSign, '#10b981', 'fair_share_equity-card', () => navigate('/deposits'))}
-          {renderKpiCardForRole(t('DOANH THU CHỜ DUYỆT'), actStats.pendingDeposits.toLocaleString() + 'đ', FileText, '#f59e0b', 'duplicates-card', () => navigate('/deposits'))}
-          {renderKpiCardForRole(t('CHI PHÍ ĐÃ CHI'), actStats.expensesThisMonth.toLocaleString() + 'đ', CreditCard, '#ef4444', 'errors-card', () => navigate('/expenses'))}
-          {renderKpiCardForRole(t('YÊU CẦU DUYỆT CHI'), String(actStats.pendingApprovalInvoices), AlertTriangle, '#3b82f6', 'distributed-card', () => navigate('/expenses?status=pending'))}
+        {/* KPIs Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+          {/* Card 1: Revenue */}
+          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
+            <div className="decor-svg" style={{ color: '#10b981', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+              <DollarSign size={70} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('DOANH THU THỰC THU')}</span>
+              <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <DollarSign size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+              <span>{t('Doanh thu thực tế tháng này')}</span>
+            </div>
+          </div>
+
+          {/* Card 2: Pending Revenue */}
+          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
+            <div className="decor-svg" style={{ color: '#f59e0b', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+              <FileText size={70} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('DOANH THU CHỜ DUYỆT')}</span>
+              <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FileText size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#f59e0b' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+              <span>{t('Đang chờ phê duyệt giao dịch')}</span>
+            </div>
+          </div>
+
+          {/* Card 3: Expenses */}
+          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/expenses')}>
+            <div className="decor-svg" style={{ color: '#ef4444', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+              <CreditCard size={70} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('CHI PHÍ ĐÃ CHI')}</span>
+              <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CreditCard size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ef4444' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+              <span>{t('Tổng chi tiêu thực tế đã chi')}</span>
+            </div>
+          </div>
+
+          {/* Card 4: Pending Invoices */}
+          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/expenses?status=pending')}>
+            <div className="decor-svg" style={{ color: '#3b82f6', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+              <AlertTriangle size={70} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('YÊU CẦU DUYỆT CHI')}</span>
+              <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertTriangle size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6' }}>{actStats.pendingApprovalInvoices}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+              <span>{t('Yêu cầu thanh toán đang chờ duyệt')}</span>
+            </div>
+          </div>
         </div>
 
         {/* Charts & Details */}
@@ -1501,10 +1588,19 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
           <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
-            <div style={{ height: 260 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
-                  <Pie data={actStats.expenseCategories} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={{ fontSize: 9, fontWeight: 600 }}>
+                  <Pie
+                    data={actStats.expenseCategories}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={4}
+                  >
                     {actStats.expenseCategories.map((entry, idx) => (
                       <Cell key={`cell-${idx}`} fill={['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6'][idx % 4]} />
                     ))}
@@ -1513,6 +1609,143 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
+          </div>
+        </div>
+
+        {/* Recent Orders Card */}
+        <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '10px' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FileText size={18} color="var(--color-primary)" /> {t('Đơn Hàng Gần Đây (PO & SO)')}
+            </h3>
+            <div style={{ display: 'flex', gap: '4px', background: 'var(--color-bg)', padding: '3px', borderRadius: '8px' }}>
+              <button
+                onClick={() => setActiveOrderType('so')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: activeOrderType === 'so' ? 'var(--color-surface)' : 'transparent',
+                  color: activeOrderType === 'so' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: activeOrderType === 'so' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                {t('SO gần đây')}
+              </button>
+              <button
+                onClick={() => setActiveOrderType('po')}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: activeOrderType === 'po' ? 'var(--color-surface)' : 'transparent',
+                  color: activeOrderType === 'po' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: activeOrderType === 'po' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                {t('PO gần đây')}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-surface)' }} className="custom-scrollbar">
+            {activeOrderType === 'so' ? (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--color-border-light)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                    <th style={{ padding: '12px' }}>{t('Mã căn')}</th>
+                    <th style={{ padding: '12px' }}>{t('Khách hàng')}</th>
+                    <th style={{ padding: '12px' }}>{t('Chương trình')}</th>
+                    <th style={{ padding: '12px', textAlign: 'right' }}>{t('Giá bán')}</th>
+                    <th style={{ padding: '12px' }}>{t('Sale phụ trách')}</th>
+                    <th style={{ padding: '12px' }}>{t('Trạng thái')}</th>
+                    <th style={{ padding: '12px' }}>{t('Ngày đặt')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td colSpan={7} style={{ padding: '12px' }}><Skeleton width="100%" height={16} /></td>
+                      </tr>
+                    ))
+                  ) : soList.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{t('Không có đơn hàng bán nào gần đây')}</td>
+                    </tr>
+                  ) : soList.slice(0, 5).map((so, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
+                      <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{so.unit_code}</td>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>{`${so.last_name || ''} ${so.first_name || ''}`}</td>
+                      <td style={{ padding: '12px' }}>{so.project_name}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{formatVND(so.price)}</td>
+                      <td style={{ padding: '12px' }}>{so.creator_name || '—'}</td>
+                      <td style={{ padding: '12px' }}>
+                        <span style={{ 
+                          padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700,
+                          background: so.status === 'approved' ? 'rgba(16, 185, 129, 0.08)' : (so.status === 'cancelled' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)'),
+                          color: so.status === 'approved' ? '#10b981' : (so.status === 'cancelled' ? '#dc2626' : '#d97706')
+                        }}>
+                          {so.status === 'approved' ? t('Hoàn tất cọc') : (so.status === 'cancelled' ? t('Bể cọc') : t('Đang giao dịch'))}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>{so.created_at ? new Date(so.created_at).toLocaleDateString('vi-VN') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--color-border-light)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                    <th style={{ padding: '12px' }}>{t('Mã PO')}</th>
+                    <th style={{ padding: '12px' }}>{t('Nhà cung cấp')}</th>
+                    <th style={{ padding: '12px', textAlign: 'right' }}>{t('Tổng tiền')}</th>
+                    <th style={{ padding: '12px' }}>{t('Người tạo')}</th>
+                    <th style={{ padding: '12px' }}>{t('Trạng thái')}</th>
+                    <th style={{ padding: '12px' }}>{t('Ngày đặt')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td colSpan={6} style={{ padding: '12px' }}><Skeleton width="100%" height={16} /></td>
+                      </tr>
+                    ))
+                  ) : poList.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{t('Không có đơn nhập hàng nào gần đây')}</td>
+                    </tr>
+                  ) : poList.slice(0, 5).map((po, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
+                      <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{po.po_number}</td>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>{po.supplier_name || `Nha cung cap ID: ${po.supplier_id}`}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{formatVND(po.total)}</td>
+                      <td style={{ padding: '12px' }}>{po.creator_name || '—'}</td>
+                      <td style={{ padding: '12px' }}>
+                        <span style={{ 
+                          padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700,
+                          background: po.status === 'received' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                          color: po.status === 'received' ? '#10b981' : '#d97706'
+                        }}>
+                          {po.status === 'received' ? t('Đã nhập kho') : (po.status === 'draft' ? t('Bản nháp') : t('Đang vận chuyển'))}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>{po.order_date ? new Date(po.order_date).toLocaleDateString('vi-VN') : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
