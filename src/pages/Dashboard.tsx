@@ -1627,7 +1627,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip />
-                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[4, 4, 0, 0]} barSize={16} />
+                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#60a5fa" radius={[4, 4, 0, 0]} barSize={16} />
                   <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[4, 4, 0, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
