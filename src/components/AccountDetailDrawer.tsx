@@ -151,6 +151,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   const isViewingOtherUser = Boolean(account && currentUser && String(account.id) !== String(currentUser.id));
   const isOwnProfile = account && currentUser && String(account.id) === String(currentUser.id);
   const isHRorAdmin = currentUser && ['hr', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(currentUser.role).toLowerCase());
+  const isManagementOrAbove = currentUser && ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr', 'accountant'].includes(String(currentUser.role).toLowerCase());
   const effectiveReadOnly = readOnly || (isViewingOtherUser && !isHRorAdmin);
   const showSalaryTab = isOwnProfile || isHRorAdmin;
   const canEditSalary = isHRorAdmin;
@@ -1595,15 +1596,17 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         {renderColoredIcon(AlertCircle, '#ff9500')}
                         <span style={{ whiteSpace: 'nowrap' }}>{t('Khen thưởng & Kỷ luật')}</span>
                       </button>
-                      <button
-                        type="button"
-                        className={`${styles.sidebarTabBtn} ${activeTab === 'bank' ? styles.sidebarTabActive : ''}`}
-                        onClick={() => setActiveTab('bank')}
-                        style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'bank' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'bank' ? 700 : 500 }}
-                      >
-                        {renderColoredIcon(CreditCard, '#34c759')}
-                        <span style={{ whiteSpace: 'nowrap' }}>{t('Tài khoản Ngân hàng')}</span>
-                      </button>
+                      {(isOwnProfile || isManagementOrAbove) && (
+                        <button
+                          type="button"
+                          className={`${styles.sidebarTabBtn} ${activeTab === 'bank' ? styles.sidebarTabActive : ''}`}
+                          onClick={() => setActiveTab('bank')}
+                          style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'bank' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'bank' ? 700 : 500 }}
+                        >
+                          {renderColoredIcon(CreditCard, '#34c759')}
+                          <span style={{ whiteSpace: 'nowrap' }}>{t('Tài khoản Ngân hàng')}</span>
+                        </button>
+                      )}
 
                       <button
                         type="button"
@@ -1614,15 +1617,17 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         {renderColoredIcon(Calendar, '#f09a37')}
                         <span style={{ whiteSpace: 'nowrap' }}>{t('Lịch trực nhận data')}</span>
                       </button>
-                      <button
-                        type="button"
-                        className={`${styles.sidebarTabBtn} ${activeTab === 'documents' ? styles.sidebarTabActive : ''}`}
-                        onClick={() => setActiveTab('documents')}
-                        style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'documents' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'documents' ? 700 : 500 }}
-                      >
-                        {renderColoredIcon(Paperclip, '#8e8e93')}
-                        <span style={{ whiteSpace: 'nowrap' }}>{t('Lưu trữ tài liệu')}</span>
-                      </button>
+                      {(isOwnProfile || isManagementOrAbove) && (
+                        <button
+                          type="button"
+                          className={`${styles.sidebarTabBtn} ${activeTab === 'documents' ? styles.sidebarTabActive : ''}`}
+                          onClick={() => setActiveTab('documents')}
+                          style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'documents' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'documents' ? 700 : 500 }}
+                        >
+                          {renderColoredIcon(Paperclip, '#8e8e93')}
+                          <span style={{ whiteSpace: 'nowrap' }}>{t('Lưu trữ tài liệu')}</span>
+                        </button>
+                      )}
 
                       {showSalaryTab && (
                         <button
@@ -1636,31 +1641,35 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         </button>
                       )}
 
-                      <div style={{ height: '1px', backgroundColor: 'var(--color-border-light)', margin: '6px 0.5rem' }} />
+                      {(isAdmin || isOwnProfile) && (
+                        <>
+                          <div style={{ height: '1px', backgroundColor: 'var(--color-border-light)', margin: '6px 0.5rem' }} />
 
-                      <button
-                        type="button"
-                        className={`${styles.sidebarTabBtn} ${activeTab === 'account' ? styles.sidebarTabActive : ''}`}
-                        onClick={() => setActiveTab('account')}
-                        style={{ 
-                          padding: '8px 0.75rem', 
-                          fontSize: '0.825rem', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '12px', 
-                          width: '100%', 
-                          border: 'none', 
-                          background: activeTab === 'account' ? 'rgba(239, 68, 68, 0.08)' : 'transparent', 
-                          borderRadius: '8px', 
-                          cursor: 'pointer', 
-                          textAlign: 'left', 
-                          fontWeight: activeTab === 'account' ? 700 : 500,
-                          color: 'var(--color-danger)'
-                        }}
-                      >
-                        {renderColoredIcon(Lock, '#ef4444')}
-                        <span style={{ whiteSpace: 'nowrap' }}>{t('Đăng nhập & Bảo mật')}</span>
-                      </button>
+                          <button
+                            type="button"
+                            className={`${styles.sidebarTabBtn} ${activeTab === 'account' ? styles.sidebarTabActive : ''}`}
+                            onClick={() => setActiveTab('account')}
+                            style={{ 
+                              padding: '8px 0.75rem', 
+                              fontSize: '0.825rem', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '12px', 
+                              width: '100%', 
+                              border: 'none', 
+                              background: activeTab === 'account' ? 'rgba(239, 68, 68, 0.08)' : 'transparent', 
+                              borderRadius: '8px', 
+                              cursor: 'pointer', 
+                              textAlign: 'left', 
+                              fontWeight: activeTab === 'account' ? 700 : 500,
+                              color: 'var(--color-danger)'
+                            }}
+                          >
+                            {renderColoredIcon(Lock, '#ef4444')}
+                            <span style={{ whiteSpace: 'nowrap' }}>{t('Đăng nhập & Bảo mật')}</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2471,7 +2480,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
               )}
 
               {/* CARD 4: THANH TOÁN & THUẾ */}
-              {activeTab === 'bank' && (
+              {activeTab === 'bank' && (isOwnProfile || isManagementOrAbove) && (
                 <div style={{
                   background: 'var(--color-surface)',
                   borderRadius: '16px',
@@ -3948,7 +3957,7 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                 </div>
               )}
 
-              {account && activeTab === 'documents' && (
+              {account && activeTab === 'documents' && (isOwnProfile || isManagementOrAbove) && (
                 <div style={{
                   background: 'var(--color-surface)',
                   borderRadius: '16px',
