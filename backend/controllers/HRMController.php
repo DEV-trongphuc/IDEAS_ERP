@@ -1210,4 +1210,40 @@ class HRMController {
             respond(500, null, $e->getMessage(), false);
         }
     }
+
+    public function deleteLeave(array $auth, int $id): void {
+        $stmt = $this->db->prepare("SELECT * FROM hrm_leave_requests WHERE id = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            respond(404, null, 'Không tìm thấy yêu cầu nghỉ phép', false);
+        }
+        if ((int)$row['user_id'] !== (int)$auth['user_id']) {
+            respond(403, null, 'Bạn không có quyền xóa yêu cầu này', false);
+        }
+        if ($row['status'] !== 'pending') {
+            respond(400, null, 'Chỉ có thể xóa yêu cầu ở trạng thái Chờ duyệt', false);
+        }
+        
+        $this->db->prepare("DELETE FROM hrm_leave_requests WHERE id = ?")->execute([$id]);
+        respond(200, null, 'Đã xóa yêu cầu nghỉ phép');
+    }
+
+    public function deleteAdvance(array $auth, int $id): void {
+        $stmt = $this->db->prepare("SELECT * FROM hrm_salary_advances WHERE id = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            respond(404, null, 'Không tìm thấy yêu cầu tạm ứng', false);
+        }
+        if ((int)$row['user_id'] !== (int)$auth['user_id']) {
+            respond(403, null, 'Bạn không có quyền xóa yêu cầu này', false);
+        }
+        if ($row['status'] !== 'pending') {
+            respond(400, null, 'Chỉ có thể xóa yêu cầu ở trạng thái Chờ duyệt', false);
+        }
+        
+        $this->db->prepare("DELETE FROM hrm_salary_advances WHERE id = ?")->execute([$id]);
+        respond(200, null, 'Đã xóa yêu cầu tạm ứng');
+    }
 }

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "deploy": "npm run deploy:backend",
     "deploy:backend": "powershell -ExecutionPolicy Bypass -File ./deploy-backend.ps1"
   },
   "dependencies": {

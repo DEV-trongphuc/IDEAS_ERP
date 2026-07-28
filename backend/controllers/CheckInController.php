@@ -561,8 +561,6 @@ class CheckInController {
     }
 
     public function destroy(array $auth, int $id): void {
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'hr']);
-
         // Fetch check-in record
         $stmtCheck = $this->db->prepare("
             SELECT c.*, u.tenant_id, u.full_name
@@ -579,6 +577,16 @@ class CheckInController {
 
         if ((int)$row['tenant_id'] !== (int)$auth['tenant_id']) {
             respond(403, null, 'Bạn không có quyền thao tác trên dữ liệu này', false);
+        }
+
+        // Allow creator to recall pending request, otherwise require role
+        $isCreator = ((int)$row['user_id'] === (int)$auth['user_id']);
+        if ($isCreator) {
+            if ($row['status'] !== 'pending_approval') {
+                respond(400, null, 'Không thể thu hồi giải trình đã duyệt hoặc từ chối', false);
+            }
+        } else {
+            requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'hr']);
         }
 
         // Delete

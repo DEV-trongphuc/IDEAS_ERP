@@ -1385,6 +1385,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [depositProjectId, setDepositProjectId] = useState('');
   const [depositUnitCode, setDepositUnitCode] = useState('');
   const [depositPrice, setDepositPrice] = useState('');
+  const [depositCurrency, setDepositCurrency] = useState('VND');
   const [depositExpectedCommission, setDepositExpectedCommission] = useState('');
   const [commissionType, setCommissionType] = useState<'percent' | 'amount'>('amount');
   const [commissionPercent, setCommissionPercent] = useState('');
@@ -4180,7 +4181,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     // Verify milestones total sum
     const totalM = depositMilestones.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
     if (totalM > parseFloat(depositPrice)) {
-      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được vượt quá Doanh thu dự kiến (${parseFloat(depositPrice).toLocaleString()} VND)`, 'error');
+      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} ${depositCurrency}) không được vượt quá Doanh thu dự kiến (${parseFloat(depositPrice).toLocaleString()} ${depositCurrency})`, 'error');
       return;
     }
 
@@ -4204,6 +4205,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         unit_code: depositUnitCode,
         price: parseFloat(depositPrice),
         expected_commission: parseFloat(depositExpectedCommission) || 0,
+        currency: depositCurrency,
         milestones: depositMilestones,
         create_coop_slip: createCoopSlipChoice,
         shares: depositCoopShares
@@ -4275,6 +4277,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       setDepositUnitCode('');
       setDepositPrice('');
       setDepositExpectedCommission('');
+      setDepositCurrency('VND');
       setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '', expected_pay_date: '' }]);
       setDepositUncFile(null);
       
@@ -11357,12 +11360,28 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Tổng doanh thu dự kiến *</label>
+                      <label className="form-label" style={{ fontWeight: 700 }}>Loại tiền tệ *</label>
+                      <CustomSelect
+                        options={[
+                          { value: 'VND', label: 'VND' },
+                          { value: 'USD', label: 'USD' },
+                          { value: 'EURO', label: 'EURO' },
+                          { value: 'CHF', label: 'CHF' }
+                        ]}
+                        value={depositCurrency}
+                        onChange={val => setDepositCurrency(val)}
+                        width="100%"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 700 }}>Tổng doanh thu dự kiến ({depositCurrency}) *</label>
                       <CurrencyInput
                         value={depositPrice}
                         onChange={val => setDepositPrice(String(val))}
                         placeholder="Nhập giá trị giao dịch..."
                         showTextHelper={true}
+                        currency={depositCurrency}
                       />
                     </div>
                   </div>
@@ -11519,8 +11538,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
                               )
                             }
-                            placeholder="Số tiền (VND)"
+                            placeholder={`Số tiền (${depositCurrency})`}
                             showTextHelper={false}
+                            currency={depositCurrency}
                           />
                         </div>
                         <input
@@ -12244,17 +12264,16 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
               : "Hợp tác là bắt buộc đối với phiếu hợp tác. Bạn có thể chọn tối đa 2 nhân sự để cùng chăm sóc khách hàng này."}
           </p>
 
-          {/* Search bar */}
           <div style={{ position: 'relative', marginBottom: '1rem' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
             <input
               type="text"
               className="form-control"
               placeholder="Tìm kiếm nhân sự theo tên hoặc email..."
               value={collabSearchQuery}
               onChange={e => setCollabSearchQuery(e.target.value)}
-              style={{ paddingLeft: '36px', fontSize: '0.875rem' }}
+              style={{ paddingRight: '36px', fontSize: '0.875rem' }}
             />
+            <Search size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
           </div>
 
           {loadingSuggestions ? (
@@ -12428,7 +12447,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             {/* Invoice Layout */}
             <div className="card-panel" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '1.5rem', boxShadow: 'var(--shadow-sm)', marginBottom: '1.5rem' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.25rem', borderBottom: '2px dashed var(--color-border-light)', paddingBottom: '1.25rem' }}>
-                <h4 style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '0.25rem' }}>Ideas Data Automation</h4>
+                <h4 style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700, marginBottom: '0.25rem' }}>Ideas ERP Automation</h4>
                 <h2 style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-text)', margin: 0 }}>HÓA ĐƠN CHI PHÍ</h2>
                 <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', margin: 0 }}>Mã số: #EXP-{viewExpense.id}</p>
               </div>

@@ -11,6 +11,7 @@ interface CurrencyInputProps {
   required?: boolean;
   id?: string;
   showTextHelper?: boolean;
+  currency?: string;
 }
 
 export const CurrencyInput: React.FC<CurrencyInputProps> = ({
@@ -22,7 +23,8 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   disabled = false,
   required = false,
   id,
-  showTextHelper = true
+  showTextHelper = true,
+  currency = 'VND'
 }) => {
   const [displayValue, setDisplayValue] = useState('');
 
@@ -74,8 +76,17 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
     onChange(numericValue);
   };
 
-  // Generate readable abbreviation: e.g. 1.2 tỷ, 150 triệu
+  // Generate readable abbreviation: e.g. 1.2 tỷ, 150 triệu, 1.2M, 150K
   const getAbbreviation = (num: number): string => {
+    if (currency !== 'VND') {
+      if (num >= 1000000) {
+        return `${parseFloat((num / 1000000).toFixed(2))}M`;
+      }
+      if (num >= 1000) {
+        return `${parseFloat((num / 1000).toFixed(2))}K`;
+      }
+      return '';
+    }
     if (num >= 1000000000) {
       const billVal = num / 1000000000;
       return `${parseFloat(billVal.toFixed(2))} tỷ`;
@@ -92,7 +103,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
   };
 
   const rawNumericValue = parseInt(displayValue.replace(/[^0-9]/g, ''), 10) || 0;
-  const vietnameseText = numberToText(rawNumericValue);
+  const vietnameseText = numberToText(rawNumericValue, currency);
   const abbreviation = rawNumericValue > 0 ? getAbbreviation(rawNumericValue) : '';
 
   return (

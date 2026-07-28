@@ -1601,6 +1601,25 @@ export const Header = ({
 
           const getItemColor = (itemName: string) => {
             const lowercase = itemName.toLowerCase();
+            
+            // Exact matches for distinct, beautiful multi-color gradients
+            if (lowercase === 'dashboard') return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
+            if (lowercase === 'bàn làm việc') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
+            if (lowercase === 'báo cáo') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
+            if (lowercase === 'thanh toán') return { bg: 'linear-gradient(135deg, #0d9488, #115e59)', color: '#ffffff' };
+            if (lowercase === 'chi phí chi tiêu') return { bg: 'linear-gradient(135deg, #d946ef, #701a75)', color: '#ffffff' };
+            if (lowercase === 'quy trình phê duyệt') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
+            if (lowercase === 'nhà cung cấp') return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
+            if (lowercase === 'đối tác kinh doanh') return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
+            if (lowercase === 'chương trình') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
+            if (lowercase === 'tài liệu') return { bg: 'linear-gradient(135deg, #eab308, #a16207)', color: '#ffffff' };
+            if (lowercase === 'chiến dịch') return { bg: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' };
+            if (lowercase === 'tài khoản cá nhân') return { bg: 'linear-gradient(135deg, #64748b, #475569)', color: '#ffffff' };
+            if (lowercase === 'lịch trình') return { bg: 'linear-gradient(135deg, #818cf8, #4f46e5)', color: '#ffffff' };
+            if (lowercase === 'phiếu lương cá nhân') return { bg: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#ffffff' };
+            if (lowercase === 'ticket hỗ trợ') return { bg: 'linear-gradient(135deg, #14b8a6, #0f766e)', color: '#ffffff' };
+
+            // General fallbacks
             if (lowercase.includes('dashboard')) return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
             if (lowercase.includes('bàn làm việc') || lowercase.includes('chấm công') || lowercase.includes('hoạt động')) return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
             if (lowercase.includes('báo cáo') || lowercase.includes('thống kê')) return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
@@ -1648,8 +1667,8 @@ export const Header = ({
             'Đối tác kinh doanh': 'Danh mục đối tác doanh nghiệp và đối tác liên kết',
             'Nhà cung cấp': 'Quản lý thông tin nhà cung cấp và chuỗi cung ứng',
             'Báo giá': 'Tạo và phê duyệt báo giá dịch vụ',
-            'Đơn đặt hàng': 'Theo dõi tiến độ đơn hàng và các đợt thanh toán',
-            'Chi phí chi tiêu': 'Phê duyệt và báo cáo các khoản chi phí chi tiêu nội bộ',
+            'Sales Order': 'Theo dõi tiến độ đơn đặt cọc và các đợt thanh toán',
+            'Purchase Order': 'Phê duyệt và báo cáo các khoản chi phí chi tiêu nội bộ',
             'Quy trình phê duyệt': 'Quản lý phê duyệt nghỉ phép, tạm ứng, chi phí và chấm công',
             'Tài khoản cá nhân': 'Thông tin hồ sơ và đổi mật khẩu',
             'Chi nhánh': 'Quản lý các văn phòng và chi nhánh',
@@ -1736,7 +1755,9 @@ export const Header = ({
               )
             : [];
 
-          const recentTargets = ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Giỏ hàng', 'Kho Databank', 'Lịch biểu', 'Dự án'];
+          const recentTargets = role === 'accountant'
+            ? ['Purchase Order', 'Sales Order', 'Quy trình phê duyệt', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Báo cáo', 'Bàn làm việc']
+            : ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Giỏ hàng', 'Kho Databank', 'Lịch biểu', 'Dự án'];
           const recentItems = recentTargets
             .map(name => allVisibleItems.find(item => item.name === name))
             .filter(Boolean)

@@ -47,6 +47,7 @@ interface Deposit {
   remind_days_before?: number;
   remind_at_hour?: number;
   remind_target?: number;
+  currency?: string;
 }
 
 interface Milestone {
@@ -76,10 +77,17 @@ interface Project {
   code: string;
 }
 
-const formatMoney = (val: string | number) => {
+const formatMoney = (val: string | number, currency: string = 'VND') => {
   const num = Number(val);
   if (isNaN(num)) return '0 đ';
-  return num.toLocaleString('vi-VN') + ' đ';
+  const normCurrency = currency === 'EURO' ? 'EUR' : currency;
+  if (normCurrency === 'VND') {
+    return num.toLocaleString('vi-VN') + ' đ';
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: normCurrency
+  }).format(num);
 };
 
 export default function DepositsPage() {
@@ -155,6 +163,7 @@ export default function DepositsPage() {
   const [unitCode, setUnitCode] = useState('');
   const [price, setPrice] = useState('');
   const [expectedCommission, setExpectedCommission] = useState('');
+  const [currency, setCurrency] = useState('VND');
   const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
     { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
   ]);
@@ -176,6 +185,7 @@ export default function DepositsPage() {
   const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);
   const [actioningType, setActioningType] = useState<'approve' | 'reject' | null>(null);
   const [sendingReminderId, setSendingReminderId] = useState<number | null>(null);
+  const [previewReminderMilestone, setPreviewReminderMilestone] = useState<any | null>(null);
 
   const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('history');
   const [comments, setComments] = useState<any[]>([]);
@@ -498,6 +508,7 @@ export default function DepositsPage() {
           unit_code: unitCode,
           price: parseFloat(price),
           expected_commission: parseFloat(expectedCommission) || 0,
+          currency: currency,
           milestones: milestonesInput,
           is_cooperation: isCooperation,
           collaborators: isCooperation
@@ -522,6 +533,7 @@ export default function DepositsPage() {
         setUnitCode('');
         setPrice('');
         setExpectedCommission('');
+        setCurrency('VND');
         setMilestonesInput([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);
         setIsCooperation(false);
         setAllowedCollaborators([]);
@@ -1140,10 +1152,10 @@ export default function DepositsPage() {
                       {/* Value / Commission */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                         <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>
-                          {formatMoney(dep.price)}
+                          {formatMoney(dep.price, dep.currency)}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
-                          HH: {formatMoney(dep.expected_commission)}
+                          HH: {formatMoney(dep.expected_commission, dep.currency)}
                         </div>
                       </td>
 
@@ -1425,7 +1437,7 @@ export default function DepositsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.8fr 1.1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">Mã Học viên / Khách hàng</label>
                 <input
@@ -1439,21 +1451,37 @@ export default function DepositsPage() {
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Tổng doanh thu dự kiến (VND)</label>
+                <label className="form-label">Loại tiền tệ</label>
+                <CustomSelect
+                  options={[
+                    { value: 'VND', label: 'VND' },
+                    { value: 'USD', label: 'USD' },
+                    { value: 'EURO', label: 'EURO' },
+                    { value: 'CHF', label: 'CHF' }
+                  ]}
+                  value={currency}
+                  onChange={val => setCurrency(val)}
+                  width="100%"
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label">Tổng doanh thu ({currency})</label>
                 <CurrencyInput
                   value={price}
                   onChange={val => setPrice(String(val))}
                   placeholder="0"
                   showTextHelper={false}
+                  currency={currency}
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Hoa hồng (VND)</label>
+                <label className="form-label">Hoa hồng ({currency})</label>
                 <CurrencyInput
                   value={expectedCommission}
                   onChange={val => setExpectedCommission(String(val))}
                   placeholder="0"
                   showTextHelper={false}
+                  currency={currency}
                 />
               </div>
             </div>
@@ -1496,8 +1524,9 @@ export default function DepositsPage() {
                           prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
                         )
                       }
-                      placeholder="Số tiền (VND)"
+                      placeholder={`Số tiền (${currency})`}
                       showTextHelper={false}
+                      currency={currency}
                     />
                   </div>
                   <input
@@ -1917,6 +1946,119 @@ export default function DepositsPage() {
         </div>
       </CustomModal>
 
+      {/* Preview Reminder Modal */}
+      <CustomModal
+        isOpen={previewReminderMilestone !== null}
+        onClose={() => setPreviewReminderMilestone(null)}
+        title={t("Xem trước Nhắc nhở Thanh toán")}
+        width="600px"
+      >
+        {previewReminderMilestone && selectedDepForManage && (() => {
+          const custName = `${selectedDepForManage.first_name || ''} ${selectedDepForManage.last_name || ''}`.trim();
+          const customerEmail = selectedDepForManage.email ? selectedDepForManage.email.trim() : '';
+          const hasEmail = customerEmail !== '';
+          const isTargetSale = remindTargetManage === 2;
+          const sendToCaretaker = isTargetSale || !hasEmail;
+          const recipientName = sendToCaretaker ? (selectedDepForManage.creator_name || 'Sale chăm sóc') : custName;
+          const recipientEmail = sendToCaretaker ? 'Email của Sale chăm sóc' : customerEmail;
+          const subject = sendToCaretaker 
+            ? (isTargetSale ? `[IDEAS] Nhắc lịch thanh toán của học viên: ${custName}` : `[IDEAS] [Fallback] Nhắc nhở chăm sóc khách hàng thanh toán: ${custName}`) 
+            : `[IDEAS] Nhắc nhở thanh toán đợt cọc: ${previewReminderMilestone.milestone_name}`;
+          
+          const payDateStr = previewReminderMilestone.expected_pay_date 
+            ? new Date(previewReminderMilestone.expected_pay_date).toLocaleDateString('vi-VN') 
+            : 'Chưa thiết lập';
+          const amountStr = formatMoney(previewReminderMilestone.expected_amount, selectedDepForManage.currency);
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.25rem 0' }}>
+              {!hasEmail && (
+                <div style={{ display: 'flex', gap: '8px', padding: '8px 12px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '8px', color: '#d97706', fontSize: '0.75rem', alignItems: 'center' }}>
+                  <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                  <span>Học viên không có email. Nhắc nhở sẽ tự động chuyển hướng (Fallback) gửi tới Sale chăm sóc.</span>
+                </div>
+              )}
+
+              <div style={{ background: 'var(--color-bg)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex' }}>
+                  <span style={{ width: '90px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Người nhận:</span>
+                  <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>
+                    {recipientName} {recipientEmail ? `(${recipientEmail})` : ''}
+                  </span>
+                </div>
+                <div style={{ display: 'flex' }}>
+                  <span style={{ width: '90px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Kênh gửi:</span>
+                  <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>Email</span>
+                </div>
+                <div style={{ display: 'flex', borderTop: '1px solid var(--color-border)', paddingTop: '6px', marginTop: '4px' }}>
+                  <span style={{ width: '90px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Tiêu đề:</span>
+                  <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>{subject}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>Nội dung Email</label>
+                <div style={{ 
+                  background: 'var(--color-surface)', 
+                  border: '1px solid var(--color-border)', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  fontSize: '0.85rem', 
+                  lineHeight: '1.5',
+                  color: 'var(--color-text)',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
+                  {sendToCaretaker ? (
+                    <div>
+                      Chào <strong>{recipientName}</strong>,<br /><br />
+                      Hệ thống gửi thông báo nhắc lịch thanh toán của học viên <strong>{custName}</strong> (SĐT: {selectedDepForManage.phone || '—'}).<br /><br />
+                      Vui lòng chủ động liên hệ nhắc nhở khách hàng thanh toán đợt: <strong>{previewReminderMilestone.milestone_name}</strong>.<br />
+                      Số tiền cần thanh toán: <strong>{amountStr}</strong>.<br />
+                      Hạn thanh toán: <strong>{payDateStr}</strong>.<br />
+                      Chương trình: <strong>{selectedDepForManage.project_name}</strong> (Căn {selectedDepForManage.unit_code}).
+                    </div>
+                  ) : (
+                    <div>
+                      Chào <strong>{custName}</strong>,<br /><br />
+                      Đây là thông báo nhắc lịch thanh toán cho đợt: <strong>{previewReminderMilestone.milestone_name}</strong>.<br /><br />
+                      Chương trình: <strong>{selectedDepForManage.project_name}</strong> (Căn {selectedDepForManage.unit_code}).<br />
+                      Số tiền cần đóng: <strong>{amountStr}</strong>.<br />
+                      Hạn thanh toán: <strong>{payDateStr}</strong>.<br /><br />
+                      Vui lòng hoàn tất thanh toán và tải hình ảnh Ủy nhiệm chi (UNC) lên hệ thống. Xin cảm ơn!
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  onClick={() => setPreviewReminderMilestone(null)}
+                  disabled={sendingReminderId === previewReminderMilestone.id}
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="button" 
+                  className="btn primary" 
+                  disabled={sendingReminderId === previewReminderMilestone.id}
+                  onClick={async () => {
+                    const mid = previewReminderMilestone.id;
+                    setPreviewReminderMilestone(null);
+                    await handleSendManualReminder(mid);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {sendingReminderId === previewReminderMilestone.id && <Loader2 size={14} className="spin" />}
+                  Xác nhận gửi
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </CustomModal>
+
       {/* Manage Milestones Drawer (Wide dual-pane layout) */}
       {createPortal(
         <AnimatePresence>
@@ -2294,12 +2436,12 @@ export default function DepositsPage() {
                               </div>
                               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
                                 <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
-                                  {formatMoney(selectedDepForManage.price)}
+                                  {formatMoney(selectedDepForManage.price, selectedDepForManage.currency)}
                                 </div>
                                 <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
                                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
-                                    Thực thu: <strong style={{ color: '#2563eb' }}>{formatMoney(totalApprovedMilestones)}</strong> ({approvedCount}/{totalCount} đợt)
+                                    Thực thu: <strong style={{ color: '#2563eb' }}>{formatMoney(totalApprovedMilestones, selectedDepForManage.currency)}</strong> ({approvedCount}/{totalCount} đợt)
                                   </span>
                                 </div>
                               </div>
@@ -2401,13 +2543,13 @@ export default function DepositsPage() {
                                   </div>
                                 ) : (
                                   <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
-                                    {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission)}
+                                    {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission, selectedDepForManage.currency)}
                                   </div>
                                 )}
                                 <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
                                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                                    Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission)}</strong>
+                                    Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission, selectedDepForManage.currency)}</strong>
                                   </span>
                                 </div>
                               </div>
@@ -2580,7 +2722,7 @@ export default function DepositsPage() {
                       }}>
                         <div>Tên đợt thanh toán</div>
                         <div>Hạn thanh toán</div>
-                        <div>Số tiền (VND)</div>
+                        <div>Số tiền ({selectedDepForManage?.currency || 'VND'})</div>
                         <div style={{ textAlign: 'center' }}>Trạng thái</div>
                         <div style={{ textAlign: 'center' }}>Minh chứng</div>
                         <div style={{ textAlign: 'right' }}>Thao tác</div>
@@ -2670,7 +2812,7 @@ export default function DepositsPage() {
                                 </div>
                                 {m.id && m.status !== 'approved' && (
                                   <button
-                                    onClick={() => handleSendManualReminder(m.id)}
+                                    onClick={() => setPreviewReminderMilestone(m)}
                                     disabled={sendingReminderId === m.id}
                                     style={{
                                       background: 'rgba(245, 158, 11, 0.08)',

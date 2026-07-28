@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -49,6 +49,7 @@ interface ApprovalItem {
   status?: string;
   created_at: string;
   updated_at?: string;
+  currency?: string;
 }
 
 const GreenToggle = ({ checked, onChange, disabled, label, id }: { checked: boolean, onChange?: (val: boolean) => void, disabled?: boolean, label: string, id: string }) => {
@@ -100,7 +101,17 @@ const GreenToggle = ({ checked, onChange, disabled, label, id }: { checked: bool
   );
 };
 
-
+const formatApprovalCurrency = (amount: number | string, currency: string = 'VND') => {
+  const normCurrency = currency === 'EURO' ? 'EUR' : currency;
+  const num = Number(amount || 0);
+  if (normCurrency === 'VND') {
+    return num.toLocaleString('vi-VN') + ' đ';
+  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: normCurrency
+  }).format(num);
+};
 
 export default function Approvals() {
   const { t } = useLanguage();
@@ -126,6 +137,8 @@ export default function Approvals() {
   const [selectedWorkflowDef, setSelectedWorkflowDef] = useState<any>(null);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [directorySearch, setDirectorySearch] = useState('');
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingItemType, setEditingItemType] = useState<string | null>(null);
 
   const [recentWorkflows, setRecentWorkflows] = useState<any[]>([]);
 
@@ -401,6 +414,73 @@ export default function Approvals() {
     } catch (err: any) {
       toast.error(err?.message || t('Lỗi khi từ chối'));
     }
+  };
+
+  const handleDeleteRequest = async (item: any) => {
+    if (!window.confirm(t('Bạn có chắc chắn muốn xóa/thu hồi yêu cầu này?'))) return;
+    try {
+      if (item.type === 'expense') {
+        await api.delete(`/expenses/${item.id}`);
+      } else if (item.type === 'checkin') {
+        await api.delete(`/check-ins/${item.id}`);
+      } else if (item.type === 'leave') {
+        await fetchAPI(`hrm/leaves/${item.id}`, { method: 'DELETE' });
+      } else if (item.type === 'advance') {
+        await fetchAPI(`hrm/advances/${item.id}`, { method: 'DELETE' });
+      }
+      toast.success(t('Đã xóa yêu cầu thành công'));
+      loadData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t('Lỗi khi xóa yêu cầu'));
+    }
+  };
+
+  const handleEditRequest = async (item: ApprovalItem) => {
+    setSelectedTimelineItem(null);
+    setSelectedItem(null);
+    setEditingItemId(item.id);
+    setEditingItemType(item.type);
+
+    const matchingDef = workflowList.find(w => w.id === item.type) || workflowList.find(w => w.id === 'leave_late') || workflowList[0];
+    setSelectedWorkflowDef(matchingDef);
+    
+    if (item.type === 'leave') {
+      setFormType('leave');
+      try {
+        const res = await fetchAPI('hrm/leaves');
+        const found = res?.data?.find((l: any) => l.id === item.id);
+        if (found) {
+          setLeaveType(found.leave_type || 'annual');
+          setLeaveFrom(found.start_date || '');
+          setLeaveTo(found.end_date || '');
+          setLeaveReason(found.reason || '');
+          if (found.approver_id) setCustomApprover1(users.find(u => u.id === found.approver_id) || null);
+          if (found.approver_id_2) setCustomApprover2(users.find(u => u.id === found.approver_id_2) || null);
+        }
+      } catch (e) {}
+    } else if (item.type === 'advance') {
+      setFormType('advance');
+      try {
+        const res = await fetchAPI('hrm/advances');
+        const found = res?.data?.find((a: any) => a.id === item.id);
+        if (found) {
+          setPaymentDetails(String(found.amount || ''));
+          setLeaveReason(found.reason || '');
+          setCurrencyType(found.currency || 'VND');
+          if (found.approver_id) setCustomApprover1(users.find(u => u.id === found.approver_id) || null);
+        }
+      } catch (e) {}
+    } else if (matchingDef.category === 'finance' || item.type === 'expense') {
+      setFormType('expense');
+      window.location.href = `/expenses?editId=${item.id}`;
+      return;
+    } else {
+      setFormType('general');
+      setExpenseTitle(item.title);
+      setPaymentDetails(item.description || '');
+    }
+    
+    setShowCreateModal(true);
   };
 
   const handleDuplicate = (item: ApprovalItem) => {
@@ -888,6 +968,44 @@ export default function Approvals() {
 
                         <td style={{ padding: '14px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            {(item.status === 'pending' || item.status === 'pending_approval') && (
+                              <>
+                                <button
+                                  onClick={() => handleEditRequest(item)}
+                                  className="btn secondary"
+                                  style={{
+                                    height: '28px',
+                                    width: '28px',
+                                    padding: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '6px',
+                                    color: 'var(--color-primary)'
+                                  }}
+                                  title={t('Sửa')}
+                                >
+                                  <Edit size={12} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteRequest(item)}
+                                  className="btn secondary"
+                                  style={{
+                                    height: '28px',
+                                    width: '28px',
+                                    padding: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '6px',
+                                    color: 'var(--color-danger)'
+                                  }}
+                                  title={t('Xóa')}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </>
+                            )}
                             <button
                               onClick={() => handleDuplicate(item)}
                               className="btn secondary"
@@ -1383,6 +1501,8 @@ export default function Approvals() {
                   onClick={() => {
                     setShowCreateModal(false);
                     setSelectedWorkflowDef(null);
+                    setEditingItemId(null);
+                    setEditingItemType(null);
                   }}
                   style={{
                     position: 'fixed',
@@ -1483,6 +1603,17 @@ export default function Approvals() {
                         onClick={async () => {
                           setSubmitting(true);
                           try {
+                            if (editingItemId) {
+                              if (editingItemType === 'leave') {
+                                await fetchAPI(`hrm/leaves/${editingItemId}`, { method: 'DELETE' });
+                              } else if (editingItemType === 'advance') {
+                                await fetchAPI(`hrm/advances/${editingItemId}`, { method: 'DELETE' });
+                              } else if (editingItemType === 'checkin') {
+                                await api.delete(`/check-ins/${editingItemId}`);
+                              } else if (editingItemType === 'expense') {
+                                await api.delete(`/expenses/${editingItemId}`);
+                              }
+                            }
                             // Resolve the last active step in the approval chain as finalApproverId
                             let finalApproverId = 1003;
                             if (showStepDirector) {
@@ -1522,7 +1653,8 @@ export default function Approvals() {
                                 body: JSON.stringify({
                                   amount: Number(paymentDetails) || 0,
                                   reason: advReasonStr,
-                                  approver_id: finalApproverId
+                                  approver_id: finalApproverId,
+                                  currency: currencyType
                                 })
                               });
                             } else if (formType === 'general') {
@@ -1540,12 +1672,13 @@ export default function Approvals() {
                                 notes: generalDesc,
                                 amount: 0,
                                 status: 'pending',
-                                approver_id: finalApproverId
+                                approver_id: finalApproverId,
+                                currency: currencyType
                               });
                             } else {
                               let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
                               if (isPhasedPayment) {
-                                const instStr = installments.map(i => `${i.title}: ${Number(i.amount).toLocaleString()}đ (Hạn: ${i.dueDate || 'Chưa chọn'})`).join('; ');
+                                const instStr = installments.map(i => `${i.title}: ${formatApprovalCurrency(i.amount, currencyType)} (Hạn: ${i.dueDate || 'Chưa chọn'})`).join('; ');
                                 finalDesc += `\n[Thanh toán theo đợt]: ${instStr}`;
                               }
                               if (isRecurring) {
@@ -1557,12 +1690,15 @@ export default function Approvals() {
                                 notes: finalDesc,
                                 amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
                                 status: 'pending',
-                                approver_id: finalApproverId
+                                approver_id: finalApproverId,
+                                currency: currencyType
                               });
                             }
                             toast.success(t('Gửi đề xuất thành công!'));
                             setShowCreateModal(false);
                             setSelectedWorkflowDef(null);
+                            setEditingItemId(null);
+                            setEditingItemType(null);
                             loadData();
                           } catch (err: any) {
                             toast.error(err?.message || t('Lỗi gửi đề xuất'));
@@ -1598,6 +1734,8 @@ export default function Approvals() {
                         onClick={() => {
                           setShowCreateModal(false);
                           setSelectedWorkflowDef(null);
+                          setEditingItemId(null);
+                          setEditingItemType(null);
                         }} 
                         className="hover-lift"
                         style={{
@@ -1740,7 +1878,9 @@ export default function Approvals() {
                                   onChange={val => setCurrencyType(val)}
                                   options={[
                                     { value: 'VND', label: 'VND' },
-                                    { value: 'USD', label: 'USD' }
+                                    { value: 'USD', label: 'USD' },
+                                    { value: 'EURO', label: 'EURO' },
+                                    { value: 'CHF', label: 'CHF' }
                                   ]}
                                   width="100%"
                                 />
@@ -1924,7 +2064,9 @@ export default function Approvals() {
                                   onChange={val => setCurrencyType(val)}
                                   options={[
                                     { value: 'VND', label: 'VND' },
-                                    { value: 'USD', label: 'USD' }
+                                    { value: 'USD', label: 'USD' },
+                                    { value: 'EURO', label: 'EURO' },
+                                    { value: 'CHF', label: 'CHF' }
                                   ]}
                                   width="100%"
                                 />
@@ -2168,7 +2310,7 @@ export default function Approvals() {
                                           required
                                         />
                                       </td>
-                                      <td style={{ padding: '8px', fontWeight: 600 }}>{lineTotal.toLocaleString()}đ</td>
+                                      <td style={{ padding: '8px', fontWeight: 600 }}>{formatApprovalCurrency(lineTotal, currencyType)}</td>
                                       <td style={{ padding: '8px' }}>
                                         <CustomSelect
                                           value={item.vat}
@@ -2210,15 +2352,15 @@ export default function Approvals() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignSelf: 'flex-end', width: '260px', marginTop: '4px', fontSize: '0.8rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: 'var(--color-text-muted)' }}>{t('Tổng tiền chưa thuế:')}</span>
-                              <strong style={{ color: 'var(--color-text)' }}>{itemsTotalBeforeTax.toLocaleString()}đ</strong>
+                              <strong style={{ color: 'var(--color-text)' }}>{formatApprovalCurrency(itemsTotalBeforeTax, currencyType)}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <span style={{ color: 'var(--color-text-muted)' }}>{t('Tiền thuế VAT:')}</span>
-                              <strong style={{ color: 'var(--color-text)' }}>{itemsTotalVat.toLocaleString()}đ</strong>
+                              <strong style={{ color: 'var(--color-text)' }}>{formatApprovalCurrency(itemsTotalVat, currencyType)}</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: '6px', fontSize: '0.9rem' }}>
                               <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>{t('Tổng thanh toán:')}</span>
-                              <strong style={{ color: 'var(--color-primary)' }}>{itemsGrandTotal.toLocaleString()}đ</strong>
+                              <strong style={{ color: 'var(--color-primary)' }}>{formatApprovalCurrency(itemsGrandTotal, currencyType)}</strong>
                             </div>
                           </div>
                         </div>
@@ -3334,7 +3476,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                 <input
                   type="text"
                   className="form-input"
-                  value={Number(detail?.amount || 0).toLocaleString('vi-VN') + ' đ'}
+                  value={formatApprovalCurrency(detail?.amount || 0, detail?.currency || item?.currency || 'VND')}
                   disabled
                 />
               </div>
@@ -3357,7 +3499,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                 <input
                   type="text"
                   className="form-input"
-                  value={Number(detail?.amount || 0).toLocaleString('vi-VN') + ' đ'}
+                  value={formatApprovalCurrency(detail?.amount || 0, detail?.currency || item?.currency || 'VND')}
                   disabled
                 />
               </div>

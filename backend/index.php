@@ -738,9 +738,11 @@ switch ($resource) {
         elseif ($resourceId === 'leaves' && $method === 'GET') $ctrl->indexLeaves($auth);
         elseif ($resourceId === 'leaves' && $method === 'POST') $ctrl->createLeave($auth);
         elseif ($resourceId === 'leaves' && $method === 'PUT') $ctrl->approveLeave($auth);
+        elseif ($resourceId === 'leaves' && $method === 'DELETE' && $subResource) $ctrl->deleteLeave($auth, (int)$subResource);
         elseif ($resourceId === 'advances' && $method === 'GET') $ctrl->indexAdvances($auth);
         elseif ($resourceId === 'advances' && $method === 'POST') $ctrl->createAdvance($auth);
         elseif ($resourceId === 'advances' && $method === 'PUT') $ctrl->approveAdvance($auth);
+        elseif ($resourceId === 'advances' && $method === 'DELETE' && $subResource) $ctrl->deleteAdvance($auth, (int)$subResource);
         elseif ($resourceId === 'payroll' && $method === 'GET') $ctrl->indexPayslips($auth);
         elseif ($resourceId === 'payroll' && $method === 'POST') $ctrl->calculatePayroll($auth);
         elseif ($resourceId === 'payroll' && $method === 'PUT') $ctrl->lockPayroll($auth);

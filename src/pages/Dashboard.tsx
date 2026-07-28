@@ -1086,7 +1086,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem;
           }
           .welcome-banner::before {
             content: '';
@@ -1490,7 +1490,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     };
 
     return renderDashboardWrapper(
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '-0.75rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner */}
         {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
 
@@ -1510,7 +1510,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <DollarSign size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.4rem' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
@@ -1537,7 +1537,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <FileText size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.4rem' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
@@ -1564,7 +1564,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <CreditCard size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.4rem' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} />
@@ -1595,7 +1595,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <AlertTriangle size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.pendingApprovalInvoices}</div>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.4rem' }}>{actStats.pendingApprovalInvoices}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block', flexShrink: 0 }} />
@@ -2134,7 +2134,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 justify-content: space-between;
                 flex-wrap: wrap;
                 gap: 1.5rem;
-                margin-bottom: 1.5rem;
+                margin-bottom: 0.5rem;
               }
               .welcome-banner::before {
                 content: '';

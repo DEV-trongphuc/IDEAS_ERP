@@ -1361,7 +1361,7 @@ class FinanceController
         $stmt->execute([$auth['tenant_id'], $id, $auth['user_id'], $body, $attachments, $parentId]);
         $newId = $this->db->lastInsertId();
 
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_COMMENT', 'expense', $id, "Thêm bình luận cho khoản chi #" . $id);
+        // logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_COMMENT', 'expense', $id, "Thêm bình luận cho khoản chi #" . $id);
 
         respond(200, ['id' => $newId], 'Thêm bình luận thành công');
     }

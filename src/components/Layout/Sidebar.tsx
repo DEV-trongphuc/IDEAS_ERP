@@ -55,8 +55,8 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'TÀI CHÍNH',
     items: [
-      { name: 'Thanh toán', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingDeposits' },
-      { name: 'Chi phí chi tiêu', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingExpenses' }
+      { name: 'Sales Order', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingDeposits' },
+      { name: 'Purchase Order', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingExpenses' }
     ]
   },
   {
