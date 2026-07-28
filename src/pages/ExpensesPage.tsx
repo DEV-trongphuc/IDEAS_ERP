@@ -1289,44 +1289,27 @@ export const ExpensesPage: React.FC = () => {
                     </h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {/* Approve / Reject / Edit Actions on top right */}
-                    {viewItem.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          className="btn danger sm" 
-                          style={{ background: 'var(--color-danger)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, height: '32px', fontSize: '0.8rem', padding: '0 12px', borderRadius: '6px', cursor: 'pointer' }} 
-                          onClick={() => setRejectingItem(viewItem)}
-                        >
-                          <XCircle size={14} /> Từ chối
-                        </button>
-                        <button 
-                          className="btn success sm" 
-                          style={{ background: 'var(--color-success)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, height: '32px', fontSize: '0.8rem', padding: '0 12px', borderRadius: '6px', cursor: 'pointer' }} 
-                          onClick={async () => {
-                            try {
-                              await api.patch(`/expenses/${viewItem.id}`, { status: 'approved' });
-                              setItems(prev => prev.map(e => e.id === viewItem.id ? {...e, status: 'approved'} : e));
-                              addToast('Đã phê duyệt chi phí', 'success');
-                              setViewItem(null);
-                              fetchExpenses();
-                              window.dispatchEvent(new Event('refresh-pending-counts'));
-                            } catch (e: any) {
-                              addToast('Lỗi khi phê duyệt chi phí', 'error');
-                            }
-                          }}
-                        >
-                          <CheckCircle2 size={14} /> Phê duyệt
-                        </button>
-                      </div>
-                    )}
+                    {/* Pencil Edit Action next to status badge */}
                     {viewItem.status !== 'approved' && (
                       <button 
                         className="btn secondary sm" 
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', borderRadius: '6px', height: '32px', fontSize: '0.8rem', padding: '0 12px', fontWeight: 700, cursor: 'pointer' }} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          background: 'var(--color-bg)', 
+                          border: '1px solid var(--color-border)', 
+                          color: 'var(--color-text-muted)', 
+                          borderRadius: '6px', 
+                          height: '32px', 
+                          width: '32px', 
+                          padding: 0,
+                          cursor: 'pointer' 
+                        }} 
                         title="Chỉnh sửa" 
                         onClick={() => { const item = viewItem; setViewItem(null); openEdit(item); }}
                       >
-                        <Pencil size={14} style={{ color: 'var(--color-text-muted)' }} /> Chỉnh sửa
+                        <Pencil size={14} style={{ color: 'var(--color-text-muted)' }} />
                       </button>
                     )}
                     <span className={`badge ${viewItem.status === 'approved' ? (viewItem.is_refunded ? 'info' : 'success') : viewItem.status === 'rejected' ? 'danger' : 'warning'}`} style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '8px', fontWeight: 700 }}>
