@@ -862,6 +862,11 @@ class FinanceController
             ]);
             $expId = (int) $this->db->lastInsertId();
 
+            if ($statusVal === 'approved') {
+                $stmtApprove = $this->db->prepare("UPDATE expenses SET approver_id = ?, approved_at = NOW() WHERE id = ?");
+                $stmtApprove->execute([$auth['user_id'], $expId]);
+            }
+
             if (!empty($entities)) {
                 $sEE = $this->db->prepare("INSERT INTO expense_entities (tenant_id, expense_id, entity_type, entity_id, amount) VALUES (?,?,?,?,?)");
                 foreach ($entities as $ee) {

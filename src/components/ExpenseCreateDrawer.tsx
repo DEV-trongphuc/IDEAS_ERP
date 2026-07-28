@@ -1,0 +1,725 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '../api/axios';
+import { useUIStore } from '../store/uiStore';
+import { CustomSelect } from './ui/CustomSelect';
+import { CustomCheckbox } from './ui/CustomCheckbox';
+import { Avatar } from './ui/Avatar';
+import { ToggleSwitch } from './ui/ToggleSwitch';
+import { compressToWebP } from '../utils/imageCompress';
+import { numberToVietnameseText } from '../utils/numberToText';
+
+const CATEGORIES = [
+  { label: 'Di chuyển', icon: Truck, color: '#3b82f6' },
+  { label: 'Ăn uống', icon: Coffee, color: '#f59e0b' },
+  { label: 'Vận hành', icon: Home, color: '#10b981' },
+  { label: 'Marketing', icon: Briefcase, color: '#ef4444' },
+  { label: 'Công cụ', icon: CreditCard, color: '#BD1D2D' },
+  { label: 'Nhân sự', icon: Tag, color: '#06b6d4' },
+];
+
+const EMPTY_FORM = {
+  title: '',
+  category: 'Khác',
+  amount: '',
+  currency: 'VND',
+  vat_amount: '',
+  date: '',
+  notes: '',
+  approver_id: null as number | null,
+  related_user_ids: [] as number[],
+  vendor_name: '',
+  has_vat_invoice: false,
+  is_vat_inclusive: false,
+  entities: [] as any[],
+  image_url: '',
+  request_bank_transfer: false,
+  bank_name: '',
+  bank_account_number: '',
+  bank_account_name: ''
+};
+
+interface ExpenseCreateDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  editItem?: any;
+  initialDate?: string; // YYYY-MM-DD
+  onSaveSuccess: () => void;
+  user: any;
+}
+
+export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
+  isOpen,
+  onClose,
+  editItem,
+  initialDate,
+  onSaveSuccess,
+  user
+}) => {
+  const { addToast } = useUIStore();
+  const [form, setForm] = useState<any>({ ...EMPTY_FORM });
+  const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [vendorSearch, setVendorSearch] = useState('');
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const vendorRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch initial data
+  useEffect(() => {
+    if (isOpen) {
+      api.get('/users').then(r => {
+        const d = r.data.data;
+        setUsers(Array.isArray(d) ? d : (d?.items || []));
+      }).catch(() => {});
+
+      api.get('/suppliers').then(r => {
+        const d = r.data.data;
+        setSuppliers(Array.isArray(d) ? d : (d?.items || []));
+      }).catch(() => {});
+
+      api.get('/contacts?limit=1000').then(r => {
+        const d = r.data.data;
+        setContacts(Array.isArray(d) ? d : (d?.items || []));
+      }).catch(() => {});
+    }
+  }, [isOpen]);
+
+  // Initialize form state
+  useEffect(() => {
+    if (isOpen) {
+      if (editItem) {
+        setVendorSearch(editItem.vendor_name || '');
+        const bankRegex = /\[Thông tin chuyển khoản\]:\s*([^\-]+)\s*-\s*STK:\s*([^\-]+)\s*-\s*Chủ TK:\s*([^\n]+)/;
+        const match = editItem.notes?.match(bankRegex);
+        let request_bank_transfer = false;
+        let bank_name = '';
+        let bank_account_number = '';
+        let bank_account_name = '';
+        let cleanNotes = editItem.notes || '';
+        if (match) {
+          request_bank_transfer = true;
+          bank_name = match[1].trim();
+          bank_account_number = match[2].trim();
+          bank_account_name = match[3].trim();
+          cleanNotes = editItem.notes.replace(bankRegex, '').trim();
+        }
+
+        setForm({
+          title: editItem.title || '',
+          category: editItem.category || 'Khác',
+          amount: String(editItem.amount || 0),
+          currency: editItem.currency || 'VND',
+          vat_amount: editItem.vat_amount ? String(editItem.vat_amount) : '',
+          date: editItem.date || new Date().toISOString().split('T')[0],
+          notes: cleanNotes,
+          approver_id: editItem.approver_id ? Number(editItem.approver_id) : null,
+          related_user_ids: Array.isArray(editItem.related_user_ids)
+            ? editItem.related_user_ids.map(Number)
+            : (editItem.related_user_ids ? String(editItem.related_user_ids).split(',').map(Number) : []),
+          vendor_name: editItem.vendor_name || '',
+          has_vat_invoice: !!editItem.has_vat_invoice,
+          is_vat_inclusive: !!editItem.is_vat_inclusive,
+          entities: Array.isArray(editItem.entities) ? editItem.entities : [],
+          image_url: editItem.image_url || '',
+          request_bank_transfer,
+          bank_name,
+          bank_account_number,
+          bank_account_name
+        });
+      } else {
+        const accountant = users.find((u: any) => u.role === 'accountant' || String(u.role).toLowerCase().includes('acc') || String(u.role).toLowerCase().includes('kế toán'));
+        setForm({
+          ...EMPTY_FORM,
+          date: initialDate || new Date().toISOString().split('T')[0],
+          approver_id: accountant ? accountant.id : (users[0]?.id || null)
+        });
+        setVendorSearch('');
+      }
+    }
+  }, [isOpen, editItem, initialDate, users]);
+
+  // Close vendor dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (vendorRef.current && !vendorRef.current.contains(e.target as Node)) {
+        setShowVendorDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isAutoApprove = form.approver_id !== null && user?.id !== undefined && Number(form.approver_id) === Number(user.id);
+
+  const handleSave = async () => {
+    if (!form.title || !form.amount) {
+      addToast('Điền đầy đủ nội dung và số tiền', 'error');
+      return;
+    }
+    if (form.approver_id === null) {
+      addToast('Vui lòng chọn người duyệt', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      let payloadEntities = form.entities;
+      if (form.entities.length > 0) {
+        const splitAmt = Number(form.amount) / form.entities.length;
+        payloadEntities = form.entities.map((e: any) => ({ ...e, amount: splitAmt }));
+      }
+
+      let finalNotes = form.notes || '';
+      if (form.request_bank_transfer && form.bank_name && form.bank_account_number && form.bank_account_name) {
+        finalNotes = `${form.notes || ''}\n[Thông tin chuyển khoản]: ${form.bank_name} - STK: ${form.bank_account_number} - Chủ TK: ${form.bank_account_name}`.trim();
+      }
+
+      const statusVal = isAutoApprove ? 'approved' : 'pending';
+
+      if (editItem) {
+        await api.put(`/expenses/${editItem.id}`, {
+          ...form,
+          notes: finalNotes,
+          amount: Number(form.amount),
+          entities: payloadEntities
+        });
+        addToast('Đã cập nhật chi phí thành công!', 'success');
+      } else {
+        await api.post('/expenses', {
+          ...form,
+          notes: finalNotes,
+          amount: Number(form.amount),
+          status: statusVal,
+          entities: payloadEntities
+        });
+        if (isAutoApprove) {
+          addToast('Đã tạo và duyệt chi phí thành công!', 'success');
+        } else {
+          addToast('Đã nhập chi phí mới – chờ phê duyệt', 'success');
+        }
+      }
+      onSaveSuccess();
+      onClose();
+    } catch (e: any) {
+      addToast(e.response?.data?.message || 'Lỗi khi lưu chi phí', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !saving && onClose()}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 1000005,
+              background: 'black'
+            }}
+          />
+
+          {/* Drawer Sheet Panel */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: 0,
+              bottom: 0,
+              left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+              right: 0,
+              background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
+              boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
+              zIndex: 1000010
+            }}
+          >
+            {/* Header with Cancel and Save buttons at the top right */}
+            <div className="modal-header" style={{
+              padding: '1.25rem 1.5rem',
+              background: 'linear-gradient(to right, var(--color-bg), var(--color-surface))',
+              borderBottom: '1px solid var(--color-border)',
+              flexShrink: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>
+                  {editItem ? 'Cập nhật khoản chi' : 'Nhập chi phí mới'}
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4, marginBottom: 0 }}>
+                  Vui lòng điền thông tin chi tiết và người phê duyệt.
+                </p>
+              </div>
+
+              {/* Action Buttons in top right corner */}
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn outline"
+                  onClick={onClose}
+                  disabled={saving}
+                  style={{ height: '36px', minWidth: '80px', fontSize: '0.85rem', fontWeight: 600 }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    height: '36px',
+                    minWidth: '140px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {saving ? <Loader2 size={16} className="spin" /> : <CheckCircle2 size={16} />}
+                  {saving ? 'Đang lưu...' : (isAutoApprove ? 'Tạo & Duyệt' : 'Gửi phê duyệt')}
+                </button>
+              </div>
+            </div>
+
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
+                <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Đơn vị thụ hưởng <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>(Thanh toán cho ai?)</span></label>
+                <div style={{ position: 'relative' }} ref={vendorRef}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 1rem', height: '44px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-surface)' }}>
+                    <input
+                      style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '0.875rem', color: 'var(--color-text)' }}
+                      placeholder="Tìm NCC hoặc nhập tự do..."
+                      value={vendorSearch}
+                      onChange={e => { setVendorSearch(e.target.value); setForm({ ...form, vendor_name: e.target.value }); setShowVendorDropdown(true); }}
+                      onFocus={() => setShowVendorDropdown(true)}
+                    />
+                    {vendorSearch && <button type="button" onClick={() => { setVendorSearch(''); setForm({ ...form, vendor_name: '' }); }} style={{ color: 'var(--color-text-muted)', display: 'flex' }}><X size={14} /></button>}
+                    <Building2 size={15} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                    <ChevronDown size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                  </div>
+
+                  {showVendorDropdown && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: 'var(--color-surface)', borderRadius: '14px', border: '1px solid var(--color-border-light)', boxShadow: '0 16px 32px -8px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden' }}>
+                      {(Array.isArray(suppliers) ? suppliers : []).filter(s => (s.name || s.company_name || '').toLowerCase().includes(vendorSearch.toLowerCase())).slice(0, 6).map(s => (
+                        <div
+                          key={s.id}
+                          onMouseDown={() => { const n = s.name || s.company_name || ''; setVendorSearch(n); setForm({ ...form, vendor_name: n }); setShowVendorDropdown(false); }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', cursor: 'pointer', transition: 'background 0.15s' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div style={{ width: 30, height: 30, borderRadius: '8px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem', flexShrink: 0 }}>{(s.name || s.company_name || '?')[0]}</div>
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{s.name || s.company_name}</p>
+                            {s.phone && <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>{s.phone}</p>}
+                          </div>
+                        </div>
+                      ))}
+                      {vendorSearch && !suppliers.find(s => (s.name || s.company_name) === vendorSearch) && (
+                        <div
+                          onMouseDown={() => { setForm({ ...form, vendor_name: vendorSearch }); setShowVendorDropdown(false); }}
+                          style={{ padding: '9px 14px', cursor: 'pointer', borderTop: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 700 }}
+                        >
+                          + Dùng "{vendorSearch}" (nhập tự do)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.7fr 0.8fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Số tiền ({form.currency || 'VND'}) *</label>
+                  <div style={{ position: 'relative' }}>
+                    <input className="form-input" type="number" min="0" style={{ paddingRight: '2.5rem', fontWeight: 800, color: 'var(--color-danger)', fontSize: '1.1rem' }} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
+                    <Wallet size={16} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                  </div>
+                  {form.amount && Number(form.amount) > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+                      style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, marginTop: '6px', fontStyle: 'italic', paddingLeft: '4px' }}
+                    >
+                      Bằng chữ: {numberToVietnameseText(form.amount, form.currency || 'VND')}
+                    </motion.div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Loại tiền tệ</label>
+                  <CustomSelect
+                    options={[
+                      { value: 'VND', label: 'VND' },
+                      { value: 'USD', label: 'USD' },
+                      { value: 'EURO', label: 'EURO' },
+                      { value: 'CHF', label: 'CHF' }
+                    ]}
+                    value={form.currency || 'VND'}
+                    onChange={val => setForm({ ...form, currency: val })}
+                    width="100%"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Ngày chi</label>
+                  <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                </div>
+              </div>
+
+              {/* VAT Settings Panel */}
+              <div style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <CustomCheckbox
+                      checked={form.has_vat_invoice}
+                      onChange={() => setForm({ ...form, has_vat_invoice: !form.has_vat_invoice })}
+                      label="Có hóa đơn VAT"
+                    />
+                    <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginLeft: '2rem', margin: 0 }}>Chứng từ thuế</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <CustomCheckbox
+                      checked={form.is_vat_inclusive}
+                      onChange={() => setForm({ ...form, is_vat_inclusive: !form.is_vat_inclusive })}
+                      label="Bao gồm VAT"
+                    />
+                    <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginLeft: '2rem', margin: 0 }}>Giá sau thuế</p>
+                  </div>
+                </div>
+
+                {form.has_vat_invoice && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)' }}>Thuế %</label>
+                      <CustomSelect
+                        options={[
+                          { value: '0', label: '0%' },
+                          { value: '5', label: '5%' },
+                          { value: '8', label: '8%' },
+                          { value: '10', label: '10%' }
+                        ]}
+                        value={form.amount ? Math.round((Number(form.vat_amount) / Number(form.amount)) * 100).toString() : '10'}
+                        onChange={val => {
+                          const pct = Number(val);
+                          const amt = Math.round(Number(form.amount) * (pct / 100));
+                          setForm({ ...form, vat_amount: amt.toString() });
+                        }}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)' }}>Tiền thuế VAT ({form.currency || 'VND'})</label>
+                      <input
+                        className="form-input"
+                        type="number"
+                        value={form.vat_amount || ''}
+                        onChange={e => setForm({ ...form, vat_amount: e.target.value })}
+                        placeholder="Nhập số tiền thuế..."
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Bank Transfer Details Panel */}
+              <div style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                      Yêu cầu thanh toán chuyển khoản
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      Nhập thông tin số tài khoản và ngân hàng thụ hưởng nếu cần chuyển khoản
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    checked={form.request_bank_transfer}
+                    onChange={(checked) => setForm({ ...form, request_bank_transfer: checked })}
+                  />
+                </div>
+
+                {form.request_bank_transfer && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '12px' }}
+                  >
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Tên ngân hàng *</label>
+                        <input
+                          className="form-input"
+                          type="text"
+                          value={form.bank_name || ''}
+                          onChange={e => setForm({ ...form, bank_name: e.target.value })}
+                          placeholder="Ví dụ: MB Bank, VCB..."
+                          required
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Số tài khoản (STK) *</label>
+                        <input
+                          className="form-input"
+                          type="text"
+                          value={form.bank_account_number || ''}
+                          onChange={e => setForm({ ...form, bank_account_number: e.target.value })}
+                          placeholder="Nhập số tài khoản..."
+                          required
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Chủ tài khoản *</label>
+                        <input
+                          className="form-input"
+                          type="text"
+                          value={form.bank_account_name || ''}
+                          onChange={e => setForm({ ...form, bank_account_name: e.target.value.toUpperCase() })}
+                          placeholder="TÊN CHỦ TÀI KHOẢN..."
+                          required
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Danh mục chi phí</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {CATEGORIES.map(c => {
+                    const Icon = c.icon;
+                    return (
+                      <button key={c.label} type="button" onClick={() => setForm({ ...form, category: c.label })}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `2px solid ${form.category === c.label ? c.color : 'var(--color-border)'}`, background: form.category === c.label ? `${c.color}15` : 'transparent', color: form.category === c.label ? c.color : 'var(--color-text-light)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.18s' }}>
+                        <Icon size={13} /> {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'var(--color-danger)', fontWeight: 700 }}>Người duyệt *</label>
+                  <CustomSelect
+                    options={users.map((u: any) => ({
+                      value: u.id,
+                      label: u.full_name,
+                      avatar: u.avatar_url,
+                      sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                    }))}
+                    value={form.approver_id}
+                    onChange={val => {
+                      const numVal = Number(val);
+                      setForm({
+                        ...form,
+                        approver_id: numVal,
+                        related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
+                      });
+                    }}
+                    placeholder="Chọn người duyệt..."
+                    searchable
+                    showAvatars
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Người liên quan</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ maxHeight: '80px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {form.related_user_ids.length === 0 ? <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Chưa chọn ai</span> :
+                        form.related_user_ids.map((uid: number) => {
+                          const u = users.find((x: any) => x.id === uid);
+                          return (
+                            <span key={uid} style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(163, 20, 34, 0.2)' }}>
+                              <Avatar name={u?.full_name} size={16} />
+                              {u?.full_name}
+                              <X size={10} style={{ cursor: 'pointer' }} onClick={() => setForm({ ...form, related_user_ids: form.related_user_ids.filter((x: number) => x !== uid) })} />
+                            </span>
+                          );
+                        })
+                      }
+                    </div>
+                    <CustomSelect
+                      options={users.filter((u: any) => !form.related_user_ids.includes(u.id) && u.id !== form.approver_id).map((u: any) => ({
+                        value: String(u.id),
+                        label: u.full_name,
+                        avatar: u.avatar_url,
+                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                      }))}
+                      value=""
+                      onChange={(val) => {
+                        const numVal = Number(val);
+                        if (numVal && !form.related_user_ids.includes(numVal)) {
+                          setForm({ ...form, related_user_ids: [...form.related_user_ids, numVal] });
+                        }
+                      }}
+                      placeholder="+ Thêm người liên quan..."
+                      showAvatars
+                      searchable
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>Ghi chú chi tiết</label>
+                  <textarea
+                    className="form-textarea"
+                    rows={3}
+                    value={form.notes}
+                    onChange={e => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Mô tả thêm nếu cần..."
+                    style={{ minHeight: '90px', resize: 'vertical' }}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>Đính kèm hóa đơn / chứng từ</label>
+                  <div style={{
+                    flex: 1, border: '2px dashed var(--color-border)', borderRadius: '12px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '8px', position: 'relative', cursor: 'pointer', background: 'var(--color-bg)',
+                    overflow: 'hidden', minHeight: '90px', transition: 'border-color 0.2s'
+                  }}
+                    onDragOver={e => e.preventDefault()}
+                    onClick={() => document.getElementById('drawer-expense-image-upload')?.click()}
+                  >
+                    {uploadingImg ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="spinner sm"></div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Đang nén & tải lên...</span>
+                      </div>
+                    ) : form.image_url ? (
+                      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img
+                          src={form.image_url.startsWith('http') ? form.image_url : `${import.meta.env.VITE_API_URL || '/backend'}${form.image_url}`}
+                          alt="Hóa đơn"
+                          style={{ maxWidth: '100%', maxHeight: '72px', objectFit: 'contain', borderRadius: '6px' }}
+                        />
+                        <button
+                          type="button"
+                          style={{
+                            position: 'absolute', top: -4, right: -4, background: 'rgba(239, 68, 68, 0.9)',
+                            color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setForm({ ...form, image_url: '' });
+                          }}
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-center" style={{ padding: '4px' }}>
+                        <Upload size={20} className="text-light" />
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chọn hoặc kéo thả ảnh</span>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)' }}>WEBP, PNG, JPG (tối đa 5MB)</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      id="drawer-expense-image-upload"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingImg(true);
+                        try {
+                          const compressedFile = await compressToWebP(file);
+                          const uploadData = new FormData();
+                          uploadData.append('file', compressedFile);
+                          if (form.image_url) {
+                            uploadData.append('previous_url', form.image_url);
+                          }
+                          const res = await api.post('/upload', uploadData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          if (res.data && res.data.success && res.data.data?.url) {
+                            setForm({ ...form, image_url: res.data.data.url });
+                            addToast('Tải lên và nén ảnh hóa đơn thành công!', 'success');
+                          } else {
+                            addToast('Tải ảnh thất bại', 'error');
+                          }
+                        } catch (err: any) {
+                          addToast('Lỗi khi nén & tải ảnh: ' + (err.message || err), 'error');
+                        } finally {
+                          setUploadingImg(false);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)' }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>Áp dụng cho (Chia đều tiền bill)</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                  {form.entities.length === 0 ? <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Chưa áp dụng cho khách hàng nào</span> :
+                    form.entities.map((e: any) => (
+                      <span key={e.entity_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '6px 12px', borderRadius: 'var(--radius-lg)', fontSize: '0.8125rem', fontWeight: 600, border: '1px solid rgba(163, 20, 34, 0.2)' }}>
+                        <Avatar name={e.name} src={e.avatar_url} size={20} />
+                        {e.name || `Khách hàng #${e.entity_id}`}
+                        <X size={14} style={{ cursor: 'pointer', marginLeft: 4 }} onClick={() => setForm({ ...form, entities: form.entities.filter((x: any) => x.entity_id !== e.entity_id) })} />
+                      </span>
+                    ))
+                  }
+                </div>
+                <CustomSelect
+                  options={contacts.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
+                    value: String(c.id),
+                    label: `${c.last_name || ''} ${c.first_name}`.trim(),
+                    avatar: c.avatar_url,
+                    sublabel: c.company_name
+                  }))}
+                  value=""
+                  onChange={(val) => {
+                    const found = contacts.find(c => String(c.id) === val);
+                    if (found) {
+                      setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: `${found.last_name || ''} ${found.first_name}`.trim(), avatar_url: found.avatar_url }] });
+                    }
+                  }}
+                  placeholder="+ Thêm khách hàng chia tiền bill..."
+                  searchable
+                  showAvatars
+                />
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};

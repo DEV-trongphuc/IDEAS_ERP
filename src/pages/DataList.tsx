@@ -1,7 +1,8 @@
 import { useState, useEffect, Fragment, useMemo } from 'react';
 import api from '../api/axios';
 import { createPortal } from 'react-dom';
-import { Database, Search, Filter, ChevronLeft, ChevronRight, Download, RefreshCw, User, Users, Phone, Mail, Clock, Tag, ExternalLink, AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Calendar, LayoutList, Sparkles, Check, X, Edit, Bell, Copy, CheckCircle, BarChart2, Scale, Info, Ban, UserPlus, Send } from 'lucide-react';
+import { Database, Search, Filter, ChevronLeft, ChevronRight, Download, RefreshCw, User, Users, Phone, Mail, Clock, Tag, ExternalLink, AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Calendar, LayoutList, Sparkles, Check, X, Edit, Bell, Copy, CheckCircle, BarChart2, Scale, Info, Ban, UserPlus, Send, Plus } from 'lucide-react';
+import { ExpenseCreateDrawer } from '../components/ExpenseCreateDrawer';
 import {
   Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -954,6 +955,8 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [activeSOId, setActiveSOId] = useState<number | null>(null);
   const [financeSummary, setFinanceSummary] = useState<any>(null);
   const [pendingOnly, setPendingOnly] = useState<boolean>(false);
+  const [showCreateExpenseModal, setShowCreateExpenseModal] = useState<boolean>(false);
+  const [selectedExpenseDate, setSelectedExpenseDate] = useState<string>('');
 
   const handleOpenPO = (poId: number) => {
     setActivePOId(poId);
@@ -5315,6 +5318,21 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
                   {(activeModalTab as string) === 'po' && (
                     <div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        <button
+                          type="button"
+                          className="btn primary"
+                          onClick={() => {
+                            setSelectedExpenseDate(selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                            setShowCreateExpenseModal(true);
+                          }}
+                          style={{ height: '32px', padding: '0 0.85rem', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Plus size={14} />
+                          {t('Nhập chi phí mới')}
+                        </button>
+                      </div>
+
                       {dayDetails.expenses && dayDetails.expenses.length > 0 ? (
                         <div className="premium-table-container">
                           <table className="premium-table">
@@ -6835,6 +6853,17 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
           fetchCalendarStats();
           if (selectedDate) handleDateClick(selectedDate);
         }}
+      />
+
+      <ExpenseCreateDrawer
+        isOpen={showCreateExpenseModal}
+        onClose={() => setShowCreateExpenseModal(false)}
+        initialDate={selectedExpenseDate}
+        onSaveSuccess={() => {
+          fetchCalendarStats();
+          if (selectedDate) handleDateClick(selectedDate);
+        }}
+        user={user}
       />
 
       <InvoiceQuickViewModal
