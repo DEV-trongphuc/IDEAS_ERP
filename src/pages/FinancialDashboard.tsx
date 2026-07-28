@@ -64,14 +64,19 @@ export const FinancialDashboard: React.FC = () => {
   const [flowData, setFlowData] = useState<any[]>([]);
   const [invoiceStatuses, setInvoiceStatuses] = useState<any[]>([]);
   const [cancellationList, setCancellationList] = useState<any[]>([]);
+  const [poList, setPoList] = useState<any[]>([]);
+  const [soList, setSoList] = useState<any[]>([]);
+  const [activeOrderType, setActiveOrderType] = useState<'so' | 'po'>('so');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Gọi song song các API tương tự ReportsPage
-      const [sRes, eRes] = await Promise.all([
+      // Gọi song song các API
+      const [sRes, eRes, poRes, soRes] = await Promise.all([
         api.get('/dashboard/stats', { params: { from: dateRange.from, to: dateRange.to } }).catch(() => ({ data: { data: null } })),
-        api.get('/reports/sales', { params: { from: dateRange.from, to: dateRange.to } }).catch(() => ({ data: { data: null } }))
+        api.get('/reports/sales', { params: { from: dateRange.from, to: dateRange.to } }).catch(() => ({ data: { data: null } })),
+        api.get('/purchase-orders').catch(() => ({ data: [] })),
+        api.get('/deposits').catch(() => ({ data: [] }))
       ]);
 
       const wonVal = sRes.data?.data?.won_value || 1450000000;
@@ -117,6 +122,9 @@ export const FinancialDashboard: React.FC = () => {
         { id: 'deal-012', client: 'Trần Thị Mai', amount: 30000000, type: t('Hủy cọc sau doanh thu'), status: t('Giữ nguyên cọc'), date: '2026-07-20', note: 'Đã phát sinh dòng tiền thực thu đợt 1, giữ nguyên trạng thái đặt cọc.' },
         { id: 'deal-015', client: 'Lê Hoàng Nam', amount: 0, type: t('Đổi căn hộ'), status: t('Liên kết deal mới'), date: '2026-07-18', note: 'Đổi từ căn CH-1205 sang CH-1208. Deal cũ đánh dấu Đã đổi.' }
       ]);
+
+      setPoList(poRes?.data?.data || poRes?.data || []);
+      setSoList(soRes?.data?.data || soRes?.data || []);
 
     } catch (e) {
       toast.error(t('Lỗi tải dữ liệu kế toán'));
@@ -255,7 +263,7 @@ export const FinancialDashboard: React.FC = () => {
                 </div>
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div className="stat-value" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                  <div className="stat-value" style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)' }}>
                     {kpi.value}
                   </div>
                   
@@ -330,14 +338,14 @@ export const FinancialDashboard: React.FC = () => {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             {loading ? <Skeleton width="150px" height="150px" borderRadius="50%" /> : (
               <>
-                <ResponsiveContainer width="100%" height={160}>
+                <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
                     <Pie
                       data={invoiceStatuses}
                       cx="50%"
                       cy="50%"
-                      innerRadius={45}
-                      outerRadius={65}
+                      innerRadius={50}
+                      outerRadius={70}
                       paddingAngle={4}
                       dataKey="value"
                     >
@@ -363,6 +371,143 @@ export const FinancialDashboard: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Recent Orders Card */}
+      <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={18} color="var(--color-primary)" /> {t('Đơn Hàng Gần Đây (PO & SO)')}
+          </h3>
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--color-bg)', padding: '3px', borderRadius: '8px' }}>
+            <button
+              onClick={() => setActiveOrderType('so')}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                background: activeOrderType === 'so' ? 'var(--color-surface)' : 'transparent',
+                color: activeOrderType === 'so' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: activeOrderType === 'so' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              {t('SO gần đây')}
+            </button>
+            <button
+              onClick={() => setActiveOrderType('po')}
+              style={{
+                padding: '6px 14px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                background: activeOrderType === 'po' ? 'var(--color-surface)' : 'transparent',
+                color: activeOrderType === 'po' ? 'var(--color-text)' : 'var(--color-text-muted)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: activeOrderType === 'po' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              {t('PO gần đây')}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-surface)' }} className="custom-scrollbar">
+          {activeOrderType === 'so' ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-border-light)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                  <th style={{ padding: '12px' }}>{t('Mã căn')}</th>
+                  <th style={{ padding: '12px' }}>{t('Khách hàng')}</th>
+                  <th style={{ padding: '12px' }}>{t('Chương trình')}</th>
+                  <th style={{ padding: '12px', textAlign: 'right' }}>{t('Giá bán')}</th>
+                  <th style={{ padding: '12px' }}>{t('Sale phụ trách')}</th>
+                  <th style={{ padding: '12px' }}>{t('Trạng thái')}</th>
+                  <th style={{ padding: '12px' }}>{t('Ngày đặt')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                      <td colSpan={7} style={{ padding: '12px' }}><Skeleton width="100%" height={16} /></td>
+                    </tr>
+                  ))
+                ) : soList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{t('Không có đơn hàng bán nào gần đây')}</td>
+                  </tr>
+                ) : soList.slice(0, 5).map((so, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
+                    <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{so.unit_code}</td>
+                    <td style={{ padding: '12px', fontWeight: 600 }}>{`${so.last_name || ''} ${so.first_name || ''}`}</td>
+                    <td style={{ padding: '12px' }}>{so.project_name}</td>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{FMT_VND(so.price)}</td>
+                    <td style={{ padding: '12px' }}>{so.creator_name || '—'}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{ 
+                        padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700,
+                        background: so.status === 'approved' ? 'rgba(16, 185, 129, 0.08)' : (so.status === 'cancelled' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)'),
+                        color: so.status === 'approved' ? '#10b981' : (so.status === 'cancelled' ? '#dc2626' : '#d97706')
+                      }}>
+                        {so.status === 'approved' ? t('Hoàn tất cọc') : (so.status === 'cancelled' ? t('Bể cọc') : t('Đang giao dịch'))}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>{so.created_at ? new Date(so.created_at).toLocaleDateString('vi-VN') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-border-light)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                  <th style={{ padding: '12px' }}>{t('Mã PO')}</th>
+                  <th style={{ padding: '12px' }}>{t('Nhà cung cấp')}</th>
+                  <th style={{ padding: '12px', textAlign: 'right' }}>{t('Tổng tiền')}</th>
+                  <th style={{ padding: '12px' }}>{t('Người tạo')}</th>
+                  <th style={{ padding: '12px' }}>{t('Trạng thái')}</th>
+                  <th style={{ padding: '12px' }}>{t('Ngày đặt')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                      <td colSpan={6} style={{ padding: '12px' }}><Skeleton width="100%" height={16} /></td>
+                    </tr>
+                  ))
+                ) : poList.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{t('Không có đơn nhập hàng nào gần đây')}</td>
+                  </tr>
+                ) : poList.slice(0, 5).map((po, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
+                    <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{po.po_number}</td>
+                    <td style={{ padding: '12px', fontWeight: 600 }}>{po.supplier_name || `Nha cung cap ID: ${po.supplier_id}`}</td>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{FMT_VND(po.total)}</td>
+                    <td style={{ padding: '12px' }}>{po.creator_name || '—'}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{ 
+                        padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700,
+                        background: po.status === 'received' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                        color: po.status === 'received' ? '#10b981' : '#d97706'
+                      }}>
+                        {po.status === 'received' ? t('Đã nhập kho') : (po.status === 'draft' ? t('Bản nháp') : t('Đang vận chuyển'))}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>{po.order_date ? new Date(po.order_date).toLocaleDateString('vi-VN') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
       {/* Row 2: Special Transaction Journal */}
