@@ -463,7 +463,7 @@ export default function MyPayslips() {
       {/* TAB 1: PAYSLIP */}
       {activeSubTab === 'payslip' && (
         <div>
-          {/* Stat Cards Grid (4 columns) */}
+          {/* Stat Cards Grid (4 columns matching App UI) */}
           <div 
             style={{ 
               display: 'grid', 
@@ -478,17 +478,41 @@ export default function MyPayslips() {
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
               borderRadius: '16px',
-              padding: '20px',
+              padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              justifyContent: 'space-between',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
+              minHeight: '135px'
             }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Tổng Thực Nhận')}</span>
-              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text, #1e293b)' }}>{formatCurrency(totalNet)}</strong>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>
-                {t('Trung bình')}: <strong style={{ color: 'var(--color-primary, #3b82f6)' }}>{formatCurrency(avgNet)}</strong> / {t('tháng')}
-              </span>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('TỔNG THỰC NHẬN')}
+                  </span>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    color: '#10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <DollarSign size={16} />
+                  </div>
+                </div>
+                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                  {formatCurrency(totalNet)}
+                </strong>
+              </div>
+              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                  {t('Trung bình')}: <strong style={{ color: 'var(--color-text, #1e293b)' }}>{formatCurrency(avgNet)}</strong> / {t('tháng')}
+                </span>
+              </div>
             </div>
 
             {/* Stat Card 2: Tổng Bảo Hiểm */}
@@ -496,15 +520,41 @@ export default function MyPayslips() {
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
               borderRadius: '16px',
-              padding: '20px',
+              padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              justifyContent: 'space-between',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
+              minHeight: '135px'
             }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Bảo Hiểm Đã Khấu Trừ')}</span>
-              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{formatCurrency(totalInsurance)}</strong>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>{t('Gồm BHXH, BHYT & BHTN')}</span>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('BẢO HIỂM ĐÃ KHẤU TRỪ')}
+                  </span>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#ef4444',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <ShieldCheck size={16} />
+                  </div>
+                </div>
+                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                  {formatCurrency(totalInsurance)}
+                </strong>
+              </div>
+              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }}></span>
+                  {t('BHXH, BHYT & BHTN')}
+                </span>
+              </div>
             </div>
 
             {/* Stat Card 3: Tổng Thưởng */}
@@ -512,15 +562,41 @@ export default function MyPayslips() {
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
               borderRadius: '16px',
-              padding: '20px',
+              padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              justifyContent: 'space-between',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
+              minHeight: '135px'
             }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Tổng Tiền Thưởng')}</span>
-              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{formatCurrency(totalBonus)}</strong>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>{t('KPI, chuyên cần & tăng ca')}</span>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('TỔNG TIỀN THƯỞNG')}
+                  </span>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    color: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Award size={16} />
+                  </div>
+                </div>
+                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                  {formatCurrency(totalBonus)}
+                </strong>
+              </div>
+              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }}></span>
+                  {t('Thưởng KPI, chuyên cần & OT')}
+                </span>
+              </div>
             </div>
 
             {/* Stat Card 4: Tổng Thuế TNCN */}
@@ -528,171 +604,213 @@ export default function MyPayslips() {
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
               borderRadius: '16px',
-              padding: '20px',
+              padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              justifyContent: 'space-between',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
+              minHeight: '135px'
             }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Thuế TNCN Đã Đóng')}</span>
-              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{formatCurrency(totalTax)}</strong>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>{t('Đã khấu trừ năm')} {selectedYear}</span>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('THUẾ TNCN ĐÃ ĐÓNG')}
+                  </span>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    color: '#f59e0b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Percent size={16} />
+                  </div>
+                </div>
+                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                  {formatCurrency(totalTax)}
+                </strong>
+              </div>
+              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
+                  {t('Đã khấu trừ năm')} {selectedYear}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* 12-Month Cards Layout (4 cards per row) */}
-          <div 
-            style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(4, 1fr)', 
-              gap: '16px', 
-              marginBottom: '2rem' 
-            }} 
-            className="no-print"
-          >
-            {Array.from({ length: 12 }).map((_, idx) => {
-              const m = idx + 1;
-              const mStr = `${selectedYear}-${String(m).padStart(2, '0')}`;
-              const payslipForMonth = allPayslips.find(p => p.month_year === mStr);
-              const isAvailable = !!payslipForMonth;
-              const isSelected = selectedMonth === mStr;
+          {/* Main container for Month Cards */}
+          <div className="card" style={{
+            padding: '24px',
+            background: 'var(--color-surface, #ffffff)',
+            border: '1px solid var(--color-border, #e2e8f0)',
+            borderRadius: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }} className="no-print">
+              <FileText size={18} style={{ color: 'var(--color-primary, #3b82f6)' }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text, #1e293b)' }}>
+                {t('Danh sách phiếu lương')}
+              </h3>
+            </div>
 
-              return (
-                <div
-                  key={mStr}
-                  onClick={() => {
-                    if (isAvailable) {
-                      setSelectedMonth(mStr);
-                      setIsModalOpen(true);
-                    }
-                  }}
-                  style={{
-                    padding: '18px 16px',
-                    borderRadius: '16px',
-                    background: isSelected 
-                      ? 'var(--color-surface, #ffffff)' 
-                      : isAvailable 
+            {/* 12-Month Cards Layout (4 cards per row) */}
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(4, 1fr)', 
+                gap: '16px'
+              }} 
+              className="no-print"
+            >
+              {Array.from({ length: 12 }).map((_, idx) => {
+                const m = idx + 1;
+                const mStr = `${selectedYear}-${String(m).padStart(2, '0')}`;
+                const payslipForMonth = allPayslips.find(p => p.month_year === mStr);
+                const isAvailable = !!payslipForMonth;
+                const isSelected = selectedMonth === mStr;
+
+                return (
+                  <div
+                    key={mStr}
+                    onClick={() => {
+                      if (isAvailable) {
+                        setSelectedMonth(mStr);
+                        setIsModalOpen(true);
+                      }
+                    }}
+                    style={{
+                      padding: '18px 16px',
+                      borderRadius: '16px',
+                      background: isSelected 
                         ? 'var(--color-surface, #ffffff)' 
-                        : '#f8fafc',
-                    border: isSelected 
-                      ? '2px solid var(--color-primary, #3b82f6)' 
-                      : isAvailable
-                        ? '1px solid var(--color-border, #e2e8f0)'
-                        : '1px dashed var(--color-border-light, #e2e8f0)',
-                    cursor: isAvailable ? 'pointer' : 'not-allowed',
-                    opacity: isAvailable ? 1 : 0.6,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease-in-out',
-                    boxShadow: isSelected 
-                      ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
-                      : isAvailable
-                        ? '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
-                        : 'none',
-                    pointerEvents: isAvailable ? 'auto' : 'none'
-                  }}
-                  className={isAvailable ? 'hover-translate-y' : ''}
-                >
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted, #64748b)' }}>Tháng</span>
-                  <span style={{ fontSize: '1.75rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)' }}>{m}</span>
-                  {isAvailable ? (
-                    <>
-                      <span style={{ 
-                        fontSize: '0.85rem', 
-                        fontWeight: 800, 
-                        color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
-                        marginTop: '4px' 
-                      }}>
-                        {formatCurrency(payslipForMonth.net_salary)}
+                        : isAvailable 
+                          ? 'var(--color-surface, #ffffff)' 
+                          : '#f8fafc',
+                      border: isSelected 
+                        ? '2px solid var(--color-primary, #3b82f6)' 
+                        : isAvailable
+                          ? '1px solid var(--color-border, #e2e8f0)'
+                          : '1px dashed var(--color-border-light, #e2e8f0)',
+                      cursor: isAvailable ? 'pointer' : 'not-allowed',
+                      opacity: isAvailable ? 1 : 0.6,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease-in-out',
+                      boxShadow: isSelected 
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
+                        : isAvailable
+                          ? '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
+                          : 'none',
+                      pointerEvents: isAvailable ? 'auto' : 'none'
+                    }}
+                    className={isAvailable ? 'hover-translate-y' : ''}
+                  >
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted, #64748b)' }}>Tháng</span>
+                    <span style={{ fontSize: '1.75rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)' }}>{m}</span>
+                    {isAvailable ? (
+                      <>
+                        <span style={{ 
+                          fontSize: '0.85rem', 
+                          fontWeight: 800, 
+                          color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
+                          marginTop: '4px' 
+                        }}>
+                          {formatCurrency(payslipForMonth.net_salary)}
+                        </span>
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          fontWeight: 700, 
+                          color: payslipForMonth.status === 'confirmed' ? '#10b981' : '#f59e0b',
+                          background: payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                          padding: '2px 8px',
+                          borderRadius: '20px',
+                          marginTop: '4px',
+                          border: `1px solid ${payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                        }}>
+                          {payslipForMonth.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
+                        </span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '6px' }}>
+                        Chưa có
                       </span>
-                      <span style={{ 
-                        fontSize: '0.65rem', 
-                        fontWeight: 700, 
-                        color: payslipForMonth.status === 'confirmed' ? '#10b981' : '#f59e0b',
-                        background: payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        marginTop: '4px',
-                        border: `1px solid ${payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
-                      }}>
-                        {payslipForMonth.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
-                      </span>
-                    </>
-                  ) : (
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '6px' }}>
-                      Chưa có
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Special Periods */}
+              {['MID', '13', 'YEND'].map(suffix => {
+                const key = `${selectedYear}-${suffix}`;
+                const payslipForPeriod = allPayslips.find(p => p.month_year === key);
+                if (!payslipForPeriod) return null;
+                const isSelected = selectedMonth === key;
+                const label = suffix === '13' ? 'Lương T13' : suffix === 'MID' ? 'Thưởng Giữa Năm' : 'Thưởng Cuối Năm';
+
+                return (
+                  <div
+                    key={key}
+                    onClick={() => {
+                      setSelectedMonth(key);
+                      setIsModalOpen(true);
+                    }}
+                    style={{
+                      padding: '18px 16px',
+                      borderRadius: '16px',
+                      background: isSelected 
+                        ? 'var(--color-surface, #ffffff)' 
+                        : 'var(--color-surface, #ffffff)',
+                      border: isSelected 
+                        ? '2px solid var(--color-primary, #3b82f6)' 
+                        : '1px solid var(--color-border, #e2e8f0)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease-in-out',
+                      boxShadow: isSelected 
+                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
+                        : '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
+                    }}
+                    className="hover-translate-y"
+                  >
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', textAlign: 'center' }}>
+                      {label}
                     </span>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Special Periods */}
-            {['MID', '13', 'YEND'].map(suffix => {
-              const key = `${selectedYear}-${suffix}`;
-              const payslipForPeriod = allPayslips.find(p => p.month_year === key);
-              if (!payslipForPeriod) return null;
-              const isSelected = selectedMonth === key;
-              const label = suffix === '13' ? 'Lương T13' : suffix === 'MID' ? 'Thưởng Giữa Năm' : 'Thưởng Cuối Năm';
-
-              return (
-                <div
-                  key={key}
-                  onClick={() => {
-                    setSelectedMonth(key);
-                    setIsModalOpen(true);
-                  }}
-                  style={{
-                    padding: '18px 16px',
-                    borderRadius: '16px',
-                    background: isSelected 
-                      ? 'var(--color-surface, #ffffff)' 
-                      : 'var(--color-surface, #ffffff)',
-                    border: isSelected 
-                      ? '2px solid var(--color-primary, #3b82f6)' 
-                      : '1px solid var(--color-border, #e2e8f0)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease-in-out',
-                    boxShadow: isSelected 
-                      ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
-                      : '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
-                  }}
-                  className="hover-translate-y"
-                >
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', textAlign: 'center' }}>
-                    {label}
-                  </span>
-                  <span style={{ 
-                    fontSize: '0.85rem', 
-                    fontWeight: 800, 
-                    color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
-                    marginTop: '2px' 
-                  }}>
-                    {formatCurrency(payslipForPeriod.net_salary)}
-                  </span>
-                  <span style={{ 
-                    fontSize: '0.65rem', 
-                    fontWeight: 700, 
-                    color: payslipForPeriod.status === 'confirmed' ? '#10b981' : '#f59e0b',
-                    background: payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                    padding: '2px 8px',
-                    borderRadius: '20px',
-                    marginTop: '4px',
-                    border: `1px solid ${payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
-                  }}>
-                    {payslipForPeriod.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
-                  </span>
-                </div>
-              );
-            })}
+                    <span style={{ 
+                      fontSize: '0.85rem', 
+                      fontWeight: 800, 
+                      color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
+                      marginTop: '2px' 
+                    }}>
+                      {formatCurrency(payslipForPeriod.net_salary)}
+                    </span>
+                    <span style={{ 
+                      fontSize: '0.65rem', 
+                      fontWeight: 700, 
+                      color: payslipForPeriod.status === 'confirmed' ? '#10b981' : '#f59e0b',
+                      background: payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                      padding: '2px 8px',
+                      borderRadius: '20px',
+                      marginTop: '4px',
+                      border: `1px solid ${payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                    }}>
+                      {payslipForPeriod.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
