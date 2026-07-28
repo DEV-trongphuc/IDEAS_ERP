@@ -1035,6 +1035,11 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
       const json = await fetchAPI(`get_calendar_day_details&date=${dateStr}&consultant=${encodeURIComponent(consultantFilter)}`);
       if (json.success) {
         setDayDetails(json.data);
+        if (['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase())) {
+          setActiveModalTab('so' as any);
+        } else {
+          setActiveModalTab('sales');
+        }
       }
     } catch (e: any) {
       toast.error(t('Lỗi tải chi tiết ngày: ') + e.message);
@@ -1496,6 +1501,40 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
             }} title={t("Ticket")}>
               <span>{t('Ticket')}:</span>
               <strong>{dayData.error}</strong>
+            </div>
+          )}
+          {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && dayData.so_count > 0 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '2px 4px',
+              borderRadius: '4px',
+              background: '#eff6ff',
+              color: '#1d4ed8',
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              border: '1px solid #bfdbfe'
+            }} title={`Sales Order: ${dayData.so_count} đơn`}>
+              <span>SO:</span>
+              <strong>{dayData.so_count}</strong>
+            </div>
+          )}
+          {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && dayData.po_count > 0 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '2px 4px',
+              borderRadius: '4px',
+              background: '#fef3c7',
+              color: '#d97706',
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              border: '1px solid #fde68a'
+            }} title={`Purchase Order: ${dayData.po_count} đơn`}>
+              <span>PO:</span>
+              <strong>{dayData.po_count}</strong>
             </div>
           )}
         </div>
@@ -4679,6 +4718,80 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                       {dayDetails.blacklist_logs?.length || 0}
                     </span>
                   </button>
+                  {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab('so' as any)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: (activeModalTab as string) === 'so' ? 'var(--color-primary)' : 'transparent',
+                          color: (activeModalTab as string) === 'so' ? 'white' : 'var(--color-text-muted)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          height: '32px',
+                          flex: 1
+                        }}
+                        className="modal-tab-button"
+                      >
+                        <span>SO (Doanh thu)</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: (activeModalTab as string) === 'so' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
+                          color: (activeModalTab as string) === 'so' ? 'white' : 'var(--color-text-muted)',
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          transition: 'all 0.2s'
+                        }}>
+                          {dayDetails.invoices?.length || 0}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab('po' as any)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: (activeModalTab as string) === 'po' ? 'var(--color-primary)' : 'transparent',
+                          color: (activeModalTab as string) === 'po' ? 'white' : 'var(--color-text-muted)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          height: '32px',
+                          flex: 1
+                        }}
+                        className="modal-tab-button"
+                      >
+                        <span>PO (Chi phí)</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: (activeModalTab as string) === 'po' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
+                          color: (activeModalTab as string) === 'po' ? 'white' : 'var(--color-text-muted)',
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          transition: 'all 0.2s'
+                        }}>
+                          {dayDetails.expenses?.length || 0}
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Modal Content */}
@@ -4984,6 +5097,98 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                         <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--color-text-muted)', background: 'var(--color-surface)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
                           <ShieldAlert size={40} style={{ marginBottom: 12, color: 'var(--color-text-muted)', opacity: 0.6 }} />
                           <p style={{ fontSize: '0.875rem', fontWeight: 500 }}>{t('Không phát hiện trường hợp Blacklist hay Lỗi hệ thống nào vào ngày này.')}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(activeModalTab as string) === 'so' && (
+                    <div>
+                      {dayDetails.invoices && dayDetails.invoices.length > 0 ? (
+                        <div className="premium-table-container">
+                          <table className="premium-table">
+                            <thead>
+                              <tr>
+                                <th>Mã đơn (SO)</th>
+                                <th>Khách hàng</th>
+                                <th>Giá trị</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dayDetails.invoices.map((item: any, idx: number) => (
+                                <tr key={item.id || idx}>
+                                  <td>
+                                    <strong style={{ color: 'var(--color-primary)' }}>{item.invoice_number || `#${item.id}`}</strong>
+                                  </td>
+                                  <td>{item.customer_name || 'N/A'}</td>
+                                  <td>
+                                    <strong style={{ color: 'var(--color-text)' }}>
+                                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.total)}
+                                    </strong>
+                                  </td>
+                                  <td>
+                                    <span className={`badge ${item.status === 'paid' ? 'success' : item.status === 'overdue' ? 'danger' : 'warning'}`}>
+                                      {item.status === 'paid' ? 'Đã thanh toán' : item.status === 'overdue' ? 'Quá hạn' : 'Chờ thanh toán'}
+                                    </span>
+                                  </td>
+                                  <td>{item.issue_date ? new Date(item.issue_date).toLocaleDateString('vi-VN') : 'N/A'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)', background: 'var(--color-surface)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                          Không có Sales Order nào trong ngày này.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(activeModalTab as string) === 'po' && (
+                    <div>
+                      {dayDetails.expenses && dayDetails.expenses.length > 0 ? (
+                        <div className="premium-table-container">
+                          <table className="premium-table">
+                            <thead>
+                              <tr>
+                                <th>Mã phiếu chi (PO)</th>
+                                <th>Tiêu đề chi phí</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày lập</th>
+                                <th>Người đề xuất</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dayDetails.expenses.map((item: any, idx: number) => (
+                                <tr key={item.id || idx}>
+                                  <td>
+                                    <strong style={{ color: 'var(--color-primary)' }}>#EXP-{item.id}</strong>
+                                  </td>
+                                  <td>{item.title}</td>
+                                  <td>
+                                    <strong style={{ color: 'var(--color-text)' }}>
+                                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.amount)}
+                                    </strong>
+                                  </td>
+                                  <td>
+                                    <span className={`badge ${item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'}`}>
+                                      {item.status === 'approved' ? 'Đã duyệt' : item.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                                    </span>
+                                  </td>
+                                  <td>{item.date ? new Date(item.date).toLocaleDateString('vi-VN') : 'N/A'}</td>
+                                  <td>{item.creator_name || 'N/A'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)', background: 'var(--color-surface)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                          Không có Purchase Order nào trong ngày này.
                         </div>
                       )}
                     </div>

@@ -3673,6 +3673,56 @@ switch ($action) {
             }
         }
 
+        if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
+            // 3. Get SO (invoices) stats per day
+            $soRes = $conn->query("
+                SELECT 
+                    DATE(i.issue_date) as date_str,
+                    COUNT(*) as so_count,
+                    SUM(i.total) as so_total
+                FROM invoices i
+                WHERE i.issue_date >= '$startDate' AND i.issue_date <= '$endDate' AND i.deleted_at IS NULL
+                GROUP BY DATE(i.issue_date)
+            ");
+            if ($soRes) {
+                while ($row = $soRes->fetch_assoc()) {
+                    $d = $row['date_str'];
+                    if (!isset($stats[$d])) {
+                        $stats[$d] = [
+                            'distributed' => 0, 'blacklist' => 0, 'reminder' => 0, 'error' => 0, 'total' => 0,
+                            'ticket_total' => 0, 'ticket_approved' => 0
+                        ];
+                    }
+                    $stats[$d]['so_count'] = (int)$row['so_count'];
+                    $stats[$d]['so_total'] = (float)$row['so_total'];
+                }
+            }
+
+            // 4. Get PO (expenses) stats per day
+            $poRes = $conn->query("
+                SELECT 
+                    DATE(e.date) as date_str,
+                    COUNT(*) as po_count,
+                    SUM(e.amount) as po_total
+                FROM expenses e
+                WHERE e.date >= '$startDate' AND e.date <= '$endDate' AND e.deleted_at IS NULL
+                GROUP BY DATE(e.date)
+            ");
+            if ($poRes) {
+                while ($row = $poRes->fetch_assoc()) {
+                    $d = $row['date_str'];
+                    if (!isset($stats[$d])) {
+                        $stats[$d] = [
+                            'distributed' => 0, 'blacklist' => 0, 'reminder' => 0, 'error' => 0, 'total' => 0,
+                            'ticket_total' => 0, 'ticket_approved' => 0
+                        ];
+                    }
+                    $stats[$d]['po_count'] = (int)$row['po_count'];
+                    $stats[$d]['po_total'] = (float)$row['po_total'];
+                }
+            }
+        }
+
         echo json_encode(['success' => true, 'data' => $stats]);
         break;
 
@@ -3889,12 +3939,61 @@ switch ($action) {
             }
         }
 
+        $invoices = [];
+        $expenses = [];
+
+        if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
+            // Fetch invoices (SO) for the date
+            $invRes = $conn->query("
+                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.first_name, ct.last_name
+                FROM invoices i
+                LEFT JOIN contacts ct ON i.contact_id = ct.id
+                WHERE DATE(i.issue_date) = '$escapedDate' AND i.deleted_at IS NULL
+                ORDER BY i.id DESC
+            ");
+            if ($invRes) {
+                while ($row = $invRes->fetch_assoc()) {
+                    $invoices[] = [
+                        'id' => (int)$row['id'],
+                        'invoice_number' => $row['invoice_number'],
+                        'total' => (float)$row['total'],
+                        'status' => $row['status'],
+                        'issue_date' => $row['issue_date'],
+                        'customer_name' => ($row['first_name'] || $row['last_name']) ? trim($row['first_name'] . ' ' . $row['last_name']) : 'N/A'
+                    ];
+                }
+            }
+
+            // Fetch expenses (PO) for the date
+            $expRes = $conn->query("
+                SELECT e.id, e.title, e.amount, e.status, e.date, u.full_name as creator_name
+                FROM expenses e
+                LEFT JOIN users u ON e.created_by = u.id
+                WHERE DATE(e.date) = '$escapedDate' AND e.deleted_at IS NULL
+                ORDER BY e.id DESC
+            ");
+            if ($expRes) {
+                while ($row = $expRes->fetch_assoc()) {
+                    $expenses[] = [
+                        'id' => (int)$row['id'],
+                        'title' => $row['title'],
+                        'amount' => (float)$row['amount'],
+                        'status' => $row['status'],
+                        'date' => $row['date'],
+                        'creator_name' => $row['creator_name'] ?: 'N/A'
+                    ];
+                }
+            }
+        }
+
         echo json_encode([
             'success' => true,
             'data' => [
                 'sales' => $sales,
                 'tickets' => $tickets,
-                'blacklist_logs' => $blacklistLogs
+                'blacklist_logs' => $blacklistLogs,
+                'invoices' => $invoices,
+                'expenses' => $expenses
             ]
         ]);
         break;
