@@ -63,7 +63,7 @@ if ($approvedCount === 0) {
     $expiresAt = date('Y-m-d H:i:s', strtotime('+3 months'));
     
     $stmtRev = $conn->prepare("UPDATE contacts SET pipeline_status = ?, stage_id = ?, temperature = ?, status = 'lead', security_expires_at = ? WHERE id = ?");
-    $stmtRev->bind_param("sisssi", $targetStatus, $bookingStageId, $nextTemp, $expiresAt, $contactId);
+    $stmtRev->bind_param("sissi", $targetStatus, $bookingStageId, $nextTemp, $expiresAt, $contactId);
     $stmtRev->execute();
     $stmtRev->close();
 }
