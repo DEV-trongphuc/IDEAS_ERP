@@ -953,6 +953,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [activePOId, setActivePOId] = useState<number | null>(null);
   const [activeSOId, setActiveSOId] = useState<number | null>(null);
   const [financeSummary, setFinanceSummary] = useState<any>(null);
+  const [pendingOnly, setPendingOnly] = useState<boolean>(false);
 
   const handleOpenPO = (poId: number) => {
     setActivePOId(poId);
@@ -1030,7 +1031,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
-      const json = await fetchAPI(`get_calendar_stats&year=${year}&month=${month}&consultant=${encodeURIComponent(consultantFilter)}`);
+      const json = await fetchAPI(`get_calendar_stats&year=${year}&month=${month}&consultant=${encodeURIComponent(consultantFilter)}&pending_only=${pendingOnly ? 1 : 0}`);
       if (json.success) {
         setCalendarData(json.data || {});
         setFinanceSummary(json.finance_summary || null);
@@ -1046,11 +1047,11 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     setDayDetailsLoading(true);
     setDayDetails(null);
     try {
-      const json = await fetchAPI(`get_calendar_day_details&date=${dateStr}&consultant=${encodeURIComponent(consultantFilter)}`);
+      const json = await fetchAPI(`get_calendar_day_details&date=${dateStr}&consultant=${encodeURIComponent(consultantFilter)}&pending_only=${pendingOnly ? 1 : 0}`);
       if (json.success) {
         setDayDetails(json.data);
         if (['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase())) {
-          setActiveModalTab('so' as any);
+          setActiveModalTab('po' as any);
         } else {
           setActiveModalTab('sales');
         }
@@ -1065,13 +1066,13 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     if (isActive && viewMode === 'calendar') {
       fetchCalendarStats();
     }
-  }, [viewMode, currentDate, consultantFilter, isActive]);
+  }, [viewMode, currentDate, consultantFilter, isActive, pendingOnly]);
 
   useEffect(() => {
     if (isActive && selectedDate) {
       handleDateClick(selectedDate);
     }
-  }, [consultantFilter, isActive]);
+  }, [consultantFilter, isActive, pendingOnly]);
 
   const fetchConsultants = async () => {
     try {
@@ -1980,6 +1981,28 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
               >
                 {t('Hôm nay')}
               </button>
+
+              {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && (
+                <button
+                  type="button"
+                  className={`btn ${pendingOnly ? 'warning' : 'outline'}`}
+                  onClick={() => setPendingOnly(!pendingOnly)}
+                  style={{
+                    height: 36,
+                    padding: '0 0.85rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: pendingOnly ? 'var(--color-warning)' : 'var(--color-border)',
+                    color: pendingOnly ? 'white' : 'var(--color-text)'
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: pendingOnly ? '#fff' : 'var(--color-warning)', display: 'inline-block' }} />
+                  {t('Chỉ hiện chờ thanh toán')}
+                </button>
+              )}
 
               {String(user?.role).toLowerCase() !== 'accountant' && (
                 <CustomSelect
@@ -4723,7 +4746,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
         onClose={() => {
           setSelectedDate(null);
           setDayDetails(null);
-          setActiveModalTab(['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) ? 'so' : 'sales');
+          setActiveModalTab(['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) ? 'po' : 'sales');
         }}
         title={`${t('Chi tiết hoạt động ngày')} ${selectedDate ? new Date(selectedDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}`}
         width="900px"
@@ -4864,41 +4887,6 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                     <>
                       <button
                         type="button"
-                        onClick={() => setActiveModalTab('so' as any)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: (activeModalTab as string) === 'so' ? 'var(--color-primary)' : 'transparent',
-                          color: (activeModalTab as string) === 'so' ? 'white' : 'var(--color-text-muted)',
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          height: '32px',
-                          flex: 1
-                        }}
-                        className="modal-tab-button"
-                      >
-                        <span>SO (Doanh thu)</span>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          background: (activeModalTab as string) === 'so' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
-                          color: (activeModalTab as string) === 'so' ? 'white' : 'var(--color-text-muted)',
-                          padding: '1px 6px',
-                          borderRadius: '5px',
-                          transition: 'all 0.2s'
-                        }}>
-                          {dayDetails.invoices?.length || 0}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setActiveModalTab('po' as any)}
                         style={{
                           display: 'flex',
@@ -4930,6 +4918,41 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                           transition: 'all 0.2s'
                         }}>
                           {dayDetails.expenses?.length || 0}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab('so' as any)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: (activeModalTab as string) === 'so' ? 'var(--color-primary)' : 'transparent',
+                          color: (activeModalTab as string) === 'so' ? 'white' : 'var(--color-text-muted)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          height: '32px',
+                          flex: 1
+                        }}
+                        className="modal-tab-button"
+                      >
+                        <span>SO (Doanh thu)</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: (activeModalTab as string) === 'so' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
+                          color: (activeModalTab as string) === 'so' ? 'white' : 'var(--color-text-muted)',
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          transition: 'all 0.2s'
+                        }}>
+                          {dayDetails.invoices?.length || 0}
                         </span>
                       </button>
                     </>
@@ -5296,11 +5319,10 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                           <table className="premium-table">
                             <thead>
                               <tr>
-                                <th>Mã phiếu chi (PO)</th>
+                                <th>Mã phiếu / Ngày lập</th>
                                 <th>Tiêu đề chi phí</th>
                                 <th>Số tiền</th>
                                 <th>Trạng thái</th>
-                                <th>Ngày lập</th>
                                 <th>Người đề xuất</th>
                               </tr>
                             </thead>
@@ -5308,7 +5330,12 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                               {dayDetails.expenses.map((item: any, idx: number) => (
                                 <tr key={item.id || idx} onClick={() => handleOpenPO(item.id)} style={{ cursor: 'pointer' }}>
                                   <td>
-                                    <strong style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>#EXP-{item.id}</strong>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
+                                      <strong style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '0.8rem' }}>#EXP-{item.id}</strong>
+                                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                        {item.date ? new Date(item.date).toLocaleDateString('vi-VN') : 'N/A'}
+                                      </span>
+                                    </div>
                                   </td>
                                   <td>{item.title}</td>
                                   <td>
@@ -5317,12 +5344,16 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                                     </strong>
                                   </td>
                                   <td>
-                                    <span className={`badge ${item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'}`}>
-                                      {item.status === 'approved' ? 'Đã duyệt' : item.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                                    <span className={`badge ${item.is_refunded ? 'success' : (item.status === 'approved' ? 'warning' : item.status === 'rejected' ? 'danger' : 'warning')}`}>
+                                      {item.is_refunded ? 'Đã thanh toán' : (item.status === 'approved' ? 'Chờ thanh toán' : item.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt')}
                                     </span>
                                   </td>
-                                  <td>{item.date ? new Date(item.date).toLocaleDateString('vi-VN') : 'N/A'}</td>
-                                  <td>{item.creator_name || 'N/A'}</td>
+                                  <td style={{ verticalAlign: 'middle' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <Avatar name={item.creator_name} src={item.creator_avatar} size={24} />
+                                      <span style={{ fontSize: '0.8125rem' }}>{item.creator_name || 'N/A'}</span>
+                                    </div>
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>

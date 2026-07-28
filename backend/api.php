@@ -3673,6 +3673,10 @@ switch ($action) {
             }
         }
 
+        $pendingOnly = isset($_GET['pending_only']) && (int)$_GET['pending_only'] === 1;
+        $pendingFilterSO = $pendingOnly ? " AND i.status != 'paid'" : '';
+        $pendingFilterPO = $pendingOnly ? " AND e.is_refunded = 0" : '';
+
         if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
             // 3. Get SO (invoices) stats per day
             $soRes = $conn->query("
@@ -3681,7 +3685,7 @@ switch ($action) {
                     COUNT(*) as so_count,
                     SUM(i.total) as so_total
                 FROM invoices i
-                WHERE i.issue_date >= '$startDate' AND i.issue_date <= '$endDate' AND i.deleted_at IS NULL
+                WHERE i.issue_date >= '$startDate' AND i.issue_date <= '$endDate' AND i.deleted_at IS NULL $pendingFilterSO
                 GROUP BY DATE(i.issue_date)
             ");
             if ($soRes) {
@@ -3698,15 +3702,15 @@ switch ($action) {
                 }
             }
 
-            // 4. Get PO (expenses) stats per day
+            // 4. Get PO (expenses) stats per day (grouped by payment date/refunded_at if paid, otherwise evidence date)
             $poRes = $conn->query("
                 SELECT 
-                    DATE(e.date) as date_str,
+                    DATE(COALESCE(e.refunded_at, e.date)) as date_str,
                     COUNT(*) as po_count,
                     SUM(e.amount) as po_total
                 FROM expenses e
-                WHERE e.date >= '$startDate' AND e.date <= '$endDate' AND e.deleted_at IS NULL
-                GROUP BY DATE(e.date)
+                WHERE COALESCE(e.refunded_at, e.date) >= '$startDate' AND COALESCE(e.refunded_at, e.date) <= '$endDate' AND e.deleted_at IS NULL $pendingFilterPO
+                GROUP BY DATE(COALESCE(e.refunded_at, e.date))
             ");
             if ($poRes) {
                 while ($row = $poRes->fetch_assoc()) {
@@ -3736,10 +3740,10 @@ switch ($action) {
 
             $poSumRes = $conn->query("
                 SELECT 
-                    SUM(CASE WHEN e.status = 'approved' THEN e.amount ELSE 0 END) as po_approved,
-                    SUM(CASE WHEN e.status = 'pending' THEN e.amount ELSE 0 END) as po_pending
+                    SUM(CASE WHEN e.is_refunded = 1 THEN e.amount ELSE 0 END) as po_approved,
+                    SUM(CASE WHEN e.is_refunded = 0 THEN e.amount ELSE 0 END) as po_pending
                 FROM expenses e
-                WHERE e.date >= '$startDate' AND e.date <= '$endDate' AND e.deleted_at IS NULL
+                WHERE COALESCE(e.refunded_at, e.date) >= '$startDate' AND COALESCE(e.refunded_at, e.date) <= '$endDate' AND e.deleted_at IS NULL
             ");
             $poSums = $poSumRes ? $poSumRes->fetch_assoc() : ['po_approved' => 0, 'po_pending' => 0];
 
@@ -3974,13 +3978,17 @@ switch ($action) {
         $invoices = [];
         $expenses = [];
 
+        $pendingOnly = isset($_GET['pending_only']) && (int)$_GET['pending_only'] === 1;
+        $pendingFilterSO = $pendingOnly ? " AND i.status != 'paid'" : '';
+        $pendingFilterPO = $pendingOnly ? " AND e.is_refunded = 0" : '';
+
         if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
             // Fetch invoices (SO) for the date
             $invRes = $conn->query("
                 SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.first_name, ct.last_name
                 FROM invoices i
                 LEFT JOIN contacts ct ON i.contact_id = ct.id
-                WHERE DATE(i.issue_date) = '$escapedDate' AND i.deleted_at IS NULL
+                WHERE DATE(i.issue_date) = '$escapedDate' AND i.deleted_at IS NULL $pendingFilterSO
                 ORDER BY i.id DESC
             ");
             if ($invRes) {
@@ -3998,10 +4006,10 @@ switch ($action) {
 
             // Fetch expenses (PO) for the date
             $expRes = $conn->query("
-                SELECT e.id, e.title, e.amount, e.status, e.date, u.full_name as creator_name
+                SELECT e.id, e.title, e.amount, e.status, e.date, e.refunded_at, e.is_refunded, u.full_name as creator_name, u.avatar_url as creator_avatar
                 FROM expenses e
                 LEFT JOIN users u ON e.created_by = u.id
-                WHERE DATE(e.date) = '$escapedDate' AND e.deleted_at IS NULL
+                WHERE DATE(COALESCE(e.refunded_at, e.date)) = '$escapedDate' AND e.deleted_at IS NULL $pendingFilterPO
                 ORDER BY e.id DESC
             ");
             if ($expRes) {
@@ -4012,7 +4020,10 @@ switch ($action) {
                         'amount' => (float)$row['amount'],
                         'status' => $row['status'],
                         'date' => $row['date'],
-                        'creator_name' => $row['creator_name'] ?: 'N/A'
+                        'refunded_at' => $row['refunded_at'],
+                        'is_refunded' => (int)$row['is_refunded'],
+                        'creator_name' => $row['creator_name'] ?: 'N/A',
+                        'creator_avatar' => $row['creator_avatar']
                     ];
                 }
             }
