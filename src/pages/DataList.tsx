@@ -4753,7 +4753,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
           setActiveModalTab(['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) ? 'po' : 'sales');
         }}
         title={`${t('Chi tiết hoạt động ngày')} ${selectedDate ? new Date(selectedDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}`}
-        width="900px"
+        width="1200px"
       >
         {selectedDate !== null && (
           <>

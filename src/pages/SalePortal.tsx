@@ -16455,7 +16455,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             setActiveCalendarModalTab('sales');
           }}
           title={`${t('Chi tiết hoạt động ngày')} ${selectedCalendarDate ? new Date(selectedCalendarDate.replace(/-/g, '/')).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}`}
-          width="900px"
+          width="1200px"
         >
           {dayDetailsLoading ? (
             <div style={{ padding: '1rem' }}>
@@ -17170,7 +17170,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             setNewActivityContactId('');
           }}
           title={`${t('Lịch trình & Báo cáo ngày')} ${selectedSchedulerDate.split('-').reverse().join('/')}`}
-          width="760px"
+          width="1100px"
         >
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: isMobile ? 'auto' : '550px' }}>
             {/* Modal Sub-tabs */}
