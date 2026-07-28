@@ -881,7 +881,7 @@ export default function DepositsPage() {
   }, [deposits]);
 
   return (
-    <div className="page-container anim-fade-up" style={{ color: 'var(--color-text)' }}>
+    <div className="anim-fade-up" style={{ color: 'var(--color-text)', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Notifications */}
 
       {/* Header */}
