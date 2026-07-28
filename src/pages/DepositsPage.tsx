@@ -1021,7 +1021,7 @@ export default function DepositsPage() {
               >
                 <option value="">{t("Tất cả trạng thái")}</option>
                 <option value="pending_admin">{t("Đang giao dịch")}</option>
-                <option value="approved">{t("Hoàn tất cọc")}</option>
+                <option value="approved">{t("Hoàn tất")}</option>
                 <option value="cancelled">{t("Đã hủy")}</option>
               </select>
             </div>
@@ -1050,8 +1050,8 @@ export default function DepositsPage() {
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '180px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '140px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '120px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1061,7 +1061,7 @@ export default function DepositsPage() {
                   let statusColor = '#d97706';
 
                   if (dep.status === 'approved') {
-                    statusText = 'Hoàn tất cọc';
+                    statusText = 'Hoàn tất';
                     statusBg = 'rgba(16, 185, 129, 0.08)';
                     statusColor = '#059669';
                   } else if (dep.status === 'cancelled') {
@@ -1668,7 +1668,7 @@ export default function DepositsPage() {
                   <span style={{
                     position: 'absolute',
                     inset: 0,
-                    backgroundColor: autoRemind ? 'var(--color-primary)' : '#cbd5e1',
+                    backgroundColor: autoRemind ? '#10b981' : '#cbd5e1',
                     borderRadius: '34px',
                     transition: '0.3s'
                   }}>
@@ -1715,22 +1715,22 @@ export default function DepositsPage() {
                     return null;
                   })()}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
-                      <select
-                        value={remindTarget}
-                        onChange={e => setRemindTarget(Number(e.target.value))}
-                        className="form-input"
-                        style={{ height: '34px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '6px' }}
-                      >
-                        <option value={1}>Gửi học viên (Fallback về Sale)</option>
-                        <option value={2}>Chỉ gửi nhắc cho Sale chăm sóc</option>
-                      </select>
+                      <CustomSelect
+                        options={[
+                          { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
+                          { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                        ]}
+                        value={String(remindTarget)}
+                        onChange={val => setRemindTarget(Number(val))}
+                        placeholder="Chọn đối tượng"
+                      />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
+                    <div style={{ width: '130px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Nhắc trước (ngày)</label>
                       <input
                         type="number"
                         min={1}
@@ -1738,22 +1738,21 @@ export default function DepositsPage() {
                         value={remindDaysBefore}
                         onChange={e => setRemindDaysBefore(Math.max(1, parseInt(e.target.value) || 3))}
                         className="form-input"
-                        style={{ height: '34px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '6px', textAlign: 'center' }}
+                        style={{ height: '38px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '8px', textAlign: 'center', margin: 0 }}
                       />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi nhắc</label>
-                      <select
-                        value={remindAtHour}
-                        onChange={e => setRemindAtHour(Number(e.target.value))}
-                        className="form-input"
-                        style={{ height: '34px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '6px', textAlign: 'center' }}
-                      >
-                        {Array.from({ length: 24 }).map((_, h) => (
-                          <option key={h} value={h}>{h}:00</option>
-                        ))}
-                      </select>
+                    <div style={{ width: '125px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Giờ gửi nhắc</label>
+                      <CustomSelect
+                        options={Array.from({ length: 24 }).map((_, h) => ({
+                          value: String(h),
+                          label: `${h}:00`
+                        }))}
+                        value={String(remindAtHour)}
+                        onChange={val => setRemindAtHour(Number(val))}
+                        placeholder="Chọn giờ"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1960,11 +1959,9 @@ export default function DepositsPage() {
               }}>
                 <div>
                   <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
-                    Chi tiết & Lịch trình thanh toán - Căn {selectedDepForManage.unit_code}
+                    Chi tiết & Lịch trình thanh toán - SKU: {selectedDepForManage.unit_code}
                   </h2>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                    Mã đơn đặt hàng: #{selectedDepForManage.id}
-                  </p>
+
                 </div>
 
                 {/* Actions & Close area top right */}
@@ -2051,18 +2048,19 @@ export default function DepositsPage() {
                 <div style={{ flex: 1.3, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {/* Brief Info with Customer Details and Sales Team */}
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1.2fr 1fr',
-                    gap: '1.5rem',
-                    background: 'linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%)',
-                    padding: '1.5rem',
-                    borderRadius: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    background: 'var(--color-surface)',
+                    padding: '20px',
+                    borderRadius: '16px',
                     border: '1px solid var(--color-border-light)',
-                    boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)'
+                    boxShadow: 'var(--shadow-sm)'
                   }}>
-                    {/* Left Column: Customer details */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderRight: '1px solid var(--color-border-light)', paddingRight: '1.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {/* Top Row: Customer & SKU */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+                      {/* Left: Customer Info */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div
                           onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
                           style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
@@ -2073,17 +2071,30 @@ export default function DepositsPage() {
                             src={selectedDepForManage.avatar_url}
                             name={`${selectedDepForManage.last_name} ${selectedDepForManage.first_name}`}
                             size="lg"
+                            style={{ width: '52px', height: '52px', fontSize: '1.2rem' }}
                           />
                         </div>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', fontWeight: 600 }}>Khách hàng</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span style={{ 
+                            fontSize: '0.675rem', 
+                            fontWeight: 700, 
+                            color: 'var(--color-primary)', 
+                            background: 'rgba(189, 29, 45, 0.06)',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            width: 'fit-content',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            Học viên / Khách hàng
+                          </span>
                           <h4
                             onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
                             style={{
                               margin: 0,
                               fontSize: '1.1rem',
                               fontWeight: 800,
-                              color: 'var(--color-primary)',
+                              color: 'var(--color-text)',
                               cursor: 'pointer',
                               textDecoration: 'underline decoration-dotted',
                               transition: 'opacity 0.2s'
@@ -2093,16 +2104,29 @@ export default function DepositsPage() {
                           >
                             {selectedDepForManage.last_name} {selectedDepForManage.first_name}
                           </h4>
-                          <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                            SĐT: {selectedDepForManage.phone}
-                          </p>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                            SĐT: <strong style={{ color: 'var(--color-text)' }}>{selectedDepForManage.phone}</strong>
+                          </span>
                         </div>
                       </div>
 
-                      {/* Sales team section */}
-                      <div style={{ marginTop: '0.25rem' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
-                          Nhân sự chăm sóc & tỷ lệ chia hoa hồng:
+                      {/* Right: Program & SKU */}
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
+                        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chương trình & SKU</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
+                          {selectedDepForManage.project_name} ({selectedDepForManage.unit_code})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ height: '1px', background: 'var(--color-border-light)' }} />
+
+                    {/* Bottom Row: Caretaker & Financials */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'center' }}>
+                      {/* Left: Caretaker info */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Nhân sự chăm sóc & hoa hồng
                         </span>
                         {isAdmin && tempSharesData && tempSharesData.length > 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2113,16 +2137,16 @@ export default function DepositsPage() {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
-                                  background: 'var(--color-surface)',
+                                  background: 'var(--color-bg-light)',
                                   border: '1px solid var(--color-border-light)',
-                                  padding: '6px 12px',
+                                  padding: '5px 10px',
                                   borderRadius: '8px',
-                                  maxWidth: '360px'
+                                  width: '100%'
                                 }}
                               >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <Avatar src={sh.avatar} name={sh.name} size="sm" />
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{sh.name}</span>
+                                  <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
+                                  <span style={{ fontSize: '0.775rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <input
@@ -2132,20 +2156,20 @@ export default function DepositsPage() {
                                     value={sh.percentage}
                                     onChange={(e) => handleTempSharePercentChange(sIdx, e.target.value)}
                                     className="form-input"
-                                    style={{ width: '60px', height: '28px', textAlign: 'center', padding: '2px', fontSize: '0.8rem' }}
+                                    style={{ width: '55px', height: '24px', textAlign: 'center', padding: '2px', fontSize: '0.75rem', margin: 0 }}
                                   />
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>%</span>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>%</span>
                                 </div>
                               </div>
                             ))}
                             {(() => {
                               const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
                               if (totalPct !== 100) {
-                                return (
-                                  <span style={{ fontSize: '0.725rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-                                    * Tổng tỷ lệ phải bằng 100% (Hiện tại: {totalPct}%)
-                                  </span>
-                                );
+                                  return (
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--color-danger)', fontWeight: 600 }}>
+                                      * Tổng tỷ lệ phải bằng 100% (Hiện tại: {totalPct}%)
+                                    </span>
+                                  );
                               }
                               return null;
                             })()}
@@ -2159,15 +2183,15 @@ export default function DepositsPage() {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '6px',
-                                  background: 'var(--color-surface)',
+                                  background: 'var(--color-bg-light)',
                                   border: '1px solid var(--color-border-light)',
-                                  padding: '3px 8px',
+                                  padding: '4px 10px',
                                   borderRadius: '16px',
                                   boxShadow: 'var(--shadow-sm)'
                                 }}
                               >
-                                <Avatar src={sh.avatar} name={sh.name} size="sm" />
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{sh.name}</span>
+                                <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
                                 <span style={{
                                   fontSize: '0.7rem',
                                   fontWeight: 700,
@@ -2182,41 +2206,61 @@ export default function DepositsPage() {
                             ))}
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                            Bán độc lập (Chỉ có chủ sở hữu cọc)
-                          </span>
+                          (() => {
+                            const ownerUser = usersList.find(x => String(x.id) === String(selectedDepForManage.contact_owner_id))
+                              || usersList.find(x => String(x.id) === String(selectedDepForManage.created_by));
+                            const ownerName = ownerUser?.full_name || ownerUser?.name || selectedDepForManage.creator_name || 'Chưa xác định';
+                            const ownerAvatar = ownerUser?.avatar_url || selectedDepForManage.creator_avatar;
+
+                            return (
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  background: 'var(--color-bg-light)',
+                                  border: '1px solid var(--color-border-light)',
+                                  padding: '4px 10px',
+                                  borderRadius: '16px',
+                                  boxShadow: 'var(--shadow-sm)',
+                                  width: 'fit-content'
+                                }}
+                              >
+                                <Avatar src={ownerAvatar} name={ownerName} size="sm" style={{ width: '20px', height: '20px' }} />
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{ownerName}</span>
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  background: 'rgba(16, 185, 129, 0.1)',
+                                  color: '#10b981',
+                                  padding: '1px 5px',
+                                  borderRadius: '8px'
+                                }}>
+                                  100% (Bán độc lập)
+                                </span>
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
-                    </div>
 
-                    {/* Right Column: Transaction details */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Chiến dịch & Mã sản phẩm</span>
-                          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{selectedDepForManage.project_name} - {selectedDepForManage.unit_code}</span>
+                      {/* Right: Financial Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div style={{ background: 'rgba(189, 29, 45, 0.03)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(189, 29, 45, 0.08)' }}>
+                          <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Tổng giá trị đơn hàng</span>
+                          <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.9rem' }}>{formatMoney(selectedDepForManage.price)}</span>
                         </div>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Thời gian tạo đơn</span>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                            {new Date(selectedDepForManage.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                          </span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Tổng giá trị đơn hàng</span>
-                          <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1rem' }}>{formatMoney(selectedDepForManage.price)}</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>Hoa hồng dự kiến</span>
+                        <div style={{ background: 'rgba(16, 185, 129, 0.03)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.08)' }}>
+                          <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Hoa hồng dự kiến</span>
                           {isAdmin ? (
                             <CurrencyInput
                               value={tempExpectedCommission}
                               onChange={(val) => setTempExpectedCommission(val || 0)}
                               className="form-input"
-                              style={{ height: '32px', fontSize: '0.9rem', fontWeight: 800, color: '#059669', width: '100%', maxWidth: '160px' }}
+                              style={{ height: '24px', fontSize: '0.8rem', fontWeight: 800, color: '#059669', width: '100%', margin: 0, padding: '0 4px', borderRadius: '4px', background: 'var(--color-surface)' }}
                             />
                           ) : (
-                            <span style={{ fontWeight: 800, color: '#059669', fontSize: '1rem' }}>{formatMoney(selectedDepForManage.expected_commission)}</span>
+                            <span style={{ fontWeight: 800, color: '#059669', fontSize: '0.9rem' }}>{formatMoney(selectedDepForManage.expected_commission)}</span>
                           )}
                         </div>
                       </div>
@@ -2255,7 +2299,7 @@ export default function DepositsPage() {
                         <span style={{
                           position: 'absolute',
                           inset: 0,
-                          backgroundColor: autoRemindManage ? 'var(--color-primary)' : '#cbd5e1',
+                          backgroundColor: autoRemindManage ? '#10b981' : '#cbd5e1',
                           borderRadius: '34px',
                           transition: '0.3s'
                         }}>
@@ -2296,23 +2340,23 @@ export default function DepositsPage() {
                           </div>
                         )}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
-                            <select
+                            <CustomSelect
                               disabled={!canEditMilestones}
-                              value={remindTargetManage}
-                              onChange={e => setRemindTargetManage(Number(e.target.value))}
-                              className="form-input"
-                              style={{ height: '34px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '6px' }}
-                            >
-                              <option value={1}>Gửi học viên (Fallback về Sale)</option>
-                              <option value={2}>Chỉ gửi nhắc cho Sale chăm sóc</option>
-                            </select>
+                              options={[
+                                { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
+                                { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                              ]}
+                              value={String(remindTargetManage)}
+                              onChange={val => setRemindTargetManage(Number(val))}
+                              placeholder="Chọn đối tượng"
+                            />
                           </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
+                          <div style={{ width: '130px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Nhắc trước (ngày)</label>
                             <input
                               disabled={!canEditMilestones}
                               type="number"
@@ -2321,23 +2365,22 @@ export default function DepositsPage() {
                               value={remindDaysBeforeManage}
                               onChange={e => setRemindDaysBeforeManage(Math.max(1, parseInt(e.target.value) || 3))}
                               className="form-input"
-                              style={{ height: '34px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '6px', textAlign: 'center' }}
+                              style={{ height: '38px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '8px', textAlign: 'center', margin: 0 }}
                             />
                           </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi nhắc</label>
-                            <select
+                          <div style={{ width: '125px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Giờ gửi nhắc</label>
+                            <CustomSelect
                               disabled={!canEditMilestones}
-                              value={remindAtHourManage}
-                              onChange={e => setRemindAtHourManage(Number(e.target.value))}
-                              className="form-input"
-                              style={{ height: '34px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '6px', textAlign: 'center' }}
-                            >
-                              {Array.from({ length: 24 }).map((_, h) => (
-                                <option key={h} value={h}>{h}:00</option>
-                              ))}
-                            </select>
+                              options={Array.from({ length: 24 }).map((_, h) => ({
+                                value: String(h),
+                                label: `${h}:00`
+                              }))}
+                              value={String(remindAtHourManage)}
+                              onChange={val => setRemindAtHourManage(Number(val))}
+                              placeholder="Chọn giờ"
+                            />
                           </div>
                         </div>
                       </div>
