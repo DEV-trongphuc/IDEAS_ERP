@@ -757,9 +757,9 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     );
   };
 
-  const renderWelcomeBannerForRole = (desc: string, issuesList: any[]) => {
+  const renderWelcomeBannerForRole = (desc: string, issuesList: any[], styleOverrides?: React.CSSProperties) => {
     return (
-      <div className="welcome-banner">
+      <div className="welcome-banner" style={styleOverrides}>
         {/* Left section: Welcome Info */}
         <div style={{ 
           display: 'flex', 
@@ -1465,48 +1465,107 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       action: () => navigate('/deposits')
     });
 
+    const renderKpiCardClean = (label: string, value: string, Icon: any, color: string, onClick: () => void) => {
+      const getIconBg = (c: string) => {
+        if (c === '#10b981') return 'rgba(16, 185, 129, 0.08)';
+        if (c === '#f59e0b') return 'rgba(245, 158, 11, 0.08)';
+        if (c === '#ef4444') return 'rgba(239, 68, 68, 0.08)';
+        if (c === '#3b82f6') return 'rgba(59, 130, 246, 0.08)';
+        return 'rgba(100, 116, 139, 0.08)';
+      };
+
+      return (
+        <div 
+          onClick={onClick}
+          className="hover-lift"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minHeight: '120px',
+            padding: '1.25rem',
+            borderRadius: '16px',
+            background: 'none',
+            border: 'none',
+            boxShadow: 'none',
+            cursor: 'pointer',
+            animation: 'slideUp 0.4s ease-out both'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+              {label}
+            </span>
+            <div style={{ width: 32, height: 32, borderRadius: '8px', background: getIconBg(color), color: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon size={16} />
+            </div>
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: color }}>
+            {value}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
+            <span>{t('Click để quản lý')}</span>
+          </div>
+        </div>
+      );
+    };
+
     return renderDashboardWrapper(
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Header */}
         {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
 
         {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
+        {renderWelcomeBannerForRole(
+          t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), 
+          actIssues, 
+          { background: 'transparent', border: 'none', boxShadow: 'none', padding: '1.25rem 0' }
+        )}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
-          {renderKpiCardForRole(t('DOANH THU THỰC THU'), actStats.revenueThisMonth.toLocaleString() + 'đ', DollarSign, '#10b981', 'fair_share_equity-card', () => navigate('/deposits'))}
-          {renderKpiCardForRole(t('DOANH THU CHỜ DUYỆT'), actStats.pendingDeposits.toLocaleString() + 'đ', FileText, '#f59e0b', 'duplicates-card', () => navigate('/deposits'))}
-          {renderKpiCardForRole(t('CHI PHÍ ĐÃ CHI'), actStats.expensesThisMonth.toLocaleString() + 'đ', CreditCard, '#ef4444', 'errors-card', () => navigate('/expenses'))}
-          {renderKpiCardForRole(t('YÊU CẦU DUYỆT CHI'), String(actStats.pendingApprovalInvoices), AlertTriangle, '#3b82f6', 'distributed-card', () => navigate('/expenses?status=pending'))}
+          {renderKpiCardClean(t('DOANH THU THỰC THU'), actStats.revenueThisMonth.toLocaleString() + 'đ', DollarSign, '#10b981', () => navigate('/deposits'))}
+          {renderKpiCardClean(t('DOANH THU CHỜ DUYỆT'), actStats.pendingDeposits.toLocaleString() + 'đ', FileText, '#f59e0b', () => navigate('/deposits'))}
+          {renderKpiCardClean(t('CHI PHÍ ĐÃ CHI'), actStats.expensesThisMonth.toLocaleString() + 'đ', CreditCard, '#ef4444', () => navigate('/expenses'))}
+          {renderKpiCardClean(t('YÊU CẦU DUYỆT CHI'), String(actStats.pendingApprovalInvoices), AlertTriangle, '#3b82f6', () => navigate('/expenses?status=pending'))}
         </div>
 
         {/* Charts & Details */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
-          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+          <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', background: 'none', border: 'none', boxShadow: 'none' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={actStats.cashFlowTrend} margin={{ left: -15, right: 10, top: 15, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="actRevenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.85}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0.4}/>
+                    </linearGradient>
+                    <linearGradient id="actExpenseGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.85}/>
+                      <stop offset="95%" stopColor="#dc2626" stopOpacity={0.4}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <Tooltip />
-                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="url(#actRevenueGrad)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" name={t('Chi phí')} fill="url(#actExpenseGrad)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+          <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', background: 'none', border: 'none', boxShadow: 'none' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={actStats.expenseCategories} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={{ fontSize: 9, fontWeight: 600 }}>
                     {actStats.expenseCategories.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6'][idx % 4]} />
+                      <Cell key={`cell-${idx}`} fill={['#3b82f6', '#f43f5e', '#f59e0b', '#a855f7'][idx % 4]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(value: any) => value.toLocaleString() + 'đ'} />
