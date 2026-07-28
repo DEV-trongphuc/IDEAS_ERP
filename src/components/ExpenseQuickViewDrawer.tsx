@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, XCircle, CheckCircle2, Pencil, Wallet, Clock, MessageSquare, Loader2, Coffee, Trash2, Upload } from 'lucide-react';
+import { X, XCircle, CheckCircle2, Pencil, Wallet, Clock, MessageSquare, Loader2, Coffee, Trash2, Upload, Send, Info } from 'lucide-react';
 import api from '../api/axios';
 import { Avatar } from './ui/Avatar';
 import { useUIStore } from '../store/uiStore';
@@ -126,6 +126,155 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
       console.error('Error deleting comment:', err);
       addToast('Không thể xóa bình luận', 'error');
     }
+  };
+
+  const combinedFeed = useMemo(() => {
+    const feedItems: any[] = [];
+    if (Array.isArray(comments)) {
+      comments.forEach(c => {
+        feedItems.push({
+          id: `comment-${c.id}`,
+          type: 'comment',
+          created_at: c.created_at,
+          data: c
+        });
+      });
+    }
+    if (Array.isArray(historyLogs)) {
+      historyLogs.forEach(h => {
+        feedItems.push({
+          id: `history-${h.id}`,
+          type: 'history',
+          created_at: h.created_at,
+          data: h
+        });
+      });
+    }
+    return feedItems.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [comments, historyLogs]);
+
+  const renderTimeline = () => {
+    if (!viewItem) return null;
+
+    const isPending = viewItem.status === 'pending';
+    const isApproved = viewItem.status === 'approved';
+    const isRejected = viewItem.status === 'rejected';
+    const isRefunded = !!viewItem.is_refunded;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'relative', paddingLeft: '1.5rem', borderLeft: '2px solid var(--color-border-light)', margin: '0.5rem 0 0.5rem 0.5rem' }}>
+        {/* Step 1: Created */}
+        <div style={{ position: 'relative', paddingBottom: '0.25rem' }}>
+          {/* Dot */}
+          <div style={{
+            position: 'absolute',
+            left: 'calc(-1.5rem - 6px)',
+            top: '4px',
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            background: 'var(--color-success)',
+            border: '2px solid var(--color-surface)',
+            boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.15)',
+            zIndex: 2
+          }} />
+          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>Lập đề xuất & gửi</span>
+            <span style={{ fontSize: '0.7rem', padding: '1px 6px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)', borderRadius: '4px', fontWeight: 700 }}>Hoàn thành</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span>Đề xuất bởi: <strong>{viewItem.creator_name || 'N/A'}</strong></span>
+            <span>Ngày tạo: {viewItem.created_at ? new Date(viewItem.created_at).toLocaleString('vi-VN') : '—'}</span>
+          </div>
+        </div>
+
+        {/* Step 2: Approved/Rejected */}
+        <div style={{ position: 'relative', paddingBottom: '0.25rem' }}>
+          {/* Dot */}
+          <div style={{
+            position: 'absolute',
+            left: 'calc(-1.5rem - 6px)',
+            top: '4px',
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            background: isApproved ? 'var(--color-success)' : isRejected ? 'var(--color-danger)' : 'var(--color-warning)',
+            border: '2px solid var(--color-surface)',
+            boxShadow: isApproved ? '0 0 0 3px rgba(16, 185, 129, 0.15)' : isRejected ? '0 0 0 3px rgba(239, 68, 68, 0.15)' : '0 0 0 3px rgba(245, 158, 11, 0.15)',
+            zIndex: 2
+          }} />
+          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>Phê duyệt đề xuất chi phí</span>
+            <span style={{
+              fontSize: '0.7rem',
+              padding: '1px 6px',
+              background: isApproved ? 'rgba(16, 185, 129, 0.1)' : isRejected ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+              color: isApproved ? 'var(--color-success)' : isRejected ? 'var(--color-danger)' : 'var(--color-warning)',
+              borderRadius: '4px',
+              fontWeight: 700
+            }}>
+              {isApproved ? 'Đã phê duyệt' : isRejected ? 'Bị từ chối' : 'Chờ phê duyệt'}
+            </span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {(isApproved || isRejected) && (
+              <>
+                <span>Người duyệt: <strong>{viewItem.approver_name || 'N/A'}</strong></span>
+                <span>Ngày duyệt: {viewItem.approved_at ? new Date(viewItem.approved_at).toLocaleString('vi-VN') : '—'}</span>
+              </>
+            )}
+            {isPending && (
+              <span>Đang chờ duyệt bởi Admin / Quản lý tài chính</span>
+            )}
+          </div>
+        </div>
+
+        {/* Step 3: Refunded/Paid */}
+        <div style={{ position: 'relative' }}>
+          {/* Dot */}
+          <div style={{
+            position: 'absolute',
+            left: 'calc(-1.5rem - 6px)',
+            top: '4px',
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            background: isRefunded ? 'var(--color-success)' : (isApproved ? 'var(--color-warning)' : 'var(--color-text-muted)'),
+            border: '2px solid var(--color-surface)',
+            boxShadow: isRefunded ? '0 0 0 3px rgba(16, 185, 129, 0.15)' : (isApproved ? '0 0 0 3px rgba(245, 158, 11, 0.15)' : 'none'),
+            opacity: (isApproved || isRefunded) ? 1 : 0.5,
+            zIndex: 2
+          }} />
+          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isApproved || isRefunded) ? 1 : 0.6 }}>
+            <span>Hạch toán thanh toán thực tế</span>
+            <span style={{
+              fontSize: '0.7rem',
+              padding: '1px 6px',
+              background: isRefunded ? 'rgba(16, 185, 129, 0.1)' : (isApproved ? 'rgba(245, 158, 11, 0.1)' : 'var(--color-border-light)'),
+              color: isRefunded ? 'var(--color-success)' : (isApproved ? 'var(--color-warning)' : 'var(--color-text-muted)'),
+              borderRadius: '4px',
+              fontWeight: 700
+            }}>
+              {isRefunded ? 'Đã hoàn tất chi' : (isApproved ? 'Chờ thanh toán' : 'Chưa thực hiện')}
+            </span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px', opacity: (isApproved || isRefunded) ? 1 : 0.6 }}>
+            {isRefunded && (
+              <>
+                <span>Thủ quỹ/Kế toán chi: <strong>{viewItem.refunder_name || 'N/A'}</strong></span>
+                <span>Ngày chi: {viewItem.refunded_at ? new Date(viewItem.refunded_at).toLocaleString('vi-VN') : '—'}</span>
+              </>
+            )}
+            {!isRefunded && isApproved && (
+              <span>Chờ kế toán xác nhận thanh toán thực tế (Tải ảnh UNC)</span>
+            )}
+            {!isApproved && !isRefunded && (
+              <span>Sẽ thực hiện sau khi đề xuất chi phí được duyệt</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const handleApprove = async () => {
@@ -726,181 +875,167 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
-              background: 'var(--color-surface)'
+              background: 'var(--color-surface)',
+              borderLeft: '1px solid var(--color-border-light)',
+              padding: '1.25rem'
             }}>
-              
-              {/* Tabs */}
-              <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-light)', padding: '0 8px', flexShrink: 0 }}>
-                <button
-                  onClick={() => setActiveTab('history')}
-                  style={{
-                    flex: 1,
-                    padding: '14px 10px',
-                    border: 'none',
-                    background: 'none',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: activeTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    borderBottom: activeTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Clock size={14} />
-                  Lịch sử ({historyLogs.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('comments')}
-                  style={{
-                    flex: 1,
-                    padding: '14px 10px',
-                    border: 'none',
-                    background: 'none',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: activeTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    borderBottom: activeTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <MessageSquare size={14} />
-                  Thảo luận ({comments.length})
-                </button>
-              </div>
+              {/* Scrollable Container */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingRight: '4px' }} className="custom-scrollbar">
+                
+                {/* Section 1: CÁC BƯỚC THỰC HIỆN */}
+                <div>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                    Các bước thực hiện
+                  </h3>
+                  {renderTimeline()}
+                </div>
 
-              {/* Tab Content Body */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 1.25rem 1.25rem 1.25rem', display: 'flex', flexDirection: 'column' }}>
-                {activeTab === 'comments' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '1rem', overflow: 'hidden' }}>
-                    {/* Comments List */}
-                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {loadingComments ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                          <Loader2 size={20} className="spin text-primary" />
-                        </div>
-                      ) : (!Array.isArray(comments) || comments.length === 0) ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                          <Coffee size={24} style={{ opacity: 0.4 }} />
-                          <span style={{ fontSize: '0.8rem' }}>Chưa có bình luận nào cho khoản chi này. Hãy bắt đầu thảo luận!</span>
-                        </div>
-                      ) : (
-                        comments.map((c) => (
-                          <div key={c.id} style={{ display: 'flex', gap: '10px', padding: '10px', borderRadius: '8px', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-light)', position: 'relative' }}>
-                            <Avatar src={c.avatar_url} name={c.user_name} size={32} />
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{c.user_name}</span>
-                                <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                  {new Date(c.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                </span>
-                              </div>
-                              {c.body && /<[a-z][\s\S]*>/i.test(c.body) ? (
-                                <div 
-                                  className="rich-comment-content text-left"
-                                  dangerouslySetInnerHTML={{ __html: c.body }}
-                                  style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '2px 0 0', lineHeight: '1.4', textAlign: 'left' }}
-                                />
-                              ) : (
-                                <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: 0, lineHeight: 1.4, whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{c.body}</p>
-                              )}
-                            </div>
-                            {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === c.user_id) && (
-                              <button
-                                onClick={() => handleDeleteComment(c.id)}
-                                style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '4px', bottom: '4px' }}
-                                title="Xóa bình luận"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
+                {/* Section 2: THẢO LUẬN & HOẠT ĐỘNG */}
+                <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                    Thảo luận & Hoạt động
+                  </h3>
 
-                    {/* Comment Input */}
-                    <div style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '8px', 
-                      borderTop: '1px solid var(--color-border-light)', 
-                      paddingTop: '12px', 
-                      flexShrink: 0 
-                    }}>
-                      <MentionInput
-                        value={commentText}
-                        onChange={(e: any) => setCommentText(e.target.value)}
-                        placeholder="Nhập nội dung trao đổi... (Gõ @ để nhắc tên đồng nghiệp)"
-                        style={{ 
-                          width: '100%', 
-                          minHeight: '80px', 
-                          border: '1px solid var(--color-border)', 
-                          borderRadius: '10px', 
-                          outline: 'none', 
-                          background: 'var(--color-bg)', 
-                          color: 'var(--color-text)', 
-                          boxSizing: 'border-box'
-                        }}
-                        disabled={submittingComment}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button
-                          disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
-                          onClick={handleAddComment}
-                          className="btn primary"
-                          style={{
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '6px 16px',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem',
-                            fontWeight: 700
-                          }}
-                        >
-                          Gửi
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* History logs */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {loadingHistory ? (
+                  {/* Combined Feed Items */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {loadingComments || loadingHistory ? (
                       <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
                         <Loader2 size={20} className="spin text-primary" />
                       </div>
-                    ) : historyLogs.length === 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                        <Clock size={24} style={{ opacity: 0.4 }} />
-                        <span style={{ fontSize: '0.8rem' }}>Chưa có hoạt động nào được ghi nhận cho khoản chi này.</span>
+                    ) : combinedFeed.length === 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
+                        <Coffee size={24} style={{ opacity: 0.4 }} />
+                        <span style={{ fontSize: '0.8rem' }}>Chưa có hoạt động hay thảo luận nào cho khoản chi này.</span>
                       </div>
                     ) : (
-                      historyLogs.map((log) => (
-                        <div key={log.id} style={{ display: 'flex', gap: '10px', padding: '8px 10px', borderLeft: '2px solid var(--color-primary-light)', background: 'var(--color-bg-secondary)', borderRadius: '0 8px 8px 0' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: 0, textAlign: 'left' }}>
-                              <strong style={{ color: 'var(--color-text-light)' }}>{log.operator_name}</strong> {log.action_text}
-                            </p>
-                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                              {new Date(log.created_at).toLocaleString('vi-VN')}
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                      combinedFeed.map((item) => {
+                        if (item.type === 'comment') {
+                          return (
+                            <div key={item.id} style={{
+                              display: 'flex',
+                              gap: '12px',
+                              padding: '12px 16px',
+                              background: 'var(--color-bg)',
+                              borderRadius: '14px',
+                              border: '1px solid var(--color-border-light)',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
+                              position: 'relative'
+                            }}>
+                              <Avatar src={item.data.avatar_url} name={item.data.user_name} size={28} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{item.data.user_name}</strong>
+                                  <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                    {new Date(item.data.created_at).toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                                {item.data.body && /<[a-z][\s\S]*>/i.test(item.data.body) ? (
+                                  <div 
+                                    className="rich-comment-content text-left"
+                                    dangerouslySetInnerHTML={{ __html: item.data.body }}
+                                    style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.45', textAlign: 'left' }}
+                                  />
+                                ) : (
+                                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{item.data.body}</p>
+                                )}
+                              </div>
+                              {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === item.data.user_id) && (
+                                <button
+                                  onClick={() => handleDeleteComment(item.data.id)}
+                                  style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '8px', top: '8px' }}
+                                  title="Xóa bình luận"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={item.id} style={{
+                              display: 'flex',
+                              gap: '12px',
+                              padding: '10px 14px',
+                              background: 'var(--color-bg-secondary)',
+                              borderRadius: '10px',
+                              borderLeft: '3px solid var(--color-primary-light)',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.01)',
+                              alignItems: 'center'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', color: 'var(--color-primary)', flexShrink: 0 }}>
+                                <Info size={14} />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                  <strong style={{ fontSize: '0.78rem', color: 'var(--color-text)', fontWeight: 700 }}>Hệ thống phiếu chi IDEAS</strong>
+                                  <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                    {new Date(item.data.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'left', lineHeight: '1.4' }}>
+                                  <strong style={{ color: 'var(--color-text-light)' }}>{item.data.operator_name}</strong> {item.data.action_text} lúc {new Date(item.data.created_at).toLocaleTimeString('vi-VN')} {new Date(item.data.created_at).toLocaleDateString('vi-VN')}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                      })
                     )}
                   </div>
-                )}
+                </div>
+              </div>
+
+              {/* Comment Editor Box at bottom */}
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '8px', 
+                borderTop: '1px solid var(--color-border-light)', 
+                paddingTop: '12px', 
+                flexShrink: 0,
+                marginTop: '1rem'
+              }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                  <MentionInput
+                    value={commentText}
+                    onChange={(e: any) => setCommentText(e.target.value)}
+                    placeholder="Viết bình luận... Gõ @ để nhắc tên"
+                    style={{ 
+                      width: '100%', 
+                      minHeight: '65px', 
+                      border: 'none',
+                      borderRadius: 0,
+                      outline: 'none', 
+                      background: 'transparent',
+                      color: 'var(--color-text)', 
+                      boxSizing: 'border-box'
+                    }}
+                    disabled={submittingComment}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px', borderTop: '1px dashed var(--color-border-light)' }}>
+                    <button
+                      disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
+                      onClick={handleAddComment}
+                      className="btn primary sm"
+                      style={{
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '6px 18px',
+                        cursor: 'pointer',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      <Send size={13} />
+                      Gửi
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
