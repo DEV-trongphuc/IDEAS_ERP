@@ -20,6 +20,20 @@ if (!function_exists('getBody')) {
     }
 }
 
+class RespondException extends Exception {
+    public int $code;
+    public $data;
+    public string $msg;
+    public bool $success;
+    public function __construct(int $code, $data, string $msg, bool $success) {
+        parent::__construct($msg, $code);
+        $this->code = $code;
+        $this->data = $data;
+        $this->msg = $msg;
+        $this->success = $success;
+    }
+}
+
 $lastResponse = null;
 if (!function_exists('respond')) {
     function respond(int $code, $data = null, string $message = '', bool $success = true): void {
@@ -30,6 +44,7 @@ if (!function_exists('respond')) {
             'message' => $message,
             'success' => $success
         ];
+        throw new RespondException($code, $data, $message, $success);
     }
 }
 
@@ -124,7 +139,9 @@ try {
         'status' => 'approved',
         'note' => 'Duyệt phép năm'
     ];
-    $hrmCtrl->approveLeave($adminAuth);
+    try {
+        $hrmCtrl->approveLeave($adminAuth);
+    } catch (RespondException $e) {}
     
     // Check if leave deduction occurred
     $profileStmt = $pdo->prepare("SELECT annual_leave_used FROM hrm_profiles WHERE user_id = ?");
@@ -148,7 +165,9 @@ try {
         'check_in_time' => '13:00:00',
         'is_supplementary' => 0
     ];
-    $checkInCtrl->store($authPayload);
+    try {
+        $checkInCtrl->store($authPayload);
+    } catch (RespondException $e) {}
 
     // 3. Verify late_minutes is 0 (not late)
     $checkInStmt = $pdo->prepare("SELECT late_minutes FROM check_ins WHERE user_id = ? AND check_in_date = '2026-07-21'");
@@ -172,7 +191,9 @@ try {
         'check_in_time' => '16:30:00',
         'is_supplementary' => 0
     ];
-    $checkInCtrl->store($authPayload);
+    try {
+        $checkInCtrl->store($authPayload);
+    } catch (RespondException $e) {}
 
     // 3. Verify early_minutes is 0
     $checkOutStmt = $pdo->prepare("SELECT early_minutes FROM check_ins WHERE user_id = ? AND check_in_date = '2026-07-21'");
@@ -203,7 +224,9 @@ try {
         'month_year' => $monthYear,
         'work_days_required' => 26
     ];
-    $hrmCtrl->calculatePayroll($adminAuth);
+    try {
+        $hrmCtrl->calculatePayroll($adminAuth);
+    } catch (RespondException $e) {}
 
     // 4. Query generated payslip and assert results
     $payslipStmt = $pdo->prepare("SELECT * FROM monthly_payslips WHERE user_id = ? AND month_year = ?");
