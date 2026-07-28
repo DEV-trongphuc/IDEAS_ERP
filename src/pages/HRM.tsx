@@ -529,7 +529,7 @@ export default function HRM() {
   return (
     <div>
       {/* Header */}
-      <div className="page-header" style={{ marginBottom: '1.5rem' }}>
+      <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="page-title">
             {t('Hệ thống Quản lý Nhân sự & Bảng Lương (HRMS)')}
@@ -538,6 +538,16 @@ export default function HRM() {
             {t('Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.')}
           </p>
         </div>
+        {activeTab === 'dashboard' && (
+          <div style={{ position: 'relative', zIndex: 100, minWidth: '200px' }}>
+            <CustomSelect
+              options={periodOptions.filter(opt => !opt.value.includes('MID') && !opt.value.includes('YEND') && !opt.value.includes('13'))}
+              value={dashboardMonth}
+              onChange={(val) => setDashboardMonth(String(val))}
+              width="100%"
+            />
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -710,33 +720,7 @@ export default function HRM() {
 
               </div>
 
-              {/* Month filter select right below Hero area cards */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-bg-secondary)', padding: '10px 16px', borderRadius: 12, width: 'fit-content' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chọn tháng thống kê:')}</span>
-                <select
-                  value={dashboardMonth}
-                  onChange={e => setDashboardMonth(e.target.value)}
-                  className="form-input"
-                  style={{
-                    height: 34,
-                    padding: '0 24px 0 10px',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    minWidth: '150px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {periodOptions.filter(opt => !opt.value.includes('MID') && !opt.value.includes('YEND') && !opt.value.includes('13')).map(opt => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
 
               {/* Charts Row */}
               <div className="responsive-grid-6-4" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem' }}>
