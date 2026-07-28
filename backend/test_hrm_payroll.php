@@ -33,6 +33,12 @@ if (!function_exists('respond')) {
     }
 }
 
+if (!function_exists('logActivity')) {
+    function logActivity($db, $tid, $uid, string $action, ?string $resource = null, $resourceId = null, ?string $data = null): void {
+        // Mock log activity in test harness
+    }
+}
+
 // Test 1: Verify Table Schemas
 $requiredTables = [
     'hrm_profiles',
