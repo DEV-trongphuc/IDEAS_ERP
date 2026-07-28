@@ -220,7 +220,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 2000000000, display: 'flex', justifyContent: 'flex-end' }}>
           {/* Backdrop Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -228,9 +228,9 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
             exit={{ opacity: 0 }}
             onClick={() => !saving && onClose()}
             style={{
-              position: 'fixed',
+              position: 'absolute',
               inset: 0,
-              zIndex: 1000005,
+              zIndex: 2000000005,
               background: 'black'
             }}
           />
@@ -254,7 +254,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               flexDirection: 'column',
               boxSizing: 'border-box',
               overflow: 'hidden',
-              zIndex: 1000010
+              zIndex: 2000000010
             }}
           >
             {/* Header with Cancel and Save buttons at the top right */}
@@ -718,7 +718,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   );
