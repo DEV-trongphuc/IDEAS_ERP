@@ -138,6 +138,7 @@ class HRMController {
 
             require_once __DIR__ . '/../NotificationService.php';
             $targetUserId = $approverId ?: $auth['user_id'];
+            $leaveId = (int)$this->db->lastInsertId();
             NotificationService::send($this->db, $auth['tenant_id'], 'HRM_LEAVE_REQUEST', [
                 'user_id' => $targetUserId,
                 'user_name' => $userName,
@@ -146,7 +147,8 @@ class HRMController {
                 'end_date' => $b['end_date'],
                 'total_days' => (float)($b['total_days'] ?? 1.0),
                 'reason' => $b['reason'] ?? '',
-                'date' => date('Y-m-d')
+                'date' => date('Y-m-d'),
+                'ref_id' => $leaveId
             ]);
         } catch (\Throwable $e) {}
 
@@ -272,7 +274,8 @@ class HRMController {
                     'end_date' => $leaveRow['end_date'],
                     'total_days' => (float)$leaveRow['total_days'],
                     'reason' => 'Đã duyệt Cấp 1. Lý do ban đầu: ' . $leaveRow['reason'],
-                    'date' => date('Y-m-d')
+                    'date' => date('Y-m-d'),
+                    'ref_id' => $id
                 ]);
             } else {
                 NotificationService::send($this->db, $auth['tenant_id'], 'HRM_LEAVE_APPROVAL', [
@@ -284,7 +287,9 @@ class HRMController {
                     'status_text' => $statusText,
                     'reason' => $approverNote,
                     'remaining_annual_leave' => $remainingAnnual,
-                    'remaining_compensatory_leave' => $remainingComp
+                    'remaining_compensatory_leave' => $remainingComp,
+                    'ref_id' => $id,
+                    'status' => $nextStatus
                 ]);
             }
         } catch (\Throwable $e) {}
@@ -347,12 +352,14 @@ class HRMController {
 
             require_once __DIR__ . '/../NotificationService.php';
             $targetUserId = $approverId ?: $auth['user_id'];
+            $advId = (int)$this->db->lastInsertId();
             NotificationService::send($this->db, $auth['tenant_id'], 'HRM_ADVANCE_REQUEST', [
                 'user_id' => $targetUserId,
                 'user_name' => $userName,
                 'amount' => (float)$b['amount'],
                 'reason' => $b['reason'] ?? '',
-                'date' => date('Y-m-d')
+                'date' => date('Y-m-d'),
+                'ref_id' => $advId
             ]);
         } catch (\Throwable $e) {}
 
@@ -442,7 +449,8 @@ class HRMController {
                     'user_name' => $advRow['full_name'],
                     'amount' => (float)$advRow['amount'],
                     'reason' => 'Đã duyệt Cấp 1. Lý do ban đầu: ' . $advRow['reason'],
-                    'date' => date('Y-m-d')
+                    'date' => date('Y-m-d'),
+                    'ref_id' => $id
                 ]);
             } else {
                 NotificationService::send($this->db, $auth['tenant_id'], 'HRM_ADVANCE_APPROVAL', [
@@ -450,7 +458,9 @@ class HRMController {
                     'user_name' => $advRow['full_name'],
                     'amount' => (float)$advRow['amount'],
                     'status_text' => $statusText,
-                    'reason' => $approverNote
+                    'reason' => $approverNote,
+                    'ref_id' => $id,
+                    'status' => $nextStatus
                 ]);
             }
         } catch (\Throwable $e) {}

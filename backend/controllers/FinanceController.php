@@ -910,7 +910,8 @@ class FinanceController
                     'user_name' => $auth['full_name'],
                     'title' => $data['title'],
                     'amount' => $totalAmount,
-                    'reason' => $data['notes'] ?? 'Không có'
+                    'reason' => $data['notes'] ?? 'Không có',
+                    'ref_id' => $expId
                 ]);
             }
 

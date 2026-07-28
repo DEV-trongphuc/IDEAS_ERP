@@ -409,7 +409,7 @@ class NotificationService {
                     'title' => "Yêu cầu phê duyệt chi phí",
                     'body' => "Nhân viên " . $userName . " vừa tạo yêu cầu chi phí mới: " . $titleText . " (" . $amountText . ")",
                     'type' => "expense",
-                    'link' => "/expenses",
+                    'link' => "/approvals?open_id=" . ($payload['ref_id'] ?? '') . "&open_type=expense",
                     'zalo_msg' => "💸 [ YÊU CẦU PHÊ DUYỆT CHI PHÍ ]\n\n"
                         . "Nhân viên $userName vừa tạo yêu cầu chi phí mới:\n"
                         . "  • Tiêu đề: $titleText\n"
@@ -948,7 +948,7 @@ class NotificationService {
                     'title' => "Đơn xin nghỉ phép mới ($leaveType)",
                     'body' => "Nhân viên $userName vừa gửi đơn xin nghỉ $leaveType từ $leavePeriod ($leaveDays ngày). Lý do: \"$reason\"",
                     'type' => "leave",
-                    'link' => "/hrm?tab=leaves",
+                    'link' => "/approvals?open_id=" . ($payload['ref_id'] ?? '') . "&open_type=leave",
                     'zalo_msg' => "🏖️ [ ĐƠN XIN NGHỈ PHÉP MỚI - $leaveType ]\n\n"
                         . "Nhân viên: $userName\n"
                         . "Thời gian: $leavePeriod ($leaveDays ngày)\n"
@@ -985,7 +985,7 @@ class NotificationService {
                     'title' => "Kết quả duyệt nghỉ phép ($leaveType)",
                     'body' => "Đơn xin nghỉ $leaveType từ $leavePeriod của bạn đã được $statusText. Ghi chú: \"$reason\"" . $balanceStr,
                     'type' => "leave",
-                    'link' => "/my-payslips",
+                    'link' => "/approvals?open_id=" . ($payload['ref_id'] ?? '') . "&open_type=leave&open_status=" . ($payload['status'] ?? ''),
                     'zalo_msg' => "✅ [ KẾT QUẢ DUYỆT NGHỈ PHÉP ]\n\n"
                         . "Đơn xin nghỉ $leaveType ($leavePeriod) của bạn đã được $statusText.\n"
                         . "Ghi chú: \"$reason\"" . $balanceStr,
@@ -1007,7 +1007,7 @@ class NotificationService {
                     'title' => "Yêu cầu tạm ứng lương mới",
                     'body' => "Nhân viên $userName đề xuất tạm ứng số tiền $amountText. Lý do: \"$reason\"",
                     'type' => "expense",
-                    'link' => "/hrm?tab=advances",
+                    'link' => "/approvals?open_id=" . ($payload['ref_id'] ?? '') . "&open_type=advance",
                     'zalo_msg' => "💸 [ YÊU CẦU TẠM ỨNG LƯƠNG MỚI ]\n\n"
                         . "Nhân viên: $userName\n"
                         . "Số tiền đề xuất: $amountText\n"
@@ -1033,7 +1033,7 @@ class NotificationService {
                     'title' => "Kết quả duyệt tạm ứng lương",
                     'body' => "Đề xuất tạm ứng $amountText của bạn đã được $statusText. Ghi chú: \"$reason\"",
                     'type' => "expense",
-                    'link' => "/my-payslips",
+                    'link' => "/approvals?open_id=" . ($payload['ref_id'] ?? '') . "&open_type=advance&open_status=" . ($payload['status'] ?? ''),
                     'zalo_msg' => "✅ [ KẾT QUẢ DUYỆT TẠM ỨNG LƯƠNG ]\n\n"
                         . "Đề xuất tạm ứng $amountText của bạn đã được $statusText.\n"
                         . "Ghi chú: \"$reason\"",

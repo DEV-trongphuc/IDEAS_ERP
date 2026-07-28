@@ -324,6 +324,23 @@ export default function Approvals() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get('open_id');
+    const openType = params.get('open_type');
+    const openStatus = params.get('open_status');
+    if (openId && openType) {
+      setSelectedTimelineItem({
+        id: Number(openId),
+        type: openType as any,
+        title: '',
+        description: '',
+        status: openStatus || 'pending',
+        created_at: new Date().toISOString()
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     loadData();
   }, [activeTab]);
 
