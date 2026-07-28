@@ -10,6 +10,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { Avatar } from '../components/ui/Avatar';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Line, AreaChart, Area 
@@ -24,6 +25,7 @@ const FMT_COMPACT = (n: any) => {
 
 export default function HRM() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   
   const getRoleBadgeStyle = (role: string) => {
     switch (String(role).toLowerCase()) {
@@ -52,6 +54,14 @@ export default function HRM() {
   const [leaves, setLeaves] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
   const [payslips, setPayslips] = useState<any[]>([]);
+  const [showOnlyMyPending, setShowOnlyMyPending] = useState(false);
+  const isMyPendingRequest = (req: any) => {
+    const isGlobalAdmin = ['superadmin', 'admin', 'director'].includes(user?.role || '');
+    if (isGlobalAdmin) return true;
+    const isLevel1Pending = req.status_level_1 === 'pending' && Number(req.approver_id) === Number(user?.id);
+    const isLevel2Pending = req.status_level_1 === 'approved' && req.status_level_2 === 'pending' && Number(req.approver_id_2) === Number(user?.id);
+    return isLevel1Pending || isLevel2Pending;
+  };
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   useEffect(() => {
@@ -556,8 +566,8 @@ export default function HRM() {
         {[
           { id: 'dashboard', label: t('Tổng quan HR'), icon: LayoutDashboard },
           { id: 'profiles', label: t('Hồ sơ lương nhân viên'), icon: Users },
-          { id: 'leaves', label: t('Phê duyệt Nghỉ Phép'), icon: Calendar, badge: leaves.filter(l => l.status === 'pending').length },
-          { id: 'advances', label: t('Tạm ứng Lương'), icon: CreditCard, badge: advances.filter(a => a.status === 'pending').length },
+          { id: 'leaves', label: t('Phê duyệt Nghỉ Phép'), icon: Calendar, badge: leaves.filter(l => l.status === 'pending' && isMyPendingRequest(l)).length },
+          { id: 'advances', label: t('Tạm ứng Lương'), icon: CreditCard, badge: advances.filter(a => a.status === 'pending' && isMyPendingRequest(a)).length },
           { id: 'payroll', label: t('Tính & Chốt Lương'), icon: DollarSign }
         ].map(tab => {
           const Icon = tab.icon;
@@ -964,212 +974,273 @@ export default function HRM() {
         {/* TAB 2: LEAVES */}
         {activeTab === 'leaves' && (
           <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
-            {leaves.length === 0 ? (
-              <EmptyCard
-                icon={<Calendar />}
-                title={t('Không có đơn nghỉ phép & tăng ca')}
-                description={t('Không có đơn nghỉ phép hay tăng ca nào.')}
-              />
-            ) : (
-              <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '0.5rem', boxShadow: 'var(--shadow-sm)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                      <th style={{ padding: '12px 16px' }}>{t('Nhân viên')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Loại phép')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Thời gian')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Lý do')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Người duyệt')}</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('Hành động / Trạng thái')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaves.map(req => {
-                      const user = profiles.find(p => Number(p.id) === Number(req.user_id));
-                      const approver1 = profiles.find(p => Number(p.id) === Number(req.approver_id));
-                      const approver2 = profiles.find(p => Number(p.id) === Number(req.approver_id_2));
-                      
-                      const isPending = req.status === 'pending';
-                      const isApproved = req.status === 'approved';
-                      const isRejected = req.status === 'rejected';
-                      
-                      const leaveTypeText = req.leave_type === 'annual' ? t('Phép năm') : 
-                                          req.leave_type === 'sick' ? t('Nghỉ ốm') : 
-                                          req.leave_type === 'compensatory' ? t('Nghỉ bù') : 
-                                          req.leave_type === 'overtime' ? t('Tăng ca') :
-                                          req.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Không lương');
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showOnlyMyPending}
+                  onChange={(e) => setShowOnlyMyPending(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                {t('Chỉ hiện yêu cầu tôi cần duyệt')}
+              </label>
+            </div>
+            {(() => {
+              const filteredList = leaves.filter(req => {
+                if (!showOnlyMyPending) return true;
+                return req.status === 'pending' && isMyPendingRequest(req);
+              });
+              if (filteredList.length === 0) {
+                return (
+                  <EmptyCard
+                    icon={<Calendar />}
+                    title={t('Không có đơn nghỉ phép & tăng ca')}
+                    description={showOnlyMyPending ? t('Không có đơn nào cần bạn duyệt.') : t('Không có đơn nghỉ phép hay tăng ca nào.')}
+                  />
+                );
+              }
+              return (
+                <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '0.5rem', boxShadow: 'var(--shadow-sm)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '12px 16px' }}>{t('Nhân viên')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Loại phép')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Thời gian')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Lý do')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Người duyệt')}</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('Hành động / Trạng thái')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredList.map(req => {
+                        const userProfile = profiles.find(p => Number(p.id) === Number(req.user_id));
+                        const approver1 = profiles.find(p => Number(p.id) === Number(req.approver_id));
+                        const approver2 = profiles.find(p => Number(p.id) === Number(req.approver_id_2));
+                        
+                        const isPending = req.status === 'pending';
+                        const isApproved = req.status === 'approved';
+                        
+                        const leaveTypeText = req.leave_type === 'annual' ? t('Phép năm') : 
+                                            req.leave_type === 'sick' ? t('Nghỉ ốm') : 
+                                            req.leave_type === 'compensatory' ? t('Nghỉ bù') : 
+                                            req.leave_type === 'overtime' ? t('Tăng ca') :
+                                            req.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Không lương');
 
-                      return (
-                        <tr key={req.id} className="hover-bg-secondary" style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.875rem', transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '14px 16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <Avatar src={user?.avatar_url || user?.avatar} name={req.employee_name} size={32} />
-                              <strong style={{ color: 'var(--color-text)' }}>{req.employee_name}</strong>
-                            </div>
-                          </td>
-                          <td style={{ padding: '14px 8px' }}>
-                            <span style={{ 
-                              fontSize: '0.725rem', 
-                              fontWeight: 800, 
-                              backgroundColor: req.leave_type === 'overtime' ? 'rgba(139, 92, 246, 0.08)' : 'rgba(59, 130, 246, 0.08)',
-                              color: req.leave_type === 'overtime' ? '#8b5cf6' : '#3b82f6', 
-                              padding: '2px 10px', 
-                              borderRadius: '20px', 
-                              textTransform: 'uppercase' 
-                            }}>
-                              {leaveTypeText}
-                            </span>
-                          </td>
-                          <td style={{ padding: '14px 8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-                              <Calendar size={13} style={{ color: 'var(--color-text-light)' }} />
-                              <span>
-                                {new Date(req.start_date).toLocaleDateString('vi-VN')} {t('đến')} {new Date(req.end_date).toLocaleDateString('vi-VN')} ({req.total_days} {t('ngày')})
-                              </span>
-                            </div>
-                          </td>
-                          <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)', fontSize: '0.8125rem', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={req.reason}>
-                            {req.reason || '—'}
-                          </td>
-                          <td style={{ padding: '14px 8px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              {approver1 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
-                                  <span style={{ color: req.status_level_1 === 'approved' ? '#10b981' : (req.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
-                                  <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 1')}: {approver1.full_name}</span>
-                                </div>
-                              )}
-                              {approver2 && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
-                                  <span style={{ color: req.status_level_2 === 'approved' ? '#10b981' : (req.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
-                                  <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 2')}: {approver2.full_name}</span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                            {isPending ? (
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                <button 
-                                  onClick={() => handleApproveLeave(req.id, 'approved')} 
-                                  className="btn sm" 
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
-                                >
-                                  <Check size={12} /> {t('Duyệt')}
-                                </button>
-                                <button 
-                                  onClick={() => handleApproveLeave(req.id, 'rejected')} 
-                                  className="btn sm outline" 
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 2, borderColor: '#ef4444', color: '#ef4444', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
-                                >
-                                  <X size={12} /> {t('Từ chối')}
-                                </button>
+                        return (
+                          <tr key={req.id} className="hover-bg-secondary" style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.875rem', transition: 'background-color 0.2s' }}>
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Avatar src={userProfile?.avatar_url || userProfile?.avatar} name={req.employee_name} size={32} />
+                                <strong style={{ color: 'var(--color-text)' }}>{req.employee_name}</strong>
                               </div>
-                            ) : (
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
                               <span style={{ 
+                                fontSize: '0.725rem', 
                                 fontWeight: 800, 
-                                textTransform: 'uppercase', 
-                                fontSize: '0.7rem', 
-                                color: isApproved ? '#10b981' : '#ef4444',
-                                backgroundColor: isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                padding: '3px 10px',
-                                borderRadius: '20px',
-                                letterSpacing: '0.03em'
+                                backgroundColor: req.leave_type === 'overtime' ? 'rgba(139, 92, 246, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+                                color: req.leave_type === 'overtime' ? '#8b5cf6' : '#3b82f6', 
+                                padding: '2px 10px', 
+                                borderRadius: '20px', 
+                                textTransform: 'uppercase' 
                               }}>
-                                {isApproved ? t('Đã duyệt') : t('Đã từ chối')}
+                                {leaveTypeText}
                               </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                                <Calendar size={13} style={{ color: 'var(--color-text-light)' }} />
+                                <span>
+                                  {new Date(req.start_date).toLocaleDateString('vi-VN')} {t('đến')} {new Date(req.end_date).toLocaleDateString('vi-VN')} ({req.total_days} {t('ngày')})
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)', fontSize: '0.8125rem', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={req.reason}>
+                              {req.reason || '—'}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {approver1 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                    <span style={{ color: req.status_level_1 === 'approved' ? '#10b981' : (req.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 1')}: {approver1.full_name}</span>
+                                  </div>
+                                )}
+                                {approver2 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                    <span style={{ color: req.status_level_2 === 'approved' ? '#10b981' : (req.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 2')}: {approver2.full_name}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                              {isPending ? (
+                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                  <button 
+                                    onClick={() => handleApproveLeave(req.id, 'approved')} 
+                                    className="btn sm" 
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
+                                  >
+                                    <Check size={12} /> {t('Duyệt')}
+                                  </button>
+                                  <button 
+                                    onClick={() => handleApproveLeave(req.id, 'rejected')} 
+                                    className="btn sm outline" 
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 2, borderColor: '#ef4444', color: '#ef4444', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
+                                  >
+                                    <X size={12} /> {t('Từ chối')}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ 
+                                  fontWeight: 800, 
+                                  textTransform: 'uppercase', 
+                                  fontSize: '0.7rem', 
+                                  color: isApproved ? '#10b981' : '#ef4444',
+                                  backgroundColor: isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                  padding: '3px 10px',
+                                  borderRadius: '20px',
+                                  letterSpacing: '0.03em'
+                                }}>
+                                  {isApproved ? t('Đã duyệt') : t('Đã từ chối')}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         )}
 
         {/* TAB 3: ADVANCES */}
         {activeTab === 'advances' && (
           <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
-            {advances.length === 0 ? (
-              <EmptyCard
-                icon={<CreditCard />}
-                title={t('Không có yêu cầu tạm ứng')}
-                description={t('Không có yêu cầu tạm ứng lương nào.')}
-              />
-            ) : (
-              <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '0.5rem', boxShadow: 'var(--shadow-sm)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                      <th style={{ padding: '12px 16px' }}>{t('Nhân viên')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Số tiền tạm ứng')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Ngày đề xuất')}</th>
-                      <th style={{ padding: '12px 8px' }}>{t('Lý do')}</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('Hành động / Trạng thái')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {advances.map(adv => {
-                      const isPending = adv.status === 'pending';
-                      const isApproved = adv.status === 'approved';
-                      
-                      return (
-                        <tr key={adv.id} className="hover-bg-secondary" style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.875rem', transition: 'background-color 0.2s' }}>
-                          <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                            {adv.employee_name}
-                          </td>
-                          <td style={{ padding: '14px 8px', fontWeight: 800, color: 'var(--color-primary)' }}>
-                            {formatCurrency(adv.amount)}
-                          </td>
-                          <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)' }}>
-                            {new Date(adv.request_date).toLocaleDateString('vi-VN')}
-                          </td>
-                          <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)', fontSize: '0.825rem', maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={adv.reason}>
-                            {adv.reason || t('Tạm ứng sinh hoạt')}
-                          </td>
-                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                            {isPending ? (
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                <button 
-                                  onClick={() => handleApproveAdvance(adv.id, 'approved')} 
-                                  className="btn sm primary" 
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#10b981', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
-                                >
-                                  <Check size={12} /> {t('Duyệt chi')}
-                                </button>
-                                <button 
-                                  onClick={() => handleApproveAdvance(adv.id, 'rejected')} 
-                                  className="btn sm secondary" 
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
-                                >
-                                  <X size={12} /> {t('Từ chối')}
-                                </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showOnlyMyPending}
+                  onChange={(e) => setShowOnlyMyPending(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                {t('Chỉ hiện yêu cầu tôi cần duyệt')}
+              </label>
+            </div>
+            {(() => {
+              const filteredList = advances.filter(adv => {
+                if (!showOnlyMyPending) return true;
+                return adv.status === 'pending' && isMyPendingRequest(adv);
+              });
+              if (filteredList.length === 0) {
+                return (
+                  <EmptyCard
+                    icon={<CreditCard />}
+                    title={t('Không có yêu cầu tạm ứng')}
+                    description={showOnlyMyPending ? t('Không có yêu cầu tạm ứng nào cần bạn duyệt.') : t('Không có yêu cầu tạm ứng lương nào.')}
+                  />
+                );
+              }
+              return (
+                <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '0.5rem', boxShadow: 'var(--shadow-sm)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '12px 16px' }}>{t('Nhân viên')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Số tiền tạm ứng')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Ngày đề xuất')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Lý do')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Quy trình')}</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('Hành động / Trạng thái')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredList.map(adv => {
+                        const isPending = adv.status === 'pending';
+                        const isApproved = adv.status === 'approved';
+                        const approver1 = profiles.find(p => Number(p.id) === Number(adv.approver_id));
+                        const approver2 = profiles.find(p => Number(p.id) === Number(adv.approver_id_2));
+                        
+                        return (
+                          <tr key={adv.id} className="hover-bg-secondary" style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.875rem', transition: 'background-color 0.2s' }}>
+                            <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text)' }}>
+                              {adv.employee_name}
+                            </td>
+                            <td style={{ padding: '14px 8px', fontWeight: 800, color: 'var(--color-primary)' }}>
+                              {formatCurrency(adv.amount)}
+                            </td>
+                            <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)' }}>
+                              {new Date(adv.request_date).toLocaleDateString('vi-VN')}
+                            </td>
+                            <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)', fontSize: '0.825rem', maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={adv.reason}>
+                              {adv.reason || t('Tạm ứng sinh hoạt')}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {approver1 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                    <span style={{ color: adv.status_level_1 === 'approved' ? '#10b981' : (adv.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 1')}: {approver1.full_name}</span>
+                                  </div>
+                                )}
+                                {approver2 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                    <span style={{ color: adv.status_level_2 === 'approved' ? '#10b981' : (adv.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
+                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 2')}: {approver2.full_name}</span>
+                                  </div>
+                                )}
+                                {!approver1 && !approver2 && (
+                                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{t('Duyệt trực tiếp')}</span>
+                                )}
                               </div>
-                            ) : (
-                              <span style={{ 
-                                fontWeight: 800, 
-                                textTransform: 'uppercase', 
-                                fontSize: '0.7rem', 
-                                color: isApproved ? '#10b981' : '#ef4444',
-                                backgroundColor: isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                padding: '3px 10px',
-                                borderRadius: '20px',
-                                letterSpacing: '0.03em'
-                              }}>
-                                {isApproved ? t('Đã duyệt chi') : t('Đã từ chối')}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                              {isPending ? (
+                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                  <button 
+                                    onClick={() => handleApproveAdvance(adv.id, 'approved')} 
+                                    className="btn sm primary" 
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#10b981', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
+                                  >
+                                    <Check size={12} /> {t('Duyệt chi')}
+                                  </button>
+                                  <button 
+                                    onClick={() => handleApproveAdvance(adv.id, 'rejected')} 
+                                    className="btn sm secondary" 
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.725rem', fontWeight: 700 }}
+                                  >
+                                    <X size={12} /> {t('Từ chối')}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ 
+                                  fontWeight: 800, 
+                                  textTransform: 'uppercase', 
+                                  fontSize: '0.7rem', 
+                                  color: isApproved ? '#10b981' : '#ef4444',
+                                  backgroundColor: isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                  padding: '3px 10px',
+                                  borderRadius: '20px',
+                                  letterSpacing: '0.03em'
+                                }}>
+                                  {isApproved ? t('Đã duyệt chi') : t('Đã từ chối')}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         )}
 
