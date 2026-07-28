@@ -475,37 +475,43 @@ export default function MyPayslips() {
                     }
                   }}
                   style={{
-                    padding: '16px',
+                    padding: '18px 16px',
                     borderRadius: '16px',
                     background: isSelected 
-                      ? 'linear-gradient(135deg, var(--color-primary-light, #eff6ff), #dbeafe)' 
+                      ? 'var(--color-surface, #ffffff)' 
                       : isAvailable 
-                        ? 'var(--color-surface)' 
-                        : 'rgba(241, 245, 249, 0.4)',
+                        ? 'var(--color-surface, #ffffff)' 
+                        : '#f8fafc',
                     border: isSelected 
                       ? '2px solid var(--color-primary, #3b82f6)' 
-                      : '1px solid var(--color-border-light)',
+                      : isAvailable
+                        ? '1px solid var(--color-border, #e2e8f0)'
+                        : '1px dashed var(--color-border-light, #e2e8f0)',
                     cursor: isAvailable ? 'pointer' : 'not-allowed',
-                    opacity: isAvailable ? 1 : 0.5,
+                    opacity: isAvailable ? 1 : 0.6,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    transition: 'all 0.25s',
-                    boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+                    transition: 'all 0.2s ease-in-out',
+                    boxShadow: isSelected 
+                      ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
+                      : isAvailable
+                        ? '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
+                        : 'none',
                     pointerEvents: isAvailable ? 'auto' : 'none'
                   }}
                   className={isAvailable ? 'hover-translate-y' : ''}
                 >
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Tháng</span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text)' }}>{m}</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted, #64748b)' }}>Tháng</span>
+                  <span style={{ fontSize: '1.75rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)' }}>{m}</span>
                   {isAvailable ? (
                     <>
                       <span style={{ 
                         fontSize: '0.85rem', 
                         fontWeight: 800, 
-                        color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text)', 
+                        color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
                         marginTop: '4px' 
                       }}>
                         {formatCurrency(payslipForMonth.net_salary)}
@@ -515,15 +521,16 @@ export default function MyPayslips() {
                         fontWeight: 700, 
                         color: payslipForMonth.status === 'confirmed' ? '#10b981' : '#f59e0b',
                         background: payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                        padding: '2px 6px',
-                        borderRadius: '6px',
-                        marginTop: '4px'
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        marginTop: '4px',
+                        border: `1px solid ${payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
                       }}>
                         {payslipForMonth.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
                       </span>
                     </>
                   ) : (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: '6px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '6px' }}>
                       Chưa có
                     </span>
                   )}
@@ -547,32 +554,34 @@ export default function MyPayslips() {
                     setIsModalOpen(true);
                   }}
                   style={{
-                    padding: '16px',
+                    padding: '18px 16px',
                     borderRadius: '16px',
                     background: isSelected 
-                      ? 'linear-gradient(135deg, var(--color-primary-light, #eff6ff), #dbeafe)' 
-                      : 'var(--color-surface)',
+                      ? 'var(--color-surface, #ffffff)' 
+                      : 'var(--color-surface, #ffffff)',
                     border: isSelected 
                       ? '2px solid var(--color-primary, #3b82f6)' 
-                      : '1px solid var(--color-border-light)',
+                      : '1px solid var(--color-border, #e2e8f0)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    transition: 'all 0.25s',
-                    boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-sm)'
+                    transition: 'all 0.2s ease-in-out',
+                    boxShadow: isSelected 
+                      ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
+                      : '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
                   }}
                   className="hover-translate-y"
                 >
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text)', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', textAlign: 'center' }}>
                     {label}
                   </span>
                   <span style={{ 
                     fontSize: '0.85rem', 
                     fontWeight: 800, 
-                    color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text)', 
+                    color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
                     marginTop: '2px' 
                   }}>
                     {formatCurrency(payslipForPeriod.net_salary)}
@@ -582,9 +591,10 @@ export default function MyPayslips() {
                     fontWeight: 700, 
                     color: payslipForPeriod.status === 'confirmed' ? '#10b981' : '#f59e0b',
                     background: payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                    padding: '2px 6px',
-                    borderRadius: '6px',
-                    marginTop: '4px'
+                    padding: '2px 8px',
+                    borderRadius: '20px',
+                    marginTop: '4px',
+                    border: `1px solid ${payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
                   }}>
                     {payslipForPeriod.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
                   </span>
