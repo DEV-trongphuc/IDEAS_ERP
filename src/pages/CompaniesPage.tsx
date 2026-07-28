@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Building2, X, Loader2, Pencil, Trash2, Globe, Phone, Mail, MapPin, Users, LayoutGrid, List, Filter, RefreshCw, Download, DollarSign, Briefcase, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '../components/ui/Avatar';
@@ -148,7 +148,10 @@ export const CompaniesPage: React.FC = () => {
     if (!tier) return 'Đại lý F1';
     const t = String(tier).toLowerCase();
     if (t === 'ctv') return 'CTV / Môi giới';
-    return 'Đại lý ' + t.toUpperCase();
+    if (t === 'giang_vien') return 'Giảng viên';
+    if (t === 'chuyen_gia') return 'Chuyên gia';
+    if (t.startsWith('f')) return 'Đại lý ' + t.toUpperCase();
+    return t.charAt(0).toUpperCase() + t.slice(1);
   };
 
   return (
@@ -459,7 +462,7 @@ export const CompaniesPage: React.FC = () => {
             <div className="empty-state" style={{ gridColumn: '1/-1' }}>
               <Building2 size={40} />
               <h3>Chưa có đối tác nào</h3>
-              <p>Thêm đại lý F1/F2 hoặc CTV liên kết đầu tiên.</p>
+              <p>Thêm đại lý F1/F2, CTV liên kết, Giảng viên hoặc Chuyên gia đầu tiên.</p>
               {!isSale && <button className="btn primary mt-4" onClick={openCreate}><Plus size={16} /> Thêm Đối tác</button>}
             </div>
           )}

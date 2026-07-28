@@ -957,6 +957,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [pendingOnly, setPendingOnly] = useState<boolean>(false);
   const [showCreateExpenseModal, setShowCreateExpenseModal] = useState<boolean>(false);
   const [selectedExpenseDate, setSelectedExpenseDate] = useState<string>('');
+  const [editingExpense, setEditingExpense] = useState<any>(null);
 
   const handleOpenPO = (poId: number) => {
     setActivePOId(poId);
@@ -6848,12 +6849,19 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
           fetchCalendarStats();
           if (selectedDate) handleDateClick(selectedDate);
         }}
+        onEditClick={(item) => {
+          setEditingExpense(item);
+        }}
       />
 
       {typeof document !== 'undefined' && createPortal(
         <ExpenseCreateDrawer
-          isOpen={showCreateExpenseModal}
-          onClose={() => setShowCreateExpenseModal(false)}
+          isOpen={showCreateExpenseModal || !!editingExpense}
+          onClose={() => {
+            setShowCreateExpenseModal(false);
+            setEditingExpense(null);
+          }}
+          editItem={editingExpense}
           initialDate={selectedExpenseDate}
           onSaveSuccess={() => {
             fetchCalendarStats();

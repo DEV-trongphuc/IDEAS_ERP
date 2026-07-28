@@ -132,7 +132,9 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
     { value: 'f1', label: 'Đại lý F1' },
     { value: 'f2', label: 'Đại lý F2' },
     { value: 'f3', label: 'Đại lý F3' },
-    { value: 'ctv', label: 'CTV & Môi giới' }
+    { value: 'ctv', label: 'CTV & Môi giới' },
+    { value: 'giang_vien', label: 'Giảng viên' },
+    { value: 'chuyen_gia', label: 'Chuyên gia' }
   ];
 
   const parentOptions = useMemo(() => {

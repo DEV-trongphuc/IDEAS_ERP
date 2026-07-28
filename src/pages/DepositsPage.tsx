@@ -14,6 +14,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { TableSkeleton } from '../components/ui/Skeleton';
 const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(module => ({ default: module.CustomerProfileDrawer })));
 import { CurrencyInput } from '../components/ui/CurrencyInput';
+import { MentionInput } from '../components/ui/MentionInput';
 
 const formatNumberWithCommas = (val: any) => {
   if (val === undefined || val === null || val === '') return '';
@@ -96,6 +97,12 @@ export default function DepositsPage() {
   const { showConfirm, addToast } = useUIStore();
   const { t } = useLanguage();
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [activeViewTab, setActiveViewTab] = useState<'list' | 'stats'>('list');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (document.documentElement.getAttribute('data-theme') as 'light' | 'dark') || 'light';
@@ -163,6 +170,7 @@ export default function DepositsPage() {
   const [unitCode, setUnitCode] = useState('');
   const [price, setPrice] = useState('');
   const [expectedCommission, setExpectedCommission] = useState('');
+  const [notes, setNotes] = useState('');
   const [currency, setCurrency] = useState('VND');
   const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
     { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
@@ -354,7 +362,8 @@ export default function DepositsPage() {
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCommentText.trim() || !selectedDepForManage?.id || isSubmittingComment) return;
+    const cleanText = newCommentText.replace(/<[^>]*>/g, '').trim();
+    if (!cleanText || !selectedDepForManage?.id || isSubmittingComment) return;
     setIsSubmittingComment(true);
     try {
       const res = await fetchAPI(`deposits/${selectedDepForManage.id}/comments`, {
@@ -475,8 +484,8 @@ export default function DepositsPage() {
 
   const handleCreateDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedContactId || !selectedProjectId || !unitCode || !price) {
-      addToast('Vui lòng điền đầy đủ thông tin khách hàng, chương trình, căn hộ, giá bán', 'error');
+    if (!selectedContactId || !selectedProjectId || !price) {
+      addToast('Vui lòng điền đầy đủ thông tin khách hàng, chương trình, giá bán', 'error');
       return;
     }
 
@@ -505,7 +514,7 @@ export default function DepositsPage() {
         body: JSON.stringify({
           contact_id: selectedContactId,
           project_id: selectedProjectId,
-          unit_code: unitCode,
+          unit_code: unitCode || '—',
           price: parseFloat(price),
           expected_commission: parseFloat(expectedCommission) || 0,
           currency: currency,
@@ -520,7 +529,8 @@ export default function DepositsPage() {
           auto_remind: autoRemind ? 1 : 0,
           remind_days_before: remindDaysBefore,
           remind_at_hour: remindAtHour,
-          remind_target: remindTarget
+          remind_target: remindTarget,
+          notes: notes
         })
       });
 
@@ -533,6 +543,7 @@ export default function DepositsPage() {
         setUnitCode('');
         setPrice('');
         setExpectedCommission('');
+        setNotes('');
         setCurrency('VND');
         setMilestonesInput([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);
         setIsCooperation(false);
@@ -1084,13 +1095,13 @@ export default function DepositsPage() {
                 <table className="w-full text-left" style={{ borderCollapse: 'collapse', minWidth: 900 }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '150px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Ngày tạo</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chương trình & Khách hàng</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Khách hàng / Chương trình</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale / Ngày tạo</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '160px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '200px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thanh toán gần nhất</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '140px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '120px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '100px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '100px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1116,27 +1127,7 @@ export default function DepositsPage() {
                       className="table-row-hover"
                       onClick={() => handleOpenManageMilestones(dep)}
                     >
-                      {/* Date Created */}
-                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <span style={{ 
-                          fontSize: '0.8rem', 
-                          fontWeight: 700, 
-                          color: 'var(--color-text)',
-                          display: 'block'
-                        }}>
-                          {new Date(dep.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                        </span>
-                        <span style={{ 
-                          fontSize: '0.725rem', 
-                          color: 'var(--color-text-muted)',
-                          display: 'block',
-                          marginTop: '2px'
-                        }}>
-                          {new Date(dep.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </td>
-
-                      {/* Client & Program */}
+                      {/* Client / Program */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
@@ -1149,13 +1140,16 @@ export default function DepositsPage() {
                         </div>
                       </td>
 
-                      {/* Sale */}
+                      {/* Sale / Date Created */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Avatar src={dep.creator_avatar} name={dep.creator_name || 'Sale'} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
                           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>
                             {dep.creator_name || '—'}
                           </span>
+                        </div>
+                        <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '4px', paddingLeft: '32px' }}>
+                          {new Date(dep.created_at).toLocaleDateString('vi-VN')} {new Date(dep.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
 
@@ -1164,6 +1158,66 @@ export default function DepositsPage() {
                         <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>
                           {formatMoney(dep.price, dep.currency)}
                         </div>
+                      </td>
+
+                      {/* Nearest Payment Date */}
+                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                        {(() => {
+                          const ms = dep.milestones || [];
+                          if (ms.length === 0) return <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>—</span>;
+
+                          const allApproved = ms.every((m: any) => m.status === 'approved');
+                          if (allApproved) {
+                            const dates = ms.map((m: any) => m.paid_at || m.updated_at || m.expected_pay_date).filter(Boolean);
+                            const latestDate = dates.length > 0 ? new Date(Math.max(...dates.map(d => new Date(d).getTime()))) : null;
+                            const latestDateStr = latestDate ? latestDate.toLocaleDateString('vi-VN') : '—';
+                            return (
+                              <div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#10b981', display: 'block' }}>Ngày {latestDateStr}</span>
+                                <span style={{ fontSize: '0.725rem', color: '#10b981', display: 'block', marginTop: '2px', fontWeight: 700 }}>Đã thu hết</span>
+                              </div>
+                            );
+                          }
+
+                          const unpaid = ms.filter((m: any) => m.status !== 'approved');
+                          const validUnpaid = unpaid.filter((m: any) => m.expected_pay_date);
+                          if (validUnpaid.length === 0) return <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>—</span>;
+
+                          const sortedUnpaid = [...validUnpaid].sort((a, b) => new Date(a.expected_pay_date).getTime() - new Date(b.expected_pay_date).getTime());
+                          const nearestM = sortedUnpaid[0];
+
+                          const payDate = new Date(nearestM.expected_pay_date);
+                          payDate.setHours(0, 0, 0, 0);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          const diffTime = payDate.getTime() - today.getTime();
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                          const payDateStr = payDate.toLocaleDateString('vi-VN');
+
+                          if (diffDays > 0) {
+                            return (
+                              <div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>{payDateStr}</span>
+                                <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>Còn {diffDays} ngày nữa</span>
+                              </div>
+                            );
+                          } else if (diffDays === 0) {
+                            return (
+                              <div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#d97706', display: 'block' }}>{payDateStr}</span>
+                                <span style={{ fontSize: '0.725rem', color: '#d97706', display: 'block', marginTop: '2px', fontWeight: 600 }}>Hạn hôm nay</span>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', display: 'block' }}>{payDateStr}</span>
+                                <span style={{ fontSize: '0.725rem', color: '#dc2626', display: 'block', marginTop: '2px', fontWeight: 700 }}>Trễ {Math.abs(diffDays)} ngày</span>
+                              </div>
+                            );
+                          }
+                        })()}
                       </td>
 
                       {/* Status */}
@@ -1207,7 +1261,7 @@ export default function DepositsPage() {
                               gap: '6px'
                             }}>
                               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: pillColor }} />
-                              {approvedCount} / {totalCount} đợt
+                              {approvedCount} / {totalCount}
                             </span>
                           );
                         })()}
@@ -1403,415 +1457,527 @@ export default function DepositsPage() {
         </div>
       )}
 
-      {/* Create Modal */}
-      <CustomModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        title="Khởi tạo phiếu thanh toán"
-        width="620px"
-      >
-        <div style={{ padding: '0.5rem 0' }}>
-          <form onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '75vh', overflowY: 'auto', paddingRight: '4px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Khách hàng</label>
-                <CustomSelect
-                  options={contacts.map(c => ({
-                    value: String(c.id),
-                    label: `${c.last_name} ${c.first_name} (${c.phone})`,
-                    avatar: (c as any).avatar_url || (c as any).avatar
-                  }))}
-                  value={selectedContactId}
-                  onChange={val => setSelectedContactId(val.toString())}
-                  placeholder="-- Chọn khách hàng --"
-                  showAvatars
-                  searchable
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Chương trình / Chiến dịch</label>
-                <CustomSelect
-                  options={projects.map(p => ({
-                    value: String(p.id),
-                    label: p.name
-                  }))}
-                  value={selectedProjectId}
-                  onChange={val => setSelectedProjectId(val.toString())}
-                  placeholder="-- Chọn chương trình/chiến dịch --"
-                  searchable
-                />
-              </div>
-            </div>
+      <AnimatePresence>
+        {isCreateOpen && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000000, display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Backdrop Overlay */}
+            <motion.div
+              className="drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCreateOpen(false)}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 1000005
+              }}
+            />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.8fr 1.1fr 1fr', gap: '1rem' }}>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Mã Học viên / Khách hàng</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: HV-10023"
-                  value={unitCode}
-                  onChange={e => setUnitCode(e.target.value.toUpperCase())}
-                  className="form-input"
-                  style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem' }}
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Loại tiền tệ</label>
-                <CustomSelect
-                  options={[
-                    { value: 'VND', label: 'VND' },
-                    { value: 'USD', label: 'USD' },
-                    { value: 'EURO', label: 'EURO' },
-                    { value: 'CHF', label: 'CHF' }
-                  ]}
-                  value={currency}
-                  onChange={val => setCurrency(val)}
-                  width="100%"
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Tổng doanh thu ({currency})</label>
-                <CurrencyInput
-                  value={price}
-                  onChange={val => setPrice(String(val))}
-                  placeholder="0"
-                  showTextHelper={false}
-                  currency={currency}
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Hoa hồng ({currency})</label>
-                <CurrencyInput
-                  value={expectedCommission}
-                  onChange={val => setExpectedCommission(String(val))}
-                  placeholder="0"
-                  showTextHelper={false}
-                  currency={currency}
-                />
-              </div>
-            </div>
+            {/* Drawer Sheet Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                bottom: 0,
+                left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+                right: 0,
+                backgroundColor: 'var(--color-surface)',
+                boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 1000010,
+                overflow: 'hidden'
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid var(--color-border)',
+                background: 'linear-gradient(to right, var(--color-bg), var(--color-surface))',
+                flexShrink: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                  {/* Close Button as "<" ChevronLeft on the Left */}
+                  <button 
+                    type="button"
+                    onClick={() => setIsCreateOpen(false)}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--color-text)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                    className="hover-bg-muted"
+                    title="Quay lại"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
 
-            {/* Milestones config */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 700 }}>Lịch trình thanh toán</h4>
-                <button
-                  type="button"
-                  onClick={handleAddMilestoneInput}
-                  style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
-                  className="hover:underline"
-                >
-                  <Plus size={14} /> Thêm đợt tiền
-                </button>
-              </div>
-
-              {milestonesInput.map((m, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    required
-                    placeholder={`Tên đợt ${idx + 1}`}
-                    value={m.name}
-                    onChange={e =>
-                      setMilestonesInput(prev =>
-                        prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))
-                      )
-                    }
-                    className="form-input"
-                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1 }}
-                  />
-                  <div style={{ width: '140px', flexShrink: 0 }}>
-                    <CurrencyInput
-                      value={m.amount}
-                      required
-                      onChange={val =>
-                        setMilestonesInput(prev =>
-                          prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
-                        )
-                      }
-                      placeholder={`Số tiền (${currency})`}
-                      showTextHelper={false}
-                      currency={currency}
-                    />
-                  </div>
-                  <input
-                    type="date"
-                    required
-                    value={m.expected_pay_date || ''}
-                    onChange={e =>
-                      setMilestonesInput(prev =>
-                        prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
-                      )
-                    }
-                    className="form-input"
-                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}
-                  />
-                  {milestonesInput.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveMilestoneInput(idx)}
-                      style={{ padding: '6px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Sales Method & Cooperation Config */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)' }}>
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 700, margin: 0 }}>Phương thức bán hàng & Hoa hồng</h4>
-              
-              {hasExistingCoop ? (
-                <div style={{
-                  padding: '8px 12px',
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  borderRadius: '8px',
-                  fontSize: '0.8rem'
-                }}>
-                  <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Check size={14} /> Phát hiện có Phiếu hợp tác đã lập từ trước
-                  </p>
-                  <p style={{ color: 'var(--color-text-muted)', marginBottom: '8px', fontSize: '0.75rem' }}>
-                    Phiếu cọc này sẽ tự động liên kết với phiếu hợp tác sẵn có. Phân chia tỷ lệ hoa hồng:
-                  </p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    {existingCoopShares.map((sh: any) => (
-                      <span key={sh.user_id} style={{
-                        background: 'var(--color-surface)',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--color-border-light)',
-                        fontWeight: 600
-                      }}>
-                        {sh.name}: {sh.percentage}%
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {allowedCollaborators.length <= 1 ? (
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                      KHTN này chưa phát sinh lịch sử mời hỗ trợ chăm sóc chung. Giao dịch sẽ mặc định là Bán độc lập (Chủ sở hữu hưởng 100% hoa hồng và tự động duyệt phiếu).
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0, color: 'var(--color-text)' }}>
+                      Tạo phiếu thanh toán mới
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4, marginBottom: 0 }}>
+                      Thiết lập lộ trình thanh toán chương trình
                     </p>
-                  ) : (
-                    <>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-                        <input
-                          type="checkbox"
-                          checked={isCooperation}
-                          onChange={e => setIsCooperation(e.target.checked)}
-                          style={{ cursor: 'pointer' }}
-                        />
-                        <span>Có hợp tác chia sẻ hoa hồng (Cooperation Deal)</span>
-                      </label>
+                  </div>
+                </div>
+              </div>
 
-                      {isCooperation && (
-                        <div style={{
-                          padding: '12px',
-                          background: 'var(--color-surface-hover)',
-                          borderRadius: '8px',
-                          border: '1px solid var(--color-border-light)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px'
-                        }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 2 }}>
-                            Phân chia tỷ lệ hoa hồng cho thành viên (Luật 4.5):
-                          </span>
+              {/* Body */}
+              <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+                <form onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'stretch' }}>
+                    
+                    {/* Left Pane: Transaction & Installments */}
+                    <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      
+                      {/* Card 1: Thông tin chung */}
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Thông tin chung</h4>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">Khách hàng *</label>
+                            <CustomSelect
+                              options={contacts.map(c => ({
+                                value: String(c.id),
+                                label: `${c.last_name} ${c.first_name} (${c.phone})`,
+                                avatar: (c as any).avatar_url || (c as any).avatar
+                              }))}
+                              value={selectedContactId}
+                              onChange={val => setSelectedContactId(val.toString())}
+                              placeholder="-- Chọn khách hàng --"
+                              showAvatars
+                              searchable
+                            />
+                          </div>
 
-                          {allowedCollaborators.map((col) => (
-                            <div key={col.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '0.8rem', fontWeight: col.isOwner ? 700 : 500, color: col.isOwner ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                                {col.name}
-                              </span>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                  type="number"
-                                  placeholder="%"
-                                  required
-                                  min={0}
-                                  max={100}
-                                  value={collaboratorShares[col.id] !== undefined ? collaboratorShares[col.id] : ''}
-                                  onChange={e => {
-                                    const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                                    setCollaboratorShares(prev => ({
-                                      ...prev,
-                                      [col.id]: val
-                                    }));
-                                  }}
-                                  className="form-input"
-                                  style={{ width: '70px', height: '32px', fontSize: '0.75rem', padding: '0 8px', textAlign: 'center' }}
-                                />
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>%</span>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Total share sum indicator */}
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            borderTop: '1px solid var(--color-border-light)',
-                            paddingTop: '6px',
-                            marginTop: '4px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700
-                          }}>
-                            <span>Tổng tỷ lệ chia sẻ:</span>
-                            <span style={{
-                              color: Object.values(collaboratorShares).reduce((acc, curr) => acc + Number(curr), 0) === 100 ? '#10b981' : '#ef4444'
-                            }}>
-                              {Object.values(collaboratorShares).reduce((acc, curr) => acc + Number(curr), 0)}% / 100%
-                            </span>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">Chương trình / Chiến dịch *</label>
+                            <CustomSelect
+                              options={projects.map(p => ({
+                                value: String(p.id),
+                                label: p.name
+                              }))}
+                              value={selectedProjectId}
+                              onChange={val => setSelectedProjectId(val.toString())}
+                              placeholder="-- Chọn chương trình/chiến dịch --"
+                              searchable
+                            />
                           </div>
                         </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* Cấu hình nhắc lịch thanh toán tự động */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              padding: '12px 16px',
-              background: 'var(--color-surface-hover)',
-              borderRadius: '12px',
-              border: '1px solid var(--color-border-light)',
-              marginTop: '0.5rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                  Bật nhắc lịch thanh toán tự động
-                </span>
-                <label style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: '40px',
-                  height: '22px',
-                  cursor: 'pointer'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={autoRemind}
-                    onChange={e => setAutoRemind(e.target.checked)}
-                    style={{ opacity: 0, width: 0, height: 0 }}
-                  />
-                  <span style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundColor: autoRemind ? '#10b981' : '#cbd5e1',
-                    borderRadius: '34px',
-                    transition: '0.3s'
-                  }}>
-                    <span style={{
-                      position: 'absolute',
-                      content: '""',
-                      height: '16px',
-                      width: '16px',
-                      left: autoRemind ? '20px' : '3px',
-                      bottom: '3px',
-                      backgroundColor: 'white',
-                      borderRadius: '50%',
-                      transition: '0.3s'
-                    }} />
-                  </span>
-                </label>
-              </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">Loại tiền tệ *</label>
+                            <CustomSelect
+                              options={[
+                                { value: 'VND', label: 'VND' },
+                                { value: 'USD', label: 'USD' },
+                                { value: 'EURO', label: 'EURO' },
+                                { value: 'CHF', label: 'CHF' }
+                              ]}
+                              value={currency}
+                              onChange={val => setCurrency(val)}
+                              width="100%"
+                            />
+                          </div>
 
-              {autoRemind && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
-                  {/* Warning if selected customer has no email */}
-                  {selectedContactId && (() => {
-                    const selectedContactObj = contacts.find(c => String(c.id) === String(selectedContactId));
-                    if (selectedContactObj && !selectedContactObj.email) {
-                      return (
-                        <div style={{
-                          padding: '8px 12px',
-                          background: 'rgba(245, 158, 11, 0.08)',
-                          border: '1px solid rgba(245, 158, 11, 0.2)',
-                          borderRadius: '8px',
-                          color: '#d97706',
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          lineHeight: 1.4,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}>
-                          <AlertCircle size={14} style={{ flexShrink: 0 }} />
-                          <span>Khách hàng này không có email. Email nhắc thanh toán sẽ được gửi cho Sale chăm sóc thay thế.</span>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">Tổng doanh thu ({currency}) *</label>
+                            <CurrencyInput
+                              value={price}
+                              onChange={val => setPrice(String(val))}
+                              placeholder="0"
+                              showTextHelper={false}
+                              currency={currency}
+                            />
+                          </div>
+
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">Hoa hồng ({currency})</label>
+                            <CurrencyInput
+                              value={expectedCommission}
+                              onChange={val => setExpectedCommission(String(val))}
+                              placeholder="0"
+                              showTextHelper={false}
+                              currency={currency}
+                            />
+                          </div>
                         </div>
-                      );
-                    }
-                    return null;
-                  })()}
 
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
-                      <CustomSelect
-                        options={[
-                          { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
-                          { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
-                        ]}
-                        value={String(remindTarget)}
-                        onChange={val => setRemindTarget(Number(val))}
-                        placeholder="Chọn đối tượng"
-                      />
+                        {/* Notes input instead of unitCode */}
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label">Ghi chú</label>
+                          <textarea
+                            placeholder="Nhập ghi chú giao dịch..."
+                            value={notes}
+                            onChange={e => setNotes(e.target.value)}
+                            className="form-input"
+                            style={{ height: '70px', padding: '8px 12px', fontSize: '0.85rem', resize: 'none', borderRadius: '8px' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Card 2: Lịch trình thanh toán */}
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Lịch trình thanh toán</h4>
+                          <button
+                            type="button"
+                            onClick={handleAddMilestoneInput}
+                            style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}
+                            className="hover:underline"
+                          >
+                            <Plus size={14} /> Thêm đợt tiền
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {milestonesInput.map((m, idx) => (
+                            <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                required
+                                placeholder={`Tên đợt ${idx + 1}`}
+                                value={m.name}
+                                onChange={e =>
+                                  setMilestonesInput(prev =>
+                                    prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))
+                                  )
+                                }
+                                className="form-input"
+                                style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1, borderRadius: '8px' }}
+                              />
+                              <div style={{ width: '150px', flexShrink: 0 }}>
+                                <CurrencyInput
+                                  value={m.amount}
+                                  required
+                                  onChange={val =>
+                                    setMilestonesInput(prev =>
+                                      prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
+                                    )
+                                  }
+                                  placeholder={`Số tiền (${currency})`}
+                                  showTextHelper={false}
+                                  currency={currency}
+                                />
+                              </div>
+                              <input
+                                type="date"
+                                required
+                                value={m.expected_pay_date || ''}
+                                onChange={e =>
+                                  setMilestonesInput(prev =>
+                                    prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
+                                  )
+                                }
+                                className="form-input"
+                                style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '135px', flexShrink: 0, borderRadius: '8px' }}
+                              />
+                              {milestonesInput.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMilestoneInput(idx)}
+                                  style={{ padding: '8px', background: 'rgba(239, 68, 68, 0.08)', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', borderRadius: '8px', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
                     </div>
 
-                    <div style={{ width: '130px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Nhắc trước (ngày)</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={30}
-                        value={remindDaysBefore}
-                        onChange={e => setRemindDaysBefore(Math.max(1, parseInt(e.target.value) || 3))}
-                        className="form-input"
-                        style={{ height: '38px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '8px', textAlign: 'center', margin: 0 }}
-                      />
-                    </div>
+                    {/* Right Pane: Cooperation & Reminders */}
+                    <div style={{ flex: isMobile ? 'none' : 5, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      
+                      {/* Card 3: Phương thức bán hàng & Hoa hồng */}
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Bán hàng & Hợp tác</h4>
+                        
+                        {hasExistingCoop ? (
+                          <div style={{
+                            padding: '10px 12px',
+                            background: 'rgba(16, 185, 129, 0.08)',
+                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem'
+                          }}>
+                            <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px', margin: 0 }}>
+                              <Check size={14} /> Có Phiếu hợp tác đã lập sẵn
+                            </p>
+                            <p style={{ color: 'var(--color-text-muted)', marginBottom: '8px', marginTop: '4px', fontSize: '0.75rem', lineHeight: 1.4 }}>
+                              Phiếu cọc này tự động kế thừa phân chia tỷ lệ hoa hồng:
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                              {existingCoopShares.map((sh: any) => (
+                                <span key={sh.user_id} style={{
+                                  background: 'var(--color-surface)',
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--color-border-light)',
+                                  fontWeight: 600,
+                                  fontSize: '0.75rem'
+                                }}>
+                                  {sh.name}: {sh.percentage}%
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {allowedCollaborators.length <= 1 ? (
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                Giao dịch này mặc định là Bán độc lập (Chủ sở hữu hưởng 100% hoa hồng).
+                              </p>
+                            ) : (
+                              <>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, margin: 0 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isCooperation}
+                                    onChange={e => setIsCooperation(e.target.checked)}
+                                    style={{ cursor: 'pointer' }}
+                                  />
+                                  <span>Hợp tác chia sẻ hoa hồng (Co-op)</span>
+                                </label>
 
-                    <div style={{ width: '125px', display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Giờ gửi nhắc</label>
-                      <CustomSelect
-                        options={Array.from({ length: 24 }).map((_, h) => ({
-                          value: String(h),
-                          label: `${h}:00`
-                        }))}
-                        value={String(remindAtHour)}
-                        onChange={val => setRemindAtHour(Number(val))}
-                        placeholder="Chọn giờ"
-                      />
+                                {isCooperation && (
+                                  <div style={{
+                                    padding: '12px',
+                                    background: 'var(--color-bg-light)',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--color-border-light)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px'
+                                  }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 2 }}>
+                                      Tỷ lệ chia sẻ hoa hồng (%):
+                                    </span>
+
+                                    {allowedCollaborators.map((col) => (
+                                      <div key={col.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: col.isOwner ? 700 : 500, color: col.isOwner ? 'var(--color-primary)' : 'var(--color-text)' }}>
+                                          {col.name}
+                                        </span>
+                                        
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <input
+                                            type="number"
+                                            placeholder="%"
+                                            required
+                                            min={0}
+                                            max={100}
+                                            value={collaboratorShares[col.id] !== undefined ? collaboratorShares[col.id] : ''}
+                                            onChange={e => {
+                                              const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                                              setCollaboratorShares(prev => ({
+                                                ...prev,
+                                                [col.id]: val
+                                              }));
+                                            }}
+                                            className="form-input"
+                                            style={{ width: '70px', height: '32px', fontSize: '0.75rem', padding: '0 8px', textAlign: 'center', borderRadius: '6px' }}
+                                          />
+                                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>%</span>
+                                        </div>
+                                      </div>
+                                    ))}
+
+                                    <div style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      borderTop: '1px solid var(--color-border-light)',
+                                      paddingTop: '6px',
+                                      marginTop: '4px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700
+                                    }}>
+                                      <span>Tổng tỷ lệ:</span>
+                                      <span style={{
+                                        color: Object.values(collaboratorShares).reduce((acc, curr) => acc + Number(curr), 0) === 100 ? '#10b981' : '#ef4444'
+                                      }}>
+                                        {Object.values(collaboratorShares).reduce((acc, curr) => acc + Number(curr), 0)}% / 100%
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Card 4: Nhắc lịch tự động */}
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch thanh toán</h4>
+                          
+                          <label style={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            width: '40px',
+                            height: '22px',
+                            cursor: 'pointer'
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={autoRemind}
+                              onChange={e => setAutoRemind(e.target.checked)}
+                              style={{ opacity: 0, width: 0, height: 0 }}
+                            />
+                            <span style={{
+                              position: 'absolute',
+                              inset: 0,
+                              backgroundColor: autoRemind ? '#10b981' : '#cbd5e1',
+                              borderRadius: '34px',
+                              transition: '0.3s'
+                            }}>
+                              <span style={{
+                                position: 'absolute',
+                                content: '""',
+                                height: '16px',
+                                width: '16px',
+                                left: autoRemind ? '20px' : '3px',
+                                bottom: '3px',
+                                backgroundColor: 'white',
+                                borderRadius: '50%',
+                                transition: '0.3s'
+                              }} />
+                            </span>
+                          </label>
+                        </div>
+
+                        {autoRemind && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {selectedContactId && (() => {
+                              const selectedContactObj = contacts.find(c => String(c.id) === String(selectedContactId));
+                              if (selectedContactObj && !selectedContactObj.email) {
+                                return (
+                                  <div style={{
+                                    padding: '8px 12px',
+                                    background: 'rgba(245, 158, 11, 0.08)',
+                                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                                    borderRadius: '8px',
+                                    color: '#d97706',
+                                    fontSize: '0.725rem',
+                                    fontWeight: 500,
+                                    lineHeight: 1.4,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}>
+                                    <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                                    <span>Khách hàng này không có email. Nhắc nhở sẽ chuyển sang Sale chăm sóc.</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận</label>
+                              <CustomSelect
+                                options={[
+                                  { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
+                                  { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                                ]}
+                                value={String(remindTarget)}
+                                onChange={val => setRemindTarget(Number(val))}
+                                placeholder="Chọn đối tượng"
+                              />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={30}
+                                  value={remindDaysBefore}
+                                  onChange={e => setRemindDaysBefore(Math.max(1, parseInt(e.target.value) || 3))}
+                                  className="form-input"
+                                  style={{ height: '38px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '8px', textAlign: 'center', margin: 0 }}
+                                />
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi</label>
+                                <CustomSelect
+                                  options={Array.from({ length: 24 }).map((_, h) => ({
+                                    value: String(h),
+                                    label: `${h}:00`
+                                  }))}
+                                  value={String(remindAtHour)}
+                                  onChange={val => setRemindAtHour(Number(val))}
+                                  placeholder="Chọn giờ"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
 
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="btn primary w-full"
-              style={{ height: '38px', marginTop: '0.5rem', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
-            >
-              {isSaving ? 'Đang khởi tạo...' : 'Tạo phiếu đặt cọc'}
-            </button>
-          </form>
-        </div>
-      </CustomModal>
+                  {/* Form Footer Action Buttons */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '0.75rem',
+                    borderTop: '1px solid var(--color-border)',
+                    paddingTop: '1.25rem',
+                    marginTop: '1rem',
+                    flexShrink: 0
+                  }}>
+                    <button
+                      type="button"
+                      className="btn outline"
+                      onClick={() => setIsCreateOpen(false)}
+                      disabled={isSaving}
+                      style={{ height: '38px', minWidth: '100px', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn primary"
+                      disabled={isSaving}
+                      style={{ height: '38px', minWidth: '180px', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      {isSaving ? 'Đang khởi tạo...' : 'Khởi tạo phiếu cọc'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Cancel Modal */}
       <CustomModal
@@ -3085,10 +3251,17 @@ export default function DepositsPage() {
                                     border: '1px solid var(--color-border-light)',
                                     fontSize: '0.8125rem',
                                     color: 'var(--color-text)',
-                                    lineHeight: 1.4,
-                                    whiteSpace: 'pre-wrap'
+                                    lineHeight: 1.4
                                   }}>
-                                    {c.body}
+                                    {c.body && /<[a-z][\s\S]*>/i.test(c.body) ? (
+                                      <div 
+                                        className="rich-comment-content text-left"
+                                        dangerouslySetInnerHTML={{ __html: c.body }}
+                                        style={{ fontSize: '0.8125rem', color: 'var(--color-text)', lineHeight: '1.4', textAlign: 'left' }}
+                                      />
+                                    ) : (
+                                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-text)', margin: 0, lineHeight: 1.4, whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{c.body}</p>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -3178,48 +3351,57 @@ export default function DepositsPage() {
 
                   {/* Send Comment Input */}
                   {activeDrawerTab === 'comments' && (
-                    <form onSubmit={handleAddComment} style={{ padding: '12px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '8px', background: 'var(--color-surface)' }}>
-                      <input
-                        type="text"
-                        placeholder="Nhập nội dung trao đổi..."
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border)', padding: '12px', background: 'var(--color-surface)' }}>
+                      <MentionInput
                         value={newCommentText}
-                        onChange={(e) => setNewCommentText(e.target.value)}
-                        style={{
-                          flex: 1,
-                          height: '38px',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '8px',
-                          padding: '0 12px',
-                          fontSize: '0.8125rem',
-                          outline: 'none',
-                          background: 'var(--color-bg)',
-                          color: 'var(--color-text)'
+                        onChange={(e: any) => setNewCommentText(e.target.value)}
+                        placeholder="Nhập nội dung trao đổi... (Gõ @ để nhắc tên đồng nghiệp)"
+                        style={{ 
+                          width: '100%', 
+                          minHeight: '60px', 
+                          border: '1px solid var(--color-border)', 
+                          borderRadius: '8px', 
+                          outline: 'none', 
+                          background: 'var(--color-bg)', 
+                          color: 'var(--color-text)', 
+                          boxSizing: 'border-box'
                         }}
+                        disabled={isSubmittingComment}
                       />
-                      <button
-                        type="submit"
-                        disabled={isSubmittingComment || !newCommentText.trim()}
-                        style={{
-                          height: '38px',
-                          width: '38px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: newCommentText.trim() ? 'var(--color-primary)' : 'var(--color-border-light)',
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: newCommentText.trim() ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {isSubmittingComment ? (
-                          <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                          <Send size={16} />
-                        )}
-                      </button>
-                    </form>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          disabled={isSubmittingComment || !newCommentText || !newCommentText.replace(/<[^>]*>/g, '').trim()}
+                          onClick={handleAddComment}
+                          className="btn primary"
+                          style={{
+                            height: '32px',
+                            padding: '0 16px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            borderRadius: '8px',
+                            cursor: (newCommentText && newCommentText.replace(/<[^>]*>/g, '').trim()) ? 'pointer' : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'var(--color-primary)',
+                            color: 'white',
+                            border: 'none',
+                            opacity: (newCommentText && newCommentText.replace(/<[^>]*>/g, '').trim()) ? 1 : 0.6
+                          }}
+                        >
+                          {isSubmittingComment ? (
+                            <>
+                              <Loader2 size={12} className="spin animate-spin" /> Đang gửi...
+                            </>
+                          ) : (
+                            <>
+                              <Send size={12} /> Gửi
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

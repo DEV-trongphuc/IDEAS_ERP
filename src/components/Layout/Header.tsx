@@ -1608,7 +1608,8 @@ export const Header = ({
             if (lowercase === 'báo cáo') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
             if (lowercase === 'thanh toán') return { bg: 'linear-gradient(135deg, #0d9488, #115e59)', color: '#ffffff' };
             if (lowercase === 'chi phí chi tiêu') return { bg: 'linear-gradient(135deg, #d946ef, #701a75)', color: '#ffffff' };
-            if (lowercase === 'quy trình phê duyệt') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
+            if (lowercase === 'quy trình' || lowercase === 'quy trình phê duyệt') return { bg: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#ffffff' };
+            if (lowercase === 'sales order') return { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff' };
             if (lowercase === 'nhà cung cấp') return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
             if (lowercase === 'đối tác kinh doanh') return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
             if (lowercase === 'chương trình') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
@@ -1768,14 +1769,14 @@ export const Header = ({
             : [];
 
           const RECENT_TARGETS_BY_ROLE: Record<string, string[]> = {
-            admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            superadmin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            super_admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            director: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            superadmin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            super_admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            director: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
             sale: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
             sales: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
-            accountant: ['Sales Order', 'Purchase Order', 'Quy trình phê duyệt', 'Phiếu lương cá nhân', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc'],
-            hr: ['Quản trị nhân sự & lương', 'Quản lý chấm công', 'Quy trình phê duyệt', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu'],
+            accountant: ['Sales Order', 'Purchase Order', 'Quy trình', 'Phiếu lương cá nhân', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc'],
+            hr: ['Quản trị nhân sự & lương', 'Quản lý chấm công', 'Quy trình', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu'],
             marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data']
           };
 

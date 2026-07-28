@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft } from 'lucide-react';
+import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import { useUIStore } from '../store/uiStore';
@@ -68,12 +68,67 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const vendorRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [vatPercent, setVatPercent] = useState('10');
+  const isInitializedRef = useRef(false);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [allocationType, setAllocationType] = useState<'contact' | 'company'>('contact');
+
+  useEffect(() => {
+    if (isOpen && editItem) {
+      if (Array.isArray(editItem.entities) && editItem.entities.length > 0) {
+        const hasCompany = editItem.entities.some((e: any) => e.entity_type === 'company');
+        setAllocationType(hasCompany ? 'company' : 'contact');
+      } else {
+        setAllocationType('contact');
+      }
+    } else if (isOpen) {
+      setAllocationType('contact');
+    }
+  }, [isOpen, editItem]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      isInitializedRef.current = false;
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && editItem) {
+      if (editItem.amount && editItem.vat_amount) {
+        const pct = Math.round((Number(editItem.vat_amount) / Number(editItem.amount)) * 100);
+        setVatPercent(String(pct));
+      } else {
+        setVatPercent('10');
+      }
+    } else if (isOpen) {
+      setVatPercent('10');
+    }
+  }, [isOpen, editItem]);
+
+  // Automatic VAT calculation
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+    
+    if (form.has_vat_invoice) {
+      const amountVal = parseFloat(form.amount) || 0;
+      const pct = parseFloat(vatPercent) || 0;
+      let calculatedVat = 0;
+      if (form.is_vat_inclusive) {
+        calculatedVat = Math.round(amountVal - (amountVal / (1 + (pct / 100))));
+      } else {
+        calculatedVat = Math.round(amountVal * (pct / 100));
+      }
+      setForm(prev => ({ ...prev, vat_amount: calculatedVat > 0 ? String(calculatedVat) : '0' }));
+    } else {
+      setForm(prev => ({ ...prev, vat_amount: '0' }));
+    }
+  }, [form.amount, form.has_vat_invoice, form.is_vat_inclusive, vatPercent]);
 
   // Fetch initial data
   useEffect(() => {
@@ -91,6 +146,11 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
       api.get('/contacts?limit=1000').then(r => {
         const d = r.data.data;
         setContacts(Array.isArray(d) ? d : (d?.items || []));
+      }).catch(() => {});
+
+      api.get('/companies?limit=1000').then(r => {
+        const d = r.data.data;
+        setCompanies(Array.isArray(d) ? d : (d?.items || []));
       }).catch(() => {});
     }
   }, [isOpen]);
@@ -146,6 +206,9 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
         });
         setVendorSearch('');
       }
+      setTimeout(() => {
+        isInitializedRef.current = true;
+      }, 50);
     }
   }, [isOpen, editItem, initialDate, users]);
 
@@ -186,7 +249,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
 
       const statusVal = isAutoApprove ? 'approved' : 'pending';
 
-      if (editItem) {
+      if (editItem && editItem.id && !editItem.isClone) {
         await api.put(`/expenses/${editItem.id}`, {
           ...form,
           notes: finalNotes,
@@ -224,16 +287,61 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           {/* Backdrop Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !saving && onClose()}
             style={{
-              position: 'absolute',
+              position: 'fixed',
               inset: 0,
               zIndex: 2000000005,
-              background: 'black'
+              background: 'rgba(15, 23, 42, 0.3)',
+              backdropFilter: 'blur(4px)',
+              cursor: 'pointer'
             }}
-          />
+          >
+            {!isMobile && (
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 'var(--sidebar-width, 220px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    transition: 'all 0.22s ease-in-out'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <ChevronLeft size={22} />
+                </motion.div>
+              </div>
+            )}
+          </motion.div>
 
           {/* Drawer Sheet Panel */}
           <motion.div
@@ -422,54 +530,90 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
 
               {/* VAT Settings Panel */}
-              <div style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ 
+                background: 'var(--color-surface)', 
+                padding: '1.25rem', 
+                borderRadius: '16px', 
+                border: '1px solid var(--color-border-light)', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '1.25rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(189, 29, 45, 0.08)', color: 'var(--color-primary)', display: 'grid', placeItems: 'center' }}>
+                    <FileText size={16} />
+                  </div>
+                  <span style={{ fontWeight: 750, fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--color-text)' }}>Hóa đơn & Thuế VAT</span>
+                </div>
+
+                <div style={{ background: 'var(--color-bg-light)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <CustomCheckbox
                       checked={form.has_vat_invoice}
-                      onChange={() => setForm({ ...form, has_vat_invoice: !form.has_vat_invoice })}
+                      onChange={() => {
+                        const nextHasVat = !form.has_vat_invoice;
+                        setForm({
+                          ...form,
+                          has_vat_invoice: nextHasVat,
+                          is_vat_inclusive: nextHasVat ? form.is_vat_inclusive : false
+                        });
+                      }}
                       label="Có hóa đơn VAT"
                     />
-                    <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginLeft: '2rem', margin: 0 }}>Chứng từ thuế</p>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <CustomCheckbox
-                      checked={form.is_vat_inclusive}
-                      onChange={() => setForm({ ...form, is_vat_inclusive: !form.is_vat_inclusive })}
-                      label="Bao gồm VAT"
-                    />
-                    <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginLeft: '2rem', margin: 0 }}>Giá sau thuế</p>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '26px' }}>Chứng từ thuế</span>
                   </div>
                 </div>
 
                 {form.has_vat_invoice && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)' }}>Thuế %</label>
-                      <CustomSelect
-                        options={[
-                          { value: '0', label: '0%' },
-                          { value: '5', label: '5%' },
-                          { value: '8', label: '8%' },
-                          { value: '10', label: '10%' }
-                        ]}
-                        value={form.amount ? Math.round((Number(form.vat_amount) / Number(form.amount)) * 100).toString() : '10'}
-                        onChange={val => {
-                          const pct = Number(val);
-                          const amt = Math.round(Number(form.amount) * (pct / 100));
-                          setForm({ ...form, vat_amount: amt.toString() });
-                        }}
+                  <motion.div 
+                    initial={{ opacity: 0, y: -8 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      gap: '1.25rem',
+                      padding: '1.25rem',
+                      background: 'rgba(59, 130, 246, 0.02)',
+                      border: '1px dashed rgba(59, 130, 246, 0.2)',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px dashed var(--color-border-light)', paddingBottom: '12px' }}>
+                      <CustomCheckbox
+                        checked={form.is_vat_inclusive}
+                        onChange={() => setForm({ ...form, is_vat_inclusive: !form.is_vat_inclusive })}
+                        label="Bao gồm VAT (Giá sau thuế)"
                       />
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '26px' }}>Đơn giá nhập phía trên đã bao gồm thuế VAT</span>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)' }}>Tiền thuế VAT ({form.currency || 'VND'})</label>
-                      <input
-                        className="form-input"
-                        type="number"
-                        value={form.vat_amount || ''}
-                        onChange={e => setForm({ ...form, vat_amount: e.target.value })}
-                        placeholder="Nhập số tiền thuế..."
-                      />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Thuế %</label>
+                        <CustomSelect
+                          options={[
+                            { value: '0', label: '0%' },
+                            { value: '5', label: '5%' },
+                            { value: '8', label: '8%' },
+                            { value: '10', label: '10%' }
+                          ]}
+                          value={vatPercent}
+                          onChange={val => setVatPercent(val.toString())}
+                          placeholder="Thuế %"
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Tiền thuế VAT ({form.currency || 'VND'})</label>
+                        <input
+                          className="form-input"
+                          type="number"
+                          value={form.vat_amount || ''}
+                          onChange={e => setForm({ ...form, vat_amount: e.target.value })}
+                          placeholder="Nhập số tiền thuế..."
+                          style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
+                        />
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -709,36 +853,119 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
 
               <div className="form-group" style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)' }}>
-                <label className="form-label" style={{ fontWeight: 600 }}>Áp dụng cho (Chia đều tiền bill)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+                  <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>Áp dụng cho (Chia đều bill)</label>
+                  
+                  {/* Segmented Control: 1 trong 2 */}
+                  <div style={{
+                    display: 'inline-flex',
+                    background: 'var(--color-surface)',
+                    padding: '3px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border-light)'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (allocationType !== 'contact') {
+                          setAllocationType('contact');
+                          setForm(prev => ({ ...prev, entities: [] }));
+                        }
+                      }}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: allocationType === 'contact' ? 'var(--color-primary-light)' : 'transparent',
+                        color: allocationType === 'contact' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      Khách hàng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (allocationType !== 'company') {
+                          setAllocationType('company');
+                          setForm(prev => ({ ...prev, entities: [] }));
+                        }
+                      }}
+                      style={{
+                        padding: '4px 12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: allocationType === 'company' ? 'var(--color-primary-light)' : 'transparent',
+                        color: allocationType === 'company' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      Đối tác / Giảng viên
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                  {form.entities.length === 0 ? <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Chưa áp dụng cho khách hàng nào</span> :
+                  {form.entities.length === 0 ? (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                      Chưa áp dụng cho {allocationType === 'contact' ? 'khách hàng' : 'đối tác'} nào
+                    </span>
+                  ) : (
                     form.entities.map((e: any) => (
                       <span key={e.entity_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '6px 12px', borderRadius: 'var(--radius-lg)', fontSize: '0.8125rem', fontWeight: 600, border: '1px solid rgba(163, 20, 34, 0.2)' }}>
                         <Avatar name={e.name} src={e.avatar_url} size={20} />
-                        {e.name || `Khách hàng #${e.entity_id}`}
+                        {e.name || `${allocationType === 'contact' ? 'Khách hàng' : 'Đối tác'} #${e.entity_id}`}
                         <X size={14} style={{ cursor: 'pointer', marginLeft: 4 }} onClick={() => setForm({ ...form, entities: form.entities.filter((x: any) => x.entity_id !== e.entity_id) })} />
                       </span>
                     ))
-                  }
+                  )}
                 </div>
-                <CustomSelect
-                  options={contacts.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
-                    value: String(c.id),
-                    label: `${c.last_name || ''} ${c.first_name}`.trim(),
-                    avatar: c.avatar_url,
-                    sublabel: c.company_name
-                  }))}
-                  value=""
-                  onChange={(val) => {
-                    const found = contacts.find(c => String(c.id) === val);
-                    if (found) {
-                      setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: `${found.last_name || ''} ${found.first_name}`.trim(), avatar_url: found.avatar_url }] });
-                    }
-                  }}
-                  placeholder="+ Thêm khách hàng chia tiền bill..."
-                  searchable
-                  showAvatars
-                />
+
+                {allocationType === 'contact' ? (
+                  <CustomSelect
+                    options={contacts.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
+                      value: String(c.id),
+                      label: `${c.last_name || ''} ${c.first_name}`.trim(),
+                      avatar: c.avatar_url,
+                      sublabel: c.company_name
+                    }))}
+                    value=""
+                    onChange={(val) => {
+                      const found = contacts.find(c => String(c.id) === val);
+                      if (found) {
+                        setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: `${found.last_name || ''} ${found.first_name}`.trim(), avatar_url: found.avatar_url }] });
+                      }
+                    }}
+                    placeholder="+ Thêm khách hàng chia tiền bill..."
+                    searchable
+                    showAvatars
+                  />
+                ) : (
+                  <CustomSelect
+                    options={companies.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
+                      value: String(c.id),
+                      label: c.name || c.company_name || 'Không tên',
+                      avatar: c.logo_url || c.logo,
+                      sublabel: c.code || c.phone
+                    }))}
+                    value=""
+                    onChange={(val) => {
+                      const found = companies.find(c => String(c.id) === val);
+                      if (found) {
+                        setForm({ ...form, entities: [...form.entities, { entity_type: 'company', entity_id: found.id, name: found.name || found.company_name || 'Không tên', avatar_url: found.logo_url || found.logo }] });
+                      }
+                    }}
+                    placeholder="+ Thêm đối tác / giảng viên chia tiền bill..."
+                    searchable
+                    showAvatars
+                  />
+                )}
               </div>
             </div>
           </motion.div>

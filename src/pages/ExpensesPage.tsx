@@ -4,7 +4,7 @@ import {
   DollarSign, Plus, Search, Download, Truck, Coffee, Home,
   Briefcase, CreditCard, Tag, Eye, Pencil, Trash2, Loader2,
   CheckCircle2, Clock, TrendingDown, X, ArrowUpRight, ArrowDownRight, ChevronDown, Building2, Wallet, User,
-  Upload, Paperclip, XCircle, Send, MessageSquare
+  Upload, Paperclip, XCircle, Send, MessageSquare, Copy, Calendar
 } from 'lucide-react';
 import { compressToWebP } from '../utils/imageCompress';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -606,7 +606,6 @@ export const ExpensesPage: React.FC = () => {
                 <th style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-surface)' }}>Người tạo</th>
                 <th style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-surface)' }}>Số tiền</th>
                 <th style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-surface)' }}>Người duyệt <Tooltip content="Thành viên chịu trách nhiệm phê duyệt khoản chi phí này." /></th>
-                <th style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-surface)' }}>Trạng thái <Tooltip content="Quy trình duyệt: Chờ duyệt (đang kiểm tra chứng từ), Đã duyệt (chấp thuận thanh toán và ghi nhận chi phí)." /></th>
                 <th style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-surface)', textAlign: 'right' }}>Thao tác</th>
               </tr>
             </thead>
@@ -646,54 +645,58 @@ export const ExpensesPage: React.FC = () => {
                           <Avatar src={exp.creator_avatar} name={exp.creator_name} size={24} style={{ border: '1px solid var(--color-border-light)' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>{exp.creator_name}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                              {new Date(exp.created_at).toLocaleDateString('vi-VN')} {new Date(exp.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{FMT(exp.amount, exp.currency)}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            {exp.date && !isNaN(Date.parse(exp.date)) ? new Date(exp.date).toLocaleDateString('vi-VN') : '—'}
+                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                            <Calendar size={12} style={{ color: 'var(--color-text-muted)' }} />
+                            Hạn chi: {exp.date && !isNaN(Date.parse(exp.date)) ? new Date(exp.date).toLocaleDateString('vi-VN') : '—'}
                           </span>
                         </div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {exp.approver_id ? (
-                            <>
-                              <Avatar src={exp.approver_avatar} name={exp.approver_name || 'Admin'} size={24} style={{ border: '1px solid var(--color-border-light)' }} />
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>{exp.approver_name || 'Admin'}</span>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div style={{ 
-                                width: '24px', 
-                                height: '24px', 
-                                borderRadius: '50%', 
-                                background: 'rgba(245, 158, 11, 0.08)', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                color: '#f59e0b', 
-                                fontSize: '0.65rem',
-                                fontWeight: 800,
-                                border: '1px dashed rgba(245, 158, 11, 0.3)'
-                              }}>
-                                ?
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#f59e0b', fontStyle: 'italic' }}>Chờ duyệt</span>
-                              </div>
-                            </>
-                          )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {exp.approver_id ? (
+                              <>
+                                <Avatar src={exp.approver_avatar} name={exp.approver_name || 'Admin'} size={24} style={{ border: '1px solid var(--color-border-light)' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)' }}>{exp.approver_name || 'Admin'}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ 
+                                  width: '24px', 
+                                  height: '24px', 
+                                  borderRadius: '50%', 
+                                  background: 'rgba(245, 158, 11, 0.08)', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  color: '#f59e0b', 
+                                  fontSize: '0.65rem',
+                                  fontWeight: 800,
+                                  border: '1px dashed rgba(245, 158, 11, 0.3)'
+                                }}>
+                                  ?
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#f59e0b', fontStyle: 'italic' }}>Chờ duyệt</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <span className={`badge ${exp.status === 'approved' ? 'success' : 'warning'}`} style={{ fontSize: '0.65rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px', height: 'auto', borderRadius: '6px' }}>
+                            {exp.status === 'approved' ? <><CheckCircle2 size={10} /> Đã duyệt</> : <><Clock size={10} /> Chờ duyệt</>}
+                          </span>
                         </div>
-                      </td>
-                      <td>
-                        <span className={`badge ${exp.status === 'approved' ? 'success' : 'warning'}`}>
-                          {exp.status === 'approved' ? <><CheckCircle2 size={11} /> Đã duyệt</> : <><Clock size={11} /> Chờ duyệt</>}
-                        </span>
                       </td>
                       <td>
                         <div className="flex gap-1" style={{ justifyContent: 'flex-end' }}>
@@ -887,6 +890,32 @@ export const ExpensesPage: React.FC = () => {
                         <Pencil size={14} style={{ color: 'var(--color-text-muted)' }} />
                       </button>
                     )}
+                    {/* Duplicate Action */}
+                    <button 
+                      className="btn secondary sm" 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        background: 'var(--color-bg)', 
+                        border: '1px solid var(--color-border)', 
+                        color: 'var(--color-text-muted)', 
+                        borderRadius: '6px', 
+                        height: '32px', 
+                        width: '32px', 
+                        padding: 0,
+                        cursor: 'pointer',
+                        marginLeft: '4px'
+                      }} 
+                      title="Nhân bản phiếu chi" 
+                      onClick={() => { 
+                        const cloned = { ...viewItem, id: undefined, isClone: true };
+                        setViewItem(null); 
+                        openEdit(cloned); 
+                      }}
+                    >
+                      <Copy size={14} style={{ color: 'var(--color-text-muted)' }} />
+                    </button>
                     <span className={`badge ${viewItem.status === 'approved' ? (viewItem.is_refunded ? 'info' : 'success') : viewItem.status === 'rejected' ? 'danger' : 'warning'}`} style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '8px', fontWeight: 700 }}>
                       {viewItem.status === 'approved' ? (viewItem.is_refunded ? 'Đã thanh toán' : 'Đã duyệt') : viewItem.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
                     </span>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, XCircle, CheckCircle2, Pencil, Wallet, Clock, MessageSquare, Loader2, Coffee, Trash2, Upload, Send, Info } from 'lucide-react';
+import { X, XCircle, CheckCircle2, Pencil, Wallet, Clock, MessageSquare, Loader2, Coffee, Trash2, Upload, Send, Info, Copy } from 'lucide-react';
 import api from '../api/axios';
 import { Avatar } from './ui/Avatar';
 import { useUIStore } from '../store/uiStore';
@@ -420,6 +420,32 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
                   onClick={() => onEditClick(viewItem)}
                 >
                   <Pencil size={14} style={{ color: 'var(--color-text-muted)' }} />
+                </button>
+              )}
+              {onEditClick && (
+                <button 
+                  className="btn secondary sm" 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: 'var(--color-bg)', 
+                    border: '1px solid var(--color-border)', 
+                    color: 'var(--color-text-muted)', 
+                    borderRadius: '6px', 
+                    height: '32px', 
+                    width: '32px', 
+                    padding: 0,
+                    cursor: 'pointer' 
+                  }} 
+                  title="Nhân bản phiếu chi" 
+                  onClick={() => { 
+                    const cloned = { ...viewItem, id: undefined, isClone: true };
+                    onClose(); 
+                    onEditClick(cloned); 
+                  }}
+                >
+                  <Copy size={14} style={{ color: 'var(--color-text-muted)' }} />
                 </button>
               )}
               <span className={`badge ${viewItem.status === 'approved' ? (viewItem.is_refunded ? 'info' : 'success') : viewItem.status === 'rejected' ? 'danger' : 'warning'}`} style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '8px', fontWeight: 700 }}>

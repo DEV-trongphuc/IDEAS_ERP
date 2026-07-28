@@ -1393,6 +1393,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     { name: 'Đợt 1 - Cọc giữ chỗ', amount: '', expected_pay_date: '' }
   ]);
   const [depositUncFile, setDepositUncFile] = useState<File | null>(null);
+  const [depositAccountantId, setDepositAccountantId] = useState('');
+  const [autoRemind, setAutoRemind] = useState(false);
+  const [remindDaysBefore, setRemindDaysBefore] = useState(3);
+  const [remindAtHour, setRemindAtHour] = useState(8);
+  const [remindTarget, setRemindTarget] = useState(1);
+
+
   const [pendingPipelineTransition, setPendingPipelineTransition] = useState<{ targetId: string; targetLabel: string; note: string } | null>(null);
   const [depositCoopShares, setDepositCoopShares] = useState<Record<string, string>>({});
 
@@ -1765,6 +1772,15 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [allowedTeams, setAllowedTeams] = useState<any[]>([]);
   const [pipelineModal, setPipelineModal] = useState<{ isOpen: boolean; targetId: string; targetLabel: string; note: string }>({ isOpen: false, targetId: '', targetLabel: '', note: '' });
   const [users, setUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showDealModal && users.length > 0) {
+      const acc = users.find(u => String(u.role).toLowerCase() === 'accountant');
+      if (acc) {
+        setDepositAccountantId(String(acc.id));
+      }
+    }
+  }, [showDealModal, users]);
   const [allTags, setAllTags] = useState<any[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [draggedOverIndex, setDraggedOverIndex] = useState<number | null>(null);
@@ -4208,7 +4224,12 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         currency: depositCurrency,
         milestones: depositMilestones,
         create_coop_slip: createCoopSlipChoice,
-        shares: depositCoopShares
+        shares: depositCoopShares,
+        accountant_id: depositAccountantId ? Number(depositAccountantId) : null,
+        auto_remind: autoRemind ? 1 : 0,
+        remind_days_before: remindDaysBefore,
+        remind_at_hour: remindAtHour,
+        remind_target: remindTarget
       });
 
       const responseData = res.data?.data || res.data;
@@ -11459,6 +11480,25 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       )}
                     </div>
 
+                    {/* Kế toán phê duyệt */}
+                    <div className="form-group" style={{ marginTop: '1rem' }}>
+                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Kế toán phê duyệt <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                      <CustomSelect
+                        options={users
+                          .filter(u => String(u.role).toLowerCase() === 'accountant')
+                          .map(u => ({
+                            value: String(u.id),
+                            label: u.full_name || u.name || u.username,
+                            avatar: u.avatar_url || u.avatar
+                          }))}
+                        value={depositAccountantId}
+                        onChange={val => setDepositAccountantId(val.toString())}
+                        placeholder="-- Chọn kế toán phê duyệt --"
+                        showAvatars
+                        searchable
+                      />
+                    </div>
+
                     {/* Phase 1 UNC upload */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '10px', marginTop: 'auto' }}>
                       <label className="form-label" style={{ fontWeight: 700, margin: 0, fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -11569,6 +11609,107 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     ))}
                   </div>
                 </div>
+
+                {/* Cài đặt nhắc lịch thanh toán tự động */}
+                {depositMilestones.length > 1 && (
+                  <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', marginTop: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Cài đặt nhắc lịch thanh toán tự động</span>
+                      <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={autoRemind}
+                          onChange={e => setAutoRemind(e.target.checked)}
+                          style={{ opacity: 0, width: 0, height: 0 }}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          cursor: 'pointer',
+                          inset: 0,
+                          backgroundColor: autoRemind ? 'var(--color-primary)' : '#ccc',
+                          borderRadius: '20px',
+                          transition: '0.3s'
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            content: '""',
+                            height: '14px',
+                            width: '14px',
+                            left: autoRemind ? '17px' : '3px',
+                            bottom: '3px',
+                            backgroundColor: 'white',
+                            borderRadius: '50%',
+                            transition: '0.3s'
+                              }} />
+                            </span>
+                          </label>
+                        </div>
+
+                        {autoRemind && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {!contact?.email && (
+                              <div style={{
+                                padding: '8px 12px',
+                                background: 'rgba(245, 158, 11, 0.08)',
+                                border: '1px solid rgba(245, 158, 11, 0.2)',
+                                borderRadius: '8px',
+                                color: '#d97706',
+                                fontSize: '0.725rem',
+                                fontWeight: 500,
+                                lineHeight: 1.4,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}>
+                                <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                                <span>Khách hàng này không có email. Nhắc nhở sẽ chuyển sang Sale chăm sóc.</span>
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
+                              <CustomSelect
+                                options={[
+                                  { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
+                                  { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                                ]}
+                                value={String(remindTarget)}
+                                onChange={val => setRemindTarget(Number(val))}
+                                placeholder="Chọn đối tượng"
+                              />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={30}
+                                  value={remindDaysBefore}
+                                  onChange={e => setRemindDaysBefore(Math.max(1, parseInt(e.target.value) || 3))}
+                                  className="form-input"
+                                  style={{ height: '38px', fontSize: '0.8rem', padding: '0 8px', borderRadius: '8px', textAlign: 'center', margin: 0 }}
+                                />
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi nhắc</label>
+                                <CustomSelect
+                                  options={Array.from({ length: 24 }).map((_, h) => ({
+                                    value: String(h),
+                                    label: `${h}:00`
+                                  }))}
+                                  value={String(remindAtHour)}
+                                  onChange={val => setRemindAtHour(Number(val))}
+                                  placeholder="Giờ gửi"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                 {/* Multi-sale Co-op Commission Allocation Section (Removed) */}
 

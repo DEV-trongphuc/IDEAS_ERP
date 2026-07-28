@@ -529,27 +529,27 @@ export default function Approvals() {
     const s = status ? status.toLowerCase() : 'pending';
     if (s === 'approved' || s === 'confirmed') {
       return (
-        <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', textTransform: 'uppercase' }}>
           {t('Đã duyệt')}
         </span>
       );
     }
     if (s === 'level1_approved') {
       return (
-        <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', textTransform: 'uppercase' }}>
           {t('Đã duyệt Cấp 1')}
         </span>
       );
     }
     if (s === 'rejected' || s === 'failed') {
       return (
-        <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>
           {t('Từ chối')}
         </span>
       );
     }
     return (
-      <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', textTransform: 'uppercase' }}>
         {t('Chờ duyệt')}
       </span>
     );
@@ -821,7 +821,6 @@ export default function Approvals() {
                   <tr style={{ background: 'var(--color-bg-secondary)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '450px' }}>{t('Yêu cầu & Nội dung')}</th>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '220px' }}>{t('Người tạo & Thời gian')}</th>
-                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '120px' }}>{t('Trạng thái')}</th>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '180px' }}>{t('Người duyệt')}</th>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', textAlign: 'right', minWidth: '150px' }}>{t('Thao tác')}</th>
                   </tr>
@@ -874,10 +873,10 @@ export default function Approvals() {
                           })()}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          {formatBadge(item.status || 'pending')}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          {renderCurrentApprover(item)}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                            {renderCurrentApprover(item)}
+                            {formatBadge(item.status || 'pending')}
+                          </div>
                         </td>
 
 
@@ -924,7 +923,6 @@ export default function Approvals() {
                   <tr style={{ background: 'var(--color-bg-secondary)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '450px' }}>{t('Yêu cầu & Nội dung')}</th>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '220px' }}>{t('Người tạo & Thời gian')}</th>
-                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '120px' }}>{t('Trạng thái')}</th>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '180px' }}>{t('Người duyệt')}</th>
                     <th style={{ padding: '14px 16px', fontSize: '0.8125rem', textAlign: 'right', minWidth: '150px' }}>{t('Thao tác')}</th>
                   </tr>
@@ -977,10 +975,10 @@ export default function Approvals() {
                           })()}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          {formatBadge(item.status || 'pending')}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          {renderCurrentApprover(item)}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                            {renderCurrentApprover(item)}
+                            {formatBadge(item.status || 'pending')}
+                          </div>
                         </td>
 
 

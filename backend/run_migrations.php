@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 199;
+$targetVersion = 200;
 $currentVersion = 186;
 
 // Query current DB version
@@ -813,8 +813,36 @@ try {
         $logMsg("Nâng cấp lên phiên bản 199 hoàn tất.", "success");
     }
 
+    // 9.9. Version 200: Add notes column to deposits table
+    if ($currentVersion < 200 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 200 (Thêm cột notes)...", "info");
+        
+        try {
+            $conn->query("ALTER TABLE `deposits` ADD COLUMN `notes` TEXT NULL COMMENT 'Ghi chú phiếu cọc'");
+            $logMsg("Đã bổ sung cột notes vào bảng deposits.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột notes đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 200 hoàn tất.", "success");
+    }
+
+    // 9.10. Version 201: Add accountant_id column to deposits table
+    if ($currentVersion < 201 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 201 (Thêm cột accountant_id)...", "info");
+        
+        try {
+            $conn->query("ALTER TABLE `deposits` ADD COLUMN `accountant_id` INT NULL DEFAULT NULL COMMENT 'Kế toán duyệt', ADD INDEX (`accountant_id`)");
+            $logMsg("Đã bổ sung cột accountant_id vào bảng deposits.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột accountant_id đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 201 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '199') ON DUPLICATE KEY UPDATE setting_value = '199'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '201') ON DUPLICATE KEY UPDATE setting_value = '201'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

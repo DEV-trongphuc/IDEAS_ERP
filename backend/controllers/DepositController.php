@@ -126,13 +126,14 @@ class DepositController {
         $b = getBody();
         $contactId = (int)($b['contact_id'] ?? 0);
         $projectId = (int)($b['project_id'] ?? 0);
-        $unitCode  = trim($b['unit_code'] ?? '');
+        $unitCode  = trim($b['unit_code'] ?? '') ?: '—';
         $price     = (float)($b['price'] ?? 0);
         $expectedCommission = (float)($b['expected_commission'] ?? 0);
+        $notes     = trim($b['notes'] ?? '');
         $milestones = $b['milestones'] ?? []; // Array of { name, amount }
 
-        if (!$contactId || !$projectId || !$unitCode || $price <= 0) {
-            respond(422, null, 'Thiếu thông tin bắt buộc để tạo đơn đặt hàng (khách hàng, chiến dịch, mã sản phẩm, giá bán)', false);
+        if (!$contactId || !$projectId || $price <= 0) {
+            respond(422, null, 'Thiếu thông tin bắt buộc để tạo đơn đặt hàng (khách hàng, chiến dịch, giá bán)', false);
         }
 
         $this->db->beginTransaction();
@@ -167,13 +168,64 @@ class DepositController {
             $remindDaysBefore = isset($b['remind_days_before']) ? (int)$b['remind_days_before'] : 3;
             $remindAtHour = isset($b['remind_at_hour']) ? (int)$b['remind_at_hour'] : 8;
 
+            $accountantId = isset($b['accountant_id']) ? (int)$b['accountant_id'] : null;
+
             // Insert deposit record
             $stmt = $this->db->prepare("
-                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour)
-                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?)
+                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour, notes, accountant_id)
+                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour]);
+            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour, $notes, $accountantId]);
             $depositId = $this->db->lastInsertId();
+
+            // Tag accountant & create notification if assigned
+            if ($accountantId > 0) {
+                try {
+                    $stmtU = $this->db->prepare("SELECT full_name FROM users WHERE id = ?");
+                    $stmtU->execute([$auth['user_id']]);
+                    $creatorName = $stmtU->fetchColumn() ?: 'Nhân viên';
+
+                    $stmtAcct = $this->db->prepare("SELECT full_name, username FROM users WHERE id = ?");
+                    $stmtAcct->execute([$accountantId]);
+                    $acctUser = $stmtAcct->fetch();
+
+                    if ($acctUser) {
+                        $acctName = $acctUser['full_name'] ?: $acctUser['username'];
+                        $acctTag = '@' . str_replace(' ', '_', $acctName);
+                        $bodyText = "Đã tạo phiếu thanh toán mới, chỉ định Kế toán $acctTag phê duyệt.";
+
+                        // Insert note
+                        $stmtNote = $this->db->prepare("
+                            INSERT INTO notes (tenant_id, entity_type, entity_id, user_id, body)
+                            VALUES (?, 'contact', ?, ?, ?)
+                        ");
+                        $stmtNote->execute([$auth['tenant_id'], $contactId, $auth['user_id'], $bodyText]);
+                        $noteId = $this->db->lastInsertId();
+
+                        // Add note mention
+                        $stmtMention = $this->db->prepare("
+                            INSERT INTO note_mentions (note_id, user_id)
+                            VALUES (?, ?)
+                        ");
+                        $stmtMention->execute([$noteId, $accountantId]);
+
+                        // Send notification
+                        $stmtNotif = $this->db->prepare("
+                            INSERT INTO notifications (user_id, tenant_id, title, body, type, link)
+                            VALUES (?, ?, 'Yêu cầu phê duyệt phiếu thanh toán', ?, 'mention', ?)
+                        ");
+                        $stmtNotif->execute([
+                            $accountantId,
+                            $auth['tenant_id'],
+                            "Nhân viên $creatorName đã tạo phiếu thanh toán mới và chỉ định bạn phê duyệt.",
+                            "/contacts/$contactId"
+                        ]);
+                    }
+                } catch (Throwable $notifErr) {
+                    // Suppress notification errors to avoid failing the deposit creation
+                    error_log("Failed to send accountant notification: " . $notifErr->getMessage());
+                }
+            }
 
             // Insert milestones (default to Đợt 1 if empty)
             if (empty($milestones)) {
@@ -1109,6 +1161,63 @@ class DepositController {
         ");
         $stmt->execute([$auth['tenant_id'], $id, $auth['user_id'], $body, $attachments, $parentId]);
         $newId = $this->db->lastInsertId();
+
+        // Parse mentions in comment body
+        $mentions = [];
+        // 1. data-user-id
+        if (preg_match_all('/data-user-id="(\d+)"/i', (string)$body, $matches)) {
+            $uids = array_filter(array_map('intval', $matches[1]));
+            foreach ($uids as $uid) {
+                if ($uid !== (int)$auth['user_id']) {
+                    $stmtUser = $this->db->prepare("SELECT id, email, full_name FROM users WHERE tenant_id=? AND id=?");
+                    $stmtUser->execute([$auth['tenant_id'], $uid]);
+                    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                    if ($userRow) {
+                        $mentions[$uid] = $userRow;
+                    }
+                }
+            }
+        }
+        // 2. @name
+        $matches = [];
+        preg_match_all('/@([a-zA-Z0-9_\x{00C0}-\x{1EF9}()]+)/u', (string)$body, $matches);
+        $names = is_array($matches[1] ?? null) ? $matches[1] : [];
+        if (!empty($names)) {
+            foreach ($names as $nameWithUnderscores) {
+                $fullName = str_replace('_', ' ', $nameWithUnderscores);
+                $stmtUser = $this->db->prepare("SELECT id, email, full_name FROM users WHERE tenant_id=? AND (full_name=? OR REPLACE(full_name, ' ', '_')=?)");
+                $stmtUser->execute([$auth['tenant_id'], $fullName, $nameWithUnderscores]);
+                $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                if ($userRow) {
+                    $uid = (int)$userRow['id'];
+                    if ($uid !== (int)$auth['user_id']) {
+                        $mentions[$uid] = $userRow;
+                    }
+                }
+            }
+        }
+
+        // Get contact details for deposit
+        $stmtDep = $this->db->prepare("SELECT contact_id FROM deposits WHERE id = ?");
+        $stmtDep->execute([$id]);
+        $contactId = $stmtDep->fetchColumn();
+
+        if (!empty($mentions) && $contactId) {
+            try {
+                require_once __DIR__ . '/../NotificationService.php';
+                $targetLink = "/contacts?open_contact_id={$contactId}&highlight_activity_id=0&highlight_comment_id={$newId}";
+                foreach ($mentions as $uid => $userRow) {
+                    NotificationService::send($this->db, $auth['tenant_id'], 'MENTION_TAGGED', [
+                        'user_id' => $uid,
+                        'author_name' => $auth['full_name'] ?? 'Đồng nghiệp',
+                        'comment' => $body,
+                        'link' => $targetLink
+                    ]);
+                }
+            } catch (Throwable $e) {
+                error_log("Failed to send comment mention notification: " . $e->getMessage());
+            }
+        }
 
         respond(200, ['id' => $newId], 'Thêm bình luận thành công');
     }

@@ -319,16 +319,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         className={`${styles.trigger} ${isOpen ? styles.open : ''}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         style={{
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.625 : 1,
-          backgroundColor: disabled ? 'var(--color-bg-light)' : undefined,
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: 1,
+          backgroundColor: disabled ? 'transparent' : undefined,
+          border: disabled ? 'none' : undefined,
+          boxShadow: disabled ? 'none' : undefined,
+          padding: disabled ? '0' : undefined,
           maxWidth: '100%',
           overflow: 'hidden',
           boxSizing: 'border-box',
           ...(size === 'sm' ? {
-            minHeight: '38px',
-            height: multiple ? 'auto' : '38px',
-            padding: multiple ? '4px 12px' : '6px 12px',
+            minHeight: disabled ? 'auto' : '38px',
+            height: disabled ? 'auto' : (multiple ? 'auto' : '38px'),
+            padding: disabled ? '0' : (multiple ? '4px 12px' : '6px 12px'),
             fontSize: '0.875rem',
             borderRadius: 'var(--radius-md)'
           } : {}),
@@ -343,7 +346,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         >
           {renderTriggerContent()}
         </span>
-        <ChevronDown size={size === 'sm' ? 14 : 16} className={`${styles.icon} ${isOpen ? styles.iconOpen : ''}`} />
+        {!disabled && <ChevronDown size={size === 'sm' ? 14 : 16} className={`${styles.icon} ${isOpen ? styles.iconOpen : ''}`} />}
       </div>
 
       <AnimatePresence>

@@ -62,7 +62,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'QUY TRÌNH & PHÊ DUYỆT',
     items: [
-      { name: 'Quy trình phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals', hideForRoles: ['marketing'] }
+      { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals', hideForRoles: ['marketing'] }
     ]
   },
   {
@@ -71,7 +71,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Tài khoản cá nhân', href: '/account', icon: User },
       { name: 'Phòng ban', href: '/consultants?tab=teams', icon: Users },
       { name: 'Nhân sự công ty', href: '/consultants', icon: Users },
-      { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing'] },
+      { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing', 'accountant'] },
       { name: 'Lịch trình', href: '/calendar', icon: Calendar },
       { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director'] },
       { name: 'Quản trị nhân sự & lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
