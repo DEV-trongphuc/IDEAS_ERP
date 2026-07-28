@@ -3061,7 +3061,7 @@ const SettingsInner = () => {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', borderTop: '1px solid var(--color-border-light)', paddingTop: '1.5rem' }}>
                   <button 
-                    onClick={saveSettings} 
+                    onClick={handleSave} 
                     disabled={saving} 
                     className="btn primary" 
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}

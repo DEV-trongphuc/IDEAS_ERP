@@ -1480,7 +1480,24 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     }
     actIssues.push({
       icon: <Receipt size={14} style={{ color: '#fbbf24' }} />,
-              {/* KPIs Grid */}
+      text: `2 ${t('đơn đặt cọc/UNC đang chờ đối soát.')}`,
+      action: () => navigate('/deposits')
+    });
+
+    const formatVND = (n: any) => {
+      const num = Math.round(Number(n || 0));
+      return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
+    };
+
+    return renderDashboardWrapper(
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
+        {/* Header */}
+        {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
+
+        {/* Welcome Banner */}
+        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
+
+        {/* KPIs Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
           {/* Card 1: Revenue */}
           <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
