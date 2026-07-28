@@ -166,7 +166,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   };
 
   const getMetricColor = (_metric: string) => {
-    return '#a31422';
+    return 'var(--color-primary)';
   };
 
   const isSingleDay = dateFilter === 'Hôm nay' || dateFilter === 'Hôm qua';
@@ -473,7 +473,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       label: t('TỔNG DATA TIẾP NHẬN'),
       value: stats?.total_today?.toLocaleString() || '0',
       icon: GitBranch,
-      color: '#a31422', // Purple for Total Data
+      color: 'var(--color-primary)', // Purple for Total Data
       change: stats?.total_change,
       up: (stats?.total_change || '').startsWith('+')
     },
@@ -1792,10 +1792,10 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover, #a31422) 100%)',
               color: '#fff',
               border: 'none',
-              boxShadow: '0 2px 6px rgba(189, 29, 45, 0.25)',
+              boxShadow: '0 2px 6px var(--color-primary-glow)',
               cursor: 'pointer',
               flexShrink: 0,
               flex: '0 0 38px',
@@ -1859,8 +1859,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 gap: '0.75rem',
                 animation: 'slideUp 0.4s ease-out both',
                 animationDelay: '120ms',
-                background: theme === 'dark' ? 'rgba(163, 20, 34, 0.12)' : 'rgba(163, 20, 34, 0.04)',
-                border: theme === 'dark' ? '1px solid rgba(163, 20, 34, 0.25)' : '1px solid rgba(163, 20, 34, 0.12)',
+                background: theme === 'dark' ? 'rgba(255, 69, 58, 0.12)' : 'rgba(189, 29, 45, 0.04)',
+                border: theme === 'dark' ? '1px solid rgba(255, 69, 58, 0.25)' : '1px solid rgba(189, 29, 45, 0.12)',
                 cursor: 'pointer',
                 minHeight: '94px',
                 height: 'auto',
@@ -1958,7 +1958,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           const Icon = card.icon;
           
           const getIconBgColor = (color: string) => {
-            if (color === '#a31422') return 'rgba(163, 20, 34, 0.08)';
+            if (color === 'var(--color-primary)' || color === '#a31422') return 'var(--color-primary-light)';
             if (color === '#3b82f6') return 'rgba(59, 130, 246, 0.08)';
             if (color === '#f59e0b') return 'rgba(245, 158, 11, 0.08)';
             if (color === '#ef4444') return 'rgba(239, 68, 68, 0.08)';
@@ -1983,7 +1983,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               onClick={() => navigate(`/data?status=${card.statusValue}`)}
             >
               {card.id === 'total' && (
-                <div className="decor-svg" style={{ color: '#a31422' }}>
+                <div className="decor-svg" style={{ color: 'var(--color-primary)' }}>
                   <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
                     <circle cx="30" cy="50" r="10" stroke="currentColor" strokeWidth="2" />
                     <circle cx="70" cy="30" r="10" stroke="currentColor" strokeWidth="2" />
@@ -2036,7 +2036,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 {card.id === 'total' && (
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a31422', display: 'inline-block', flexShrink: 0 }} />
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block', flexShrink: 0 }} />
                       <span>
                         {t('Tỷ lệ chia')}: {(() => {
                           const total = stats?.total_today || 0;
@@ -2367,7 +2367,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                       }
                       return null;
                     }} />
-                    <Bar dataKey="volume" fill="#a31422" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={20}>
+                    <Bar dataKey="volume" fill="var(--color-primary)" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={20}>
                       <LabelList dataKey="volume" position="top" style={{ fill: 'var(--color-text)', fontSize: 11, fontWeight: 700 }} offset={6} />
                     </Bar>
                   </ComposedChart>

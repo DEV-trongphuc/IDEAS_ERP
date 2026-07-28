@@ -74,10 +74,10 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md', classNam
     resolvedSrc = `${apiBase}/${src}`;
   }
 
-  // Nếu name là "Hệ thống" / "System" / "HT" và không có ảnh avatar cụ thể, gán ảnh LOGO mặc định
+  // Nếu name là "Hệ thống" / "System" / "HT" / "Hệ thống quy trình IDEAS" và không có ảnh avatar cụ thể, gán ảnh LOGO mặc định
   if (!resolvedSrc && name) {
     const trimmedName = name.trim().toLowerCase();
-    if (trimmedName === 'hệ thống' || trimmedName === 'system' || trimmedName === 'ht') {
+    if (trimmedName === 'hệ thống' || trimmedName === 'system' || trimmedName === 'ht' || trimmedName === 'hệ thống quy trình ideas') {
       resolvedSrc = '/LOGO.jpg';
     }
   }

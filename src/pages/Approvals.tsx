@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -17,6 +17,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { MentionInput } from '../components/ui/MentionInput';
 import { motion } from 'framer-motion';
+import { Pagination } from '../components/ui/Pagination';
 
 const workflowList = [
   { id: 'payment', name: 'Đề nghị thanh toán', description: 'Đề xuất thanh toán nhà cung cấp, chi phí vận hành, đối tác.', category: 'finance', icon: FileSignature, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
@@ -47,7 +48,59 @@ interface ApprovalItem {
   description: string;
   status?: string;
   created_at: string;
+  updated_at?: string;
 }
+
+const GreenToggle = ({ checked, onChange, disabled, label, id }: { checked: boolean, onChange?: (val: boolean) => void, disabled?: boolean, label: string, id: string }) => {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+      <label htmlFor={id} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)', cursor: disabled ? 'default' : 'pointer' }}>
+        {label}
+      </label>
+      <label style={{
+        position: 'relative',
+        display: 'inline-block',
+        width: '38px',
+        height: '20px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        flexShrink: 0
+      }}>
+        <input
+          type="checkbox"
+          id={id}
+          checked={checked}
+          onChange={e => !disabled && onChange && onChange(e.target.checked)}
+          style={{ opacity: 0, width: 0, height: 0 }}
+          disabled={disabled}
+        />
+        <span style={{
+          position: 'absolute',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: checked ? '#10b981' : '#cbd5e1',
+          transition: '0.3s',
+          borderRadius: '20px',
+          opacity: disabled ? 0.7 : 1
+        }}>
+          <span style={{
+            position: 'absolute',
+            content: '""',
+            height: '14px',
+            width: '14px',
+            left: checked ? '20px' : '3px',
+            bottom: '3px',
+            background: 'white',
+            transition: '0.3s',
+            borderRadius: '50%',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+          }} />
+        </span>
+      </label>
+    </div>
+  );
+};
+
+
 
 export default function Approvals() {
   const { t } = useLanguage();
@@ -141,6 +194,15 @@ export default function Approvals() {
   const [expenseTitle, setExpenseTitle] = useState('');
   const [jobPosition, setJobPosition] = useState('');
   const [departmentName, setDepartmentName] = useState('');
+  const [teams, setTeams] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAPI('teams').then(res => {
+      if (res && res.success && Array.isArray(res.data)) {
+        setTeams(res.data);
+      }
+    }).catch(() => {});
+  }, []);
   const [paymentTarget, setPaymentTarget] = useState('Nội bộ');
   const [paymentMethod, setPaymentMethod] = useState('Chuyển khoản');
   const [paymentDetails, setPaymentDetails] = useState('');
@@ -177,6 +239,16 @@ export default function Approvals() {
   const [listSearchText, setListSearchText] = useState('');
   const [listCategoryFilter, setListCategoryFilter] = useState('all');
   const [listStatusFilter, setListStatusFilter] = useState('all');
+
+
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, listSearchText, listCategoryFilter, listStatusFilter]);
 
   // CC list / related users state
   const [relatedUsers, setRelatedUsers] = useState<string[]>([]);
@@ -371,7 +443,7 @@ export default function Approvals() {
       );
     }
     return (
-      <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(107, 114, 128, 0.1)', color: '#6b7280', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '3px 8px', borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', textTransform: 'uppercase' }}>
         {t('Chờ duyệt')}
       </span>
     );
@@ -385,6 +457,68 @@ export default function Approvals() {
       case 'checkin': return <Clock size={16} style={{ color: '#ec4899' }} />;
       default: return <Clipboard size={16} />;
     }
+  };
+
+  const renderCurrentApprover = (item: ApprovalItem) => {
+    let approverUser: any = null;
+
+    if (item.type === 'leave' || item.type === 'advance') {
+      const status1 = (item as any).status_level_1 || 'pending';
+      const status2 = (item as any).status_level_2 || 'pending';
+      
+      const app1Id = (item as any).approver_id;
+      const app2Id = (item as any).approver_id_2;
+      const directorId = (item as any).director_id || '1001';
+
+      if (status1 === 'pending') {
+        approverUser = users.find(u => String(u.id) === String(app1Id));
+        if (!approverUser) {
+          approverUser = users.find(u => ['manager', 'director', 'admin', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
+        }
+      } else if (status1 === 'approved' && status2 === 'pending') {
+        approverUser = users.find(u => String(u.id) === String(app2Id));
+        if (!approverUser) {
+          approverUser = users.find(u => ['accountant', 'admin', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
+        }
+      } else {
+        approverUser = users.find(u => String(u.id) === String(directorId));
+        if (!approverUser) {
+          approverUser = users.find(u => ['director', 'admin', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
+        }
+      }
+    } else if (item.type === 'expense') {
+      const appId = (item as any).approver_id || '1003';
+      approverUser = users.find(u => String(u.id) === String(appId));
+      if (!approverUser) {
+        approverUser = users.find(u => ['accountant', 'manager', 'director', 'admin', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
+      }
+    } else if (item.type === 'checkin') {
+      approverUser = users.find(u => String(u.role).toLowerCase() === 'admin' || String(u.role).toLowerCase() === 'superadmin' || String(u.role).toLowerCase() === 'super_admin');
+    }
+
+    if (!approverUser) {
+      approverUser = users.find(u => u.full_name || u.name);
+    }
+
+    if (!approverUser) {
+      return (
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>
+          {t('Chờ duyệt')}
+        </span>
+      );
+    }
+
+    const avatarUrl = approverUser?.avatar_url || approverUser?.avatar;
+    const displayName = approverUser?.full_name || approverUser?.name;
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Avatar src={avatarUrl} name={displayName} size={24} />
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>
+          {displayName}
+        </span>
+      </div>
+    );
   };
 
   // Filter logic for main lists
@@ -410,6 +544,7 @@ export default function Approvals() {
 
   return (
     <div>
+
       
       {/* Header */}
       <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -573,71 +708,98 @@ export default function Approvals() {
             description={t('Không có yêu cầu phê duyệt nào đang chờ xử lý.')}
           />
         ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {filteredPendingList.map(item => (
-              <div 
-                key={`${item.type}-${item.id}`} 
-                className="card hover-lift" 
-                onClick={() => setSelectedTimelineItem(item)}
-                style={{
-                  padding: '1.5rem',
-                  borderRadius: '12px',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '8px',
-                    background: 'var(--color-bg-secondary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    {getTypeIcon(item.type)}
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
-                        {item.type === 'leave' ? t('Nghỉ phép') : item.type === 'advance' ? t('Tạm ứng') : item.type === 'expense' ? t('Chi phí') : t('Chấm công')}
-                      </span>
-                      <ArrowRight size={10} style={{ color: 'var(--color-text-muted)' }} />
-                      <strong style={{ fontSize: '0.875rem' }}>{item.employee_name}</strong>
-                    </div>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: '4px 0 2px' }}>{item.title}</h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>{item.description}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 8 }}>
-                      <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>
-                        {t('Yêu cầu gửi ngày')}: {new Date(item.created_at).toLocaleString('vi-VN')}
-                      </span>
-                      <span style={{ fontSize: '0.725rem', color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>
-                        {t('Xem tiến trình')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="responsive-table-wrap" style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--color-bg-secondary)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '450px' }}>{t('Yêu cầu & Nội dung')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '220px' }}>{t('Người tạo & Thời gian')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '120px' }}>{t('Trạng thái')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '180px' }}>{t('Người duyệt')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', textAlign: 'right', minWidth: '150px' }}>{t('Thao tác')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPendingList.slice((page - 1) * pageSize, page * pageSize).map(item => {
+                    const deadline = (item as any).deadline || new Date(new Date(item.created_at).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN') + ' 17:00';
+                    const reminder = (item as any).reminder_interval || (item.type === 'leave' ? t('Mỗi 4 giờ') : item.type === 'advance' ? t('Mỗi 2 giờ') : item.type === 'expense' ? t('Hằng ngày') : t('Mỗi 1 giờ'));
+                    const related = (item as any).related_persons || (item.id % 2 === 0 ? ['Dev Admin', 'Dev Director'] : ['Dev Manager', 'Dev Accountant']);
+                    const approver = (item as any).approver_name || (item.status === 'approved' ? 'Dev Admin' : t('Chờ duyệt'));
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => openRejectModal(item)} className="btn secondary" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '6px 14px', fontSize: '0.8rem', height: '32px' }}>
-                    <XCircle size={14} style={{ marginRight: 4 }} />
-                    {t('Từ chối')}
-                  </button>
-                  <button onClick={() => handleApprove(item)} className="btn primary" style={{ padding: '6px 16px', fontSize: '0.8rem', height: '32px' }}>
-                    <CheckCircle2 size={14} style={{ marginRight: 4 }} />
-                    {t('Phê duyệt')}
-                  </button>
-                </div>
-              </div>
-            ))}
+                    return (
+                      <tr 
+                        key={`${item.type}-${item.id}`} 
+                        onClick={() => setSelectedTimelineItem(item)}
+                        style={{ borderBottom: '1px solid var(--color-border-light)', cursor: 'pointer', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <div style={{
+                              width: '32px', height: '32px', borderRadius: '8px',
+                              background: 'var(--color-bg-secondary)', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                            }}>
+                              {getTypeIcon(item.type)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{item.title}</div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>{item.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {(() => {
+                            const creatorUser = users.find(u => String(u.full_name) === String(item.employee_name) || String(u.name) === String(item.employee_name));
+                            const avatarUrl = creatorUser?.avatar_url || creatorUser?.avatar;
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Avatar src={avatarUrl} name={item.employee_name} size={28} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontWeight: 600 }}>{item.employee_name}</span>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                    {new Date(item.created_at).toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {formatBadge(item.status || 'pending')}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {renderCurrentApprover(item)}
+                        </td>
+
+
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button onClick={() => openRejectModal(item)} className="btn secondary" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '4px 10px', fontSize: '0.75rem', height: '28px', borderRadius: '6px' }}>
+                              <XCircle size={12} style={{ marginRight: 2 }} />
+                              {t('Từ chối')}
+                            </button>
+                            <button onClick={() => handleApprove(item)} className="btn primary" style={{ background: '#10b981', borderColor: '#10b981', color: '#ffffff', padding: '4px 12px', fontSize: '0.75rem', height: '28px', borderRadius: '6px' }}>
+                              <CheckCircle2 size={12} style={{ marginRight: 2 }} />
+                              {t('Duyệt')}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            <Pagination 
+              total={filteredPendingList.length}
+              page={page}
+              pageSize={pageSize}
+              onChange={(p) => setPage(p)}
+            />
           </div>
         )
       ) : (
@@ -649,71 +811,106 @@ export default function Approvals() {
             description={t('Bạn chưa gửi yêu cầu quy trình nào.')}
           />
         ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {filteredMyRequestsList.map(item => (
-              <div 
-                key={`${item.type}-${item.id}`} 
-                className="card hover-lift" 
-                onClick={() => setSelectedTimelineItem(item)}
-                style={{
-                  padding: '1.25rem',
-                  borderRadius: '12px',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: 'var(--color-bg-secondary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    {getTypeIcon(item.type)}
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: 0 }}>{item.title}</h4>
-                    <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{item.description}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                        {t('Gửi ngày')}: {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>
-                        {t('Xem tiến trình')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleDuplicate(item)}
-                    className="btn secondary"
-                    style={{
-                      height: '28px',
-                      padding: '0 10px',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      borderRadius: '6px'
-                    }}
-                  >
-                    <Copy size={12} />
-                    {t('Nhân bản')}
-                  </button>
-                  {formatBadge(item.status || 'pending')}
-                </div>
-              </div>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="responsive-table-wrap" style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border)', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--color-bg-secondary)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '450px' }}>{t('Yêu cầu & Nội dung')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '220px' }}>{t('Người tạo & Thời gian')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '120px' }}>{t('Trạng thái')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', minWidth: '180px' }}>{t('Người duyệt')}</th>
+                    <th style={{ padding: '14px 16px', fontSize: '0.8125rem', textAlign: 'right', minWidth: '150px' }}>{t('Thao tác')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMyRequestsList.slice((page - 1) * pageSize, page * pageSize).map(item => {
+                    const deadline = (item as any).deadline || new Date(new Date(item.created_at).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN') + ' 17:00';
+                    const reminder = (item as any).reminder_interval || (item.type === 'leave' ? t('Mỗi 4 giờ') : item.type === 'advance' ? t('Mỗi 2 giờ') : item.type === 'expense' ? t('Hằng ngày') : t('Mỗi 1 giờ'));
+                    const related = (item as any).related_persons || (item.id % 2 === 0 ? ['Dev Admin', 'Dev Director'] : ['Dev Manager', 'Dev Accountant']);
+                    const approver = (item as any).approver_name || (item.status === 'approved' ? 'Dev Admin' : t('Chờ duyệt'));
+
+                    return (
+                      <tr 
+                        key={`${item.type}-${item.id}`} 
+                        onClick={() => setSelectedTimelineItem(item)}
+                        style={{ borderBottom: '1px solid var(--color-border-light)', cursor: 'pointer', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--color-bg)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <div style={{
+                              width: '32px', height: '32px', borderRadius: '8px',
+                              background: 'var(--color-bg-secondary)', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                            }}>
+                              {getTypeIcon(item.type)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{item.title}</div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>{item.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {(() => {
+                            const creatorUser = users.find(u => String(u.full_name) === String(item.employee_name || user?.name) || String(u.name) === String(item.employee_name || user?.name));
+                            const avatarUrl = creatorUser?.avatar_url || creatorUser?.avatar;
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Avatar src={avatarUrl} name={item.employee_name || user?.name} size={28} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontWeight: 600 }}>{item.employee_name || user?.name}</span>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                    {new Date(item.created_at).toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {formatBadge(item.status || 'pending')}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {renderCurrentApprover(item)}
+                        </td>
+
+
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={() => handleDuplicate(item)}
+                              className="btn secondary"
+                              style={{
+                                height: '28px',
+                                width: '28px',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '6px'
+                              }}
+                              title={t('Nhân bản')}
+                            >
+                              <Copy size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <Pagination 
+              total={filteredMyRequestsList.length}
+              page={page}
+              pageSize={pageSize}
+              onChange={(p) => setPage(p)}
+            />
           </div>
         )
       )}
@@ -931,7 +1128,6 @@ export default function Approvals() {
                                   setExpenseTitle(item.name);
                                   handleSelectWorkflow(item.id);
                                 }}
-                                className="hover-lift"
                                 style={{
                                   display: 'flex',
                                   alignItems: 'flex-start',
@@ -940,16 +1136,14 @@ export default function Approvals() {
                                   borderRadius: '12px',
                                   cursor: 'pointer',
                                   transition: 'all 0.2s',
-                                  background: 'var(--color-bg-light, #f8fafc)',
-                                  border: '1px solid var(--color-border-light, #e2e8f0)'
+                                  background: 'transparent',
+                                  border: 'none'
                                 }}
                                 onMouseEnter={e => {
-                                  e.currentTarget.style.borderColor = 'var(--color-primary)';
-                                  e.currentTarget.style.background = 'var(--color-surface)';
+                                  e.currentTarget.style.background = 'var(--color-bg)';
                                 }}
                                 onMouseLeave={e => {
-                                  e.currentTarget.style.borderColor = 'var(--color-border-light, #e2e8f0)';
-                                  e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
+                                  e.currentTarget.style.background = 'transparent';
                                 }}
                               >
                                 <div style={{
@@ -997,7 +1191,6 @@ export default function Approvals() {
                                 setExpenseTitle(item.name);
                                 handleSelectWorkflow(item.id);
                               }}
-                              className="hover-lift"
                               style={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
@@ -1006,18 +1199,14 @@ export default function Approvals() {
                                 borderRadius: '12px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease-in-out',
-                                border: '1px solid transparent',
+                                border: 'none',
                                 background: 'transparent'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = 'var(--color-primary-light, rgba(163, 20, 34, 0.08))';
-                                e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03)';
+                                e.currentTarget.style.background = 'var(--color-bg)';
                               }}
                               onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = 'transparent';
                                 e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <div style={{
@@ -1064,7 +1253,6 @@ export default function Approvals() {
                                 setExpenseTitle(item.name);
                                 handleSelectWorkflow(item.id);
                               }}
-                              className="hover-lift"
                               style={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
@@ -1073,18 +1261,14 @@ export default function Approvals() {
                                 borderRadius: '12px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease-in-out',
-                                border: '1px solid transparent',
+                                border: 'none',
                                 background: 'transparent'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = 'var(--color-primary-light, rgba(163, 20, 34, 0.08))';
-                                e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03)';
+                                e.currentTarget.style.background = 'var(--color-bg)';
                               }}
                               onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = 'transparent';
                                 e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <div style={{
@@ -1131,7 +1315,6 @@ export default function Approvals() {
                                 setExpenseTitle(item.name);
                                 handleSelectWorkflow(item.id);
                               }}
-                              className="hover-lift"
                               style={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
@@ -1140,18 +1323,14 @@ export default function Approvals() {
                                 borderRadius: '12px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease-in-out',
-                                border: '1px solid transparent',
+                                border: 'none',
                                 background: 'transparent'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = 'var(--color-primary-light, rgba(163, 20, 34, 0.08))';
-                                e.currentTarget.style.background = 'var(--color-bg-light, #f8fafc)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.03)';
+                                e.currentTarget.style.background = 'var(--color-bg)';
                               }}
                               onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = 'transparent';
                                 e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.boxShadow = 'none';
                               }}
                             >
                               <div style={{
@@ -1343,6 +1522,7 @@ export default function Approvals() {
                               await api.post('/expenses', {
                                 title: expenseTitle || selectedWorkflowDef.name,
                                 description: generalDesc,
+                                notes: generalDesc,
                                 amount: 0,
                                 status: 'pending',
                                 approver_id: finalApproverId
@@ -1359,6 +1539,7 @@ export default function Approvals() {
                               await api.post('/expenses', {
                                 title: expenseTitle || selectedWorkflowDef.name,
                                 description: finalDesc,
+                                notes: finalDesc,
                                 amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
                                 status: 'pending',
                                 approver_id: finalApproverId
@@ -1582,7 +1763,10 @@ export default function Approvals() {
                                 <CustomSelect
                                   value={departmentName}
                                   onChange={val => setDepartmentName(val)}
-                                  options={[
+                                  options={teams.length > 0 ? teams.map(t => ({
+                                    value: t.name,
+                                    label: t.name
+                                  })) : [
                                     { value: 'Ban Giám đốc', label: t('Ban Giám đốc') },
                                     { value: 'Phòng Kinh doanh', label: t('Phòng Kinh doanh (Sales)') },
                                     { value: 'Phòng Marketing', label: t('Phòng Marketing') },
@@ -1642,7 +1826,10 @@ export default function Approvals() {
                                 <CustomSelect
                                   value={departmentName}
                                   onChange={val => setDepartmentName(val)}
-                                  options={[
+                                  options={teams.length > 0 ? teams.map(t => ({
+                                    value: t.name,
+                                    label: t.name
+                                  })) : [
                                     { value: 'Ban Giám đốc', label: t('Ban Giám đốc') },
                                     { value: 'Phòng Kinh doanh', label: t('Phòng Kinh doanh (Sales)') },
                                     { value: 'Phòng Marketing', label: t('Phòng Marketing') },
@@ -1724,18 +1911,12 @@ export default function Approvals() {
                         {/* 1. Phased payment settings (only for finance/expense) */}
                         {formType === 'expense' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <input
-                                type="checkbox"
-                                id="isPhasedPayment"
-                                checked={isPhasedPayment}
-                                onChange={e => setIsPhasedPayment(e.target.checked)}
-                                style={{ cursor: 'pointer', width: '15px', height: '15px' }}
-                              />
-                              <label htmlFor="isPhasedPayment" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)', cursor: 'pointer' }}>
-                                {t('Thanh toán chia nhiều đợt (Installment/Phased Payment)')}
-                              </label>
-                            </div>
+                             <GreenToggle
+                               id="isPhasedPayment"
+                               checked={isPhasedPayment}
+                               onChange={setIsPhasedPayment}
+                               label={t('Thanh toán chia nhiều đợt (Installment/Phased Payment)')}
+                             />
 
                             {isPhasedPayment && (
                               <div style={{ marginTop: '8px', border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '1.25rem', background: 'var(--color-bg-secondary)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1815,18 +1996,12 @@ export default function Approvals() {
 
                         {/* 2. Recurring settings (for all workflows) */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input
-                              type="checkbox"
-                              id="isRecurring"
-                              checked={isRecurring}
-                              onChange={e => setIsRecurring(e.target.checked)}
-                              style={{ cursor: 'pointer', width: '15px', height: '15px' }}
-                            />
-                            <label htmlFor="isRecurring" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)', cursor: 'pointer' }}>
-                              {t('Thiết lập lặp lại tự động (Recurring Proposal)')}
-                            </label>
-                          </div>
+                           <GreenToggle
+                             id="isRecurring"
+                             checked={isRecurring}
+                             onChange={setIsRecurring}
+                             label={t('Thiết lập lặp lại tự động (Recurring Proposal)')}
+                           />
 
                           {isRecurring && (
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginTop: '8px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)' }}>
@@ -2457,10 +2632,15 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
   const [loading, setLoading] = useState(true);
   const isMobile = window.innerWidth < 768;
 
-  // Comments states
-  const [localComments, setLocalComments] = useState<any[]>([
-    { id: 1, author: t('Hệ thống'), time: '10:30', text: t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình.'), attachments: [] }
-  ]);
+  const [reminderTargetUser, setReminderTargetUser] = useState<any>(null);
+  const [reminderMessage, setReminderMessage] = useState('');
+
+  // Reminders states
+  const [editingReminderStepIdx, setEditingReminderStepIdx] = useState<number | null>(null);
+  const [reminderDateTime, setReminderDateTime] = useState('');
+  const [stepReminders, setStepReminders] = useState<Record<number, string>>({});
+
+  const [localComments, setLocalComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [commentAttachments, setCommentAttachments] = useState<any[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -2523,6 +2703,45 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
     return () => { active = false; };
   }, [item]);
 
+  useEffect(() => {
+    if (detail || item) {
+      const createdAtVal = detail?.created_at || item.created_at;
+      const initialComments = [
+        { 
+          id: 1, 
+          author: t('Hệ thống quy trình IDEAS'), 
+          time: new Date(createdAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
+          text: `${t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình lúc')} ${new Date(createdAtVal).toLocaleString('vi-VN')}.`, 
+          attachments: [] 
+        }
+      ];
+
+      const overall = (item.status || detail?.status || 'pending').toLowerCase();
+      if (overall === 'approved') {
+        const approvedAtVal = detail?.approved_at || detail?.updated_at || (item as any).updated_at || new Date().toISOString();
+        initialComments.push({
+          id: 2,
+          author: t('Hệ thống quy trình IDEAS'),
+          time: new Date(approvedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          text: `✅ ${t('Yêu cầu đã được phê duyệt thành công lúc')} ${new Date(approvedAtVal).toLocaleString('vi-VN')}.`,
+          attachments: []
+        });
+      } else if (overall === 'rejected') {
+        const rejectedAtVal = detail?.updated_at || (item as any).updated_at || new Date().toISOString();
+        const reasonStr = detail?.reason || detail?.reject_reason || '';
+        initialComments.push({
+          id: 2,
+          author: t('Hệ thống quy trình IDEAS'),
+          time: new Date(rejectedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          text: `❌ ${t('Yêu cầu bị từ chối lúc')} ${new Date(rejectedAtVal).toLocaleString('vi-VN')}.${reasonStr ? ` Lý do: ${reasonStr}` : ''}`,
+          attachments: []
+        });
+      }
+
+      setLocalComments(initialComments);
+    }
+  }, [detail, item]);
+
   const getEmployeeName = () => {
     if (detail?.employee_name) return detail.employee_name;
     if (item.employee_name) return item.employee_name;
@@ -2537,231 +2756,372 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
   const renderTimeline = () => {
     if (loading) {
       return (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--color-text-muted)' }}>
+        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
           <div className="spinner sm" style={{ margin: '0 auto 10px auto' }}></div>
           {t('Đang tải tiến trình...')}
         </div>
       );
     }
 
-    const steps = [];
+    const creatorUser = users.find(u => String(u.full_name) === String(getEmployeeName()) || String(u.name) === String(getEmployeeName()) || String(u.id) === String(detail?.user_id || detail?.created_by));
 
-    // Step 1: Proposal Submission
-    steps.push({
-      title: item.type === 'leave' ? t('Lập đề nghị nghỉ phép') : item.type === 'advance' ? t('Lập đề xuất tạm ứng') : item.type === 'expense' ? t('Lập đề xuất chi phí') : t('Gửi giải trình chấm công'),
-      user: {
-        name: getEmployeeName(),
-        avatar: getEmployeeAvatar()
-      },
-      status: 'approved',
-      time: detail?.created_at || item.created_at,
-      notes: detail?.reason || detail?.notes || detail?.description
-    });
+    let currentStepIndex = 1;
+    const stepIndex1 = currentStepIndex++;
+    
+    const isMultiLevel = item.type === 'leave' || item.type === 'advance';
+    const stepIndex2 = isMultiLevel ? currentStepIndex++ : null;
+    const stepIndex3 = isMultiLevel ? currentStepIndex++ : null;
+    const stepIndex4 = isMultiLevel ? currentStepIndex++ : null;
 
-    // Multi-level Leaves & Salary Advances
-    if (item.type === 'leave' || item.type === 'advance') {
-      const approver1Id = detail?.approver_id;
-      if (approver1Id) {
-        const app1 = users.find(u => String(u.id) === String(approver1Id));
-        const app1Status = detail?.status_level_1 || 'pending';
-        steps.push({
-          title: t('Trưởng phòng phê duyệt'),
-          user: {
-            name: app1?.full_name || t('Trưởng phòng'),
-            avatar: app1?.avatar_url || app1?.avatar
-          },
-          status: app1Status,
-          time: app1Status !== 'pending' ? detail?.updated_at : null,
-          notes: app1Status === 'rejected' ? detail?.reason : null
-        });
+    const isSingleLevel = !isMultiLevel;
+    const singleStepIndex = isSingleLevel ? currentStepIndex++ : null;
+
+    const managerUser = users.find(u => String(u.id) === String(detail?.approver_id)) || users.find(u => ['manager', 'director', 'admin'].includes(String(u.role).toLowerCase()));
+    const accountantUser = users.find(u => String(u.id) === String(detail?.approver_id_2)) || users.find(u => String(u.role).toLowerCase() === 'accountant');
+    const directorUser = users.find(u => String(u.id) === String(detail?.director_id || '1001')) || users.find(u => ['director', 'admin', 'superadmin'].includes(String(u.role).toLowerCase()));
+
+    const singleApproverUser = users.find(u => String(u.id) === String(detail?.approver_id)) || users.find(u => ['accountant', 'manager', 'director', 'admin'].includes(String(u.role).toLowerCase()));
+
+    // Helper to get step status and details
+    const getStepDetails = (stepKey: 'step1' | 'step2' | 'step3' | 'step4' | 'single', stepNum: number) => {
+      const overall = (item.status || 'pending').toLowerCase();
+      const s1 = (detail?.status_level_1 || 'pending').toLowerCase();
+      const s2 = (detail?.status_level_2 || 'pending').toLowerCase();
+
+      let status: 'approved' | 'rejected' | 'pending' | 'not_reached' = 'pending';
+
+      if (stepKey === 'step1') {
+        status = 'approved';
+      } else if (stepKey === 'single') {
+        if (overall === 'approved') status = 'approved';
+        else if (overall === 'rejected') status = 'rejected';
+        else status = 'pending';
+      } else if (stepKey === 'step2') {
+        if (s1 === 'approved' || overall === 'approved') status = 'approved';
+        else if (s1 === 'rejected' || overall === 'rejected') status = 'rejected';
+        else status = 'pending';
+      } else if (stepKey === 'step3') {
+        if (s2 === 'approved' || overall === 'approved') status = 'approved';
+        else if (s1 !== 'approved' && overall !== 'approved') status = 'not_reached';
+        else if (s2 === 'rejected' || overall === 'rejected') status = 'rejected';
+        else status = 'pending';
+      } else if (stepKey === 'step4') {
+        if (overall === 'approved') status = 'approved';
+        else if (s2 !== 'approved' && overall !== 'approved') status = 'not_reached';
+        else if (overall === 'rejected') status = 'rejected';
+        else status = 'pending';
       }
 
-      const approver2Id = detail?.approver_id_2;
-      if (approver2Id) {
-        const app2 = users.find(u => String(u.id) === String(approver2Id));
-        const app2Status = detail?.status_level_2 || 'pending';
-        steps.push({
-          title: t('Kế toán toán tổng hợp kiểm tra'),
-          user: {
-            name: app2?.full_name || t('Kế toán'),
-            avatar: app2?.avatar_url || app2?.avatar
-          },
-          status: app2Status,
-          time: app2Status !== 'pending' ? detail?.updated_at : null,
-          notes: app2Status === 'rejected' ? detail?.reject_reason || detail?.reason : null
-        });
+      // Styles based on status
+      let bg = 'var(--color-primary)';
+      let textCol = '#ffffff';
+      let iconContent: React.ReactNode = String(stepNum);
+      let showBell = false;
+
+      if (status === 'approved') {
+        bg = '#10b981'; // Green
+        iconContent = '✓';
+      } else if (status === 'rejected') {
+        bg = '#ef4444'; // Red
+        iconContent = '✗';
+      } else if (status === 'not_reached') {
+        bg = 'var(--color-border-light)';
+        textCol = 'var(--color-text-muted)';
+      } else if (status === 'pending') {
+        bg = 'var(--color-primary)';
+        showBell = true;
       }
-    } else if (item.type === 'expense') {
-      const approverId = detail?.approver_id;
-      const app = users.find(u => String(u.id) === String(approverId || '1003'));
-      const appStatus = detail?.status || 'pending';
-      steps.push({
-        title: t('Phê duyệt đề xuất chi phí'),
-        user: {
-          name: app?.full_name || t('Người phê duyệt'),
-          avatar: app?.avatar_url || app?.avatar
-        },
-        status: appStatus,
-        time: appStatus !== 'pending' ? detail?.approved_at : null,
-        notes: appStatus === 'rejected' ? detail?.reject_reason : null
-      });
-    } else if (item.type === 'checkin') {
-      const appStatus = detail?.status === 'approved' ? 'approved' : (detail?.status === 'rejected' ? 'rejected' : 'pending');
-      steps.push({
-        title: t('Phê duyệt giải trình chấm công'),
-        user: {
-          name: t('Admin hệ thống'),
-          initial: 'AD'
-        },
-        status: appStatus,
-        time: appStatus !== 'pending' ? detail?.updated_at : null,
-        notes: appStatus === 'rejected' ? detail?.reason : null
-      });
-    }
+
+      return { bg, textCol, iconContent, showBell };
+    };
 
     return (
-      <div style={{ position: 'relative', paddingLeft: '2.5rem', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {/* Gray connecting line background */}
-        <div style={{
-          position: 'absolute',
-          left: '9px',
-          top: '16px',
-          bottom: '16px',
-          width: '2px',
-          background: 'var(--color-border-light)'
-        }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '12px', position: 'relative', paddingLeft: '30px', textAlign: 'left' }}>
+        <div style={{ position: 'absolute', left: '10px', top: '10px', bottom: '10px', width: '2px', background: 'var(--color-border-light)' }} />
         
-        {/* Green connecting line foreground for completed steps */}
-        <div style={{
-          position: 'absolute',
-          left: '9px',
-          top: '16px',
-          height: `${Math.max(0, (steps.filter(s => s.status === 'approved').length - 1)) * 100 / Math.max(1, steps.length - 1)}%`,
-          width: '2px',
-          background: '#10b981',
-          transition: 'height 0.3s ease'
-        }} />
-
-        {steps.map((step, idx) => {
-          const isDone = step.status === 'approved' || step.status === 'confirmed';
-          const isRejected = step.status === 'rejected' || step.status === 'failed';
-          const isPending = step.status === 'pending';
-          
-          const borderStyle = isPending ? '1px solid #3b82f6' : (isRejected ? '1px solid #ef4444' : '1px solid var(--color-border-light)');
-          
+        {/* Step 1: Submitter */}
+        {(() => {
+          const sDetails = getStepDetails('step1', 1);
           return (
-            <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
-              {/* Timeline circle dot */}
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <div style={{
                 position: 'absolute',
-                left: '-2.5rem',
-                top: '12px',
-                width: '20px',
-                height: '20px',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
                 borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 10,
-                background: isDone ? '#10b981' : (isRejected ? '#ef4444' : 'var(--color-surface)'),
-                border: isDone || isRejected ? 'none' : '2px solid var(--color-border)',
-                color: '#fff',
-                fontSize: '10px',
-                fontWeight: 'bold',
-                boxShadow: '0 0 0 4px var(--color-surface)'
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
               }}>
-                {isDone && '✓'}
-                {isRejected && '✗'}
+                {sDetails.iconContent}
               </div>
-
-              {/* Speech bubble card body */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: borderStyle,
-                borderRadius: '12px',
-                padding: '1.25rem',
-                boxShadow: isPending ? '0 4px 12px rgba(59, 130, 246, 0.08)' : '0 1px 3px rgba(0,0,0,0.02)',
-                position: 'relative',
-                transition: 'all 0.2s',
-                textAlign: 'left'
-              }}>
-                {/* Speech bubble triangle pointer */}
-                <div style={{
-                  position: 'absolute',
-                  left: '-8px',
-                  top: '16px',
-                  width: 0,
-                  height: 0,
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderRight: `8px solid ${isPending ? '#3b82f6' : (isRejected ? '#ef4444' : 'var(--color-border-light)')}`,
-                  zIndex: 1
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  left: '-7px',
-                  top: '16px',
-                  width: 0,
-                  height: 0,
-                  borderTop: '6px solid transparent',
-                  borderBottom: '6px solid transparent',
-                  borderRight: '8px solid var(--color-surface)',
-                  zIndex: 2
-                }} />
-
-                {/* Card details */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 8 }}>
-                      <h4 style={{ fontSize: '0.925rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
-                        {step.title}
-                      </h4>
-                      {/* Optional comment bubble icon for logs containing reason / notes */}
-                      {step.notes && (
-                        <div title={step.notes} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-light)', cursor: 'help' }}>
-                          <span style={{ fontSize: '11px' }}>💬</span>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Avatar src={step.user.avatar} name={step.user.name} size={24} />
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-light)' }}>
-                        {step.user.name}
-                      </span>
-                    </div>
-                    
-                    {step.time && (
-                      <div style={{ fontSize: '0.78rem', color: isRejected ? '#ef4444' : '#10b981', fontWeight: 600, marginTop: '8px' }}>
-                        {new Date(step.time).toLocaleString('vi-VN')}
-                      </div>
-                    )}
-
-                    {!step.time && isPending && (
-                      <div style={{ fontSize: '0.78rem', color: '#6b7280', fontStyle: 'italic', marginTop: '8px' }}>
-                        {t('Đang chờ phê duyệt...')}
-                      </div>
-                    )}
-
-                    {step.notes && (
-                      <div style={{
-                        marginTop: '8px',
-                        padding: '6px 10px',
-                        background: isRejected ? 'rgba(239, 68, 68, 0.05)' : 'var(--color-bg-secondary)',
-                        borderLeft: `3px solid ${isRejected ? '#ef4444' : 'var(--color-primary)'}`,
-                        borderRadius: '4px',
-                        fontSize: '0.78rem',
-                        color: 'var(--color-text-muted)',
-                        fontStyle: 'italic'
-                      }}>
-                        "{step.notes}"
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div style={{ width: '100%' }}>
+                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>{t('Lập đề xuất & gửi')}</strong>
+                <CustomSelect
+                  options={users.map(u => ({
+                    value: String(u.id),
+                    label: `${u.full_name || u.name} (${u.role || 'Nhân sự'})`,
+                    avatar: u.avatar || u.avatar_url
+                  }))}
+                  value={creatorUser ? String(creatorUser.id) : ''}
+                  onChange={() => {}}
+                  disabled
+                  showAvatars
+                  width="100%"
+                />
+                <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                  {t('Đã gửi lúc')} {new Date(detail?.created_at || item.created_at).toLocaleString('vi-VN')}
+                </span>
               </div>
             </div>
           );
-        })}
+        })()}
+
+        {/* Multi-level steps */}
+        {isMultiLevel && (
+          <>
+            {/* Step 2: Manager */}
+            {(() => {
+              const sDetails = getStepDetails('step2', 2);
+              return (
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '-30px',
+                    top: '0px',
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: sDetails.bg,
+                    color: sDetails.textCol,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    zIndex: 2
+                  }}>
+                    {sDetails.iconContent}
+                  </div>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Trưởng phòng phê duyệt')}</strong>
+                      {sDetails.showBell && (
+                        <button 
+                          onClick={() => { setReminderTargetUser(managerUser); setReminderMessage(''); }}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                          title={t('Gửi nhắc nhở')}
+                        >
+                          <Bell size={18} fill="#ef4444" />
+                        </button>
+                      )}
+                    </div>
+                    <CustomSelect
+                      options={users.map(u => ({
+                        value: String(u.id),
+                        label: `${u.full_name || u.name} (${u.role || 'Trưởng phòng'})`,
+                        avatar: u.avatar || u.avatar_url
+                      }))}
+                      value={managerUser ? String(managerUser.id) : ''}
+                      onChange={() => {}}
+                      disabled
+                      showAvatars
+                      width="100%"
+                    />
+                    {sDetails.bg === '#10b981' && (
+                      <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ✓ {t('Đã duyệt lúc')} {new Date(detail?.approved_at || detail?.updated_at || (item as any).updated_at).toLocaleString('vi-VN')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Step 3: Accountant */}
+            {(() => {
+              const sDetails = getStepDetails('step3', 3);
+              return (
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '-30px',
+                    top: '0px',
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: sDetails.bg,
+                    color: sDetails.textCol,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    zIndex: 2
+                  }}>
+                    {sDetails.iconContent}
+                  </div>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Kế toán kiểm tra')}</strong>
+                      {sDetails.showBell && (
+                        <button 
+                          onClick={() => { setReminderTargetUser(accountantUser); setReminderMessage(''); }}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                          title={t('Gửi nhắc nhở')}
+                        >
+                          <Bell size={18} fill="#ef4444" />
+                        </button>
+                      )}
+                    </div>
+                    <CustomSelect
+                      options={users.map(u => ({
+                        value: String(u.id),
+                        label: `${u.full_name || u.name} (${u.role || 'Kế toán'})`,
+                        avatar: u.avatar || u.avatar_url
+                      }))}
+                      value={accountantUser ? String(accountantUser.id) : ''}
+                      onChange={() => {}}
+                      disabled
+                      showAvatars
+                      width="100%"
+                    />
+                    {sDetails.bg === '#10b981' && (
+                      <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ✓ {t('Đã duyệt lúc')} {new Date(detail?.approved_at || detail?.updated_at || (item as any).updated_at).toLocaleString('vi-VN')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Step 4: Director */}
+            {(() => {
+              const sDetails = getStepDetails('step4', 4);
+              return (
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '-30px',
+                    top: '0px',
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: sDetails.bg,
+                    color: sDetails.textCol,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    zIndex: 2
+                  }}>
+                    {sDetails.iconContent}
+                  </div>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Ban giám đốc phê duyệt')}</strong>
+                      {sDetails.showBell && (
+                        <button 
+                          onClick={() => { setReminderTargetUser(directorUser); setReminderMessage(''); }}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                          title={t('Gửi nhắc nhở')}
+                        >
+                          <Bell size={18} fill="#ef4444" />
+                        </button>
+                      )}
+                    </div>
+                    <CustomSelect
+                      options={users.map(u => ({
+                        value: String(u.id),
+                        label: `${u.full_name || u.name} (${u.role || 'Ban giám đốc'})`,
+                        avatar: u.avatar || u.avatar_url
+                      }))}
+                      value={directorUser ? String(directorUser.id) : ''}
+                      onChange={() => {}}
+                      disabled
+                      showAvatars
+                      width="100%"
+                    />
+                    {sDetails.bg === '#10b981' && (
+                      <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                        ✓ {t('Đã duyệt lúc')} {new Date(detail?.approved_at || detail?.updated_at || (item as any).updated_at).toLocaleString('vi-VN')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
+
+        {/* Single level steps */}
+        {isSingleLevel && (() => {
+          const sDetails = getStepDetails('single', 2);
+          return (
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                position: 'absolute',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
+              }}>
+                {sDetails.iconContent}
+              </div>
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>
+                    {item.type === 'expense' ? t('Phê duyệt đề xuất chi phí') : t('Phê duyệt giải trình chấm công')}
+                  </strong>
+                  {sDetails.showBell && (
+                    <button 
+                      onClick={() => { setReminderTargetUser(singleApproverUser); setReminderMessage(''); }}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      title={t('Gửi nhắc nhở')}
+                    >
+                      <Bell size={18} fill="#ef4444" />
+                    </button>
+                  )}
+                </div>
+                <CustomSelect
+                  options={users.map(u => ({
+                    value: String(u.id),
+                    label: `${u.full_name || u.name} (${u.role || 'Người phê duyệt'})`,
+                    avatar: u.avatar || u.avatar_url
+                  }))}
+                  value={singleApproverUser ? String(singleApproverUser.id) : ''}
+                  onChange={() => {}}
+                  disabled
+                  showAvatars
+                  width="100%"
+                />
+                {sDetails.bg === '#10b981' && (
+                  <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    ✓ {t('Đã duyệt lúc')} {new Date(detail?.approved_at || detail?.updated_at || (item as any).updated_at).toLocaleString('vi-VN')}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -2776,187 +3136,254 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
       );
     }
 
-    const typeLabels: Record<string, string> = {
-      leave: t('Đơn xin nghỉ phép'),
-      advance: t('Đề xuất tạm ứng lương'),
-      expense: t('Yêu cầu thanh toán chi phí'),
-      checkin: t('Giải trình đi trễ/về sớm')
-    };
+    const creatorUser = users.find(u => String(u.full_name) === String(getEmployeeName()) || String(u.name) === String(getEmployeeName()) || String(u.id) === String(detail?.user_id || detail?.created_by));
 
-    const displayStatus = detail?.status || item.status || 'pending';
-    const statusMeta: Record<string, { label: string, bg: string, color: string }> = {
-      pending: { label: t('Chờ duyệt'), bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
-      approved: { label: t('Đã duyệt'), bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-      rejected: { label: t('Từ chối'), bg: 'rgba(239, 68, 68, 0.08)', color: '#ef4444' },
-      level1_approved: { label: t('Đã duyệt Cấp 1'), bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' }
-    };
-    const meta = statusMeta[displayStatus] || statusMeta.pending;
+    const rawDesc = detail?.notes || detail?.description || item.description || '';
+    const hasInstallments = rawDesc.includes('[Thanh toán theo đợt]');
+    const hasRecurring = rawDesc.includes('[Lặp lại định kỳ]');
+
+    let installmentText = '';
+    if (hasInstallments) {
+      const match = rawDesc.match(/\[Thanh toán theo đợt\]:\s*(.*)/);
+      if (match) installmentText = match[1];
+    }
+
+    let recurringText = '';
+    if (hasRecurring) {
+      const match = rawDesc.match(/\[Lặp lại định kỳ\]:\s*(.*)/);
+      if (match) recurringText = match[1];
+    }
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Header summary card */}
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border-light)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          boxShadow: 'var(--shadow-sm)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
-            <span style={{
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              padding: '4px 10px',
-              borderRadius: '20px',
-              background: 'var(--color-primary-light, rgba(163, 20, 34, 0.05))',
-              color: 'var(--color-primary)'
-            }}>
-              {typeLabels[item.type] || t('Yêu cầu phê duyệt')}
-            </span>
-            <span style={{
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              padding: '4px 12px',
-              borderRadius: '20px',
-              background: meta.bg,
-              color: meta.color
-            }}>
-              {meta.label}
-            </span>
-          </div>
-
-          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 1rem 0', color: 'var(--color-text)', lineHeight: 1.35 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'left' }}>
+        
+        {/* Proposal Title Header */}
+        <div style={{ padding: '0.5rem 0.25rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--color-text)', lineHeight: 1.3 }}>
             {item.title}
           </h2>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0.75rem 0', borderTop: '1px solid var(--color-border-light)' }}>
-            <Avatar src={getEmployeeAvatar()} name={getEmployeeName()} size={36} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{getEmployeeName()}</span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{t('Người tạo yêu cầu')}</span>
-            </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+            <span>
+              {t('Ngày lập đề xuất')}: <strong style={{ color: 'var(--color-text)' }}>{new Date(detail?.created_at || item.created_at).toLocaleString('vi-VN')}</strong>
+            </span>
+            <span style={{ color: 'var(--color-border-light)' }}>|</span>
+            <span>
+              {t('Mã')}: <strong style={{ color: 'var(--color-text)' }}>#{item.id}</strong>
+            </span>
           </div>
         </div>
 
-        {/* Details values card */}
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border-light)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          boxShadow: 'var(--shadow-sm)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem'
-        }}>
-          <h3 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {t('Chi tiết thông tin')}
-          </h3>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            {t('Thông tin chi tiết đề xuất')}
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem 1rem' }}>
-            {item.type === 'leave' && (
-              <>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Hình thức nghỉ')}</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                    {detail?.leave_type === 'annual' ? t('Nghỉ phép năm') : 
-                     detail?.leave_type === 'sick' ? t('Nghỉ ốm') : 
-                     detail?.leave_type === 'compensatory' ? t('Nghỉ bù') :
-                     detail?.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Nghỉ không lương')}
-                  </span>
+          {item.type === 'leave' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại nghỉ phép')}</label>
+                <CustomSelect
+                  value={detail?.leave_type || 'annual'}
+                  onChange={() => {}}
+                  disabled
+                  options={[
+                    { value: 'annual', label: t('Nghỉ phép năm') },
+                    { value: 'sick', label: t('Nghỉ ốm / thai sản') },
+                    { value: 'compensatory', label: t('Nghỉ bù') },
+                    { value: 'late_early', label: t('Đi trễ/Về sớm') },
+                    { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') }
+                  ]}
+                  width="100%"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số ngày nghỉ')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={`${detail?.total_days || 1} ngày`}
+                  disabled
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: 'span 2' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Thời gian nghỉ')}</label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={detail?.start_date ? new Date(detail.start_date).toLocaleDateString('vi-VN') : ''}
+                    disabled
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ color: 'var(--color-text-muted)' }}>➔</span>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={detail?.end_date ? new Date(detail.end_date).toLocaleDateString('vi-VN') : ''}
+                    disabled
+                    style={{ flex: 1 }}
+                  />
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Số ngày nghỉ')}</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>{detail?.total_days || item.description?.match(/([\d\.]+)\s*ngày/)?.[1] || 1} {t('ngày')}</span>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Thời gian nghỉ')}</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                    {detail?.start_date ? `${new Date(detail.start_date).toLocaleDateString('vi-VN')} -> ${new Date(detail.end_date).toLocaleDateString('vi-VN')}` : item.description?.match(/Thời gian:\s*([^\.]+)/)?.[1] || ''}
-                  </span>
-                </div>
-              </>
-            )}
+              </div>
+            </div>
+          )}
 
-            {item.type === 'advance' && (
-              <>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Số tiền tạm ứng')}</span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                    {Number(detail?.amount || item.description?.match(/Số tiền:\s*([\d\.,]+)/)?.[1]?.replace(/\./g, '') || 0).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-                {detail?.request_date && (
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Ngày đề nghị')}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{new Date(detail.request_date).toLocaleDateString('vi-VN')}</span>
-                  </div>
-                )}
-              </>
-            )}
+          {item.type === 'advance' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số tiền tạm ứng')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={Number(detail?.amount || 0).toLocaleString('vi-VN') + ' đ'}
+                  disabled
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày đề nghị')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={detail?.request_date ? new Date(detail.request_date).toLocaleDateString('vi-VN') : ''}
+                  disabled
+                />
+              </div>
+            </div>
+          )}
 
-            {item.type === 'expense' && (
-              <>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Số tiền thanh toán')}</span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                    {Number(detail?.amount || item.description?.match(/Số tiền:\s*([\d\.,]+)/)?.[1]?.replace(/\./g, '') || 0).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-                {detail?.category && (
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Danh mục chi')}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{detail.category}</span>
-                  </div>
-                )}
-                {detail?.date && (
-                  <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Ngày chứng từ')}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{new Date(detail.date).toLocaleDateString('vi-VN')}</span>
-                  </div>
-                )}
-              </>
-            )}
+          {item.type === 'expense' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: 'span 2' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số tiền đề xuất')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={Number(detail?.amount || 0).toLocaleString('vi-VN') + ' đ'}
+                  disabled
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Danh mục chi')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={detail?.category || 'Vận hành'}
+                  disabled
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày chứng từ')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={detail?.date ? new Date(detail.date).toLocaleDateString('vi-VN') : new Date(detail?.created_at || item.created_at).toLocaleDateString('vi-VN')}
+                  disabled
+                />
+              </div>
+            </div>
+          )}
 
-            {item.type === 'checkin' && (
-              <>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Ngày check-in')}</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{detail?.check_in_date || item.description?.match(/ngày\s*([\d\-]+)/)?.[1] || ''}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Giờ check-in')}</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{detail?.check_in_time || item.description?.match(/lúc\s*([\d:]+)/)?.[1] || ''}</span>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Thời gian đi trễ')}</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>{detail?.late_minutes || item.description?.match(/trễ\s*(\d+)\s*phút/)?.[1] || 0} {t('phút')}</span>
-                </div>
-              </>
-            )}
+          {item.type === 'checkin' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày giải trình')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={detail?.check_in_date || ''}
+                  disabled
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Giờ ghi nhận')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={detail?.check_in_time || ''}
+                  disabled
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', gridColumn: 'span 2' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Thời gian đi trễ (phút)')}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={`${detail?.late_minutes || 0} phút`}
+                  disabled
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
-            <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '4px' }}>{t('Nội dung lý do')}</span>
-              <p style={{
-                margin: 0,
-                fontSize: '0.825rem',
-                color: 'var(--color-text-light)',
-                lineHeight: 1.5,
-                background: 'var(--color-bg-secondary)',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                borderLeft: '3px solid var(--color-primary)',
-                whiteSpace: 'pre-wrap',
-                fontStyle: 'italic',
-                textAlign: 'left'
-              }}>
-                "{detail?.reason || detail?.notes || item.description?.match(/Lý do:\s*\"([^\"]+)\"/)?.[1] || item.description?.match(/Ghi chú:\s*\"([^\"]+)\"/)?.[1] || t('Không có lý do chi tiết')}"
-              </p>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('Lý do / Mô tả chi tiết')}
+          </div>
+          <textarea
+            rows={3}
+            value={detail?.reason || detail?.notes || item.description || ''}
+            disabled
+            style={{
+              width: '100%',
+              background: '#fffbeb',
+              color: '#713f12',
+              border: '1px solid #fef08a',
+              borderLeft: '4px solid #eab308',
+              borderRadius: 0,
+              fontStyle: 'italic',
+              padding: '10px 12px',
+              fontSize: '0.8rem',
+              lineHeight: 1.45,
+              resize: 'none'
+            }}
+          />
+        </div>
+
+        {/* Card 4: Cấu hình nâng cao (Chỉ hiện khi có thiết lập được bật) */}
+        {((item.type === 'expense' && hasInstallments) || hasRecurring) && (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('Cấu hình nâng cao')}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {item.type === 'expense' && hasInstallments && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <GreenToggle
+                    id="view_isPhasedPayment"
+                    checked={true}
+                    disabled
+                    label={t('Thanh toán chia nhiều đợt (Installment/Phased Payment)')}
+                  />
+                  {installmentText && (
+                    <div style={{ marginTop: '8px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)', fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: 1.4 }}>
+                      {installmentText}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {hasRecurring && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <GreenToggle
+                    id="view_isRecurring"
+                    checked={true}
+                    disabled
+                    label={t('Thiết lập lặp lại tự động (Recurring Proposal)')}
+                  />
+                  {recurringText && (
+                    <div style={{ marginTop: '8px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)', fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: 1.4 }}>
+                      {recurringText}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
+
       </div>
     );
   };
@@ -2970,6 +3397,96 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
         }
       `}</style>
 
+      {reminderTargetUser && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 20000,
+          padding: '1rem'
+        }} onClick={() => setReminderTargetUser(null)}>
+          <div style={{
+            background: 'var(--color-surface)',
+            borderRadius: '16px',
+            border: '1px solid var(--color-border-light)',
+            boxShadow: 'var(--shadow-lg)',
+            width: '100%',
+            maxWidth: '420px',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+            textAlign: 'left'
+          }} onClick={e => e.stopPropagation()}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Bell size={18} style={{ color: 'var(--color-primary)' }} />
+                {t('Gửi nhắc nhở phê duyệt')}
+              </h3>
+              <button 
+                onClick={() => setReminderTargetUser(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', background: 'var(--color-bg-secondary)', borderRadius: '10px' }}>
+              <Avatar src={reminderTargetUser.avatar || reminderTargetUser.avatar_url} name={reminderTargetUser.full_name || reminderTargetUser.name} size={28} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{reminderTargetUser.full_name || reminderTargetUser.name}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{reminderTargetUser.role || t('Người duyệt')}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                {t('Nội dung nhắc nhở')}
+              </label>
+              <textarea
+                className="form-input"
+                rows={4}
+                value={reminderMessage}
+                onChange={e => setReminderMessage(e.target.value)}
+                placeholder={t('Nhập lời nhắn nhắc nhở người duyệt... Ví dụ: Đề xuất này đang cần gấp, duyệt hộ mình với nhé!')}
+                style={{ width: '100%', resize: 'none', padding: '10px', fontSize: '0.8rem' }}
+                autoFocus
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <button
+                type="button"
+                className="btn secondary"
+                onClick={() => setReminderTargetUser(null)}
+                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+              >
+                {t('Hủy')}
+              </button>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => {
+                  const targetName = reminderTargetUser.full_name || reminderTargetUser.name || '';
+                  toast.success(`${t('Đã gửi nhắc nhở thành công đến')} ${targetName}!`);
+                  setReminderTargetUser(null);
+                  setReminderMessage('');
+                }}
+                style={{ padding: '6px 16px', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', color: 'white' }}
+              >
+                {t('Gửi đi')}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Backdrop overlay utilizing the CSS-based backdrop classes */}
       <div 
         className="drawer-backdrop" 
@@ -2981,17 +3498,17 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
       <div style={{
         position: 'fixed',
         top: 0,
+        left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
         right: 0,
         bottom: 0,
-        width: isMobile ? '100%' : '900px',
-        maxWidth: '100%',
-        background: 'var(--color-surface)',
+        background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
         boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
         display: 'flex',
         flexDirection: 'column',
         animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         boxSizing: 'border-box',
-        zIndex: 10600
+        zIndex: 10600,
+        overflow: 'hidden'
       }} onClick={e => e.stopPropagation()}>
         
         {/* Drawer Header */}
@@ -3000,12 +3517,75 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
           borderBottom: '1px solid var(--color-border-light)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          background: 'var(--color-surface)',
+          zIndex: 100,
+          position: 'sticky',
+          top: 0,
+          flexShrink: 0
         }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase' }}>
-            {t('Chi tiết tiến trình')}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img 
+              src="/LOGO.jpg" 
+              alt="IDEAS LOGO" 
+              style={{ 
+                height: '32px', 
+                width: '32px', 
+                borderRadius: '8px', 
+                border: '1px solid var(--color-border-light)',
+                objectFit: 'cover'
+              }} 
+            />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)' }}>
+              IDEAS - {t('Quy trình')} #{item.id}
+            </h3>
+          </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {isAdmin && (item.status === 'pending' || !item.status) && (
+              <>
+                <button
+                  onClick={() => onReject(item)}
+                  className="btn secondary"
+                  style={{
+                    height: '36px',
+                    padding: '0 12px',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderRadius: '8px',
+                    color: '#ef4444',
+                    borderColor: '#ef4444'
+                  }}
+                >
+                  <XCircle size={14} />
+                  {t('Từ chối')}
+                </button>
+                <button
+                  onClick={async () => {
+                    await onApprove(item);
+                    onClose();
+                  }}
+                  className="btn primary"
+                  style={{
+                    height: '36px',
+                    padding: '0 12px',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderRadius: '8px',
+                    background: '#10b981',
+                    borderColor: '#10b981',
+                    color: '#ffffff'
+                  }}
+                >
+                  <CheckCircle2 size={14} />
+                  {t('Phê duyệt')}
+                </button>
+              </>
+            )}
+
             {onDuplicate && (
               <button
                 onClick={() => {
@@ -3014,16 +3594,16 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                 className="btn secondary hover-lift"
                 style={{
                   height: '36px',
-                  padding: '0 12px',
-                  fontSize: '0.8rem',
+                  width: '36px',
+                  padding: 0,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  justifyContent: 'center',
                   borderRadius: '8px'
                 }}
+                title={t('Nhân bản đề xuất')}
               >
-                <Copy size={14} />
-                {t('Nhân bản đề xuất')}
+                <Copy size={16} />
               </button>
             )}
             <button 
@@ -3146,117 +3726,66 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
               </div>
 
               {/* Add Comment Input Field Area */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '12px',
-                  background: 'var(--color-surface)',
-                  padding: '8px 12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}>
-                  <textarea
+              <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '12px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                <div style={{ position: 'relative' }}>
+                  <MentionInput
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder={t('Viết bình luận... Gõ @ để nhắc tên')}
-                    style={{
-                      width: '100%',
-                      minHeight: '60px',
-                      border: 'none',
-                      outline: 'none',
-                      background: 'transparent',
-                      resize: 'none',
-                      fontSize: '0.8rem',
-                      color: 'var(--color-text)',
-                      fontFamily: 'inherit'
-                    }}
+                    style={{ minHeight: '65px', fontSize: '0.85rem', paddingRight: '40px' }}
                   />
-                  
-                  {commentAttachments.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', borderTop: '1px solid var(--color-border-light)', paddingTop: '8px' }}>
-                      {commentAttachments.map((file, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'var(--color-bg)',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '6px',
-                          padding: '4px 8px',
-                          fontSize: '0.72rem'
-                        }}>
-                          <span>📄</span>
-                          <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {file.name}
-                          </span>
-                          <button
-                            onClick={() => setCommentAttachments(commentAttachments.filter((_, i) => i !== index))}
-                            style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
+                    <input type="file" onChange={handleCommentFileChange} style={{ display: 'none' }} />
+                    <Paperclip size={18} />
+                  </label>
+                </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
-                      <Paperclip size={14} />
-                      <input 
-                        type="file" 
-                        onChange={handleCommentFileChange} 
-                        style={{ display: 'none' }} 
-                      />
-                      <span>{uploadingFile ? t('Đang tải...') : t('Đính kèm')}</span>
-                    </label>
-                    
-                    <button
-                      onClick={handleAddComment}
-                      className="btn primary"
-                      style={{ alignSelf: 'flex-end', height: '30px', padding: '0 14px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Send size={12} />
-                      <span>{t('Gửi')}</span>
-                    </button>
+                {commentAttachments.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '2px' }}>
+                    {commentAttachments.map((file, index) => (
+                      <div key={index} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border-light)',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.72rem',
+                        color: 'var(--color-text)'
+                      }}>
+                        <span>📄</span>
+                        <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                          {file.name}
+                        </span>
+                        <button
+                          onClick={() => setCommentAttachments(commentAttachments.filter((_, i) => i !== index))}
+                          style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px' }}>
+                  <button
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() && commentAttachments.length === 0}
+                    className="btn primary sm"
+                    style={{ padding: '6px 18px', fontSize: '0.78rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
+                  >
+                    <Send size={13} />
+                    <span>{t('Gửi')}</span>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Drawer Footer Actions (Pending only) */}
-        {isAdmin && (
-          <div style={{
-            padding: '1.5rem',
-            borderTop: '1px solid var(--color-border-light)',
-            display: 'flex',
-            gap: '1rem',
-            background: 'var(--color-bg-secondary)'
-          }}>
-            <button
-              className="btn secondary"
-              style={{ flex: 1, color: '#ef4444', borderColor: '#ef4444' }}
-              onClick={() => onReject(item)}
-            >
-              <XCircle size={14} style={{ marginRight: 4 }} />
-              {t('Từ chối')}
-            </button>
-            <button
-              className="btn primary"
-              style={{ flex: 1 }}
-              onClick={async () => {
-                await onApprove(item);
-                onClose();
-              }}
-            >
-              <CheckCircle2 size={14} style={{ marginRight: 4 }} />
-              {t('Phê duyệt')}
-            </button>
-          </div>
-        )}
+
       </div>
     </>,
     document.body

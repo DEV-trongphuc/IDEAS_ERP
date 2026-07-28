@@ -553,26 +553,30 @@ export const ExpensesPage: React.FC = () => {
                       </td>
                       <td>
                         <div className="flex gap-1" style={{ justifyContent: 'flex-end' }}>
-                          <button className="btn-icon sm" title="Sửa" onClick={(e) => { e.stopPropagation(); openEdit(exp); }}><Pencil size={13} /></button>
-                          <button className="btn-icon sm text-danger" title="Xóa" onClick={(e) => {
-                            e.stopPropagation();
-                            showConfirm({
-                              title: 'Xóa khoản chi phí?',
-                              message: `Khoản chi "${exp.title}" sẽ bị xóa vĩnh viễn khỏi hệ thống. Thao tác này không thể hoàn tác.`,
-                              confirmText: 'Xóa ngay',
-                              cancelText: 'Hủy',
-                              isDanger: true,
-                              onConfirm: async () => {
-                                try {
-                                  await api.delete(`/expenses/${exp.id}`);
-                                  setItems(prev => prev.filter(item => item.id !== exp.id));
-                                  addToast('Đã xóa chi phí', 'success');
-                                } catch (error: any) {
-                                  addToast(error.response?.data?.message || 'Lỗi khi xóa chi phí', 'error');
-                                }
-                              }
-                            });
-                          }}><Trash2 size={13} /></button>
+                          {exp.status !== 'approved' && (
+                            <>
+                              <button className="btn-icon sm" title="Sửa" onClick={(e) => { e.stopPropagation(); openEdit(exp); }}><Pencil size={13} /></button>
+                              <button className="btn-icon sm text-danger" title="Xóa" onClick={(e) => {
+                                e.stopPropagation();
+                                showConfirm({
+                                  title: 'Xóa khoản chi phí?',
+                                  message: `Khoản chi "${exp.title}" sẽ bị xóa vĩnh viễn khỏi hệ thống. Thao tác này không thể hoàn tác.`,
+                                  confirmText: 'Xóa ngay',
+                                  cancelText: 'Hủy',
+                                  isDanger: true,
+                                  onConfirm: async () => {
+                                    try {
+                                      await api.delete(`/expenses/${exp.id}`);
+                                      setItems(prev => prev.filter(item => item.id !== exp.id));
+                                      addToast('Đã xóa chi phí', 'success');
+                                    } catch (error: any) {
+                                      addToast(error.response?.data?.message || 'Lỗi khi xóa chi phí', 'error');
+                                    }
+                                  }
+                                });
+                              }}><Trash2 size={13} /></button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
@@ -976,7 +980,7 @@ export const ExpensesPage: React.FC = () => {
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2">
                   <span className={`badge ${viewItem.status === 'approved' ? (viewItem.is_refunded ? 'info' : 'success') : viewItem.status === 'rejected' ? 'danger' : 'warning'}`} style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '8px' }}>
-                    {viewItem.status === 'approved' ? (viewItem.is_refunded ? 'Đã hoàn tiền' : 'Đã duyệt') : viewItem.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                    {viewItem.status === 'approved' ? (viewItem.is_refunded ? 'Đã thanh toán' : 'Đã duyệt') : viewItem.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
                   </span>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                     {viewItem.date && !isNaN(Date.parse(viewItem.date)) ? new Date(viewItem.date).toLocaleDateString('vi-VN') : '—'}
@@ -1086,13 +1090,13 @@ export const ExpensesPage: React.FC = () => {
                       {viewItem.is_refunded ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border)', paddingTop: '12px', marginTop: '8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Hoàn tiền</span>
+                            <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Thanh toán</span>
                             <span className="badge info" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                              <CheckCircle2 size={11} /> Đã hoàn tiền cho sale
+                              <CheckCircle2 size={11} /> Đã thanh toán
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', alignItems: 'center' }}>
-                            <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Người hoàn tiền</span>
+                            <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Người thanh toán</span>
                             <span style={{ fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <Avatar src={viewItem.refunder_avatar} name={viewItem.refunder_name || 'Admin'} size={20} />
                               {viewItem.refunder_name || 'Admin'} <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>(lúc {viewItem.refunded_at ? new Date(viewItem.refunded_at).toLocaleString('vi-VN') : '—'})</span>
@@ -1100,11 +1104,11 @@ export const ExpensesPage: React.FC = () => {
                           </div>
                           {viewItem.refund_image_url && (
                             <div style={{ marginTop: '4px' }}>
-                              <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>Chứng từ hoàn tiền:</span>
+                              <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>Chứng từ thanh toán:</span>
                               <div style={{ border: '1px solid var(--color-border-light)', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%', maxHeight: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
                                 <img 
                                   src={viewItem.refund_image_url.startsWith('http') ? viewItem.refund_image_url : `${import.meta.env.VITE_API_URL || '/backend'}${viewItem.refund_image_url}`} 
-                                  alt="Chứng từ hoàn tiền" 
+                                  alt="Chứng từ thanh toán" 
                                   style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', cursor: 'pointer' }}
                                   onClick={() => window.open(viewItem.refund_image_url.startsWith('http') ? viewItem.refund_image_url : `${import.meta.env.VITE_API_URL || '/backend'}${viewItem.refund_image_url}`, '_blank')}
                                 />
@@ -1116,13 +1120,13 @@ export const ExpensesPage: React.FC = () => {
                         ((user?.role as any) === 'admin' || (user?.role as any) === 'superadmin' || (user?.role as any) === 'super_admin' || user?.role === 'director') && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border)', paddingTop: '12px', marginTop: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', alignItems: 'center' }}>
-                              <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Xác nhận hoàn tiền</span>
-                              <CustomCheckbox checked={isRefunding} onChange={() => setIsRefunding(!isRefunding)} label="Đã hoàn tiền cho sale" />
+                              <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Xác nhận thanh toán</span>
+                              <CustomCheckbox checked={isRefunding} onChange={() => setIsRefunding(!isRefunding)} label="Đã thanh toán" />
                             </div>
                             
                             {isRefunding && (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Tải lên ảnh chứng từ hoàn tiền:</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Tải lên ảnh chứng từ thanh toán:</span>
                                 <div style={{
                                   border: '2px dashed var(--color-border)', borderRadius: '12px',
                                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -1203,18 +1207,18 @@ export const ExpensesPage: React.FC = () => {
                                         is_refunded: 1, 
                                         refund_image_url: refundImgUrl 
                                       });
-                                      addToast('Đã xác nhận hoàn tiền cho nhân viên', 'success');
+                                      addToast('Đã xác nhận thanh toán', 'success');
                                       setViewItem(null);
                                       fetchExpenses();
                                     } catch (e: any) {
-                                      addToast('Lỗi khi cập nhật hoàn tiền: ' + (e.response?.data?.message || e.message), 'error');
+                                      addToast('Lỗi khi cập nhật thanh toán: ' + (e.response?.data?.message || e.message), 'error');
                                     } finally {
                                       setSubmittingRefund(false);
                                     }
                                   }}
                                   style={{ marginTop: '4px', background: 'var(--color-success)', color: 'white', border: 'none', width: '100%', height: '36px', fontWeight: 700 }}
                                 >
-                                  {submittingRefund ? 'Đang cập nhật...' : 'Xác nhận đã hoàn tiền'}
+                                  {submittingRefund ? 'Đang cập nhật...' : 'Xác nhận đã thanh toán'}
                                 </button>
                               </div>
                             )}
@@ -1251,7 +1255,9 @@ export const ExpensesPage: React.FC = () => {
                     <button className="btn danger" style={{ flex: 1, background: 'var(--color-danger)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 600 }} onClick={() => setRejectingItem(viewItem)}><XCircle size={14} /> Từ chối</button>
                   </>
                 ) : null}
-                <button className="btn primary" style={{ width: '38px', minWidth: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px' }} title="Chỉnh sửa" onClick={() => { const item = viewItem; setViewItem(null); openEdit(item); }}><Pencil size={16} /></button>
+                {viewItem.status !== 'approved' && (
+                  <button className="btn primary" style={{ width: '38px', minWidth: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px' }} title="Chỉnh sửa" onClick={() => { const item = viewItem; setViewItem(null); openEdit(item); }}><Pencil size={16} /></button>
+                )}
               </div>
             </motion.div>
           </div>

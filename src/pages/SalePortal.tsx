@@ -5986,7 +5986,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
         {isAdminOrManager && !wsTeamId && wsSubTab !== 'personal' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-              {t('Vui lòng chọn một Nhóm để xem chi tiết công việc:')}
+              {t('Vui lòng chọn một Phòng ban để xem chi tiết công việc:')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '1.25rem' }}>
               {/* Card for "Tất cả các Nhóm" */}
@@ -6014,7 +6014,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   </div>
                   <div>
                     <h3 style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-text)', margin: 0 }}>
-                      {t('Tất cả các Nhóm')}
+                       {t('Tất cả các Phòng ban')}
                     </h3>
                     <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
                       {t('Xem toàn bộ công việc hệ thống')}
@@ -8353,7 +8353,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         }
                         return null;
                       }} />
-                      <Bar dataKey="volume" fill="var(--color-primary)" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={16} />
+                      <Bar dataKey="volume" fill="url(#chartBarGrad)" radius={[4, 4, 0, 0]} maxBarSize={16} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -8385,7 +8385,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       borderRadius: 'var(--radius-lg)', cursor: 'pointer', transition: 'background 0.2s',
                       borderBottom: '1px solid var(--color-border-light)'
                     }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)')}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-border-light)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       onClick={() => {
                         if (lead.contact_id) {

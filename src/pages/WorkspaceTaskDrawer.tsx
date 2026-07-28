@@ -3187,11 +3187,11 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             style={{ 
                               display: 'flex', 
                               gap: '12px', 
-                              background: isReply ? 'transparent' : 'rgba(0, 0, 0, 0.01)', 
+                              background: isReply ? 'transparent' : 'var(--color-bg-alt, rgba(0, 0, 0, 0.01))', 
                               border: isReply ? 'none' : '1px solid var(--color-border-light)', 
-                              padding: isReply ? '4px 0 4px 12px' : '12px 16px', 
-                              borderRadius: isReply ? '0' : '14px',
-                              borderLeft: isReply ? '2px solid var(--color-border-light)' : undefined,
+                              padding: isReply ? '6px 0' : '12px 16px', 
+                              borderRadius: isReply ? '0' : '16px',
+                              borderLeft: undefined,
                               transition: 'all 0.5s ease',
                               marginTop: isReply ? '6px' : '0'
                             }}
@@ -3265,10 +3265,11 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                                   <button
                                     onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp' })}
-                                    style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}
+                                    style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
                                     className="hover-lift"
                                   >
-                                    Phản hồi
+                                    <MessageSquare size={12} style={{ marginTop: '1px' }} />
+                                    <span>Phản hồi</span>
                                   </button>
                                 </div>
                               )}
@@ -3283,7 +3284,16 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           <div key={rootComment.id} style={{ display: 'flex', flexDirection: 'column' }}>
                             {renderSingleComment(rootComment, false)}
                             {replies.length > 0 && (
-                              <div style={{ marginLeft: '32px', display: 'flex', flexDirection: 'column', gap: '4px', borderLeft: '1px solid var(--color-border-light)', paddingLeft: '8px', marginTop: '4px' }}>
+                              <div style={{ 
+                                marginLeft: '26px', 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                gap: '12px', 
+                                borderLeft: '2px solid var(--color-border-light)', 
+                                paddingLeft: '18px', 
+                                marginTop: '8px',
+                                marginBottom: '6px'
+                              }}>
                                 {replies.map((reply: any) => renderSingleComment(reply, true))}
                               </div>
                             )}

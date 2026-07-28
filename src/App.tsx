@@ -32,6 +32,7 @@ const DemoEntry = lazy(() => import('./pages/DemoEntry').then(module => ({ defau
 const SalePortal = lazy(() => import('./pages/SalePortal').then(module => ({ default: module.SalePortal })));
 const FairShareAudit = lazy(() => import('./pages/FairShareAudit').then(module => ({ default: module.FairShareAudit })));
 const PersonalAccount = lazy(() => import('./pages/PersonalAccount').then(module => ({ default: module.PersonalAccount })));
+const FinancialDashboard = lazy(() => import('./pages/FinancialDashboard').then(module => ({ default: module.FinancialDashboard })));
 
 const ContactsPage = lazy(() => import('./pages/ContactsPage').then(module => ({ default: module.ContactsPage })));
 const CompaniesPage = lazy(() => import('./pages/CompaniesPage').then(module => ({ default: module.CompaniesPage })));
@@ -84,7 +85,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training', '/hrm'];
-  const userPaths = ['/', '/workspace', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals'];
+  const userPaths = ['/', '/workspace', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -107,6 +108,10 @@ const AppTabs = () => {
     }
   } else if (currentPath === '/deposits') {
     if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'deposit')) {
+      return <Navigate to="/" replace />;
+    }
+  } else if (currentPath === '/financial-dashboard') {
+    if (!['admin', 'superadmin', 'super_admin', 'director', 'accountant'].includes(user?.role || '')) {
       return <Navigate to="/" replace />;
     }
 
@@ -226,6 +231,8 @@ const AppTabs = () => {
         return <MyPayslips key="my-payslips" />;
       case '/approvals':
         return <Approvals key="approvals" />;
+      case '/financial-dashboard':
+        return <FinancialDashboard key="financial-dashboard" />;
       default:
         return <Navigate to="/" replace />;
     }
