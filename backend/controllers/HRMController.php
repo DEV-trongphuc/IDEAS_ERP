@@ -950,14 +950,10 @@ class HRMController {
         $leaves = $stmtLeaves->fetchAll(PDO::FETCH_ASSOC);
         foreach ($leaves as $l) {
             $shouldShow = false;
-            if ($isGlobalAdmin) {
+            if ($l['status_level_1'] === 'pending' && $l['approver_id'] == $userId) {
                 $shouldShow = true;
-            } else {
-                if ($l['status_level_1'] === 'pending' && $l['approver_id'] == $userId) {
-                    $shouldShow = true;
-                } else if ($l['status_level_1'] === 'approved' && $l['status_level_2'] === 'pending' && $l['approver_id_2'] == $userId) {
-                    $shouldShow = true;
-                }
+            } else if ($l['status_level_1'] === 'approved' && $l['status_level_2'] === 'pending' && $l['approver_id_2'] == $userId) {
+                $shouldShow = true;
             }
 
             if ($shouldShow) {
@@ -985,14 +981,10 @@ class HRMController {
         $advances = $stmtAdvances->fetchAll(PDO::FETCH_ASSOC);
         foreach ($advances as $a) {
             $shouldShow = false;
-            if ($isGlobalAdmin) {
+            if ($a['status_level_1'] === 'pending' && $a['approver_id'] == $userId) {
                 $shouldShow = true;
-            } else {
-                if ($a['status_level_1'] === 'pending' && $a['approver_id'] == $userId) {
-                    $shouldShow = true;
-                } else if ($a['status_level_1'] === 'approved' && $a['status_level_2'] === 'pending' && $a['approver_id_2'] == $userId) {
-                    $shouldShow = true;
-                }
+            } else if ($a['status_level_1'] === 'approved' && $a['status_level_2'] === 'pending' && $a['approver_id_2'] == $userId) {
+                $shouldShow = true;
             }
 
             if ($shouldShow) {
@@ -1010,7 +1002,7 @@ class HRMController {
 
         // 3. Pending Expenses
         $stmtExpenses = $this->db->prepare("
-            SELECT e.id, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at
+            SELECT e.id, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at, e.approver_id
             FROM expenses e
             JOIN users u ON e.created_by = u.id
             WHERE e.tenant_id = ? AND e.status = 'pending' AND e.deleted_at IS NULL
@@ -1018,34 +1010,45 @@ class HRMController {
         $stmtExpenses->execute([$auth['tenant_id']]);
         $expenses = $stmtExpenses->fetchAll(PDO::FETCH_ASSOC);
         foreach ($expenses as $e) {
-            $pending[] = [
-                'id' => (int)$e['id'],
-                'type' => 'expense',
-                'employee_name' => $e['employee_name'],
-                'title' => 'Yêu cầu chi phí: ' . $e['title'],
-                'description' => 'Số tiền: ' . number_format($e['amount'], 0, ',', '.') . 'đ. Ghi chú: "' . $e['notes'] . '"',
-                'created_at' => $e['created_at']
-            ];
+            $shouldShow = false;
+            if ($e['approver_id'] == $userId) {
+                $shouldShow = true;
+            } else if (empty($e['approver_id']) && in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr', 'accountant'])) {
+                $shouldShow = true;
+            }
+
+            if ($shouldShow) {
+                $pending[] = [
+                    'id' => (int)$e['id'],
+                    'type' => 'expense',
+                    'employee_name' => $e['employee_name'],
+                    'title' => 'Yêu cầu chi phí: ' . $e['title'],
+                    'description' => 'Số tiền: ' . number_format($e['amount'], 0, ',', '.') . 'đ. Ghi chú: "' . $e['notes'] . '"',
+                    'created_at' => $e['created_at']
+                ];
+            }
         }
 
         // 4. Pending Checkins
-        $stmtCheckins = $this->db->prepare("
-            SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, CONCAT(c.check_in_date, ' ', c.check_in_time) as created_at
-            FROM check_ins c
-            JOIN users u ON c.user_id = u.id
-            WHERE u.tenant_id = ? AND c.status = 'pending_approval'
-        ");
-        $stmtCheckins->execute([$auth['tenant_id']]);
-        $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($checkins as $c) {
-            $pending[] = [
-                'id' => (int)$c['id'],
-                'type' => 'checkin',
-                'employee_name' => $c['employee_name'],
-                'title' => 'Giải trình đi trễ ngày ' . $c['check_in_date'],
-                'description' => 'Đi trễ ' . $c['late_minutes'] . ' phút (Check-in lúc ' . $c['check_in_time'] . '). Lý do: "' . $c['reason'] . '"',
-                'created_at' => $c['created_at']
-            ];
+        if (in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr'])) {
+            $stmtCheckins = $this->db->prepare("
+                SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, CONCAT(c.check_in_date, ' ', c.check_in_time) as created_at
+                FROM check_ins c
+                JOIN users u ON c.user_id = u.id
+                WHERE u.tenant_id = ? AND c.status = 'pending_approval'
+            ");
+            $stmtCheckins->execute([$auth['tenant_id']]);
+            $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($checkins as $c) {
+                $pending[] = [
+                    'id' => (int)$c['id'],
+                    'type' => 'checkin',
+                    'employee_name' => $c['employee_name'],
+                    'title' => 'Giải trình đi trễ ngày ' . $c['check_in_date'],
+                    'description' => 'Đi trễ ' . $c['late_minutes'] . ' phút (Check-in lúc ' . $c['check_in_time'] . '). Lý do: "' . $c['reason'] . '"',
+                    'created_at' => $c['created_at']
+                ];
+            }
         }
 
         // Sort by created_at DESC

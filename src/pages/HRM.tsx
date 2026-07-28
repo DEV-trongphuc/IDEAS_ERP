@@ -55,12 +55,14 @@ export default function HRM() {
   const [advances, setAdvances] = useState<any[]>([]);
   const [payslips, setPayslips] = useState<any[]>([]);
   const [showOnlyMyPending, setShowOnlyMyPending] = useState(false);
+  const [selectedApproval, setSelectedApproval] = useState<{ type: 'leave' | 'advance', data: any } | null>(null);
   const isMyPendingRequest = (req: any) => {
-    const isGlobalAdmin = ['superadmin', 'admin', 'director'].includes(user?.role || '');
-    if (isGlobalAdmin) return true;
-    const isLevel1Pending = req.status_level_1 === 'pending' && Number(req.approver_id) === Number(user?.id);
-    const isLevel2Pending = req.status_level_1 === 'approved' && req.status_level_2 === 'pending' && Number(req.approver_id_2) === Number(user?.id);
-    return isLevel1Pending || isLevel2Pending;
+    const isGlobalAdmin = ['superadmin', 'admin', 'director', 'hr'].includes(user?.role || '');
+    const isLevel1Active = req.status_level_1 === 'pending';
+    const isLevel2Active = req.status_level_1 === 'approved' && req.status_level_2 === 'pending';
+    const isLevel1Approver = Number(req.approver_id) === Number(user?.id) || (isLevel1Active && isGlobalAdmin);
+    const isLevel2Approver = Number(req.approver_id_2) === Number(user?.id) || (isLevel2Active && isGlobalAdmin);
+    return (isLevel1Active && isLevel1Approver) || (isLevel2Active && isLevel2Approver);
   };
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -262,12 +264,14 @@ export default function HRM() {
   const loadData = async () => {
     try {
       if (activeTab === 'dashboard') {
-        const [profRes, leaveRes] = await Promise.all([
+        const [profRes, leaveRes, advRes] = await Promise.all([
           fetchAPI('hrm/profiles').catch(() => ({ data: [] })),
-          fetchAPI('hrm/leaves').catch(() => ({ data: [] }))
+          fetchAPI('hrm/leaves').catch(() => ({ data: [] })),
+          fetchAPI('hrm/advances').catch(() => ({ data: [] }))
         ]);
         setProfiles(profRes?.data || []);
         setLeaves(leaveRes?.data || []);
+        setAdvances(advRes?.data || []);
       } else if (activeTab === 'profiles') {
         const res = await fetchAPI('hrm/profiles');
         setProfiles(res?.data || []);
@@ -1059,18 +1063,27 @@ export default function HRM() {
                             <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)', fontSize: '0.8125rem', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={req.reason}>
                               {req.reason || '—'}
                             </td>
-                            <td style={{ padding: '14px 8px' }}>
+                            <td 
+                              style={{ padding: '14px 8px', cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedApproval({ type: 'leave', data: req });
+                              }}
+                              title={t('Xem chi tiết quy trình phê duyệt')}
+                            >
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {approver1 && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
                                     <span style={{ color: req.status_level_1 === 'approved' ? '#10b981' : (req.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
-                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 1')}: {approver1.full_name}</span>
+                                    <Avatar src={approver1.avatar_url || approver1.avatar} name={approver1.full_name} size={18} />
+                                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Cấp 1')}: {approver1.full_name}</span>
                                   </div>
                                 )}
                                 {approver2 && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
                                     <span style={{ color: req.status_level_2 === 'approved' ? '#10b981' : (req.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
-                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 2')}: {approver2.full_name}</span>
+                                    <Avatar src={approver2.avatar_url || approver2.avatar} name={approver2.full_name} size={18} />
+                                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Cấp 2')}: {approver2.full_name}</span>
                                   </div>
                                 )}
                               </div>
@@ -1169,8 +1182,14 @@ export default function HRM() {
                         
                         return (
                           <tr key={adv.id} className="hover-bg-secondary" style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.875rem', transition: 'background-color 0.2s' }}>
-                            <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--color-text)' }}>
-                              {adv.employee_name}
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {(() => {
+                                  const empProfile = profiles.find(p => Number(p.id) === Number(adv.user_id));
+                                  return <Avatar src={empProfile?.avatar_url || empProfile?.avatar} name={adv.employee_name} size={32} />;
+                                })()}
+                                <strong style={{ color: 'var(--color-text)' }}>{adv.employee_name}</strong>
+                              </div>
                             </td>
                             <td style={{ padding: '14px 8px', fontWeight: 800, color: 'var(--color-primary)' }}>
                               {formatCurrency(adv.amount)}
@@ -1181,18 +1200,27 @@ export default function HRM() {
                             <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)', fontSize: '0.825rem', maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={adv.reason}>
                               {adv.reason || t('Tạm ứng sinh hoạt')}
                             </td>
-                            <td style={{ padding: '14px 8px' }}>
+                            <td 
+                              style={{ padding: '14px 8px', cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedApproval({ type: 'advance', data: adv });
+                              }}
+                              title={t('Xem chi tiết quy trình phê duyệt')}
+                            >
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {approver1 && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
                                     <span style={{ color: adv.status_level_1 === 'approved' ? '#10b981' : (adv.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
-                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 1')}: {approver1.full_name}</span>
+                                    <Avatar src={approver1.avatar_url || approver1.avatar} name={approver1.full_name} size={18} />
+                                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Cấp 1')}: {approver1.full_name}</span>
                                   </div>
                                 )}
                                 {approver2 && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
                                     <span style={{ color: adv.status_level_2 === 'approved' ? '#10b981' : (adv.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'), fontSize: '0.5rem' }}>●</span>
-                                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Cấp 2')}: {approver2.full_name}</span>
+                                    <Avatar src={approver2.avatar_url || approver2.avatar} name={approver2.full_name} size={18} />
+                                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Cấp 2')}: {approver2.full_name}</span>
                                   </div>
                                 )}
                                 {!approver1 && !approver2 && (
@@ -1855,6 +1883,244 @@ export default function HRM() {
           </div>
         </div>
       )}
+
+      {/* Approval Detail Drawer */}
+      {selectedApproval && (() => {
+        const { type, data } = selectedApproval;
+        const isLeave = type === 'leave';
+        const employeeName = data.employee_name;
+        const reason = data.reason || (isLeave ? t('Nghỉ phép') : t('Tạm ứng sinh hoạt'));
+        
+        const approver1 = profiles.find(p => Number(p.id) === Number(data.approver_id));
+        const approver2 = profiles.find(p => Number(p.id) === Number(data.approver_id_2));
+        
+        const isPending = data.status === 'pending';
+        
+        const showApproveButtons = isPending && isMyPendingRequest(data);
+        
+        const handleAction = async (actionStatus: 'approved' | 'rejected') => {
+          if (isLeave) {
+            await handleApproveLeave(data.id, actionStatus);
+          } else {
+            await handleApproveAdvance(data.id, actionStatus);
+          }
+          // Refresh local selected data
+          if (isLeave) {
+            const freshLeaves = await fetchAPI('hrm/leaves');
+            setLeaves(freshLeaves?.data || []);
+            const updated = freshLeaves?.data?.find((l: any) => l.id === data.id);
+            if (updated) setSelectedApproval({ type: 'leave', data: updated });
+            else setSelectedApproval(null);
+          } else {
+            const freshAdvances = await fetchAPI('hrm/advances');
+            setAdvances(freshAdvances?.data || []);
+            const updated = freshAdvances?.data?.find((a: any) => a.id === data.id);
+            if (updated) setSelectedApproval({ type: 'advance', data: updated });
+            else setSelectedApproval(null);
+          }
+        };
+
+        return (
+          <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'flex-end', zIndex: 1100 }}>
+            {/* Click outside to close */}
+            <div style={{ flex: 1 }} onClick={() => setSelectedApproval(null)} />
+            
+            {/* Drawer Content */}
+            <div className="card" style={{ 
+              width: '450px', 
+              maxWidth: '90%', 
+              height: '100%', 
+              background: 'var(--color-surface)', 
+              boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '2rem',
+              borderRadius: 0,
+              animation: 'slideIn 0.3s ease-out'
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                  {isLeave ? t('Quy trình Phê duyệt Nghỉ Phép') : t('Quy trình Phê duyệt Tạm ứng')}
+                </h3>
+                <button 
+                  onClick={() => setSelectedApproval(null)} 
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                
+                {/* Employee / Request Info */}
+                <div>
+                  <h4 style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '0.5rem' }}>
+                    {t('Thông tin đề xuất')}
+                  </h4>
+                  <div style={{ background: 'var(--color-bg)', padding: '1rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('Nhân viên')}:</span>
+                      <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{employeeName}</span>
+                    </div>
+                    {isLeave ? (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('Loại phép')}:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>
+                            {data.leave_type === 'annual' ? t('Phép năm') : 
+                             data.leave_type === 'sick' ? t('Nghỉ ốm') : 
+                             data.leave_type === 'compensatory' ? t('Nghỉ bù') : 
+                             data.leave_type === 'overtime' ? t('Tăng ca') :
+                             data.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Không lương')}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('Thời gian')}:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.825rem' }}>
+                            {new Date(data.start_date).toLocaleDateString('vi-VN')} - {new Date(data.end_date).toLocaleDateString('vi-VN')} ({data.total_days} ngày)
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('Số tiền tạm ứng')}:</span>
+                          <span style={{ fontWeight: 800, color: 'var(--color-primary)' }}>{formatCurrency(data.amount)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('Ngày đề xuất')}:</span>
+                          <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{new Date(data.request_date).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                      </>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px solid var(--color-border-light)', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('Lý do')}:</span>
+                      <span style={{ color: 'var(--color-text)', fontStyle: 'italic', fontSize: '0.85rem' }}>"{reason}"</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Workflow Timeline */}
+                <div>
+                  <h4 style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 800, marginBottom: '1rem' }}>
+                    {t('Quy trình duyệt')}
+                  </h4>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative', paddingLeft: '1.5rem' }}>
+                    {/* Vertical Line */}
+                    <div style={{ position: 'absolute', top: '8px', bottom: '8px', left: '7px', width: '2px', background: 'var(--color-border)' }} />
+
+                    {/* Step 1 */}
+                    {approver1 && (
+                      <div style={{ position: 'relative' }}>
+                        {/* Dot */}
+                        <div style={{ 
+                          position: 'absolute', 
+                          left: '-21px', 
+                          top: '3px', 
+                          width: '12px', 
+                          height: '12px', 
+                          borderRadius: '50%', 
+                          background: data.status_level_1 === 'approved' ? '#10b981' : (data.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'),
+                          border: '3px solid var(--color-surface)',
+                          boxShadow: '0 0 0 2px ' + (data.status_level_1 === 'approved' ? '#10b981' : (data.status_level_1 === 'rejected' ? '#ef4444' : '#d1d5db'))
+                        }} />
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                              {t('Cấp 1: Phê duyệt của Quản lý')}
+                            </span>
+                            <span style={{ 
+                              fontSize: '0.725rem', 
+                              fontWeight: 800, 
+                              color: data.status_level_1 === 'approved' ? '#10b981' : (data.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280'),
+                              background: data.status_level_1 === 'approved' ? 'rgba(16, 185, 129, 0.08)' : (data.status_level_1 === 'rejected' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(107, 114, 128, 0.08)'),
+                              padding: '2px 8px',
+                              borderRadius: '12px'
+                            }}>
+                              {data.status_level_1 === 'approved' ? t('Đã duyệt') : (data.status_level_1 === 'rejected' ? t('Từ chối') : t('Chờ duyệt'))}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                            <Avatar src={approver1.avatar_url || approver1.avatar} name={approver1.full_name} size={18} />
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                              {t('Người duyệt')}: <strong>{approver1.full_name}</strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 2 */}
+                    {approver2 && (
+                      <div style={{ position: 'relative' }}>
+                        {/* Dot */}
+                        <div style={{ 
+                          position: 'absolute', 
+                          left: '-21px', 
+                          top: '3px', 
+                          width: '12px', 
+                          height: '12px', 
+                          borderRadius: '50%', 
+                          background: data.status_level_2 === 'approved' ? '#10b981' : (data.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'),
+                          border: '3px solid var(--color-surface)',
+                          boxShadow: '0 0 0 2px ' + (data.status_level_2 === 'approved' ? '#10b981' : (data.status_level_2 === 'rejected' ? '#ef4444' : '#d1d5db'))
+                        }} />
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                              {t('Cấp 2: Phê duyệt của Giám đốc')}
+                            </span>
+                            <span style={{ 
+                              fontSize: '0.725rem', 
+                              fontWeight: 800, 
+                              color: data.status_level_2 === 'approved' ? '#10b981' : (data.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280'),
+                              background: data.status_level_2 === 'approved' ? 'rgba(16, 185, 129, 0.08)' : (data.status_level_2 === 'rejected' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(107, 114, 128, 0.08)'),
+                              padding: '2px 8px',
+                              borderRadius: '12px'
+                            }}>
+                              {data.status_level_2 === 'approved' ? t('Đã duyệt') : (data.status_level_2 === 'rejected' ? t('Từ chối') : t('Chờ duyệt'))}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                            <Avatar src={approver2.avatar_url || approver2.avatar} name={approver2.full_name} size={18} />
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                              {t('Người duyệt')}: <strong>{approver2.full_name}</strong>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Action Buttons inside Drawer */}
+              {showApproveButtons && (
+                <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1.5rem', marginTop: '1rem', display: 'flex', gap: '0.75rem' }}>
+                  <button 
+                    onClick={() => handleAction('rejected')} 
+                    className="btn secondary" 
+                    style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 700, height: 40 }}
+                  >
+                    <X size={16} /> {t('Từ chối')}
+                  </button>
+                  <button 
+                    onClick={() => handleAction('approved')} 
+                    className="btn primary" 
+                    style={{ flex: 1, background: '#10b981', border: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 700, height: 40 }}
+                  >
+                    <Check size={16} /> {t('Duyệt chi')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

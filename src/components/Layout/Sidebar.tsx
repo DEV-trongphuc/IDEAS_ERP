@@ -62,7 +62,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'QUY TRÌNH & PHÊ DUYỆT',
     items: [
-      { name: 'Quy trình phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals', hideForRoles: ['hr', 'marketing'] }
+      { name: 'Quy trình phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals', hideForRoles: ['marketing'] }
     ]
   },
   {
