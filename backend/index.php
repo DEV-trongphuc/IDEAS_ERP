@@ -860,6 +860,11 @@ switch ($resource) {
             $ctrl->listEntityExpenses($auth, $subResource, (int)($segments[3] ?? 0));
         }
         elseif ($resourceId === 'summary' && $method === 'GET') $ctrl->summary($auth);
+        elseif ($resourceId && $subResource === 'comments' && $method === 'GET') $ctrl->getComments($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'comments' && $method === 'POST') $ctrl->addComment($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'comments' && isset($segments[3]) && $method === 'DELETE') $ctrl->deleteComment($auth, (int)$segments[3]);
+        elseif ($resourceId === 'comments' && $subResource && $method === 'DELETE') $ctrl->deleteComment($auth, (int)$subResource);
+        elseif ($resourceId && $subResource === 'history' && $method === 'GET') $ctrl->getHistory($auth, (int)$resourceId);
         elseif (!$resourceId && $method === 'GET')    $ctrl->listExpenses($auth);
         elseif (!$resourceId && $method === 'POST')   $ctrl->createExpense($auth);
         elseif ($resourceId  && $method === 'GET')    $ctrl->showExpense($auth, (int)$resourceId);

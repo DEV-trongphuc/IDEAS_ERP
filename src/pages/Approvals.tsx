@@ -212,6 +212,8 @@ export default function Approvals() {
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveFrom, setLeaveFrom] = useState('');
   const [leaveTo, setLeaveTo] = useState('');
+  const [stationeryItem, setStationeryItem] = useState('');
+  const [stationeryQty, setStationeryQty] = useState('');
   
   // Table item state
   const [expenseItems, setExpenseItems] = useState<any[]>([
@@ -280,7 +282,13 @@ export default function Approvals() {
 
   // Set default steps whenever the form type changes
   useEffect(() => {
-    if (formType === 'leave') {
+    if (selectedWorkflowDef?.id === 'stationery') {
+      setShowStepManager(true);
+      setShowStepAccountant(false);
+      setShowStepDirector(false);
+      setStationeryItem('');
+      setStationeryQty('');
+    } else if (formType === 'leave') {
       setShowStepManager(true);
       setShowStepAccountant(false);
       setShowStepDirector(false);
@@ -294,7 +302,7 @@ export default function Approvals() {
       setShowStepAccountant(true);
       setShowStepDirector(true);
     }
-  }, [formType]);
+  }, [formType, selectedWorkflowDef]);
 
   useEffect(() => {
     fetchAPI('users?all=1').then(res => {
@@ -549,7 +557,7 @@ export default function Approvals() {
       {/* Header */}
       <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="page-title">{t('Trung tâm Phê duyệt Quy trình (Workflow Hub)')}</h1>
+          <h1 className="page-title">{t('Quy trình hệ thống')}</h1>
           <p className="page-subtitle">{t('Quản lý tập trung các quy trình đề xuất nghỉ phép, tạm ứng lương, chi phí hành chính và giải trình đi trễ.')}</p>
         </div>
         <button
@@ -989,24 +997,27 @@ export default function Approvals() {
         const selectedTemplate = 'standard';
         
         let defaultApp1 = null;
-        if (formType === 'leave') {
+        if (selectedWorkflowDef?.id === 'stationery') {
+          defaultApp1 = users.find(u => String(u.role).toLowerCase() === 'hr');
+        }
+        if (!defaultApp1 && formType === 'leave') {
           defaultApp1 = users.find(u => String(u.id) === String(leaveFrom)); // Mock logic or manager
         }
         if (!defaultApp1) {
           defaultApp1 = users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()));
         }
         const app1User = customApprover1 || defaultApp1;
-        const app1Name = app1User?.full_name || app1User?.name || t('Trưởng phòng phê duyệt');
+        const app1Name = app1User?.full_name || app1User?.name || t('Phê duyệt');
         const app1Avatar = app1User?.avatar_url || app1User?.avatar;
 
         const defaultAccountant = users.find(u => String(u.role).toLowerCase() === 'accountant');
         const accountantUser = customApprover2 || defaultAccountant;
-        const accountantName = accountantUser?.full_name || accountantUser?.name || t('Kế toán tổng hợp kiểm tra');
+        const accountantName = accountantUser?.full_name || accountantUser?.name || t('Phê duyệt');
         const accountantAvatar = accountantUser?.avatar_url || accountantUser?.avatar;
 
         const defaultDirector = users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
         const directorUser = customApprover3 || defaultDirector;
-        const directorName = directorUser?.full_name || directorUser?.name || t('Ban giám đốc phê duyệt');
+        const directorName = directorUser?.full_name || directorUser?.name || t('Phê duyệt');
         const directorAvatar = directorUser?.avatar_url || directorUser?.avatar;
 
         return (
@@ -1515,7 +1526,11 @@ export default function Approvals() {
                                 })
                               });
                             } else if (formType === 'general') {
-                              let generalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
+                              let generalDesc = '';
+                              if (selectedWorkflowDef?.id === 'stationery') {
+                                generalDesc = `Đồ vật đề xuất: ${stationeryItem}\nSố lượng: ${stationeryQty}\n`;
+                              }
+                              generalDesc += `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
                               if (isRecurring) {
                                 generalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
                               }
@@ -1782,6 +1797,36 @@ export default function Approvals() {
                                 />
                               </div>
                             </div>
+
+                            {selectedWorkflowDef?.id === 'stationery' && (
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đề xuất cái gì')}</label>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    value={stationeryItem}
+                                    onChange={e => setStationeryItem(e.target.value)}
+                                    placeholder={t('Nhập tên văn phòng phẩm... (Ví dụ: Giấy A4 Double A)')}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số lượng bao nhiêu')}</label>
+                                  <input
+                                    type="number"
+                                    className="form-input"
+                                    value={stationeryQty}
+                                    onChange={e => setStationeryQty(e.target.value)}
+                                    placeholder={t('Ví dụ: 5')}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    min="1"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                            )}
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Nội dung đề xuất / Giải trình chi tiết')}</label>
@@ -2333,6 +2378,7 @@ export default function Approvals() {
                             </div>
                           )}
 
+
                           <button
                             type="button"
                             onClick={() => {
@@ -2444,7 +2490,7 @@ export default function Approvals() {
                                   </div>
                                   <div style={{ width: '100%' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                      <strong style={{ fontSize: '0.8rem', color: app1User ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Trưởng phòng phê duyệt')}</strong>
+                                      <strong style={{ fontSize: '0.8rem', color: app1User ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Phê duyệt')}</strong>
                                       <button
                                         type="button"
                                         onClick={() => setShowStepManager(false)}
@@ -2500,7 +2546,7 @@ export default function Approvals() {
                                   </div>
                                   <div style={{ width: '100%' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                      <strong style={{ fontSize: '0.8rem', color: accountantUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Kế toán kiểm tra')}</strong>
+                                      <strong style={{ fontSize: '0.8rem', color: accountantUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Phê duyệt')}</strong>
                                       <button
                                         type="button"
                                         onClick={() => setShowStepAccountant(false)}
@@ -2556,7 +2602,7 @@ export default function Approvals() {
                                   </div>
                                   <div style={{ width: '100%' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                      <strong style={{ fontSize: '0.8rem', color: directorUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Ban giám đốc phê duyệt')}</strong>
+                                      <strong style={{ fontSize: '0.8rem', color: directorUser ? 'var(--color-text)' : 'var(--color-text-muted)' }}>{t('Phê duyệt')}</strong>
                                       <button
                                         type="button"
                                         onClick={() => setShowStepDirector(false)}
@@ -2590,6 +2636,55 @@ export default function Approvals() {
                             </div>
                           );
                         })()}
+
+                        {(!showStepManager || !showStepAccountant || !showStepDirector) && (
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: '8px', 
+                            marginTop: '1rem', 
+                            padding: '12px',
+                            border: '1px dashed var(--color-border)',
+                            borderRadius: '12px',
+                            background: 'var(--color-bg)'
+                          }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              {t('Khôi phục bước duyệt đã xóa')}
+                            </span>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              {!showStepManager && (
+                                <button
+                                  type="button"
+                                  className="btn outline sm"
+                                  onClick={() => setShowStepManager(true)}
+                                  style={{ fontSize: '0.675rem', padding: '4px 10px', height: 'auto', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Plus size={12} /> {t('Phê duyệt (Bước 1)')}
+                                </button>
+                              )}
+                              {!showStepAccountant && (
+                                <button
+                                  type="button"
+                                  className="btn outline sm"
+                                  onClick={() => setShowStepAccountant(true)}
+                                  style={{ fontSize: '0.675rem', padding: '4px 10px', height: 'auto', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Plus size={12} /> {t('Phê duyệt (Bước 2)')}
+                                </button>
+                              )}
+                              {!showStepDirector && (
+                                <button
+                                  type="button"
+                                  className="btn outline sm"
+                                  onClick={() => setShowStepDirector(true)}
+                                  style={{ fontSize: '0.675rem', padding: '4px 10px', height: 'auto', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Plus size={12} /> {t('Phê duyệt (Bước 3)')}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
 
                         <div style={{
                           marginTop: '0.75rem',
@@ -2914,7 +3009,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                   </div>
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Trưởng phòng phê duyệt')}</strong>
+                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Phê duyệt')}</strong>
                       {sDetails.showBell && (
                         <button 
                           onClick={() => { setReminderTargetUser(managerUser); setReminderMessage(''); }}
@@ -2972,7 +3067,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                   </div>
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Kế toán kiểm tra')}</strong>
+                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Phê duyệt')}</strong>
                       {sDetails.showBell && (
                         <button 
                           onClick={() => { setReminderTargetUser(accountantUser); setReminderMessage(''); }}
@@ -3030,7 +3125,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                   </div>
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Ban giám đốc phê duyệt')}</strong>
+                      <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{t('Phê duyệt')}</strong>
                       {sDetails.showBell && (
                         <button 
                           onClick={() => { setReminderTargetUser(directorUser); setReminderMessage(''); }}

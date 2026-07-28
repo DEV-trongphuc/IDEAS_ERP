@@ -1064,7 +1064,7 @@ export default function DepositsPage() {
                     <tr>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '150px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Ngày tạo</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chương trình & Khách hàng</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '180px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '140px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
@@ -1114,20 +1114,10 @@ export default function DepositsPage() {
                         </span>
                       </td>
 
-                      {/* Project & Client with unit code badge */}
+                      {/* Project & Client without unit code badge */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>
                           <span>{dep.project_name}</span>
-                          <span style={{ 
-                            padding: '2px 6px', 
-                            background: 'rgba(189, 29, 45, 0.05)', 
-                            color: 'var(--color-primary)', 
-                            borderRadius: '4px', 
-                            fontWeight: 700, 
-                            fontSize: '0.725rem'
-                          }}>
-                            {dep.unit_code}
-                          </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                           <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
@@ -1934,6 +1924,7 @@ export default function DepositsPage() {
             <div style={{ position: 'fixed', inset: 0, zIndex: 1000000, display: 'flex', justifyContent: 'flex-end' }}>
               {/* Overlay */}
               <motion.div
+                className="drawer-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -1974,11 +1965,37 @@ export default function DepositsPage() {
                 borderBottom: '1px solid var(--color-border)',
                 background: 'var(--color-surface)'
               }}>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={() => setShowManageModal(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '8px',
+                      color: 'var(--color-text-muted)',
+                      transition: 'background 0.2s, color 0.2s',
+                      marginLeft: '-4px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--color-surface-hover)';
+                      e.currentTarget.style.color = 'var(--color-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                      e.currentTarget.style.color = 'var(--color-text-muted)';
+                    }}
+                    title="Quay lại"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
                   <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
-                    Chi tiết & Lịch trình thanh toán - SKU: {selectedDepForManage.unit_code}
+                    Chi tiết & Lịch trình thanh toán
                   </h2>
-
                 </div>
 
                 {/* Actions & Close area top right */}
@@ -2133,11 +2150,11 @@ export default function DepositsPage() {
                             </div>
                           </div>
 
-                          {/* Right: Program & SKU */}
+                          {/* Right: Program */}
                           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
-                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chương trình & SKU</span>
+                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chương trình</span>
                             <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
-                              {selectedDepForManage.project_name} ({selectedDepForManage.unit_code})
+                              {selectedDepForManage.project_name}
                             </span>
                           </div>
                         </div>
@@ -2276,7 +2293,7 @@ export default function DepositsPage() {
                                 </div>
                               </div>
                               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-                                <div className="stat-value" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
+                                <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
                                   {formatMoney(selectedDepForManage.price)}
                                 </div>
                                 <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
@@ -2383,7 +2400,7 @@ export default function DepositsPage() {
                                     </button>
                                   </div>
                                 ) : (
-                                  <div className="stat-value" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
+                                  <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
                                     {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission)}
                                   </div>
                                 )}
@@ -2951,24 +2968,30 @@ export default function DepositsPage() {
                             {historyLogs.map((log) => {
                               let actionLabel = log.action;
                               let actionColor = 'var(--color-primary)';
-                              if (log.action === 'APPROVE_DEPOSIT_MILESTONE') {
+                              if (log.action === 'CREATE_DEPOSIT') {
+                                actionLabel = 'Khởi tạo quy trình thanh toán';
+                                actionColor = '#2563eb';
+                              } else if (log.action === 'APPROVE_DEPOSIT_MILESTONE') {
                                 actionLabel = 'Duyệt đợt tiền';
                                 actionColor = '#10b981';
                               } else if (log.action === 'REJECT_DEPOSIT_MILESTONE') {
                                 actionLabel = 'Từ chối UNC';
                                 actionColor = '#ef4444';
                               } else if (log.action === 'CANCEL_DEPOSIT') {
-                                actionLabel = 'Báo bể cọc';
+                                actionLabel = 'Báo bể cọc (Hủy giao dịch)';
                                 actionColor = '#ef4444';
                               } else if (log.action === 'UPDATE_COMMISSION') {
-                                actionLabel = 'Cập nhật hoa hồng';
-                              } else if (log.action === 'UPDATE_SHARES') {
+                                actionLabel = 'Cập nhật hoa hồng dự kiến';
+                                actionColor = '#f59e0b';
+                              } else if (log.action === 'UPDATE_SHARES' || log.action === 'ADMIN_UPDATE_COOP_SHARES') {
                                 actionLabel = 'Cập nhật hoa hồng co-op';
+                                actionColor = '#10b981';
                               } else if (log.action === 'UPDATE_MILESTONES') {
                                 actionLabel = 'Cập nhật các đợt cọc';
+                                actionColor = '#6366f1';
                               } else if (log.action === 'UPLOAD_DEPOSIT_UNC') {
-                                actionLabel = 'Nộp ảnh UNC';
-                                actionColor = '#2563eb';
+                                actionLabel = 'Tải lên minh chứng (UNC)';
+                                actionColor = '#3b82f6';
                               }
                               
                               return (

@@ -76,6 +76,7 @@ const viOverrides: Record<string, string> = {
   "Tích hợp Data": "Tích hợp Lead/Data",
   "Vòng xoay chia số (Rounds)": "Vòng xoay chia số",
   "Quy tắc chia số (Rules)": "Quy tắc chia số",
+  "Trung tâm Phê duyệt Quy trình (Workflow Hub)": "Quy trình hệ thống",
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

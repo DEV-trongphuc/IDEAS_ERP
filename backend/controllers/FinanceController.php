@@ -1322,4 +1322,75 @@ class FinanceController
         
         return false;
     }
+
+    public function getComments(array $auth, int $id): void {
+        $stmt = $this->db->prepare("
+            SELECT c.*, u.full_name as user_name, u.avatar_url 
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.entity_type = 'expense' AND c.entity_id = ? AND c.tenant_id = ?
+            ORDER BY c.created_at DESC
+        ");
+        $stmt->execute([$id, $auth['tenant_id']]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $comments = array_map(function($row) {
+            if (!empty($row['attachments'])) {
+                $decoded = json_decode($row['attachments'], true);
+                $row['attachments'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $row['attachments'] = [];
+            }
+            return $row;
+        }, $rows);
+        respond(200, $comments, 'Lấy danh sách bình luận thành công');
+    }
+
+    public function addComment(array $auth, int $id): void {
+        $b = getBody();
+        $body = trim($b['body'] ?? '');
+        $attachments = !empty($b['attachments']) && is_array($b['attachments']) ? json_encode($b['attachments'], JSON_UNESCAPED_UNICODE) : null;
+        if (!$body && !$attachments) {
+            respond(422, null, 'Nội dung hoặc tệp đính kèm bình luận là bắt buộc', false);
+        }
+        $parentId = !empty($b['parent_id']) ? (int)$b['parent_id'] : null;
+
+        $stmt = $this->db->prepare("
+            INSERT INTO comments (tenant_id, entity_type, entity_id, user_id, body, attachments, parent_id) 
+            VALUES (?, 'expense', ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$auth['tenant_id'], $id, $auth['user_id'], $body, $attachments, $parentId]);
+        $newId = $this->db->lastInsertId();
+
+        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_COMMENT', 'expense', $id, "Thêm bình luận cho khoản chi #" . $id);
+
+        respond(200, ['id' => $newId], 'Thêm bình luận thành công');
+    }
+
+    public function deleteComment(array $auth, int $commentId): void {
+        $stmt = $this->db->prepare("SELECT user_id FROM comments WHERE id = ? AND tenant_id = ?");
+        $stmt->execute([$commentId, $auth['tenant_id']]);
+        $userId = $stmt->fetchColumn();
+        if (!$userId) {
+            respond(404, null, 'Không tìm thấy bình luận', false);
+        }
+        if ($auth['role'] !== 'admin' && $auth['role'] !== 'superadmin' && $auth['role'] !== 'super_admin' && (int)$userId !== (int)$auth['user_id']) {
+            respond(403, null, 'Bạn không có quyền xóa bình luận này', false);
+        }
+        $del = $this->db->prepare("DELETE FROM comments WHERE (id = ? OR parent_id = ?) AND tenant_id = ?");
+        $del->execute([$commentId, $commentId, $auth['tenant_id']]);
+        respond(200, null, 'Xóa bình luận thành công');
+    }
+
+    public function getHistory(array $auth, int $id): void {
+        $stmt = $this->db->prepare("
+            SELECT a.id, a.action, a.new_data, a.created_at, u.full_name as user_name, u.avatar_url
+            FROM audit_logs a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.tenant_id = ? AND a.resource = 'expense' AND a.resource_id = ?
+            ORDER BY a.created_at DESC
+        ");
+        $stmt->execute([$auth['tenant_id'], $id]);
+        $logs = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        respond(200, $logs, 'Lấy lịch sử chỉnh sửa thành công');
+    }
 }
