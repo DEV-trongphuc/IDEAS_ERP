@@ -598,7 +598,7 @@ export default function HRM() {
       </div>
 
       {/* Content Area */}
-      <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         
         {/* TAB 0: DASHBOARD */}
         {activeTab === 'dashboard' && (() => {
@@ -880,7 +880,7 @@ export default function HRM() {
 
         {/* TAB 1: PROFILES */}
         {activeTab === 'profiles' && (
-          <div>
+          <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
@@ -978,7 +978,7 @@ export default function HRM() {
 
         {/* TAB 2: LEAVES */}
         {activeTab === 'leaves' && (
-          <div>
+          <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
             {leaves.length === 0 ? (
               <EmptyCard
                 icon={<Calendar />}
@@ -1107,7 +1107,7 @@ export default function HRM() {
 
         {/* TAB 3: ADVANCES */}
         {activeTab === 'advances' && (
-          <div>
+          <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
             {advances.length === 0 ? (
               <EmptyCard
                 icon={<CreditCard />}
@@ -1190,7 +1190,7 @@ export default function HRM() {
 
         {/* TAB 4: PAYROLL CALCULATION */}
         {activeTab === 'payroll' && (
-          <div>
+          <div className="card" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)' }}>
             {viewMode === 'archive' ? (
               <div>
                 {/* Archive Header */}
