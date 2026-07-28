@@ -24,6 +24,8 @@ import { CalendarSkeleton, TableSkeleton, KpiCardSkeleton, CardSkeleton, ChartSk
 import { detectCountryFromPhone } from '../utils/phoneHelper';
 import { NotificationPreviewModal } from '../components/ui/NotificationPreviewModal';
 import { RuleSettings } from './RuleSettings';
+import { ExpenseQuickViewDrawer } from '../components/ExpenseQuickViewDrawer';
+import { InvoiceQuickViewModal } from '../components/InvoiceQuickViewModal';
 
 
 type Lead = {
@@ -948,33 +950,15 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [dayDetailsLoading, setDayDetailsLoading] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'sales' | 'tickets' | 'blacklist' | 'so' | 'po'>('sales');
   const [expandedSales, setExpandedSales] = useState<Record<string, boolean>>({});
-  const [activePO, setActivePO] = useState<any>(null);
-  const [activeSO, setActiveSO] = useState<any>(null);
+  const [activePOId, setActivePOId] = useState<number | null>(null);
+  const [activeSOId, setActiveSOId] = useState<number | null>(null);
 
-  const handleOpenPO = async (poId: number) => {
-    try {
-      const r = await api.get(`/expenses/${poId}`);
-      if (r.data?.success) {
-        setActivePO(r.data.data);
-      } else {
-        toast.error('Không thể lấy chi tiết PO');
-      }
-    } catch (err: any) {
-      toast.error('Lỗi: ' + (err.message || 'Không rõ nguyên nhân'));
-    }
+  const handleOpenPO = (poId: number) => {
+    setActivePOId(poId);
   };
 
-  const handleOpenSO = async (soId: number) => {
-    try {
-      const r = await api.get(`/invoices/${soId}`);
-      if (r.data?.success) {
-        setActiveSO(r.data.data);
-      } else {
-        toast.error('Không thể lấy chi tiết SO');
-      }
-    } catch (err: any) {
-      toast.error('Lỗi: ' + (err.message || 'Không rõ nguyên nhân'));
-    }
+  const handleOpenSO = (soId: number) => {
+    setActiveSOId(soId);
   };
 
   const toggleExpandSale = (saleName: string) => {
@@ -6713,223 +6697,20 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
         document.body
       )}
 
-      {typeof document !== 'undefined' && activePO && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1100000, display: 'flex', justifyContent: 'flex-end' }}>
-          {/* Backdrop */}
-          <div
-            onClick={() => setActivePO(null)}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.4)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 1100005
-            }}
-          />
-          {/* Drawer Sheet */}
-          <div
-            style={{
-              width: '460px',
-              height: '100%',
-              background: 'var(--color-surface)',
-              boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
-              zIndex: 1100010,
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              padding: '1.5rem',
-              color: 'var(--color-text)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Chi tiết Purchase Order (PO)</h2>
-              <button
-                onClick={() => setActivePO(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
+      <ExpenseQuickViewDrawer
+        expenseId={activePOId}
+        onClose={() => setActivePOId(null)}
+        user={user}
+        onStatusChange={() => {
+          fetchCalendarStats();
+          if (selectedDate) handleDateClick(selectedDate);
+        }}
+      />
 
-            <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>MÃ PHIẾU CHI</label>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, marginTop: '4px', color: 'var(--color-primary)' }}>#EXP-{activePO.id}</div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>TIÊU ĐỀ CHI PHÍ</label>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '4px' }}>{activePO.title}</div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>SỐ TIỀN</label>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginTop: '4px' }}>
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(activePO.amount)}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>TRẠNG THÁI</label>
-                  <div style={{ marginTop: '4px' }}>
-                    <span className={`badge ${activePO.status === 'approved' ? 'success' : activePO.status === 'rejected' ? 'danger' : 'warning'}`}>
-                      {activePO.status === 'approved' ? 'Đã duyệt' : activePO.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGÀY LẬP</label>
-                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>
-                    {activePO.date ? new Date(activePO.date).toLocaleDateString('vi-VN') : 'N/A'}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGƯỜI ĐỀ XUẤT</label>
-                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>{activePO.creator_name || 'N/A'}</div>
-                </div>
-
-                {activePO.approver_name && (
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGƯỜI PHÊ DUYỆT</label>
-                    <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>{activePO.approver_name}</div>
-                  </div>
-                )}
-
-                {activePO.description && (
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>MÔ TẢ CHI PHÍ / GHI CHÚ</label>
-                    <div style={{
-                      fontSize: '0.875rem',
-                      marginTop: '4px',
-                      background: 'var(--color-bg)',
-                      padding: '10px',
-                      borderRadius: '6px',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: 1.5
-                    }}>{activePO.description}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {typeof document !== 'undefined' && activeSO && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1100000, display: 'flex', justifyContent: 'flex-end' }}>
-          {/* Backdrop */}
-          <div
-            onClick={() => setActiveSO(null)}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0, 0, 0, 0.4)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 1100005
-            }}
-          />
-          {/* Drawer Sheet */}
-          <div
-            style={{
-              width: '460px',
-              height: '100%',
-              background: 'var(--color-surface)',
-              boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
-              zIndex: 1100010,
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              padding: '1.5rem',
-              color: 'var(--color-text)'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Chi tiết Sales Order (SO)</h2>
-              <button
-                onClick={() => setActiveSO(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>MÃ ĐƠN HÀNG</label>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, marginTop: '4px', color: 'var(--color-primary)' }}>
-                    {activeSO.invoice_number || `#${activeSO.id}`}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>KHÁCH HÀNG</label>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '4px' }}>
-                    {activeSO.contact_name || 'Khách lẻ'}
-                  </div>
-                  {activeSO.contact_phone && (
-                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                      SĐT: {activeSO.contact_phone}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>GIÁ TRỊ ĐƠN HÀNG</label>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginTop: '4px' }}>
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(activeSO.total)}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>TRẠNG THÁI</label>
-                  <div style={{ marginTop: '4px' }}>
-                    <span className={`badge ${activeSO.status === 'paid' ? 'success' : activeSO.status === 'overdue' ? 'danger' : 'warning'}`}>
-                      {activeSO.status === 'paid' ? 'Đã thanh toán' : activeSO.status === 'overdue' ? 'Quá hạn' : 'Chờ thanh toán'}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGÀY TẠO</label>
-                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>
-                    {activeSO.issue_date ? new Date(activeSO.issue_date).toLocaleDateString('vi-VN') : 'N/A'}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGƯỜI TẠO ĐƠN</label>
-                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>{activeSO.creator_name || 'N/A'}</div>
-                </div>
-
-                {activeSO.items && activeSO.items.length > 0 && (
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>DANH SÁCH SẢN PHẨM</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {activeSO.items.map((item: any, idx: number) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'var(--color-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>
-                          <div>
-                            <span style={{ fontWeight: 600 }}>{item.product_name || 'Sản phẩm'}</span>
-                            <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px' }}>x{item.quantity || 1}</span>
-                          </div>
-                          <span style={{ fontWeight: 600 }}>
-                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price || 0)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <InvoiceQuickViewModal
+        invoiceId={activeSOId}
+        onClose={() => setActiveSOId(null)}
+      />
 
       <style>{`
         @media (max-width: 768px) {
