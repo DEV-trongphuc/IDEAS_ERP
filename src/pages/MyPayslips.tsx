@@ -74,6 +74,8 @@ export default function MyPayslips() {
 
   // Tab 1: Payslip states
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [allPayslips, setAllPayslips] = useState<any[]>([]);
   const [payslip, setPayslip] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -137,6 +139,19 @@ export default function MyPayslips() {
     ];
   }, [userOptions, t]);
 
+  const loadAllPayslips = async () => {
+    try {
+      const res = await fetchAPI('hrm/payroll?month_year=all');
+      setAllPayslips(res?.data || []);
+    } catch (err) {
+      setAllPayslips([]);
+    }
+  };
+
+  useEffect(() => {
+    loadAllPayslips();
+  }, []);
+
   useEffect(() => {
     if (activeSubTab === 'payslip') {
       loadPayslip();
@@ -146,6 +161,23 @@ export default function MyPayslips() {
       loadAdvances();
     }
   }, [activeSubTab, selectedMonth]);
+
+  useEffect(() => {
+    if (allPayslips.length > 0) {
+      const yearPrefix = `${selectedYear}-`;
+      const available = allPayslips.filter(p => p.month_year.startsWith(yearPrefix));
+      if (available.length > 0) {
+        const sorted = [...available].sort((a, b) => b.month_year.localeCompare(a.month_year));
+        if (!available.some(p => p.month_year === selectedMonth)) {
+          setSelectedMonth(sorted[0].month_year);
+        }
+      } else {
+        if (!selectedMonth.startsWith(yearPrefix)) {
+          setSelectedMonth(`${selectedYear}-12`);
+        }
+      }
+    }
+  }, [allPayslips, selectedYear]);
 
   const loadPayslip = async () => {
     try {
@@ -341,6 +373,7 @@ export default function MyPayslips() {
         })
       });
       toast.success(t('Đã ký nhận và xác nhận phiếu lương thành công!'));
+      loadAllPayslips();
       loadPayslip();
     } catch (err: any) {
       toast.error(err?.message || t('Lỗi xác nhận phiếu lương'));
@@ -352,6 +385,9 @@ export default function MyPayslips() {
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
   };
+
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear, currentYear - 1, currentYear - 2];
 
   return (
     <div>
@@ -367,19 +403,19 @@ export default function MyPayslips() {
           </p>
         </div>
         
-        {true && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chọn kỳ thanh toán')}:</span>
+        {activeSubTab === 'payslip' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} className="no-print">
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chọn năm')}:</span>
             <select
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(e.target.value)}
+              value={selectedYear}
+              onChange={e => setSelectedYear(parseInt(e.target.value, 10))}
               className="form-input"
               style={{
                 height: 38,
                 padding: '0 30px 0 12px',
                 fontWeight: 700,
                 fontSize: '0.875rem',
-                minWidth: '220px',
+                minWidth: '120px',
                 borderRadius: '10px',
                 border: '1px solid var(--color-border)',
                 background: 'var(--color-surface)',
@@ -388,9 +424,9 @@ export default function MyPayslips() {
                 boxShadow: 'var(--shadow-sm)'
               }}
             >
-              {periodOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {years.map(yr => (
+                <option key={yr} value={yr}>
+                  {yr}
                 </option>
               ))}
             </select>
@@ -399,8 +435,127 @@ export default function MyPayslips() {
       </div>
 
       {/* TAB 1: PAYSLIP */}
-      {true && (
+      {activeSubTab === 'payslip' && (
         <div>
+          {/* 12-Month Cards Layout */}
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
+              gap: '12px', 
+              marginBottom: '1.5rem' 
+            }} 
+            className="no-print"
+          >
+            {Array.from({ length: 12 }).map((_, idx) => {
+              const m = idx + 1;
+              const mStr = `${selectedYear}-${String(m).padStart(2, '0')}`;
+              const payslipForMonth = allPayslips.find(p => p.month_year === mStr);
+              const isAvailable = !!payslipForMonth;
+              const isSelected = selectedMonth === mStr;
+
+              return (
+                <div
+                  key={mStr}
+                  onClick={() => {
+                    if (isAvailable) {
+                      setSelectedMonth(mStr);
+                    }
+                  }}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: isSelected 
+                      ? 'linear-gradient(135deg, var(--color-primary-light, #eff6ff), #dbeafe)' 
+                      : isAvailable 
+                        ? 'var(--color-surface)' 
+                        : 'rgba(241, 245, 249, 0.4)',
+                    border: isSelected 
+                      ? '2px solid var(--color-primary, #3b82f6)' 
+                      : '1px solid var(--color-border-light)',
+                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+                    opacity: isAvailable ? 1 : 0.4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s',
+                    boxShadow: isSelected ? 'var(--shadow-md)' : 'none',
+                    pointerEvents: isAvailable ? 'auto' : 'none'
+                  }}
+                  className={isAvailable ? 'hover-translate-y' : ''}
+                >
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Tháng</span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text)' }}>{m}</span>
+                  {isAvailable && (
+                    <span style={{ 
+                      fontSize: '0.65rem', 
+                      fontWeight: 700, 
+                      color: payslipForMonth.status === 'confirmed' ? '#10b981' : '#f59e0b',
+                      background: payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      marginTop: '4px'
+                    }}>
+                      {payslipForMonth.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Special Periods (Lương tháng 13, Thưởng giữa năm, Thưởng cuối năm) */}
+            {['MID', '13', 'YEND'].map(suffix => {
+              const key = `${selectedYear}-${suffix}`;
+              const payslipForPeriod = allPayslips.find(p => p.month_year === key);
+              if (!payslipForPeriod) return null;
+              const isSelected = selectedMonth === key;
+              const label = suffix === '13' ? 'Lương T13' : suffix === 'MID' ? 'Thưởng Giữa Năm' : 'Thưởng Cuối Năm';
+
+              return (
+                <div
+                  key={key}
+                  onClick={() => setSelectedMonth(key)}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: isSelected 
+                      ? 'linear-gradient(135deg, var(--color-primary-light, #eff6ff), #dbeafe)' 
+                      : 'var(--color-surface)',
+                    border: isSelected 
+                      ? '2px solid var(--color-primary, #3b82f6)' 
+                      : '1px solid var(--color-border-light)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s',
+                    boxShadow: isSelected ? 'var(--shadow-md)' : 'none'
+                  }}
+                  className="hover-translate-y"
+                >
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text)', textAlign: 'center' }}>
+                    {label}
+                  </span>
+                  <span style={{ 
+                    fontSize: '0.65rem', 
+                    fontWeight: 700, 
+                    color: payslipForPeriod.status === 'confirmed' ? '#10b981' : '#f59e0b',
+                    background: payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    marginTop: '4px'
+                  }}>
+                    {payslipForPeriod.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
           {!payslip ? (
             <EmptyCard
               icon={<FileText />}
@@ -435,6 +590,32 @@ export default function MyPayslips() {
                       : t('Vui lòng kiểm tra kỹ chi tiết trước khi ký số xác nhận lương Net.')}
                   </p>
                 </div>
+              </div>
+              {/* Print Action Button Bar */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }} className="no-print">
+                <button
+                  onClick={() => window.print()}
+                  className="btn danger sm"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    background: 'var(--color-danger, #ef4444)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#dc2626'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}
+                >
+                  <Download size={14} /> {t('In / Xuất PDF')}
+                </button>
               </div>
 
               {/* Paper Bill Design Card */}
@@ -473,25 +654,6 @@ export default function MyPayslips() {
                     }
                   }
                 `}</style>
-
-                {/* Print Action Button */}
-                <button
-                  onClick={() => window.print()}
-                  className="btn outline sm no-print"
-                  style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    fontSize: '0.8rem',
-                    fontWeight: 700
-                  }}
-                >
-                  <Download size={14} /> {t('In / Xuất PDF')}
-                </button>
 
                 {/* Company Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', borderBottom: '2px solid var(--color-primary)', paddingBottom: '1.5rem' }}>
