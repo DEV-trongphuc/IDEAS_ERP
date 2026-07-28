@@ -1480,24 +1480,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     }
     actIssues.push({
       icon: <Receipt size={14} style={{ color: '#fbbf24' }} />,
-      text: `2 ${t('đơn đặt cọc/UNC đang chờ đối soát.')}`,
-      action: () => navigate('/deposits')
-    });
-
-    const formatVND = (n: any) => {
-      const num = Math.round(Number(n || 0));
-      return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
-    };
-
-    return renderDashboardWrapper(
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
-        {/* Header */}
-        {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
-
-        {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
-
-        {/* KPIs Grid */}
+              {/* KPIs Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
           {/* Card 1: Revenue */}
           <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
@@ -1510,7 +1493,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <DollarSign size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
+            <div className="stat-value" style={{ color: '#10b981', margin: '4px 0 0 0' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
               <span>{t('Doanh thu thực tế tháng này')}</span>
             </div>
@@ -1527,7 +1510,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <FileText size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#f59e0b' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
+            <div className="stat-value" style={{ color: '#f59e0b', margin: '4px 0 0 0' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
               <span>{t('Đang chờ phê duyệt giao dịch')}</span>
             </div>
@@ -1544,7 +1527,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <CreditCard size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ef4444' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
+            <div className="stat-value" style={{ color: '#ef4444', margin: '4px 0 0 0' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
               <span>{t('Tổng chi tiêu thực tế đã chi')}</span>
             </div>
@@ -1561,7 +1544,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <AlertTriangle size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6' }}>{actStats.pendingApprovalInvoices}</div>
+            <div className="stat-value" style={{ color: '#3b82f6', margin: '4px 0 0 0' }}>{actStats.pendingApprovalInvoices}</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
               <span>{t('Yêu cầu thanh toán đang chờ duyệt')}</span>
             </div>
@@ -1569,25 +1552,25 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         </div>
 
         {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
-          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
+        <div className="responsive-grid-6-4" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6.5fr 3.5fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '1rem' }}>{t('Xu hướng Thu - Chi (Triệu VND)')}</h3>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={actStats.cashFlowTrend} margin={{ left: -15, right: 10, top: 15, bottom: 0 }}>
+                <BarChart data={actStats.cashFlowTrend} margin={{ left: -10, right: 5, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip />
-                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '1rem' }}>{t('Cơ cấu Chi phí Văn phòng')}</h3>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
@@ -1608,6 +1591,27 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                   <Tooltip formatter={(value: any) => value.toLocaleString() + 'đ'} />
                 </PieChart>
               </ResponsiveContainer>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '6px 12px',
+                width: '100%',
+                marginTop: '12px',
+                padding: '0 12px',
+                fontSize: '0.75rem',
+                color: 'var(--color-text-light)'
+              }}>
+                {actStats.expenseCategories.map((entry, index) => {
+                  const colors = ['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6'];
+                  return (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors[index % colors.length], flexShrink: 0 }} />
+                      <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{entry.name}</span>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem', fontWeight: 500, flexShrink: 0 }}>({Math.round(entry.value / 1000000)}M)</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
