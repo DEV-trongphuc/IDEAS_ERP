@@ -4762,7 +4762,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 <TableSkeleton rows={6} cols={4} />
               </div>
             ) : dayDetails ? (
-              <div style={{ display: 'flex', flexDirection: 'column', margin: '-1.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '580px', margin: '-1.5rem', overflow: 'hidden' }}>
                 {/* Modal Tabs */}
                 <div style={{
                   display: 'flex',
@@ -4964,7 +4964,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 </div>
 
                 {/* Modal Content */}
-                <div style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+                <div style={{ padding: '0 1.5rem 1.5rem 1.5rem', flex: 1, overflowY: 'auto' }}>
                   {activeModalTab === 'sales' && (
                     <div>
                       {dayDetails.sales && dayDetails.sales.length > 0 ? (

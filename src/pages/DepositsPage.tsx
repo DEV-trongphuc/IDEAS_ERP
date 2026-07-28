@@ -683,9 +683,19 @@ export default function DepositsPage() {
   };
 
   const handleRemoveMilestoneRow = (index: number) => {
-    const updated = [...tempMilestones];
-    updated.splice(index, 1);
-    setTempMilestones(updated);
+    showConfirm({
+      title: 'Xóa đợt thanh toán',
+      message: 'Bạn có chắc chắn muốn xóa đợt thanh toán này?',
+      confirmText: 'Xóa',
+      cancelText: 'Hủy',
+      isDanger: true,
+      onConfirm: () => {
+        const updated = [...tempMilestones];
+        updated.splice(index, 1);
+        setTempMilestones(updated);
+        return Promise.resolve();
+      }
+    });
   };
 
   const handleUploadUncFromModal = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -1077,7 +1087,7 @@ export default function DepositsPage() {
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '150px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Ngày tạo</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chương trình & Khách hàng</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '140px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '120px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
@@ -1126,16 +1136,16 @@ export default function DepositsPage() {
                         </span>
                       </td>
 
-                      {/* Project & Client without unit code badge */}
+                      {/* Client & Program */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>
-                          <span>{dep.project_name}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            <strong style={{ color: 'var(--color-text)' }}>{dep.last_name} {dep.first_name}</strong> ({dep.phone})
+                          <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                            {dep.last_name} {dep.first_name}
                           </span>
+                        </div>
+                        <div style={{ fontWeight: 600, color: 'var(--color-text-light)', fontSize: '0.75rem', marginTop: '4px', paddingLeft: '32px' }}>
+                          <span>{dep.project_name}</span>
                         </div>
                       </td>
 
@@ -1149,13 +1159,10 @@ export default function DepositsPage() {
                         </div>
                       </td>
 
-                      {/* Value / Commission */}
+                      {/* Value */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                         <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>
                           {formatMoney(dep.price, dep.currency)}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
-                          HH: {formatMoney(dep.expected_commission, dep.currency)}
                         </div>
                       </td>
 
@@ -1223,23 +1230,22 @@ export default function DepositsPage() {
                                     handleOpenManageMilestones(dep);
                                   }}
                                   style={{
-                                    padding: '6px 12px',
+                                    padding: '6px',
                                     height: '32px',
-                                    background: 'rgba(59, 130, 246, 0.08)',
-                                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                                    color: '#2563eb',
-                                    borderRadius: '8px',
+                                    width: '32px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#64748b',
+                                    borderRadius: '50%',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '4px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
+                                    justifyContent: 'center',
                                     cursor: 'pointer',
                                     transition: 'all 0.15s ease'
                                   }}
+                                  className="hover-bg-muted"
                                 >
-                                  <Edit size={13} />
-                                  <span>Cập nhật</span>
+                                  <Edit size={16} />
                                 </button>
                               );
                             }

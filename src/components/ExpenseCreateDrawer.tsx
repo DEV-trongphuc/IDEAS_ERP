@@ -235,42 +235,6 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
             }}
           />
 
-          {/* Back Icon Button on Overlay */}
-          {!isMobile && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={onClose}
-              style={{
-                position: 'fixed',
-                top: '20px',
-                left: 'calc(var(--sidebar-width, 220px) / 2 - 20px)', // Center horizontally in the sidebar overlay area
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 0,
-                lineHeight: 0,
-                outline: 'none',
-                cursor: 'pointer',
-                zIndex: 2000000006,
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
-            >
-              <ChevronLeft size={20} />
-            </motion.button>
-          )}
-
           {/* Drawer Sheet Panel */}
           <motion.div
             initial={{ x: '100%' }}
@@ -303,13 +267,37 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <div>
-                <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>
-                  {editItem ? 'Cập nhật khoản chi' : 'Nhập chi phí mới'}
-                </h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4, marginBottom: 0 }}>
-                  Vui lòng điền thông tin chi tiết và người phê duyệt.
-                </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                {/* Close Button as "<" ChevronLeft on the Left */}
+                <button 
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--color-text)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                  className="hover-bg-muted"
+                  title="Quay lại"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>
+                    {editItem ? 'Cập nhật khoản chi' : 'Nhập chi phí mới'}
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4, marginBottom: 0 }}>
+                    Vui lòng điền thông tin chi tiết và người phê duyệt.
+                  </p>
+                </div>
               </div>
 
               {/* Action Buttons in top right corner */}
