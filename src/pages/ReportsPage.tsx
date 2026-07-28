@@ -257,7 +257,6 @@ export const ReportsPage: React.FC = () => {
           { key: 'sales', label: 'Doanh thu' },
           { key: 'pipeline', label: 'Pipeline' },
           { key: 'customers', label: 'Khách hàng' },
-          { key: 'companies', label: 'Doanh nghiệp' },
           { key: 'expenses', label: 'Chi phí' },
           { key: 'activities', label: 'Hoạt động' }
         ];
