@@ -257,6 +257,9 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                padding: 0,
+                lineHeight: 0,
+                outline: 'none',
                 cursor: 'pointer',
                 zIndex: 2000000006,
                 transition: 'background 0.2s'
@@ -342,7 +345,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
             </div>
 
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 1.5rem 3.5rem 1.5rem', flex: 1, overflowY: 'auto' }}>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 1.5rem 3.5rem 1.5rem', flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
                 <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
