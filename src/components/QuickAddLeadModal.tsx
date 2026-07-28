@@ -1295,19 +1295,7 @@ export const QuickAddLeadModal = () => {
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Quay vòng theo luật phân phối hoạt động')}</div>
               </div>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--color-text)' }}>
-              <input
-                type="radio"
-                name="distribution_mode"
-                checked={distributionMode === 'direct_databank'}
-                onChange={() => setDistributionMode('direct_databank')}
-                style={{ accentColor: '#bd1d2d' }}
-              />
-              <div>
-                <strong>{t('Đưa thẳng vào Kho chung (Databank)')}</strong>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Lưu trữ công khai cho các Sale chủ động nhận')}</div>
-              </div>
-            </label>
+
             {canSelfAssign && (
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--color-text)' }}>
                 <input
