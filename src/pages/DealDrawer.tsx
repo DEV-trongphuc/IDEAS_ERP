@@ -1035,13 +1035,13 @@ export const DealDrawer: React.FC<DealDrawerProps> = ({ isOpen, onClose, deal, o
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Dự án mới (Nếu đổi dự án)</label>
+                    <label className="form-label">Chương trình mới (Nếu đổi chương trình)</label>
                     <CustomSelect
                       searchable
                       options={projects.map(p => ({ value: String(p.id), label: p.name }))}
                       value={switchProjectId}
                       onChange={val => setSwitchProjectId(val.toString())}
-                      placeholder="-- Giữ nguyên dự án cũ --"
+                      placeholder="-- Giữ nguyên chương trình cũ --"
                     />
                   </div>
                   <div className="form-group">

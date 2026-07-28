@@ -665,7 +665,7 @@ export const FilesPage: React.FC<FilesPageProps> = ({ embedProjectId, isEmbedded
                     <div style={{ width: '200px', flexShrink: 0 }}>
                       <CustomSelect
                         options={[
-                          { value: 'all', label: 'Tất cả dự án' },
+                          { value: 'all', label: 'Tất cả chương trình' },
                           ...projects.map(p => ({ value: String(p.id), label: p.name }))
                         ]}
                         value={selectedProjectId}
@@ -673,7 +673,7 @@ export const FilesPage: React.FC<FilesPageProps> = ({ embedProjectId, isEmbedded
                           setPage(1);
                           setSelectedProjectId(String(val));
                         }}
-                        placeholder="Lọc theo dự án"
+                        placeholder="Lọc theo chương trình"
                         searchable
                       />
                     </div>
@@ -1482,7 +1482,7 @@ export const FilesPage: React.FC<FilesPageProps> = ({ embedProjectId, isEmbedded
                   <div style={{ margin: 0 }} />
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Dự án liên kết</label>
+                    <label className="form-label">Chương trình liên kết</label>
                     <CustomSelect
                       searchable
                       direction="up"
@@ -1502,7 +1502,7 @@ export const FilesPage: React.FC<FilesPageProps> = ({ embedProjectId, isEmbedded
                         }
                         setUploadFormData({ ...uploadFormData, project_id: nextProj, campaign_id: nextCamp });
                       }}
-                      placeholder="Chọn dự án..."
+                      placeholder="Chọn chương trình..."
                     />
                   </div>
 
@@ -1613,7 +1613,7 @@ export const FilesPage: React.FC<FilesPageProps> = ({ embedProjectId, isEmbedded
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Dự án liên kết</label>
+                    <label className="form-label">Chương trình liên kết</label>
                     <CustomSelect
                       searchable
                       direction="up"
@@ -1633,7 +1633,7 @@ export const FilesPage: React.FC<FilesPageProps> = ({ embedProjectId, isEmbedded
                         }
                         setEditFormData({ ...editFormData, project_id: nextProj, campaign_id: nextCamp });
                       }}
-                      placeholder="Chọn dự án..."
+                      placeholder="Chọn chương trình..."
                     />
                   </div>
 

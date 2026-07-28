@@ -959,11 +959,11 @@ export const DealsPage: React.FC = () => {
                       <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>Giai đoạn</label>
                       <CustomSelect options={[{value: '', label: 'Tất cả giai đoạn'}, ...stages.map(s => ({value: String(s.id), label: s.name}))]} value={filterStage} onChange={v => setFilterStage(v as string)} />
                    </div>
-                   {/* Dự án */}
+                   {/* Chương trình */}
                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>Dự án</label>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>Chương trình</label>
                       <CustomSelect 
-                        options={[{value: '', label: 'Tất cả dự án'}, ...projects.map(p => ({value: String(p.id), label: p.name}))]} 
+                        options={[{value: '', label: 'Tất cả chương trình'}, ...projects.map(p => ({value: String(p.id), label: p.name}))]} 
                         value={filterProject} 
                         onChange={v => setFilterProject(v as string)} 
                         searchable

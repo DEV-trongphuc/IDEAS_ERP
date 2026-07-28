@@ -1388,8 +1388,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [depositExpectedCommission, setDepositExpectedCommission] = useState('');
   const [commissionType, setCommissionType] = useState<'percent' | 'amount'>('amount');
   const [commissionPercent, setCommissionPercent] = useState('');
-  const [depositMilestones, setDepositMilestones] = useState<{ name: string; amount: string }[]>([
-    { name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }
+  const [depositMilestones, setDepositMilestones] = useState<{ name: string; amount: string; expected_pay_date?: string }[]>([
+    { name: 'Đợt 1 - Cọc giữ chỗ', amount: '', expected_pay_date: '' }
   ]);
   const [depositUncFile, setDepositUncFile] = useState<File | null>(null);
   const [pendingPipelineTransition, setPendingPipelineTransition] = useState<{ targetId: string; targetLabel: string; note: string } | null>(null);
@@ -3429,7 +3429,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     if (formData.source === 'referral' || formData.source === 'gioi_thieu') { s += Number(rulesConfig.source_referral ?? 20); r.push({ rule: 'Khách được giới thiệu (Referral)', pts: Number(rulesConfig.source_referral ?? 20), type: 'Behavioral' }); }
 
     // Projects / Companies / Segmentations
-    if (formData.project_id) { s += Number(rulesConfig.project_id ?? 15); r.push({ rule: 'Liên kết dự án quan tâm', pts: Number(rulesConfig.project_id ?? 15), type: 'Behavioral' }); }
+    if (formData.project_id) { s += Number(rulesConfig.project_id ?? 15); r.push({ rule: 'Liên kết chương trình quan tâm', pts: Number(rulesConfig.project_id ?? 15), type: 'Behavioral' }); }
     if (formData.company_id) { s += Number(rulesConfig.company_id ?? 5); r.push({ rule: 'Liên kết công ty đối tác', pts: Number(rulesConfig.company_id ?? 5), type: 'Behavioral' }); }
     if (formData.industry) { s += Number(rulesConfig.industry ?? 5); r.push({ rule: 'Xác định ngành nghề kinh doanh', pts: Number(rulesConfig.industry ?? 5), type: 'Demographic' }); }
     if (formData.budget_range) { s += Number(rulesConfig.budget_range ?? 10); r.push({ rule: 'Xác định phân khúc ngân sách', pts: Number(rulesConfig.budget_range ?? 10), type: 'Behavioral' }); }
@@ -3577,7 +3577,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     if (noteObstacle) {
       const obstacleLabels: Record<string, string> = {
         'trust': '🧑 Chưa tin mình',
-        'project': '🏙️ Chưa ưng dự án',
+        'project': '🏙️ Chưa ưng chương trình',
         'unit': '🏠 Chưa chọn căn',
         'smooth': '✓ Đang xuôi',
         'other': `➕ Khác: ${customObstacle.trim() || 'Chưa rõ'}`
@@ -4161,7 +4161,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
   const handleSaveDeposit = async (createCoopSlipChoice: boolean = false) => {
     if (!depositProjectId || !depositUnitCode || !depositPrice) {
-      addToast('Vui lòng nhập đầy đủ Dự án, Mã căn hộ và Giá bán', 'error');
+      addToast('Vui lòng nhập đầy đủ Chương trình, Mã căn hộ và Giá bán', 'error');
       return;
     }
     
@@ -4275,7 +4275,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       setDepositUnitCode('');
       setDepositPrice('');
       setDepositExpectedCommission('');
-      setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }]);
+      setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '', expected_pay_date: '' }]);
       setDepositUncFile(null);
       
       fetchData();
@@ -4516,7 +4516,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   };
 
   const handleAddMilestoneInput = () => {
-    setDepositMilestones(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '' }]);
+    setDepositMilestones(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '', expected_pay_date: '' }]);
   };
 
   const handleRemoveMilestoneInput = (index: number) => {
@@ -5814,7 +5814,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 },
                                 {
                                   title: 'Giao dịch & Tài liệu',
-                                  tabs: ['cooperation', 'docs', 'deals', 'quotes', 'invoices', 'expenses']
+                                  tabs: ['docs', 'deals', 'expenses']
                                 },
                                 {
                                   title: 'Nghiệp vụ & Hỗ trợ',
@@ -5900,7 +5900,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 },
                                 {
                                   title: 'Giao dịch & Tài liệu',
-                                  tabs: ['cooperation', 'docs', 'deals', 'quotes', 'invoices', 'expenses']
+                                  tabs: ['docs', 'deals', 'expenses']
                                 },
                                 {
                                   title: 'Nghiệp vụ & Hỗ trợ',
@@ -6497,7 +6497,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             }} />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Dự án Quan tâm (Liên kết)</label>
+                            <label className="form-label">Chương trình Quan tâm (Liên kết)</label>
                             <CustomSelect
                               searchable
                               options={[
@@ -7194,7 +7194,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                             )}
                                             {n.stuck_tag && (
                                               <span style={{ fontSize: '0.6875rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                                                📍 Vướng: {n.stuck_tag === 'sales' ? 'Sales' : n.stuck_tag === 'project' ? 'Dự án' : n.stuck_tag === 'unit' ? 'Căn' : n.stuck_tag === 'smooth' ? 'Đang xuôi' : n.stuck_tag}
+                                                📍 Vướng: {n.stuck_tag === 'sales' ? 'Sales' : n.stuck_tag === 'project' ? 'Chương trình' : n.stuck_tag === 'unit' ? 'Căn' : n.stuck_tag === 'smooth' ? 'Đang xuôi' : n.stuck_tag}
                                               </span>
                                             )}
                                             {n.sale_temperature && tempLabels[n.sale_temperature] && (
@@ -7595,10 +7595,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: isMobileOrTablet ? 'none' : '2', minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                   <Briefcase size={13} style={{ color: 'var(--color-primary)' }} />
-                                  <span>Dự án giao dịch</span>
+                                  <span>Chương trình giao dịch</span>
                                 </div>
                                 <h4 style={{ fontWeight: 800, fontSize: '0.95rem', margin: '2px 0 0 0', color: 'var(--color-text)' }}>
-                                  {coopSlip.project_name || '— Chưa liên kết dự án —'}
+                                  {coopSlip.project_name || '— Chưa liên kết chương trình —'}
                                 </h4>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                                   {coopSlip.unit_code && (
@@ -8623,7 +8623,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                       { rule: 'Xác định ngành nghề kinh doanh', type: 'Demographic', pts: Number(rulesConfig.industry ?? 5), desc: 'Có trường Ngành nghề kinh doanh' },
                                       { rule: 'Nguồn khách từ Website', type: 'Behavioral', pts: Number(rulesConfig.source_website ?? 15), desc: 'Nguồn Inbound đăng ký qua web' },
                                       { rule: 'Khách được giới thiệu (Referral)', type: 'Behavioral', pts: Number(rulesConfig.source_referral ?? 20), desc: 'Được ghi nhận nguồn giới thiệu' },
-                                      { rule: 'Liên kết dự án quan tâm', type: 'Behavioral', pts: Number(rulesConfig.project_id ?? 15), desc: 'Chọn dự án bất động sản cụ thể' },
+                                      { rule: 'Liên kết chương trình quan tâm', type: 'Behavioral', pts: Number(rulesConfig.project_id ?? 15), desc: 'Chọn chương trình bất động sản cụ thể' },
                                       { rule: 'Liên kết công ty đối tác', type: 'Behavioral', pts: Number(rulesConfig.company_id ?? 5), desc: 'Gắn liên kết đối tác công ty' },
                                       { rule: 'Xác định phân khúc ngân sách', type: 'Behavioral', pts: Number(rulesConfig.budget_range ?? 10), desc: 'Có lựa chọn phân khúc ngân sách' },
                                       { rule: 'Kỳ vọng doanh thu > 100 Triệu', type: 'Behavioral', pts: Number(rulesConfig.revenue_medium ?? 20), desc: 'Kỳ vọng giao dịch từ 100Tr đến 500Tr VNĐ' },
@@ -10888,7 +10888,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       setDepositExpectedCommission('');
                       setCommissionType('amount');
                       setCommissionPercent('');
-                      setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }]);
+                      setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '', expected_pay_date: '' }]);
                       setPipelineModal({ isOpen: false, targetId: '', targetLabel: '', note: '' });
                       setPendingPipelineTransition({ targetId, targetLabel, note });
                       setShowDealModal(true);
@@ -11523,6 +11523,18 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             showTextHelper={false}
                           />
                         </div>
+                        <input
+                          type="date"
+                          required
+                          value={m.expected_pay_date || ''}
+                          onChange={e =>
+                            setDepositMilestones(prev =>
+                              prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
+                            )
+                          }
+                          className="form-input"
+                          style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}
+                        />
                         {depositMilestones.length > 1 && (
                           <button
                             type="button"
@@ -11538,126 +11550,14 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   </div>
                 </div>
 
-                {/* Multi-sale Co-op Commission Allocation Section */}
-                {(() => {
-                  const ownerId = String(contact?.owner_id || formData?.owner_id || currentUser?.id || '');
-                  const collabList = getCoopCollaboratorIds();
-                  const hasCoopSales = collabList.length > 0;
-                  if (!hasCoopSales) return null;
-
-                  const allUids = Array.from(new Set([ownerId, ...collabList].filter(Boolean)));
-                  const expCommission = parseFloat(depositExpectedCommission) || 0;
-                  const totalPctSum = Object.values(depositCoopShares).reduce((a, b) => a + (parseFloat(b) || 0), 0);
-
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-border-light)', marginTop: '1.75rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <h4 style={{ fontSize: '0.875rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Users size={16} style={{ color: 'var(--color-primary)' }} />
-                            Phân chia hoa hồng Sale Hợp tác (Co-care)
-                          </h4>
-                          <p style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
-                            Nhập tỷ lệ % để tự động khởi tạo phiếu hợp tác hoặc chọn chuyển cọc không tạo phiếu hợp tác.
-                          </p>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                          {totalPctSum === 100 ? (
-                            <span style={{ color: '#10b981' }}>✓ Tổng 100%</span>
-                          ) : (
-                            <span style={{ color: '#ef4444' }}>
-                              Tổng: {totalPctSum}% (Cần đúng 100%)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {allUids.map(uid => {
-                          const uObj = salesUsers.find(u => String(u.id) === String(uid)) || users.find(u => String(u.id) === String(uid));
-                          const uName = uObj?.full_name || uObj?.name || (uid === ownerId ? 'Sale chính' : `Sale ID #${uid}`);
-                          const uAvatar = uObj?.avatar_url || uObj?.avatar;
-                          const isOwner = String(uid) === ownerId;
-                          const pctVal = depositCoopShares[uid] || '0';
-                          const calcVnd = Math.round((expCommission * (parseFloat(pctVal) || 0)) / 100);
-
-                          return (
-                            <div key={uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--color-bg-light)', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                                <Avatar src={uAvatar} name={uName} size={32} />
-                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {uName}
-                                    </span>
-                                    <span className={`badge ${isOwner ? 'primary' : 'info'}`} style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
-                                      {isOwner ? 'Sale chính' : 'Sale Co.op'}
-                                    </span>
-                                  </div>
-                                  <span style={{ fontSize: '0.725rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '2px' }}>
-                                    Hoa hồng dự kiến: {calcVnd > 0 ? `${calcVnd.toLocaleString('vi-VN')} VND` : '0 VND'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={pctVal}
-                                  onChange={e => {
-                                    const newVal = e.target.value;
-                                    setDepositCoopShares(prev => ({ ...prev, [uid]: newVal }));
-                                  }}
-                                  className="form-input"
-                                  style={{ width: '70px', height: '34px', textAlign: 'center', fontWeight: 700 }}
-                                />
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>%</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* Multi-sale Co-op Commission Allocation Section (Removed) */}
 
               </div>
               <div className="modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 <button className="btn outline" onClick={() => setShowDealModal(false)} disabled={isSubmitting}>Hủy</button>
-                {(() => {
-                  const ownerId = String(contact?.owner_id || formData?.owner_id || currentUser?.id || '');
-                  const collabList = getCoopCollaboratorIds();
-                  const hasCoopSales = collabList.length > 0;
-                  if (hasCoopSales) {
-                    return (
-                      <>
-                        <button 
-                          className="btn outline" 
-                          style={{ borderColor: '#f59e0b', color: '#d97706', fontWeight: 700 }} 
-                          onClick={() => handleSaveDeposit(false)} 
-                          disabled={isSubmitting}
-                          title="Chuyển cọc không tạo phiếu hợp tác (100% hoa hồng cho Sale chính)"
-                        >
-                          {isSubmitting ? 'Đang lưu...' : 'Chuyển cọc KHÔNG tạo Phiếu HT'}
-                        </button>
-                        <button 
-                          className="btn primary" 
-                          onClick={() => handleSaveDeposit(true)} 
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? 'Đang lưu...' : 'Tạo Đơn hàng & Hợp đồng đối tác'}
-                        </button>
-                      </>
-                    );
-                  }
-                  return (
-                    <button className="btn primary" onClick={() => handleSaveDeposit(false)} disabled={isSubmitting}>
-                      {isSubmitting ? 'Đang tạo...' : 'Tạo đơn đặt hàng'}
-                    </button>
-                  );
-                })()}
+                <button className="btn primary" onClick={() => handleSaveDeposit(false)} disabled={isSubmitting}>
+                  {isSubmitting ? 'Đang tạo...' : 'Tạo phiếu thanh toán'}
+                </button>
               </div>
             </motion.div>
           </div>
@@ -13103,7 +13003,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Dự án & Căn hộ</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block' }}>Chương trình & Căn hộ</span>
                     <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{selectedDepForManage.project_name} - Căn {selectedDepForManage.unit_code}</span>
                   </div>
                   <div>

@@ -116,9 +116,7 @@ const AppTabs = () => {
     }
 
   } else if (currentPath === '/quotes') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'quote_invoice')) {
-      return <Navigate to="/" replace />;
-    }
+    return <Navigate to="/" replace />;
   } else if (currentPath === '/expenses') {
     if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
       return <Navigate to="/" replace />;
@@ -182,7 +180,7 @@ const AppTabs = () => {
       case '/deals':
         return <DealsPage key="deals" />;
       case '/quotes':
-        return <QuotesPage key="quotes" />;
+        return <Navigate to="/" replace />;
       case '/activities':
         return <Navigate to="/" replace />;
       case '/products':

@@ -338,7 +338,7 @@ export default function DepositsPage() {
   const handleCreateDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedContactId || !selectedProjectId || !unitCode || !price) {
-      addToast('Vui lòng điền đầy đủ thông tin khách hàng, dự án, căn hộ, giá bán', 'error');
+      addToast('Vui lòng điền đầy đủ thông tin khách hàng, chương trình, căn hộ, giá bán', 'error');
       return;
     }
 
@@ -644,6 +644,12 @@ export default function DepositsPage() {
         addToast('Tên đợt không được để trống.', 'error');
         return;
       }
+    }
+
+    const totalM = tempMilestones.reduce((acc, m) => acc + (parseFloat(String(m.expected_amount)) || 0), 0);
+    if (totalM > parseFloat(String(selectedDepForManage.price))) {
+      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(String(selectedDepForManage.price)).toLocaleString()} VND)`, 'error');
+      return;
     }
 
     const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');

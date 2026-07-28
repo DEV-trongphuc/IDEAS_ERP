@@ -234,7 +234,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
       const json = await fetchAPI('projects');
       if (json.success) setProjects(json.data || []);
     } catch (e: any) {
-      console.error(t('Không thể tải dự án:'), e.message);
+      console.error(t('Không thể tải chương trình:'), e.message);
     }
   };
 
@@ -428,10 +428,10 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
           data_per_turns: newTurns,
           compensations: newComps
         }));
-        const projName = projects.find(p => p.id === projId)?.name || 'Dự án';
+        const projName = projects.find(p => p.id === projId)?.name || 'Chương trình';
         toast.success(t(`Đã tự động nạp ${assignedUserIds.length} nhân sự từ Roster của ${projName}!`));
       } else {
-        toast(t('Dự án này chưa có nhân sự tư vấn nào trong Roster'), { icon: 'ℹ️' });
+        toast(t('Chương trình này chưa có nhân sự tư vấn nào trong Roster'), { icon: 'ℹ️' });
       }
     } catch (e) {
       console.error('Failed to load project roster', e);
@@ -1451,7 +1451,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
 
                         {/* Phạm vi áp dụng & Roster Scope Selector */}
                         <div className="form-group">
-                          <label className="form-label">{t("Phạm vi áp dụng (Dự án / Chiến dịch)")}</label>
+                          <label className="form-label">{t("Phạm vi áp dụng (Chương trình / Chiến dịch)")}</label>
                           <div style={{ display: 'flex', gap: '4px', background: 'var(--color-bg)', padding: '3px', borderRadius: '10px', border: '1px solid var(--color-border-light)' }}>
                             <button
                               type="button"
@@ -1540,11 +1540,11 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
                             <label className="form-label">{t("Chọn Dự Án")}</label>
                             <CustomSelect
                               searchable={true}
-                              placeholder={t("Tìm kiếm và chọn Dự án...")}
+                              placeholder={t("Tìm kiếm và chọn Chương trình...")}
                               value={formData.project_id || ''}
                               onChange={(val) => handleSelectProject(val ? Number(val) : null)}
                               options={[
-                                { value: '', label: `-- ${t("Chọn Dự án")} --` },
+                                { value: '', label: `-- ${t("Chọn Chương trình")} --` },
                                 ...projects.map(proj => ({
                                   value: proj.id,
                                   label: proj.name,
@@ -1553,7 +1553,7 @@ const RoundsInner = ({ isActive }: { isActive: boolean }) => {
                               ]}
                             />
                             <p style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                              {t("Chọn dự án sẽ tự động nạp danh sách TVV trong Roster dự án sang bên phải.")}
+                              {t("Chọn chương trình sẽ tự động nạp danh sách TVV trong Roster chương trình sang bên phải.")}
                             </p>
                           </div>
                         )}
