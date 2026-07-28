@@ -129,9 +129,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const [sysSettings, setSysSettings] = useState<any>(null);
   const managerBehaviorMode = user?.manager_behavior_mode || 'combined';
   const isSales = user?.role === 'sale' || (user?.role === 'manager' && managerBehaviorMode === 'combined');
+  const shouldCheckIn = user?.role && !['admin', 'superadmin', 'super_admin', 'director'].includes(user.role.toLowerCase());
 
   const loadCheckInStatus = async () => {
-    if (!user || !isSales) return;
+    if (!user || !shouldCheckIn) return;
     try {
       const res = await fetchAPI('check-ins&today_only=1');
       if (res.success) {
@@ -299,7 +300,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       window.removeEventListener('checkin-status-changed', handleSync);
       window.removeEventListener('trigger-checkin-modal', handleTrigger);
     };
-  }, [user, isSales]);
+  }, [user, shouldCheckIn]);
 
   // Global Real-time SSE connection for instant updates (notifications, sidebar counts, portal refresh)
   useEffect(() => {

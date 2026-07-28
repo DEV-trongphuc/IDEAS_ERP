@@ -21,7 +21,7 @@ class HRMController {
                    p.annual_leave_total, p.annual_leave_used, p.compensatory_leave_total, p.compensatory_leave_used
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
-            WHERE u.tenant_id = ?
+            WHERE u.tenant_id = ? AND u.role NOT IN ('admin', 'superadmin', 'super_admin', 'director')
             ORDER BY u.full_name
         ");
         $stmt->execute([$auth['tenant_id']]);
@@ -502,13 +502,13 @@ class HRMController {
             }
         }
 
-        // Fetch all employees in tenant
+        // Fetch all employees in tenant (excluding admin and director roles)
         $empStmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.gender, p.base_salary, p.deal_salary, p.has_insurance,
                    p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date, p.custom_fields_json
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
-            WHERE u.tenant_id = ? AND u.is_active = 1
+            WHERE u.tenant_id = ? AND u.is_active = 1 AND u.role NOT IN ('admin', 'superadmin', 'super_admin', 'director')
         ");
         $empStmt->execute([$auth['tenant_id']]);
         $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);

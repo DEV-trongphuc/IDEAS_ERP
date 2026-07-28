@@ -38,9 +38,9 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [sysSettings, setSysSettings] = useState<any>(null);
   const managerBehaviorMode = user?.manager_behavior_mode || 'combined';
-  const isSales = user?.role === 'sale' || (user?.role === 'manager' && managerBehaviorMode === 'combined');
-  const canSelectUser = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager'].includes(user?.role || '');
-  const canApprove = ['admin', 'superadmin', 'super_admin', 'director', 'assistant'].includes(user?.role || '') || (user?.role === 'manager' && managerBehaviorMode === 'pure');
+  const isSales = user?.role && !['admin', 'superadmin', 'super_admin', 'director'].includes(user.role.toLowerCase());
+  const canSelectUser = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr', 'accountant'].includes(user?.role || '');
+  const canApprove = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'hr', 'accountant'].includes(user?.role || '') || (user?.role === 'manager' && managerBehaviorMode === 'pure');
   useEffect(() => {
     fetchAPI('get_settings').then(res => {
       if (res && res.success) {
@@ -2079,7 +2079,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 }}
               >
                 <FileText size={isMobile ? 13 : 16} />
-                {isSales ? t('Yêu cầu') : t('Bảng công')}
+                {(isSales && filterUser === String(user?.id)) ? t('Yêu cầu') : t('Bảng công')}
               </button>
 
               {(() => {
@@ -2358,7 +2358,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               ) : modalTab === 'fingerprint' ? (
                 /* Sub-tab 2: Fingerprint Excel / Supplementary Form */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  {isSales ? (() => {
+                  {(isSales && filterUser === String(user?.id)) ? (() => {
                     const todayStr = new Date().toISOString().slice(0, 10);
                     const detailCheckIns = calendarCheckIns.filter(c => c.check_in_date === selectedDateForDetail);
                     const pendingCheckIn = detailCheckIns.find(c => c.status === 'pending_approval');
