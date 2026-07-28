@@ -465,8 +465,10 @@ class HRMController {
     public function calculatePayroll(array $auth): void {
         if (!$this->isAdmin($auth)) respond(403, null, 'Quyền admin là bắt buộc', false);
         $b = getBody();
-        $monthYear = $b['month_year'] ?? ''; // Format: YYYY-MM
-        if (empty($monthYear)) respond(400, null, 'Thiếu tháng tính lương (Định dạng YYYY-MM)', false);
+        $monthYear = $b['month_year'] ?? ''; // Format: YYYY-MM or YYYY-13, YYYY-MID, YYYY-YEND
+        if (empty($monthYear) || !preg_match('/^\d{4}-(?:[0-1]\d|13|MID|YEND)$/', $monthYear)) {
+            respond(400, null, 'Định dạng kỳ thanh toán không hợp lệ', false);
+        }
 
         // Standard work days in month (usually 26, custom if provided)
         $workDaysRequired = (int)($b['work_days_required'] ?? 26);
@@ -480,12 +482,22 @@ class HRMController {
         $stmtGrace->execute(['hrm_late_grace_female']);
         $graceFemale = (int)($stmtGrace->fetchColumn() ?: 60); // Default 60 mins
 
+        // Check if special period
+        $isSpecialPeriod = false;
+        $isThang13 = false;
+        if (preg_match('/^\d{4}-(13|MID|YEND)$/', $monthYear, $matches)) {
+            $isSpecialPeriod = true;
+            if ($matches[1] === '13') {
+                $isThang13 = true;
+            }
+        }
+
         // Fetch all employees in tenant
         $empStmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.gender, p.base_salary, p.deal_salary, p.has_insurance,
                    p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date, p.custom_fields_json
             FROM users u
-            JOIN hrm_profiles p ON u.id = p.user_id
+            LEFT JOIN hrm_profiles p ON u.id = p.user_id
             WHERE u.tenant_id = ? AND u.is_active = 1
         ");
         $empStmt->execute([$auth['tenant_id']]);
@@ -496,70 +508,94 @@ class HRMController {
         foreach ($employees as $emp) {
             $userId = (int)$emp['id'];
 
-            // 1. Calculate Actual Work Days from check_ins & apply late_early waivers
-            $leStmt = $this->db->prepare("
-                SELECT DATE(start_date) as le_date
-                FROM hrm_leave_requests
-                WHERE user_id = ? AND status = 'approved' AND leave_type = 'late_early'
-                  AND DATE_FORMAT(start_date, '%Y-%m') = ?
-            ");
-            $leStmt->execute([$userId, $monthYear]);
-            $waivedDates = $leStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            if ($isSpecialPeriod) {
+                $actualWorkedDays = $isThang13 ? $workDaysRequired : 0;
+                $paidLeaveDays = 0;
+                $totalLateMinutes = 0;
+                $overtimeDays = 0;
+                $waivedDates = [];
+                $checkinsList = [];
+            } else {
+                // 1. Calculate Actual Work Days from check_ins & apply late_early waivers
+                $leStmt = $this->db->prepare("
+                    SELECT DATE(start_date) as le_date
+                    FROM hrm_leave_requests
+                    WHERE user_id = ? AND status = 'approved' AND leave_type = 'late_early'
+                      AND DATE_FORMAT(start_date, '%Y-%m') = ?
+                ");
+                $leStmt->execute([$userId, $monthYear]);
+                $waivedDates = $leStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
-            $attStmt = $this->db->prepare("
-                SELECT check_in_date, late_minutes
-                FROM check_ins
-                WHERE user_id = ? AND status = 'approved' AND DATE_FORMAT(check_in_date, '%Y-%m') = ?
-            ");
-            $attStmt->execute([$userId, $monthYear]);
-            $checkinsList = $attStmt->fetchAll(PDO::FETCH_ASSOC);
+                $attStmt = $this->db->prepare("
+                    SELECT check_in_date, late_minutes
+                    FROM check_ins
+                    WHERE user_id = ? AND status = 'approved' AND DATE_FORMAT(check_in_date, '%Y-%m') = ?
+                ");
+                $attStmt->execute([$userId, $monthYear]);
+                $checkinsList = $attStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $actualWorkedDays = count($checkinsList);
-            $totalLateMinutes = 0;
-            foreach ($checkinsList as $ci) {
-                if (!in_array($ci['check_in_date'], $waivedDates)) {
-                    $totalLateMinutes += (int)$ci['late_minutes'];
+                $actualWorkedDays = count($checkinsList);
+                $totalLateMinutes = 0;
+                foreach ($checkinsList as $ci) {
+                    if (!in_array($ci['check_in_date'], $waivedDates)) {
+                        $totalLateMinutes += (int)$ci['late_minutes'];
+                    }
                 }
             }
 
             // 2. Add approved leaves that are paid (leave_type = 'annual', 'sick', or 'compensatory')
-            $lvStmt = $this->db->prepare("
-                SELECT SUM(total_days) as paid_days
-                FROM hrm_leave_requests
-                WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory')
-                  AND DATE_FORMAT(start_date, '%Y-%m') = ?
-            ");
-            $lvStmt->execute([$userId, $monthYear]);
-            $lv = $lvStmt->fetch(PDO::FETCH_ASSOC);
-            $paidLeaveDays = (float)($lv['paid_days'] ?? 0);
+            if ($isSpecialPeriod) {
+                $paidLeaveDays = 0;
+            } else {
+                $lvStmt = $this->db->prepare("
+                    SELECT SUM(total_days) as paid_days
+                    FROM hrm_leave_requests
+                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory')
+                      AND DATE_FORMAT(start_date, '%Y-%m') = ?
+                ");
+                $lvStmt->execute([$userId, $monthYear]);
+                $lv = $lvStmt->fetch(PDO::FETCH_ASSOC);
+                $paidLeaveDays = (float)($lv['paid_days'] ?? 0);
+            }
 
             $totalWorkDays = $actualWorkedDays + $paidLeaveDays;
             if ($totalWorkDays > $workDaysRequired) $totalWorkDays = $workDaysRequired;
 
             // 3. Prorate Salary
-            $baseSalary = (float)$emp['deal_salary'];
-            $basicSalaryCalculated = ($workDaysRequired > 0) ? ($baseSalary / $workDaysRequired) * $totalWorkDays : 0;
+            $baseSalary = (float)($emp['deal_salary'] ?? 0.0);
+            $basicSalaryCalculated = 0.0;
+            if ($isThang13) {
+                $basicSalaryCalculated = $baseSalary; // Full 13th month salary
+            } elseif (!$isSpecialPeriod) {
+                $basicSalaryCalculated = ($workDaysRequired > 0) ? ($baseSalary / $workDaysRequired) * $totalWorkDays : 0;
+            }
 
             // 4. Lateness Deduction Penalty with Gender Grace Threshold
-            $gender = trim(mb_strtolower($emp['gender'] ?? ''));
-            $graceMinutes = 0;
-            if ($gender === 'male' || $gender === 'nam') {
-                $graceMinutes = $graceMale;
-            } elseif ($gender === 'female' || $gender === 'nữ' || $gender === 'nu') {
-                $graceMinutes = $graceFemale;
+            $latenessPenalty = 0.0;
+            if (!$isSpecialPeriod) {
+                $gender = trim(mb_strtolower($emp['gender'] ?? ''));
+                $graceMinutes = 0;
+                if ($gender === 'male' || $gender === 'nam') {
+                    $graceMinutes = $graceMale;
+                } elseif ($gender === 'female' || $gender === 'nữ' || $gender === 'nu') {
+                    $graceMinutes = $graceFemale;
+                }
+                
+                $penalizedLateMinutes = max(0, $totalLateMinutes - $graceMinutes);
+                $latenessPenalty = $penalizedLateMinutes * 5000;
             }
-            
-            $penalizedLateMinutes = max(0, $totalLateMinutes - $graceMinutes);
-            $latenessPenalty = $penalizedLateMinutes * 5000;
 
             // 5. Allowances
-            $allowanceTotal = (float)$emp['allowance_meal'] + (float)$emp['allowance_travel'] + (float)$emp['allowance_phone'];
-            if (!empty($emp['custom_fields_json'])) {
-                $customFields = json_decode($emp['custom_fields_json'], true);
-                if (is_array($customFields)) {
-                    foreach ($customFields as $field) {
-                        if (isset($field['value'])) {
-                            $allowanceTotal += (float)$field['value'];
+            $allowanceTotal = 0.0;
+            if (!$isSpecialPeriod) {
+                $allowanceTotal = (float)($emp['allowance_meal'] ?? 0.0) + (float)($emp['allowance_travel'] ?? 0.0) + (float)($emp['allowance_phone'] ?? 0.0);
+                if (!empty($emp['custom_fields_json'])) {
+                    $customFields = json_decode($emp['custom_fields_json'], true);
+                    if (is_array($customFields)) {
+                        foreach ($customFields as $field) {
+                            if (isset($field['value'])) {
+                                $allowanceTotal += (float)$field['value'];
+                            }
                         }
                     }
                 }
@@ -569,120 +605,133 @@ class HRMController {
             $kpiBonus = 0.0;
             $revenueCollected = 0.0;
 
-            // Fetch all approved deposit milestones in the selected month
-            $milestonesStmt = $this->db->prepare("
-                SELECT m.expected_amount, d.contact_id, d.created_by
-                FROM deposit_milestones m
-                JOIN deposits d ON m.deposit_id = d.id
-                WHERE m.status = 'approved' AND DATE_FORMAT(m.approval_date, '%Y-%m') = ?
-            ");
-            $milestonesStmt->execute([$monthYear]);
-            $milestonesList = $milestonesStmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!$isSpecialPeriod) {
+                // Fetch all approved deposit milestones in the selected month
+                $milestonesStmt = $this->db->prepare("
+                    SELECT m.expected_amount, d.contact_id, d.created_by
+                    FROM deposit_milestones m
+                    JOIN deposits d ON m.deposit_id = d.id
+                    WHERE m.status = 'approved' AND DATE_FORMAT(m.approval_date, '%Y-%m') = ?
+                ");
+                $milestonesStmt->execute([$monthYear]);
+                $milestonesList = $milestonesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            foreach ($milestonesList as $mRow) {
-                $contactId = (int)$mRow['contact_id'];
-                $depositCreator = (int)$mRow['created_by'];
-                $amount = (float)$mRow['expected_amount'];
+                foreach ($milestonesList as $mRow) {
+                    $contactId = (int)$mRow['contact_id'];
+                    $depositCreator = (int)$mRow['created_by'];
+                    $amount = (float)$mRow['expected_amount'];
 
-                // Check if this contact has a cooperation slip for commission splitting
-                $csStmt = $this->db->prepare("SELECT shares_json FROM cooperation_slips WHERE contact_id = ? LIMIT 1");
-                $csStmt->execute([$contactId]);
-                $csRow = $csStmt->fetch(PDO::FETCH_ASSOC);
+                    // Check if this contact has a cooperation slip for commission splitting
+                    $csStmt = $this->db->prepare("SELECT shares_json FROM cooperation_slips WHERE contact_id = ? LIMIT 1");
+                    $csStmt->execute([$contactId]);
+                    $csRow = $csStmt->fetch(PDO::FETCH_ASSOC);
 
-                if ($csRow) {
-                    $shares = json_decode($csRow['shares_json'] ?? '[]', true) ?: [];
-                    if (isset($shares[$userId])) {
-                        $percent = (float)$shares[$userId];
-                        $revenueCollected += $amount * ($percent / 100.0);
-                    }
-                } else {
-                    // No cooperation slip, 100% of the revenue belongs to the deposit creator
-                    if ($userId === $depositCreator) {
-                        $revenueCollected += $amount;
+                    if ($csRow) {
+                        $shares = json_decode($csRow['shares_json'] ?? '[]', true) ?: [];
+                        if (isset($shares[$userId])) {
+                            $percent = (float)$shares[$userId];
+                            $revenueCollected += $amount * ($percent / 100.0);
+                        }
+                    } else {
+                        // No cooperation slip, 100% of the revenue belongs to the deposit creator
+                        if ($userId === $depositCreator) {
+                            $revenueCollected += $amount;
+                        }
                     }
                 }
-            }
 
-            $kpiTarget = (float)$emp['kpi_target'];
-            if ($kpiTarget > 0) {
-                $achievementRate = $revenueCollected / $kpiTarget;
-                if ($achievementRate >= 1.2) {
-                    $kpiBonus = $revenueCollected * 0.15; // 15% reward
-                } else if ($achievementRate >= 1.0) {
-                    $kpiBonus = $revenueCollected * 0.10; // 10% reward
-                } else if ($achievementRate >= 0.8) {
-                    $kpiBonus = $revenueCollected * 0.05; // 5% reward
-                } else {
-                    $kpiBonus = 0.0;
+                $kpiTarget = (float)($emp['kpi_target'] ?? 0.0);
+                if ($kpiTarget > 0) {
+                    $achievementRate = $revenueCollected / $kpiTarget;
+                    if ($achievementRate >= 1.2) {
+                        $kpiBonus = $revenueCollected * 0.15; // 15% reward
+                    } else if ($achievementRate >= 1.0) {
+                        $kpiBonus = $revenueCollected * 0.10; // 10% reward
+                    } else if ($achievementRate >= 0.8) {
+                        $kpiBonus = $revenueCollected * 0.05; // 5% reward
+                    } else {
+                        $kpiBonus = 0.0;
+                    }
                 }
             }
 
             // 7. Insurance Deductions (social: 8%, health: 1.5%, unemployment: 1% of base_salary)
-            $insuranceBase = (float)$emp['base_salary'];
             $bhxh = 0;
             $bhyt = 0;
             $bhtn = 0;
-            if ((int)$emp['has_insurance'] === 1 && $insuranceBase > 0) {
-                $bhxh = $insuranceBase * 0.08;
-                $bhyt = $insuranceBase * 0.015;
-                $bhtn = $insuranceBase * 0.01;
+            if (!$isSpecialPeriod) {
+                $insuranceBase = (float)($emp['base_salary'] ?? 0.0);
+                if ((int)($emp['has_insurance'] ?? 0) === 1 && $insuranceBase > 0) {
+                    $bhxh = $insuranceBase * 0.08;
+                    $bhyt = $insuranceBase * 0.015;
+                    $bhtn = $insuranceBase * 0.01;
+                }
             }
 
             // 8. Tax PIT (Thuế TNCN lũy tiến)
-            $taxableMeal = max(0, (float)$emp['allowance_meal'] - 730000);
-            $grossIncomeForTax = $basicSalaryCalculated + $kpiBonus + (float)$emp['allowance_travel'] + (float)$emp['allowance_phone'] + $taxableMeal;
-            
-            $insuranceDeductions = $bhxh + $bhyt + $bhtn;
-            $personalDeduction = 11000000; // 11M VND
-            $dependentsDeduction = 0; 
-            
-            $taxIncome = $grossIncomeForTax - $insuranceDeductions - $personalDeduction - $dependentsDeduction;
             $pit = 0;
-            if ($taxIncome > 0) {
-                if ($taxIncome <= 5000000) {
-                    $pit = $taxIncome * 0.05;
-                } else if ($taxIncome <= 10000000) {
-                    $pit = ($taxIncome * 0.10) - 250000;
-                } else if ($taxIncome <= 18000000) {
-                    $pit = ($taxIncome * 0.15) - 750000;
-                } else if ($taxIncome <= 32000000) {
-                    $pit = ($taxIncome * 0.20) - 1650000;
-                } else if ($taxIncome <= 52000000) {
-                    $pit = ($taxIncome * 0.25) - 3250000;
-                } else if ($taxIncome <= 80000000) {
-                    $pit = ($taxIncome * 0.30) - 5850000;
-                } else {
-                    $pit = ($taxIncome * 0.35) - 9850000;
+            if (!$isSpecialPeriod || $isThang13) {
+                $taxableMeal = max(0, (float)($emp['allowance_meal'] ?? 0.0) - 730000);
+                $grossIncomeForTax = $basicSalaryCalculated + $kpiBonus + (float)($emp['allowance_travel'] ?? 0.0) + (float)($emp['allowance_phone'] ?? 0.0) + $taxableMeal;
+                
+                $insuranceDeductions = $bhxh + $bhyt + $bhtn;
+                $personalDeduction = 11000000; // 11M VND
+                $dependentsDeduction = 0; 
+                
+                $taxIncome = $grossIncomeForTax - $insuranceDeductions - $personalDeduction - $dependentsDeduction;
+                if ($taxIncome > 0) {
+                    if ($taxIncome <= 5000000) {
+                        $pit = $taxIncome * 0.05;
+                    } else if ($taxIncome <= 10000000) {
+                        $pit = ($taxIncome * 0.10) - 250000;
+                    } else if ($taxIncome <= 18000000) {
+                        $pit = ($taxIncome * 0.15) - 750000;
+                    } else if ($taxIncome <= 32000000) {
+                        $pit = ($taxIncome * 0.20) - 1650000;
+                    } else if ($taxIncome <= 52000000) {
+                        $pit = ($taxIncome * 0.25) - 3250000;
+                    } else if ($taxIncome <= 80000000) {
+                        $pit = ($taxIncome * 0.30) - 5850000;
+                    } else {
+                        $pit = ($taxIncome * 0.35) - 9850000;
+                    }
                 }
             }
 
             // 9. Approved salary advances to deduct
-            $advStmt = $this->db->prepare("
-                SELECT SUM(amount) as adv_amt
-                FROM hrm_salary_advances
-                WHERE user_id = ? AND status = 'approved' AND deducted_payslip_id IS NULL
-            ");
-            $advStmt->execute([$userId]);
-            $advVal = $advStmt->fetch(PDO::FETCH_ASSOC);
-            $advanceDeduction = (float)($advVal['adv_amt'] ?? 0);
+            $advanceDeduction = 0.0;
+            if (!$isSpecialPeriod) {
+                $advStmt = $this->db->prepare("
+                    SELECT SUM(amount) as adv_amt
+                    FROM hrm_salary_advances
+                    WHERE user_id = ? AND status = 'approved' AND deducted_payslip_id IS NULL
+                ");
+                $advStmt->execute([$userId]);
+                $advVal = $advStmt->fetch(PDO::FETCH_ASSOC);
+                $advanceDeduction = (float)($advVal['adv_amt'] ?? 0);
+            }
 
             // 6b. Overtime calculation (Sum up approved leave requests of type 'overtime' in this month)
-            $otStmt = $this->db->prepare("
-                SELECT SUM(total_days) as ot_days
-                FROM hrm_leave_requests
-                WHERE user_id = ? AND status = 'approved' AND leave_type = 'overtime'
-                  AND DATE_FORMAT(start_date, '%Y-%m') = ?
-            ");
-            $otStmt->execute([$userId, $monthYear]);
-            $otRow = $otStmt->fetch(PDO::FETCH_ASSOC);
-            $overtimeDays = (float)($otRow['ot_days'] ?? 0);
+            $overtimeDays = 0.0;
+            $overtimeSalary = 0.0;
+            if (!$isSpecialPeriod) {
+                $otStmt = $this->db->prepare("
+                    SELECT SUM(total_days) as ot_days
+                    FROM hrm_leave_requests
+                    WHERE user_id = ? AND status = 'approved' AND leave_type = 'overtime'
+                      AND DATE_FORMAT(start_date, '%Y-%m') = ?
+                ");
+                $otStmt->execute([$userId, $monthYear]);
+                $otRow = $otStmt->fetch(PDO::FETCH_ASSOC);
+                $overtimeDays = (float)($otRow['ot_days'] ?? 0);
 
-            // Overtime salary: (deal_salary / work_days_required) * overtime_days * 1.5
-            $overtimeSalary = ($workDaysRequired > 0) ? (($baseSalary / $workDaysRequired) * $overtimeDays * 1.5) : 0;
+                // Overtime salary: (deal_salary / work_days_required) * overtime_days * 1.5
+                $overtimeSalary = ($workDaysRequired > 0) ? (($baseSalary / $workDaysRequired) * $overtimeDays * 1.5) : 0;
+            }
 
             // 6c. Diligence calculation
             $diligenceBonus = 0.0;
-            if ($totalWorkDays >= $workDaysRequired && $totalLateMinutes == 0) {
+            if (!$isSpecialPeriod && $totalWorkDays >= $workDaysRequired && $totalLateMinutes == 0) {
                 $diligenceBonus = 500000.00; // 500k VND
             }
 
@@ -757,6 +806,30 @@ class HRMController {
     public function indexPayslips(array $auth): void {
         $monthYear = $_GET['month_year'] ?? '';
         if (empty($monthYear)) respond(400, null, 'Thiếu tham số tháng (month_year)', false);
+
+        if ($monthYear === 'all') {
+            if ($this->isAdmin($auth)) {
+                $stmt = $this->db->prepare("
+                    SELECT p.*, u.full_name as employee_name, u.email, u.phone, u.job_title
+                    FROM monthly_payslips p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE u.tenant_id = ?
+                    ORDER BY p.month_year DESC
+                ");
+                $stmt->execute([$auth['tenant_id']]);
+            } else {
+                $stmt = $this->db->prepare("
+                    SELECT p.*, u.full_name as employee_name, u.email, u.phone, u.job_title
+                    FROM monthly_payslips p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.user_id = ?
+                    ORDER BY p.month_year DESC
+                ");
+                $stmt->execute([$auth['user_id']]);
+            }
+            respond(200, $stmt->fetchAll(PDO::FETCH_ASSOC));
+            return;
+        }
 
         if ($this->isAdmin($auth)) {
             $stmt = $this->db->prepare("
@@ -843,6 +916,14 @@ class HRMController {
         $b = getBody();
         $monthYear = $b['month_year'] ?? '';
         if (empty($monthYear)) respond(400, null, 'Thiếu tháng khóa lương', false);
+
+        $action = $b['action'] ?? 'lock';
+        if ($action === 'unlock') {
+            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'draft', signature_url = NULL, confirmed_at = NULL WHERE month_year = ?");
+            $stmt->execute([$monthYear]);
+            respond(200, ['success' => true, 'message' => 'Unlocked successfully']);
+            return;
+        }
 
         $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'locked' WHERE month_year = ?");
         $stmt->execute([$monthYear]);

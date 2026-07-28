@@ -15,6 +15,51 @@ import { Avatar } from '../components/ui/Avatar';
 export default function MyPayslips() {
   const { t } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState<'payslip' | 'leaves' | 'advances'>('payslip');
+
+  const getPeriodLabel = (periodStr: string) => {
+    const parts = periodStr.split('-');
+    if (parts.length < 2) return periodStr;
+    const year = parts[0];
+    const period = parts[1];
+    if (period === '13') return `${t('Lương tháng 13')} - ${t('Năm')} ${year}`;
+    if (period === 'MID') return `${t('Thưởng giữa năm')} - ${t('Năm')} ${year}`;
+    if (period === 'YEND') return `${t('Thưởng cuối năm')} - ${t('Năm')} ${year}`;
+    return `${t('Tháng')} ${period}/${year}`;
+  };
+
+  const getTitleLabel = (periodStr: string) => {
+    const parts = periodStr.split('-');
+    if (parts.length < 2) return t('BẢNG THANH TOÁN TIỀN LƯƠNG');
+    const period = parts[1];
+    if (period === '13') return t('PHIẾU THANH TOÁN LƯƠNG THÁNG 13');
+    if (period === 'MID') return t('PHIẾU THANH TOÁN TIỀN THƯỞNG GIỮA NĂM');
+    if (period === 'YEND') return t('PHIẾU THANH TOÁN TIỀN THƯỞNG CUỐI NĂM');
+    return t('BẢNG THANH TOÁN TIỀN LƯƠNG & PHỤ CẤP');
+  };
+
+  const periodOptions = React.useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years = [currentYear, currentYear - 1];
+    const options: { value: string; label: string }[] = [];
+    
+    years.forEach(yr => {
+      // Special periods
+      options.push({ value: `${yr}-YEND`, label: `${t('Thưởng cuối năm')} - ${yr}` });
+      options.push({ value: `${yr}-13`, label: `${t('Lương tháng 13')} - ${yr}` });
+      options.push({ value: `${yr}-MID`, label: `${t('Thưởng giữa năm')} - ${yr}` });
+      
+      // 12 standard months
+      for (let m = 12; m >= 1; m--) {
+        const val = `${yr}-${String(m).padStart(2, '0')}`;
+        options.push({
+          value: val,
+          label: `${t('Tháng')} ${String(m).padStart(2, '0')}/${yr}`
+        });
+      }
+    });
+    
+    return options;
+  }, [t]);
   
   // Custom states for multi-level approval & CCs
   const [users, setUsers] = useState<any[]>([]);
@@ -32,6 +77,25 @@ export default function MyPayslips() {
   const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Company configuration states
+  const [companyName, setCompanyName] = useState('CÔNG TY CỔ PHẦN CÔNG NGHỆ IDEAS');
+  const [companyAddress, setCompanyAddress] = useState('Tòa nhà IDEAS, 123 Đường Láng, Đống Đa, Hà Nội');
+  const [companyPhone, setCompanyPhone] = useState('024 1234 5678');
+  const [companyTaxId, setCompanyTaxId] = useState('0101234567');
+  const [companyLogoUrl, setCompanyLogoUrl] = useState('');
+
+  useEffect(() => {
+    fetchAPI('get_settings').then(res => {
+      if (res && res.success && res.data) {
+        if (res.data.company_name) setCompanyName(res.data.company_name);
+        if (res.data.company_address) setCompanyAddress(res.data.company_address);
+        if (res.data.company_phone) setCompanyPhone(res.data.company_phone);
+        if (res.data.company_tax_id) setCompanyTaxId(res.data.company_tax_id);
+        if (res.data.company_logo_url) setCompanyLogoUrl(res.data.company_logo_url);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Tab 2: Leaves states
   const [leavesList, setLeavesList] = useState<any[]>([]);
@@ -303,37 +367,32 @@ export default function MyPayslips() {
         </div>
         
         {true && (
-          <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface)', borderRadius: '10px', border: '1px solid var(--color-border)', padding: '2px', height: 40, boxShadow: 'var(--shadow-sm)' }}>
-            <button 
-              type="button"
-              onClick={() => {
-                const [y, m] = selectedMonth.split('-').map(Number);
-                const prevDate = new Date(y, m - 2, 1);
-                setSelectedMonth(`${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`);
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chọn kỳ thanh toán')}:</span>
+            <select
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              className="form-input"
+              style={{
+                height: 38,
+                padding: '0 30px 0 12px',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                minWidth: '220px',
+                borderRadius: '10px',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-sm)'
               }}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, color: 'var(--color-text-light)', borderRadius: 6 }}
-              className="hover-bg-secondary"
             >
-              <ChevronLeft size={18} />
-            </button>
-            <span style={{ padding: '0 16px', fontWeight: 700, fontSize: '0.9rem', minWidth: '120px', textAlign: 'center', color: 'var(--color-text)' }}>
-              {(() => {
-                const [y, m] = selectedMonth.split('-').map(Number);
-                return `Tháng ${String(m).padStart(2, '0')}/${y}`;
-              })()}
-            </span>
-            <button 
-              type="button"
-              onClick={() => {
-                const [y, m] = selectedMonth.split('-').map(Number);
-                const nextDate = new Date(y, m, 1);
-                setSelectedMonth(`${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`);
-              }}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, color: 'var(--color-text-light)', borderRadius: 6 }}
-              className="hover-bg-secondary"
-            >
-              <ChevronRight size={18} />
-            </button>
+              {periodOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>
@@ -378,7 +437,7 @@ export default function MyPayslips() {
               </div>
 
               {/* Paper Bill Design Card */}
-              <div className="card" style={{
+              <div id="payslip-print-area" className="card" style={{
                 padding: '2.5rem',
                 background: 'var(--color-surface)',
                 border: '1px solid var(--color-border)',
@@ -386,14 +445,97 @@ export default function MyPayslips() {
                 boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
                 position: 'relative'
               }}>
-                {/* Header info */}
-                <div style={{ textAlign: 'center', marginBottom: '2rem', borderBottom: '1px dashed var(--color-border)', paddingBottom: '1.5rem' }}>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{t('BẢNG THANH TOÁN TIỀN LƯƠNG')}</h2>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                    {t('Kỳ thanh toán')}: {selectedMonth}
+                {/* Print Template CSS */}
+                <style>{`
+                  @media print {
+                    body * {
+                      visibility: hidden !important;
+                    }
+                    #payslip-print-area, #payslip-print-area * {
+                      visibility: visible !important;
+                    }
+                    #payslip-print-area {
+                      position: absolute !important;
+                      left: 0 !important;
+                      top: 0 !important;
+                      width: 100% !important;
+                      max-width: 100% !important;
+                      padding: 20mm !important;
+                      margin: 0 !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      background: white !important;
+                      color: black !important;
+                    }
+                    .no-print {
+                      display: none !important;
+                    }
+                  }
+                `}</style>
+
+                {/* Print Action Button */}
+                <button
+                  onClick={() => window.print()}
+                  className="btn outline sm no-print"
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700
+                  }}
+                >
+                  <Download size={14} /> {t('In / Xuất PDF')}
+                </button>
+
+                {/* Company Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', borderBottom: '2px solid var(--color-primary)', paddingBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {companyLogoUrl ? (
+                      <img src={companyLogoUrl} alt="Logo" style={{ height: 42, maxWidth: 100, objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontWeight: 900,
+                        fontSize: '1rem',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                      }}>
+                        {companyName.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <strong style={{ fontSize: '0.9rem', color: 'var(--color-text)', textTransform: 'uppercase' }}>{companyName}</strong>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Địa chỉ')}: {companyAddress}</span>
+                      <div style={{ display: 'flex', gap: '15px', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                        <span>{t('SĐT')}: {companyPhone}</span>
+                        <span>{t('MST')}: {companyTaxId}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                    <strong>{t('MÃ PHIẾU')}: PL-{payslip.id}-{selectedMonth}</strong>
+                    <span>{t('Ngày in')}: {new Date().toLocaleDateString('vi-VN')}</span>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div style={{ textAlign: 'center', marginBottom: '2rem', paddingBottom: '1rem' }}>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', color: 'var(--color-text)' }}>
+                    {getTitleLabel(selectedMonth)}
+                  </h2>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginTop: 6, fontWeight: 600 }}>
+                    {t('Kỳ thanh toán')}: {getPeriodLabel(selectedMonth)}
                   </p>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem', textAlign: 'left', fontSize: '0.875rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1.5rem', textAlign: 'left', fontSize: '0.875rem', border: '1px solid var(--color-border-light)', borderRadius: '10px', padding: '1rem', background: 'var(--color-bg-secondary)' }}>
                     <div>
                       <span style={{ color: 'var(--color-text-muted)' }}>{t('Nhân viên')}:</span> <strong>{payslip.employee_name}</strong>
                     </div>
@@ -409,88 +551,123 @@ export default function MyPayslips() {
                   </div>
                 </div>
 
-                {/* Salary Breakdown Details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', fontSize: '0.9rem' }}>
-                  
-                  {/* Gross and Basic calculation */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <DollarSign size={15} style={{ color: 'var(--color-text-muted)' }} />
-                      {t('Lương thực tế theo ngày công')}
-                    </span>
-                    <span>{formatCurrency(payslip.salary_basic_calculated)}</span>
-                  </div>
+                {/* Salary Breakdown Table */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1.5rem', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text)', background: 'var(--color-bg-secondary)', fontWeight: 700 }}>
+                      <th style={{ padding: '10px 12px', textAlign: 'left' }}>{t('Khoản mục')}</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'center' }}>{t('Thông số')}</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>{t('Cộng (Thu nhập)')}</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>{t('Trừ (Khấu trừ)')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Basic calculated */}
+                    <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>{t('Lương thực tế theo ngày công')}</td>
+                      <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{payslip.work_days_actual} / {payslip.work_days_required} {t('ngày công')}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(payslip.salary_basic_calculated)}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                    </tr>
 
-                  {/* KPI Thưởng */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Award size={15} style={{ color: '#10b981' }} />
-                      {t('Lương thưởng doanh số KPI')}
-                    </span>
-                    <span style={{ color: '#10b981', fontWeight: 600 }}>{formatCurrency(payslip.kpi_bonus)}</span>
-                  </div>
+                    {/* KPI Bonus */}
+                    {Number(payslip.kpi_bonus || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Lương thưởng doanh số KPI')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#10b981' }}>{formatCurrency(payslip.kpi_bonus)}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                      </tr>
+                    )}
 
-                  {/* Allowances */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Percent size={15} style={{ color: 'var(--color-text-muted)' }} />
-                      {t('Các khoản phụ cấp (Ăn trưa, Xăng xe, Điện thoại)')}
-                    </span>
-                    <span>{formatCurrency(payslip.allowance_total)}</span>
-                  </div>
+                    {/* Overtime Salary */}
+                    {Number(payslip.overtime_salary || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Lương tăng ca')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{payslip.overtime_days || 0} {t('ngày')} (x1.5)</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#10b981' }}>{formatCurrency(payslip.overtime_salary)}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                      </tr>
+                    )}
 
-                  <div style={{ height: '1px', background: 'var(--color-border)', margin: '4px 0' }} />
+                    {/* Diligence Bonus */}
+                    {Number(payslip.diligence_bonus || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Thưởng chuyên cần')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: '#10b981' }}>{formatCurrency(payslip.diligence_bonus)}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                      </tr>
+                    )}
 
-                  {/* Deductions: Insurance */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ef4444' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <HelpCircle size={15} />
-                      {t('Khấu trừ Bảo hiểm (BHXH, BHYT, BHTN)')}
-                    </span>
-                    <span>-{formatCurrency(Number(payslip.insurance_bhxh || 0) + Number(payslip.insurance_bhyt || 0) + Number(payslip.insurance_bhtn || 0))}</span>
-                  </div>
+                    {/* Allowance */}
+                    {Number(payslip.allowance_total || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Phụ cấp (Ăn trưa, Xăng xe, Điện thoại)')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(payslip.allowance_total)}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                      </tr>
+                    )}
 
-                  {/* Deductions: Lateness */}
-                  {payslip.lateness_penalty > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ef4444' }}>
-                      <span>{t('Phạt đi trễ (Chưa nộp phép/chưa duyệt)')}</span>
-                      <span>-{formatCurrency(payslip.lateness_penalty)}</span>
-                    </div>
-                  )}
+                    {/* Insurance Deduction */}
+                    {(Number(payslip.insurance_bhxh || 0) + Number(payslip.insurance_bhyt || 0) + Number(payslip.insurance_bhtn || 0)) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Khấu trừ Bảo hiểm (BHXH, BHYT, BHTN)')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{payslip.has_insurance === 1 ? t('Có tham gia') : t('Không')}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>-{formatCurrency(Number(payslip.insurance_bhxh || 0) + Number(payslip.insurance_bhyt || 0) + Number(payslip.insurance_bhtn || 0))}</td>
+                      </tr>
+                    )}
 
-                  {/* Deductions: PIT Tax */}
-                  {payslip.tax_pit > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ef4444' }}>
-                      <span>{t('Khấu trừ Thuế Thu nhập Cá nhân (PIT)')}</span>
-                      <span>-{formatCurrency(payslip.tax_pit)}</span>
-                    </div>
-                  )}
+                    {/* Lateness Penalty */}
+                    {Number(payslip.lateness_penalty || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Khấu trừ đi trễ')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>{payslip.lateness_minutes} {t('phút')}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>-{formatCurrency(payslip.lateness_penalty)}</td>
+                      </tr>
+                    )}
 
-                  {/* Deductions: Advances */}
-                  {payslip.advance_deduction > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#ef4444' }}>
-                      <span>{t('Khấu trừ tạm ứng lương')}</span>
-                      <span>-{formatCurrency(payslip.advance_deduction)}</span>
-                    </div>
-                  )}
+                    {/* Tax PIT */}
+                    {Number(payslip.tax_pit || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Thuế Thu nhập Cá nhân (PIT)')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>-{formatCurrency(payslip.tax_pit)}</td>
+                      </tr>
+                    )}
 
-                  {/* Total footer */}
-                  <div style={{
-                    marginTop: '1.5rem',
-                    borderTop: '2px double var(--color-border)',
-                    paddingTop: '1rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <strong style={{ fontSize: '1.1rem' }}>{t('THỰC LĨNH CHUYỂN KHOẢN (NET PAY)')}</strong>
-                    <strong style={{ fontSize: '1.4rem', color: 'var(--color-primary)' }}>{formatCurrency(payslip.net_salary)}</strong>
-                  </div>
+                    {/* Advance Deduction */}
+                    {Number(payslip.advance_deduction || 0) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{t('Khấu trừ tạm ứng')}</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: 'var(--color-text-light)' }}>—</td>
+                        <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>-{formatCurrency(payslip.advance_deduction)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+
+                {/* Total Footer */}
+                <div style={{
+                  marginTop: '1.5rem',
+                  borderTop: '2px double var(--color-border)',
+                  paddingTop: '1.25rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <strong style={{ fontSize: '1rem', textTransform: 'uppercase' }}>{t('THỰC LĨNH CHUYỂN KHOẢN (NET PAY)')}</strong>
+                  <strong style={{ fontSize: '1.5rem', color: 'var(--color-primary)' }}>{formatCurrency(payslip.net_salary)}</strong>
                 </div>
 
                 {/* Signature View (If confirmed) */}
                 {payslip.status === 'confirmed' && payslip.signature_url && (
-                  <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <div style={{ marginTop: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', marginBottom: 4 }}>
                       {t('Đã xác nhận & ký nhận online')}
                     </span>

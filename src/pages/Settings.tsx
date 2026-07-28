@@ -210,6 +210,7 @@ const SettingsInner = () => {
       items: [
         { value: 'ai_assistant', label: t('Trợ lý AI (Gemini)'), icon: <Zap size={15} /> },
         { value: 'workflow_templates', label: t('Mẫu Quy trình'), icon: <FileText size={15} /> },
+        { value: 'company_info', label: t('Thông tin Công ty'), icon: <Briefcase size={15} /> },
         { value: 'database_maintenance', label: t('Bảo trì Database'), icon: <Database size={15} /> },
         { value: 'database_erd', label: t('Sơ đồ ERD trực quan'), icon: <Activity size={15} /> }
       ]
@@ -309,6 +310,13 @@ const SettingsInner = () => {
   // States for Gemini API Connection
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
+
+  // Company Information States
+  const [companyName, setCompanyName] = useState('CÔNG TY CỔ PHẦN CÔNG NGHỆ IDEAS');
+  const [companyAddress, setCompanyAddress] = useState('Tòa nhà IDEAS, 123 Đường Láng, Đống Đa, Hà Nội');
+  const [companyPhone, setCompanyPhone] = useState('024 1234 5678');
+  const [companyTaxId, setCompanyTaxId] = useState('0101234567');
+  const [companyLogoUrl, setCompanyLogoUrl] = useState('');
 
   // AI Screener Config
   const [aiScreenerEnabled, setAiScreenerEnabled] = useState(false);
@@ -815,6 +823,12 @@ const SettingsInner = () => {
         if (json.data.zalo_monthly_report_time) setZaloMonthlyReportTime(json.data.zalo_monthly_report_time);
         if (json.data.fallback_round_id) setFallbackRoundId(json.data.fallback_round_id);
         if (json.data.fallback_type) setFallbackType(json.data.fallback_type);
+
+        if (json.data.company_name) setCompanyName(json.data.company_name);
+        if (json.data.company_address) setCompanyAddress(json.data.company_address);
+        if (json.data.company_phone) setCompanyPhone(json.data.company_phone);
+        if (json.data.company_tax_id) setCompanyTaxId(json.data.company_tax_id);
+        if (json.data.company_logo_url) setCompanyLogoUrl(json.data.company_logo_url);
         if (json.data.fallback_admin_id) setFallbackAdminId(json.data.fallback_admin_id);
         if (json.data.fallback_cc_email) setFallbackCcEmail(json.data.fallback_cc_email);
         if (json.data.global_exclusion_keys) setExclusionKeys(json.data.global_exclusion_keys);
@@ -1481,7 +1495,12 @@ const SettingsInner = () => {
        ai_screener_manual_action: aiScreenerManualAction,
       ai_screener_manual_rules: aiScreenerManualRules,
       approval_matrix_config: JSON.stringify(approvalMatrixConfig),
-      lead_scoring_rules: JSON.stringify(leadScoringRules)
+      lead_scoring_rules: JSON.stringify(leadScoringRules),
+      company_name: companyName,
+      company_address: companyAddress,
+      company_phone: companyPhone,
+      company_tax_id: companyTaxId,
+      company_logo_url: companyLogoUrl
     };
 
     Object.keys(securityTimers).forEach(statusSlug => {
@@ -1507,7 +1526,8 @@ const SettingsInner = () => {
         capi_settings: 'Cài đặt CAPI',
         gemini_ai: 'Cấu hình Gemini AI',
         approval_matrix: 'Ma trận phê duyệt',
-        lead_scoring: 'Quy tắc Lead Scoring'
+        lead_scoring: 'Quy tắc Lead Scoring',
+        company_info: 'Thông tin Công ty'
       };
       const currentTabLabel = tabLabels[activeTab] || 'Cài đặt hệ thống';
 
@@ -1530,7 +1550,8 @@ const SettingsInner = () => {
         security_timers: 'Đồng hồ bảo mật',
         capi_settings: 'Cài đặt CAPI',
         gemini_ai: 'Cấu hình Gemini AI',
-        approval_matrix: 'Ma trận phê duyệt'
+        approval_matrix: 'Ma trận phê duyệt',
+        company_info: 'Thông tin Công ty'
       };
       const currentTabLabel = tabLabels[activeTab] || 'Cài đặt hệ thống';
       toast.error(t('Không thể kết nối đến máy chủ để lưu cấu hình "{tabName}": ').replace('{tabName}', currentTabLabel) + (err.message || ''));
@@ -2970,6 +2991,85 @@ const SettingsInner = () => {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* ===== TAB: COMPANY INFORMATION ===== */}
+            <div style={{ display: activeTab === 'company_info' ? 'block' : 'none' }} className="subtab-enter-active">
+              <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                    {t('Thông tin cấu hình Doanh nghiệp')}
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                    {t('Cấu hình các thông tin chính thức của công ty để tự động in lên tiêu đề phiếu lương, phiếu thưởng của nhân sự.')}
+                  </p>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1.5rem' }}>
+                  <div>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Tên doanh nghiệp / Công ty')}</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={companyName}
+                      onChange={e => setCompanyName(e.target.value)}
+                      placeholder={t('Nhập tên đầy đủ (Ví dụ: CÔNG TY CỔ PHẦN CÔNG NGHỆ IDEAS)')}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Mã số thuế (Tax Code)')}</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={companyTaxId}
+                      onChange={e => setCompanyTaxId(e.target.value)}
+                      placeholder={t('Ví dụ: 0101234567')}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Số điện thoại liên hệ')}</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={companyPhone}
+                      onChange={e => setCompanyPhone(e.target.value)}
+                      placeholder={t('Ví dụ: 024 1234 5678')}
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Đường dẫn Logo (URL Logo)')}</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={companyLogoUrl}
+                      onChange={e => setCompanyLogoUrl(e.target.value)}
+                      placeholder={t('https://example.com/logo.png')}
+                    />
+                  </div>
+                  <div style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>{t('Địa chỉ trụ sở chính')}</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={companyAddress}
+                      onChange={e => setCompanyAddress(e.target.value)}
+                      placeholder={t('Số nhà, tên đường, quận/huyện, tỉnh/thành phố...')}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', borderTop: '1px solid var(--color-border-light)', paddingTop: '1.5rem' }}>
+                  <button 
+                    onClick={saveSettings} 
+                    disabled={saving} 
+                    className="btn primary" 
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <Save size={15} />
+                    {saving ? t('Đang lưu...') : t('Lưu cấu hình công ty')}
+                  </button>
+                </div>
               </div>
             </div>
 
