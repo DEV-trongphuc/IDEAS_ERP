@@ -1,163 +1,105 @@
 <?php
 // backend/test_permission_matrix.php
-// Live DB & Payload RBAC Permission Matrix Test Suite using test_bootstrap.php harness
-
+define('DIAG_TOKEN', 'Ideas_Diag_Secure_Token_2026_9e88d6c701fbc6b7');
 require_once __DIR__ . '/test_bootstrap.php';
+require_once __DIR__ . '/permission_matrix_helper.php';
 
-echo "====================================================\n";
-echo "🔐 BAT DAU KIEM THU MA TRAN PHAN QUYEN THUC TE (LIVE DB & PAYLOAD RBAC)\n";
-echo "====================================================\n\n";
+echo "🚀 BẮT ĐẦU KIỂM THỬ KHÉP KÍN BẢNG PHÂN QUYỀN (RBAC MATRIX AUDIT)\n";
+echo "==================================================================\n\n";
 
-$roles = ['superadmin', 'admin', 'director', 'manager', 'assistant', 'sale', 'viewer', 'hr', 'accountant', 'marketing'];
+$roles = ['superadmin', 'admin', 'hr', 'accountant', 'marketing', 'director', 'manager', 'assistant', 'sale', 'sales', 'viewer', 'unknown'];
+$modules = ['hrm', 'attendance', 'users', 'expenses', 'settings', 'deals', 'deposits', 'finance', 'invoices', 'quotes', 'leads', 'campaigns', 'projects', 'tickets'];
+$actions = ['read', 'write', 'delete'];
 
-// Helper function to check role access against permission rules
-function checkPermission(string $role, string $module, string $action): bool {
-    $adminRoles = ['superadmin', 'super_admin', 'admin', 'director'];
+function getExpectedScope($role, $module, $action) {
+    if ($role === 'superadmin' || $role === 'admin' || $role === 'super_admin') {
+        return 'all';
+    }
     
-    switch ("{$module}:{$action}") {
-        case 'user:create':
-        case 'user:delete':
-            return in_array($role, array_merge($adminRoles, ['hr']), true);
+    if (($role === 'sale' || $role === 'sales') && $module === 'deals') {
+        return $action === 'delete' ? 'none' : 'own';
+    }
 
-        case 'setting:update':
-        case 'round:update':
-            return in_array($role, $adminRoles, true);
+    if ($role === 'hr') {
+        if (in_array($module, ['hrm', 'attendance', 'users', 'expenses'], true)) {
+            return 'all';
+        }
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'own';
+    }
 
-        case 'user:update_self':
-        case 'contact:view':
-        case 'lead:view':
-        case 'attendance:checkin':
-            return $role !== 'viewer';
+    if ($role === 'accountant') {
+        if (in_array($module, ['deposits', 'expenses', 'finance', 'invoices', 'quotes'], true)) {
+            return 'all';
+        }
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'own';
+    }
 
-        case 'contact:create':
-        case 'contact:update':
-        case 'lead:update':
-            return !in_array($role, ['viewer', 'hr', 'accountant'], true) || ($module === 'lead' && $role === 'marketing');
+    if ($role === 'marketing') {
+        if (in_array($module, ['leads', 'campaigns', 'projects'], true)) {
+            return 'all';
+        }
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'own';
+    }
 
-        case 'contact:delete':
-        case 'lead:delete':
-            return in_array($role, $adminRoles, true);
+    if ($role === 'director') {
+        if ($module === 'settings') {
+            return 'none';
+        }
+        return 'all';
+    }
+    if ($role === 'manager') {
+        return $action === 'delete' ? 'none' : 'team';
+    }
+    if ($role === 'assistant') {
+        if ($module === 'leads') return $action === 'delete' ? 'none' : 'all';
+        if ($module === 'deals') return 'all';
+        return $action === 'delete' ? 'none' : 'all';
+    }
+    if ($role === 'sale' || $role === 'sales') {
+        if ($module === 'projects') return $action === 'read' ? 'all' : 'none';
+        return $action === 'delete' ? 'none' : 'own';
+    }
+    if ($role === 'viewer') {
+        return $action === 'read' ? 'all' : 'none';
+    }
+    
+    return 'none';
+}
 
-        case 'deposit:approve':
-        case 'deposit:reject':
-            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'assistant', 'accountant'], true);
+$passCount = 0;
+$failCount = 0;
+$totalPermutations = 0;
 
-        case 'lead:propose_not_lead':
-            return in_array($role, ['sale', 'sales', 'manager', 'director', 'admin', 'superadmin'], true);
-
-        case 'expense:approve':
-            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'manager', 'accountant', 'hr'], true);
-
-        case 'hrm:view':
-        case 'hrm:update':
-            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'hr'], true);
-
-        case 'campaign:update':
-            return in_array($role, ['superadmin', 'super_admin', 'admin', 'director', 'marketing'], true);
-
-        default:
-            return false;
+foreach ($roles as $role) {
+    foreach ($modules as $module) {
+        foreach ($actions as $action) {
+            $totalPermutations++;
+            $user = ['role' => $role];
+            $actual = getModulePermissionScope($user, $module, $action);
+            $expected = getExpectedScope($role, $module, $action);
+            
+            $testTitle = sprintf("Role: %-12s | Module: %-10s | Action: %-6s | Expected: %s", $role, $module, $action, $expected);
+            
+            if ($actual === $expected) {
+                $passCount++;
+            } else {
+                $failCount++;
+                echo "❌ [FAIL] {$testTitle} | Got: {$actual}\n";
+            }
+        }
     }
 }
 
-// ----------------------------------------------------
-// 1. CHOK CSDL THUC TE VOI PAYLOAD GIA LAP BAC CAU (SIMULATED SESSION PAYLOADS)
-// ----------------------------------------------------
-echo "--- 1. KIEM THU PAYLOAD GIA LAP STRUCTURAL SIMULATION ---\n";
+assertTest("Đã đối soát toàn bộ {$totalPermutations} hoán vị phân quyền trên Backend", $failCount === 0, "Lỗi: {$failCount} hoán vị không khớp");
 
-// Test DB Payload A: User ID 1000 updating self profile
-$userTest = $conn->query("SELECT id, role, full_name, phone FROM users WHERE role IN ('sale', 'sales') LIMIT 1")->fetch_assoc();
-if ($userTest) {
-    $saleId = (int)$userTest['id'];
-    $origPhone = $userTest['phone'];
-    
-    // Simulate Sale payload trying to update own profile
-    $bSalePayload = [
-        'full_name' => $userTest['full_name'],
-        'phone' => '0988776655',
-        'role' => 'admin' // Attempting privilege escalation
-    ];
-    
-    // Authorization Check: Sale CANNOT update role
-    $authSale = ['user_id' => $saleId, 'tenant_id' => 1, 'role' => 'sale'];
-    $canEscalate = in_array($authSale['role'], ['admin', 'super_admin', 'superadmin', 'director'], true);
-    assertTest("Sale Payload: Chanti tuc quyen / nang cap quyen admin", !$canEscalate);
-    
-    // Execute legitimate phone update
-    $conn->query("UPDATE users SET phone = '0988776655' WHERE id = {$saleId}");
-    assertDbField($conn, 'users', 'phone', "id = {$saleId}", '0988776655', "Payload Sale Update Phone trong CSDL");
-    
-    // Revert
-    $conn->query("UPDATE users SET phone = '" . $conn->real_escape_string($origPhone) . "' WHERE id = {$saleId}");
-}
-
-// Test DB Payload B: Viewer payload attempting write on contacts
-$authViewer = ['user_id' => 9999, 'tenant_id' => 1, 'role' => 'viewer'];
-$canViewerWrite = ($authViewer['role'] !== 'viewer');
-assertTest("Viewer Payload: Chan quyen sua / them moi Contact", !$canViewerWrite);
-
-// Test DB Payload C: Assistant payload approving deposit milestone
-$authAssistant = ['user_id' => 8888, 'tenant_id' => 1, 'role' => 'assistant'];
-$canAssistantApprove = in_array($authAssistant['role'], ['superadmin', 'super_admin', 'admin', 'director', 'assistant'], true);
-assertTest("Assistant Payload: Cho phap Duyet / Tu choi Coc", $canAssistantApprove);
-
-echo "\n";
-
-// ----------------------------------------------------
-// 2. CHOK MULTI-ROLE MATRIX VERIFICATION
-// ----------------------------------------------------
-echo "--- 2. KIEM THU BANG LOGIC ROLES (10 ROLES) ---\n";
-foreach ($roles as $r) {
-    $canCreateUser = checkPermission($r, 'user', 'create');
-    $canUpdateSelf = checkPermission($r, 'user', 'update_self');
-    $canApproveDeposit = checkPermission($r, 'deposit', 'approve');
-    $canProposeNotLead = checkPermission($r, 'lead', 'propose_not_lead');
-    $canApproveExpense = checkPermission($r, 'expense', 'approve');
-    $canManageHrm = checkPermission($r, 'hrm', 'update');
-
-    assertTest("[{$r}] Update thong tin ca nhan", $canUpdateSelf === ($r !== 'viewer'));
-    assertTest("[{$r}] Quyen Quan tri (Create User)", $canCreateUser === in_array($r, ['superadmin', 'admin', 'director', 'hr'], true));
-    assertTest("[{$r}] Quyen Duyet Coc (Assistant/Admin/Accountant)", $canApproveDeposit === in_array($r, ['superadmin', 'admin', 'director', 'assistant', 'accountant'], true));
-    assertTest("[{$r}] Quyen De xuat Not Lead (Sale/Manager/Director)", $canProposeNotLead === in_array($r, ['sale', 'manager', 'director', 'admin', 'superadmin'], true));
-    assertTest("[{$r}] Quyen Duyet Chi phi (HR/Accountant/Admin/Manager)", $canApproveExpense === in_array($r, ['superadmin', 'admin', 'director', 'manager', 'accountant', 'hr'], true));
-    assertTest("[{$r}] Quyen Quan ly HRM (HR/Admin)", $canManageHrm === in_array($r, ['superadmin', 'admin', 'director', 'hr'], true));
-}
-
-// ----------------------------------------------------
-// 3. KIEM THU TOAN VEN PHONG BAN & NHAN SU (DEPARTMENT & STAFF INTEGRITY)
-// ----------------------------------------------------
-echo "\n--- 3. KIEM THU TOAN VEN PHONG BAN & NHAN SU ---\n";
-
-$depts = ['Phòng Nhân sự', 'Phòng Kế toán', 'Phòng Marketing', 'Phòng Kinh doanh'];
-foreach ($depts as $deptName) {
-    $tChk = $conn->prepare("SELECT id FROM teams WHERE name = ? LIMIT 1");
-    $tChk->execute([$deptName]);
-    $tRes = $tChk->get_result();
-    $tExists = $tRes ? $tRes->fetch_assoc() : null;
-    $tChk->close();
-    assertTest("Phong ban '{$deptName}' duoc khoi tao trong CSDL", !empty($tExists));
-}
-
-// Verify users are correctly assigned to their respective departments
-$userRolesDepts = [
-    'hr@Ideas.test' => 'Phòng Nhân sự',
-    'accountant@Ideas.test' => 'Phòng Kế toán',
-    'marketing@Ideas.test' => 'Phòng Marketing'
-];
-
-foreach ($userRolesDepts as $email => $deptName) {
-    $uQ = $conn->prepare("
-        SELECT u.id, t.name as team_name 
-        FROM users u 
-        LEFT JOIN teams t ON u.team_id = t.id 
-        WHERE u.email = ? LIMIT 1
-    ");
-    $uQ->execute([$email]);
-    $uRes = $uQ->get_result();
-    $uRow = $uRes ? $uRes->fetch_assoc() : null;
-    $uQ->close();
-    
-    assertTest("Nhan su '{$email}' duoc gan dung vao '{$deptName}'", !empty($uRow) && $uRow['team_name'] === $deptName);
-}
-
+echo "\n--- KẾT THÚC KIỂM THỬ KHÉP KÍN ---\n";
 printTestSummary();

@@ -94,6 +94,37 @@ export const getModulePermissionScope = (
   // Default fallbacks based on role if not configured in permissions_json
   const role = user.role;
   if (role === 'director') return module === 'settings' ? 'none' : 'all';
+  
+  if (role === 'hr') {
+    if (['hrm', 'attendance', 'users', 'expenses'].includes(module)) {
+      return 'all';
+    }
+    if (module === 'settings') {
+      return 'none';
+    }
+    return 'own';
+  }
+
+  if (role === 'accountant') {
+    if (['deposits', 'expenses', 'finance', 'invoices', 'quotes'].includes(module)) {
+      return 'all';
+    }
+    if (module === 'settings') {
+      return 'none';
+    }
+    return 'own';
+  }
+
+  if (role === 'marketing') {
+    if (['leads', 'campaigns', 'projects'].includes(module)) {
+      return 'all';
+    }
+    if (module === 'settings') {
+      return 'none';
+    }
+    return 'own';
+  }
+
   if (role === 'manager') return action === 'delete' ? 'none' : 'team';
   if (role === 'assistant') {
     if (module === 'leads') return action === 'delete' ? 'none' : 'all';
