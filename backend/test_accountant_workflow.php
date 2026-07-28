@@ -34,8 +34,8 @@ assertTest("Tạo thành công phiếu cọc (Deposit)", $depositId > 0, "Deposi
 
 // Tạo đợt thanh toán (Milestone)
 $conn->query("
-    INSERT INTO deposit_milestones (deposit_id, name, amount, due_date, status, created_at)
-    VALUES ({$depositId}, 'Đợt 1 - Cọc giữ chỗ', 50000000.00, CURDATE(), 'pending', NOW())
+    INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, status, created_at)
+    VALUES ({$depositId}, 'Đợt 1 - Cọc giữ chỗ', 50000000.00, 'pending', NOW())
 ");
 $milestoneId = $conn->insert_id;
 assertTest("Tạo thành công đợt thanh toán (Milestone)", $milestoneId > 0, "Milestone ID: " . $milestoneId);
