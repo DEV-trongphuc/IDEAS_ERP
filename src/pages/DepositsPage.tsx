@@ -1,4 +1,5 @@
 import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import { compressToWebP } from '../utils/imageCompress';
 import { useAuth } from '../contexts/AuthContext';
@@ -1911,41 +1912,43 @@ export default function DepositsPage() {
       </CustomModal>
 
       {/* Manage Milestones Drawer (Wide dual-pane layout) */}
-      <AnimatePresence>
-        {showManageModal && selectedDepForManage && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000300, display: 'flex', justifyContent: 'flex-end' }}>
-            {/* Overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowManageModal(false)}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: 'rgba(15, 23, 42, 0.4)',
-                backdropFilter: 'blur(4px)',
-                zIndex: 1000300
-              }}
-            />
-            {/* Drawer panel */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              style={{
-                position: 'relative',
-                width: 'calc(100% - 260px)',
-                maxWidth: 'none',
-                height: '100%',
-                backgroundColor: 'var(--color-surface)',
-                boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                zIndex: 1000400
-              }}
-            >
+      {createPortal(
+        <AnimatePresence>
+          {showManageModal && selectedDepForManage && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 1000000, display: 'flex', justifyContent: 'flex-end' }}>
+              {/* Overlay */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowManageModal(false)}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                  backdropFilter: 'blur(4px)',
+                  zIndex: 1000005
+                }}
+              />
+              {/* Drawer panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  bottom: 0,
+                  left: 'var(--sidebar-width, 220px)',
+                  right: 0,
+                  backgroundColor: 'var(--color-surface)',
+                  boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  zIndex: 1000010
+                }}
+              >
               {/* Header */}
               <div style={{
                 display: 'flex',
@@ -2663,28 +2666,6 @@ export default function DepositsPage() {
                   {/* Tabs */}
                   <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-light)', padding: '0 8px' }}>
                     <button
-                      onClick={() => setActiveDrawerTab('comments')}
-                      style={{
-                        flex: 1,
-                        padding: '14px 10px',
-                        border: 'none',
-                        background: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        color: activeDrawerTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                        borderBottom: activeDrawerTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <MessageSquare size={14} />
-                      Thảo luận ({comments.length})
-                    </button>
-                    <button
                       onClick={() => setActiveDrawerTab('history')}
                       style={{
                         flex: 1,
@@ -2705,6 +2686,28 @@ export default function DepositsPage() {
                     >
                       <Clock size={14} />
                       Lịch sử ({historyLogs.length})
+                    </button>
+                    <button
+                      onClick={() => setActiveDrawerTab('comments')}
+                      style={{
+                        flex: 1,
+                        padding: '14px 10px',
+                        border: 'none',
+                        background: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: activeDrawerTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        borderBottom: activeDrawerTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <MessageSquare size={14} />
+                      Thảo luận ({comments.length})
                     </button>
                   </div>
 
@@ -2877,7 +2880,9 @@ export default function DepositsPage() {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
 
       {showContactDrawer && selectedContact && (
         <Suspense fallback={null}>
