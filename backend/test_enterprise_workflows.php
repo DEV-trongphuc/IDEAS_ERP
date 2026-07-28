@@ -19,14 +19,15 @@ $accountantId = 100014; // Kế toán thực tế
 // ----------------------------------------------------------------
 echo "--- 1. Kiểm thử quy trình Đơn Nhập Hàng (PO) ---\n";
 
-// Lấy một nhà cung cấp và sản phẩm thực tế từ Database
-$supQuery = $conn->query("SELECT id FROM suppliers WHERE tenant_id = {$tenantId} LIMIT 1");
-$supplierId = $supQuery && $supQuery->num_rows > 0 ? (int)$supQuery->fetch_assoc()['id'] : 1;
+// Khởi tạo Nhà cung cấp và Sản phẩm giả lập
+$conn->query("INSERT INTO suppliers (tenant_id, created_by, name) VALUES ({$tenantId}, {$adminId}, 'Nhà cung cấp thử nghiệm PO')");
+$supplierId = $conn->insert_id;
+assertTest("Mock nhà cung cấp thành công", $supplierId > 0, "Supplier ID: {$supplierId}");
 
-$prodQuery = $conn->query("SELECT id, stock_quantity FROM products WHERE tenant_id = {$tenantId} LIMIT 1");
-$prod = $prodQuery->fetch_assoc();
-$productId = (int)$prod['id'];
-$initialStock = (float)$prod['stock_quantity'];
+$conn->query("INSERT INTO products (tenant_id, created_by, name, price, cost, stock_quantity) VALUES ({$tenantId}, {$adminId}, 'Sản phẩm thử nghiệm PO', 15000.00, 10000.00, 100.00)");
+$productId = $conn->insert_id;
+$initialStock = 100.00;
+assertTest("Mock sản phẩm thành công", $productId > 0, "Product ID: {$productId}");
 
 // Tạo PO giả định
 $poNumber = 'PO-TEST-' . time();
@@ -125,8 +126,9 @@ $conn->query("DELETE FROM batches WHERE po_id = {$poId}");
 $conn->query("DELETE FROM purchase_order_items WHERE po_id = {$poId}");
 $conn->query("DELETE FROM purchase_orders WHERE id = {$poId}");
 
-// Giảm tồn kho sản phẩm về ban đầu
-$conn->query("UPDATE products SET stock_quantity = {$initialStock} WHERE id = {$productId}");
+// Xóa sản phẩm và nhà cung cấp giả lập
+$conn->query("DELETE FROM products WHERE id = {$productId}");
+$conn->query("DELETE FROM suppliers WHERE id = {$supplierId}");
 
 // Xóa dữ liệu mention test
 $conn->query("DELETE FROM notifications WHERE id = {$notifId}");
