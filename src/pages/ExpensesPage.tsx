@@ -1530,11 +1530,13 @@ export const ExpensesPage: React.FC = () => {
                       return null;
                     })()}
 
-                    {/* Notes / Ghi chú (excluding bank information) */}
+                    {/* Notes / Ghi chú (excluding bank and advanced config information) */}
                     {(() => {
                       let cleanNotes = viewItem.notes || '';
                       const bankRegex = /\[Thông tin chuyển khoản\]:[^\n]*/;
-                      cleanNotes = cleanNotes.replace(bankRegex, '').trim();
+                      const installmentRegex = /\[Thanh toán theo đợt\]:[^\n]*/;
+                      const recurringRegex = /\[Lặp lại định kỳ\]:[^\n]*/;
+                      cleanNotes = cleanNotes.replace(bankRegex, '').replace(installmentRegex, '').replace(recurringRegex, '').trim();
                       if (cleanNotes) {
                         return (
                           <div style={{ 
@@ -1553,6 +1555,65 @@ export const ExpensesPage: React.FC = () => {
                         );
                       }
                       return null;
+                    })()}
+
+                    {/* Advanced Configuration (Installments & Recurring) */}
+                    {(() => {
+                      const rawNotes = viewItem.notes || '';
+                      const hasInstallments = rawNotes.includes('[Thanh toán theo đợt]');
+                      const hasRecurring = rawNotes.includes('[Lặp lại định kỳ]');
+                      
+                      let installmentText = '';
+                      if (hasInstallments) {
+                        const match = rawNotes.match(/\[Thanh toán theo đợt\]:\s*(.*)/);
+                        if (match) installmentText = match[1];
+                      }
+
+                      let recurringText = '';
+                      if (hasRecurring) {
+                        const match = rawNotes.match(/\[Lặp lại định kỳ\]:\s*(.*)/);
+                        if (match) recurringText = match[1];
+                      }
+
+                      if (!hasInstallments && !hasRecurring) return null;
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Cấu hình nâng cao
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {hasInstallments && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>Thanh toán chia nhiều đợt (Installment/Phased Payment)</span>
+                                </div>
+                                {installmentText && (
+                                  <div style={{ marginTop: '4px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)', fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: 1.4 }}>
+                                    {installmentText}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {hasRecurring && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }}></div>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>Thiết lập lặp lại tự động (Recurring Proposal)</span>
+                                </div>
+                                {recurringText && (
+                                  <div style={{ marginTop: '4px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)', fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: 1.4 }}>
+                                    {recurringText}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
                     })()}
 
                     {/* Attachments Section */}
