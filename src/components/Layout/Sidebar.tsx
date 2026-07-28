@@ -329,8 +329,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
     if (group.title === 'TỔNG QUAN' && user?.role === 'sale') {
       items = [
         { name: 'Tổng quan', href: '/', icon: LayoutDashboard, end: true },
-        { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-        { name: 'Kho Databank', href: '/databank', icon: Layers, hideForRoles: ['viewer'] }
+        { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' }
       ];
     }
     const getModuleKeyForHref = (href: string): string | null => {

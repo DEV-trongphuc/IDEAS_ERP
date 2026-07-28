@@ -1350,9 +1350,45 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
         {/* Content Panel */}
         <div className={styles.drawerBody} style={{ flex: 1, display: 'flex', overflow: 'hidden', flexDirection: isMobileOrTablet ? 'column' : 'row' }}>
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%', gap: '12px' }}>
-              <Loader2 className="spin" size={32} style={{ color: 'var(--color-primary)' }} />
-              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{t('Đang tải dữ liệu hồ sơ...')}</span>
+            <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', overflow: 'hidden' }}>
+              {/* Sidebar Skeleton (left) */}
+              {!isMobileOrTablet && (
+                <div style={{ width: '240px', borderRight: '1px solid var(--color-border)', padding: '1.5rem 1rem', background: 'var(--color-surface)', height: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* Avatar & Name Skeleton */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                    <div style={{ width: '120px', height: '16px', borderRadius: '4px', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                    <div style={{ width: '80px', height: '12px', borderRadius: '4px', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                  </div>
+                  {/* Vertical Tab Items Skeletons */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '1rem' }}>
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px' }}>
+                        <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                        <div style={{ width: i % 2 === 0 ? '110px' : '80px', height: '14px', borderRadius: '4px', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Content Skeleton (right) */}
+              <div style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto' }}>
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* Title */}
+                  <div style={{ width: '200px', height: '20px', borderRadius: '4px', background: 'var(--color-border-light)', marginBottom: '0.5rem' }} className="animate-pulse" />
+                  
+                  {/* Grid Fields */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ width: '80px', height: '12px', borderRadius: '4px', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                        <div style={{ width: '100%', height: '38px', borderRadius: '8px', background: 'var(--color-border-light)' }} className="animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <>

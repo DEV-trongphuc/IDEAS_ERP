@@ -81,8 +81,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     if (group.title === 'TỔNG QUAN' && user?.role === 'sale') {
       items = [
         { name: 'Tổng quan', href: '/', icon: Home, end: true },
-        { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-        { name: 'Kho Databank', href: '/databank', icon: Database, hideForRoles: ['viewer'] }
+        { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' }
       ];
     }
     const filteredItems = items.filter((item: any) => {
@@ -2234,14 +2233,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           <span className="mobile-bottom-nav-item-label">{t('Khách hàng')}</span>
         </button>
 
-        {/* 4. Kho data */}
-        <button 
-          className={`mobile-bottom-nav-item ${location.pathname === '/databank' ? 'active' : ''}`}
-          onClick={() => navigate('/databank')}
-        >
-          <Database size={20} />
-          <span className="mobile-bottom-nav-item-label">{t('Kho databank')}</span>
-        </button>
 
         {/* 5. Tôi */}
         <button 
