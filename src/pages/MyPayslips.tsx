@@ -391,6 +391,21 @@ export default function MyPayslips() {
   const currentYear = new Date().getFullYear();
   const years = [currentYear, currentYear - 1, currentYear - 2];
 
+  // Calculate year-to-date payroll stats
+  const yearPrefix = `${selectedYear}-`;
+  const payslipsForSelectedYear = allPayslips.filter(p => p.month_year.startsWith(yearPrefix));
+
+  const totalNet = payslipsForSelectedYear.reduce((sum, p) => sum + Number(p.net_salary || 0), 0);
+  const avgNet = payslipsForSelectedYear.length > 0 ? totalNet / payslipsForSelectedYear.length : 0;
+  
+  const totalInsurance = payslipsForSelectedYear.reduce((sum, p) => 
+    sum + Number(p.insurance_bhxh || 0) + Number(p.insurance_bhyt || 0) + Number(p.insurance_bhtn || 0), 0);
+    
+  const totalBonus = payslipsForSelectedYear.reduce((sum, p) => 
+    sum + Number(p.kpi_bonus || 0) + Number(p.diligence_bonus || 0) + Number(p.overtime_salary || 0), 0);
+    
+  const totalTax = payslipsForSelectedYear.reduce((sum, p) => sum + Number(p.tax_pit || 0), 0);
+
   return (
     <div>
       
@@ -448,6 +463,83 @@ export default function MyPayslips() {
       {/* TAB 1: PAYSLIP */}
       {activeSubTab === 'payslip' && (
         <div>
+          {/* Stat Cards Grid (4 columns) */}
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(4, 1fr)', 
+              gap: '16px', 
+              marginBottom: '2rem' 
+            }} 
+            className="no-print"
+          >
+            {/* Stat Card 1: Tổng Thực Nhận */}
+            <div style={{
+              background: 'var(--color-surface, #ffffff)',
+              border: '1px solid var(--color-border, #e2e8f0)',
+              borderRadius: '16px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Tổng Thực Nhận')}</span>
+              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text, #1e293b)' }}>{formatCurrency(totalNet)}</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>
+                {t('Trung bình')}: <strong style={{ color: 'var(--color-primary, #3b82f6)' }}>{formatCurrency(avgNet)}</strong> / {t('tháng')}
+              </span>
+            </div>
+
+            {/* Stat Card 2: Tổng Bảo Hiểm */}
+            <div style={{
+              background: 'var(--color-surface, #ffffff)',
+              border: '1px solid var(--color-border, #e2e8f0)',
+              borderRadius: '16px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Bảo Hiểm Đã Khấu Trừ')}</span>
+              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{formatCurrency(totalInsurance)}</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>{t('Gồm BHXH, BHYT & BHTN')}</span>
+            </div>
+
+            {/* Stat Card 3: Tổng Thưởng */}
+            <div style={{
+              background: 'var(--color-surface, #ffffff)',
+              border: '1px solid var(--color-border, #e2e8f0)',
+              borderRadius: '16px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Tổng Tiền Thưởng')}</span>
+              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{formatCurrency(totalBonus)}</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>{t('KPI, chuyên cần & tăng ca')}</span>
+            </div>
+
+            {/* Stat Card 4: Tổng Thuế TNCN */}
+            <div style={{
+              background: 'var(--color-surface, #ffffff)',
+              border: '1px solid var(--color-border, #e2e8f0)',
+              borderRadius: '16px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)' }}>{t('Thuế TNCN Đã Đóng')}</span>
+              <strong style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>{formatCurrency(totalTax)}</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #64748b)' }}>{t('Đã khấu trừ năm')} {selectedYear}</span>
+            </div>
+          </div>
+
           {/* 12-Month Cards Layout (4 cards per row) */}
           <div 
             style={{ 
