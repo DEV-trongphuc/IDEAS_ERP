@@ -1289,6 +1289,39 @@ export const ExpensesPage: React.FC = () => {
                     </h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Approve / Reject Actions on top right if user is authorized and status is pending */}
+                    {viewItem.status === 'pending' && (
+                      ['admin', 'superadmin', 'super_admin', 'director', 'hr', 'accountant'].includes(String(user?.role).toLowerCase()) || 
+                      (viewItem.approver_id && Number(viewItem.approver_id) === Number(user?.id))
+                    ) && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn danger sm" 
+                          style={{ background: 'var(--color-danger)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, height: '32px', fontSize: '0.8rem', padding: '0 12px', borderRadius: '6px', cursor: 'pointer' }} 
+                          onClick={() => setRejectingItem(viewItem)}
+                        >
+                          <XCircle size={14} /> Từ chối
+                        </button>
+                        <button 
+                          className="btn success sm" 
+                          style={{ background: 'var(--color-success)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, height: '32px', fontSize: '0.8rem', padding: '0 12px', borderRadius: '6px', cursor: 'pointer' }} 
+                          onClick={async () => {
+                            try {
+                              await api.patch(`/expenses/${viewItem.id}`, { status: 'approved' });
+                              setItems(prev => prev.map(e => e.id === viewItem.id ? {...e, status: 'approved'} : e));
+                              addToast('Đã phê duyệt chi phí', 'success');
+                              setViewItem(null);
+                              fetchExpenses();
+                              window.dispatchEvent(new Event('refresh-pending-counts'));
+                            } catch (e: any) {
+                              addToast('Lỗi khi phê duyệt chi phí', 'error');
+                            }
+                          }}
+                        >
+                          <CheckCircle2 size={14} /> Phê duyệt
+                        </button>
+                      </div>
+                    )}
                     {/* Pencil Edit Action next to status badge */}
                     {viewItem.status !== 'approved' && (
                       <button 
@@ -1509,7 +1542,7 @@ export const ExpensesPage: React.FC = () => {
                             background: 'rgba(245, 158, 11, 0.05)', 
                             border: '1px solid rgba(245, 158, 11, 0.15)',
                             borderLeft: '4px solid #f59e0b', 
-                            borderRadius: '12px', 
+                            borderRadius: '0px', 
                             fontSize: '0.825rem', 
                             color: 'var(--color-warning-dark)',
                             lineHeight: 1.45
