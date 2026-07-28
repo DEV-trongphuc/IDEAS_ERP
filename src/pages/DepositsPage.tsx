@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../store/uiStore';
 import { CustomModal } from '../components/ui/CustomModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
-import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell } from 'lucide-react';
+import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
@@ -2106,19 +2106,6 @@ export default function DepositsPage() {
                               />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              <span style={{ 
-                                fontSize: '0.675rem', 
-                                fontWeight: 700, 
-                                color: 'var(--color-primary)', 
-                                background: 'rgba(189, 29, 45, 0.06)',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                width: 'fit-content',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                              }}>
-                                Học viên / Khách hàng
-                              </span>
                               <h4
                                 onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
                                 style={{
@@ -2158,7 +2145,7 @@ export default function DepositsPage() {
                         <div style={{ height: '1px', background: 'var(--color-border-light)' }} />
 
                         {/* Bottom Row: Caretaker & Financials */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.2fr', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '20px', alignItems: 'center' }}>
                           {/* Left: Caretaker info */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -2181,7 +2168,7 @@ export default function DepositsPage() {
                                     }}
                                   >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
+                                      <Avatar src={sh.avatar} name={sh.name} size="md" style={{ width: '28px', height: '28px' }} />
                                       <span style={{ fontSize: '0.775rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -2211,33 +2198,27 @@ export default function DepositsPage() {
                                 })()}
                               </div>
                             ) : sharesData && sharesData.length > 0 ? (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                                 {sharesData.map((sh, sIdx) => (
                                   <div
                                     key={sIdx}
                                     style={{
                                       display: 'inline-flex',
                                       alignItems: 'center',
-                                      gap: '6px',
-                                      background: 'var(--color-bg-light)',
-                                      border: '1px solid var(--color-border-light)',
-                                      padding: '4px 10px',
-                                      borderRadius: '16px',
-                                      boxShadow: 'var(--shadow-sm)'
+                                      gap: '8px'
                                     }}
                                   >
-                                    <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
-                                    <span style={{
-                                      fontSize: '0.7rem',
-                                      fontWeight: 700,
-                                      background: 'rgba(59, 130, 246, 0.1)',
-                                      color: '#2563eb',
-                                      padding: '1px 5px',
-                                      borderRadius: '8px'
-                                    }}>
-                                      {sh.percentage}%
-                                    </span>
+                                    <Avatar src={sh.avatar} name={sh.name} size="md" style={{ width: '28px', height: '28px' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                      <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
+                                      <span style={{
+                                        fontSize: '0.675rem',
+                                        fontWeight: 700,
+                                        color: '#2563eb'
+                                      }}>
+                                        Đóng góp: {sh.percentage}%
+                                      </span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -2253,17 +2234,11 @@ export default function DepositsPage() {
                                     style={{
                                       display: 'inline-flex',
                                       alignItems: 'center',
-                                      gap: '6px',
-                                      background: 'var(--color-bg-light)',
-                                      border: '1px solid var(--color-border-light)',
-                                      padding: '4px 10px',
-                                      borderRadius: '16px',
-                                      boxShadow: 'var(--shadow-sm)',
-                                      width: 'fit-content'
+                                      gap: '8px'
                                     }}
                                   >
-                                    <Avatar src={ownerAvatar} name={ownerName} size="sm" style={{ width: '20px', height: '20px' }} />
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{ownerName}</span>
+                                    <Avatar src={ownerAvatar} name={ownerName} size="md" style={{ width: '28px', height: '28px' }} />
+                                    <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text)' }}>{ownerName}</span>
                                   </div>
                                 );
                               })()
@@ -2271,84 +2246,102 @@ export default function DepositsPage() {
                           </div>
 
                           {/* Financial Stat Cards */}
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%' }}>
-                            {/* Card 1: Tổng giá trị */}
-                            <div className="stat-card" style={{
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', width: '100%' }}>
+                            {/* Card 1: Tổng giá trị & Thực thu */}
+                            <div className="stat-card hover-lift total-card" style={{
                               display: 'flex',
                               flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              minHeight: '82px',
-                              padding: '12px'
+                              padding: '1rem',
+                              minHeight: '120px',
+                              borderRadius: '12px',
+                              border: '1px solid var(--color-border-light)',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              justifyContent: 'space-between'
                             }}>
-                              <span className="stat-label" style={{ fontSize: '0.675rem', fontWeight: 700 }}>
-                                Tổng giá trị
-                              </span>
-                              <span className="stat-value" style={{ fontSize: '1.05rem', margin: '4px 0 0 0' }}>
-                                {formatMoney(selectedDepForManage.price)}
-                              </span>
-                            </div>
-
-                            {/* Card 2: Thực thu */}
-                            <div className="stat-card" style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              minHeight: '82px',
-                              padding: '12px'
-                            }}>
-                              <span className="stat-label" style={{ fontSize: '0.675rem', fontWeight: 700 }}>
-                                Thực thu
-                              </span>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-                                <span className="stat-value" style={{ color: '#2563eb', fontSize: '1.05rem', margin: 0 }}>
-                                  {formatMoney(totalApprovedMilestones)}
+                              <div className="decor-svg" style={{ color: '#a31422' }}>
+                                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                                  <circle cx="30" cy="50" r="10" stroke="currentColor" strokeWidth="2" />
+                                  <circle cx="70" cy="30" r="10" stroke="currentColor" strokeWidth="2" />
+                                  <circle cx="70" cy="70" r="10" stroke="currentColor" strokeWidth="2" />
+                                  <path d="M40 50 H 55 V 30 H 60 M 55 50 V 70 H 60" stroke="currentColor" strokeWidth="2" />
+                                </svg>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
+                                <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  Tổng giá trị
                                 </span>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
-                                  Đã đóng {approvedCount}/{totalCount} đợt
-                                </span>
+                                <div className="stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(163, 20, 34, 0.08)', color: '#a31422', flexShrink: 0 }}>
+                                  <CreditCard size={16} />
+                                </div>
+                              </div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
+                                <div className="stat-value" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
+                                  {formatMoney(selectedDepForManage.price)}
+                                </div>
+                                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
+                                    Thực thu: <strong style={{ color: '#2563eb' }}>{formatMoney(totalApprovedMilestones)}</strong> ({approvedCount}/{totalCount} đợt)
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Card 3: Hoa hồng */}
-                            <div className="stat-card" style={{
-                              background: 'rgba(16, 185, 129, 0.02)',
-                              border: '1px solid rgba(16, 185, 129, 0.12)',
-                              padding: '12px',
-                              borderRadius: '12px',
+                            {/* Card 2: Hoa hồng dự kiến & Thực tế */}
+                            <div className="stat-card hover-lift distributed-card" style={{
                               display: 'flex',
                               flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              minHeight: '82px'
+                              padding: '1rem',
+                              minHeight: '120px',
+                              borderRadius: '12px',
+                              border: '1px solid var(--color-border-light)',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              justifyContent: 'space-between'
                             }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span className="stat-label" style={{ fontSize: '0.675rem', color: '#047857', fontWeight: 700 }}>
+                              <div className="decor-svg" style={{ color: '#10b981' }}>
+                                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                                  <circle cx="45" cy="35" r="15" stroke="currentColor" strokeWidth="2" />
+                                  <path d="M20 75 C 20 60, 31 50, 45 50 C 59 50, 70 60, 70 75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                  <path d="M75 35 H 89 M 82 28 V 42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
+                                <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                   Hoa hồng dự kiến
                                 </span>
-                                {isAdmin && !isEditingCommission && (
-                                  <button
-                                    onClick={() => setIsEditingCommission(true)}
-                                    style={{
-                                      border: 'none',
-                                      background: 'none',
-                                      padding: '2px',
-                                      cursor: 'pointer',
-                                      color: '#059669',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      borderRadius: '4px',
-                                      transition: 'background 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                                    title="Sửa hoa hồng"
-                                  >
-                                    <Edit size={12} />
-                                  </button>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {isAdmin && !isEditingCommission && (
+                                    <button
+                                      onClick={() => setIsEditingCommission(true)}
+                                      style={{
+                                        border: 'none',
+                                        background: 'none',
+                                        padding: '2px',
+                                        cursor: 'pointer',
+                                        color: '#059669',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '4px',
+                                        transition: 'background 0.2s',
+                                        position: 'relative',
+                                        zIndex: 3
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+                                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                                      title="Sửa hoa hồng"
+                                    >
+                                      <Edit size={12} />
+                                    </button>
+                                  )}
+                                  <div className="stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', flexShrink: 0 }}>
+                                    <DollarSign size={16} />
+                                  </div>
+                                </div>
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
                                 {isAdmin && isEditingCommission ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <CurrencyInput
@@ -2356,13 +2349,13 @@ export default function DepositsPage() {
                                       onChange={(val) => setTempExpectedCommission(val || 0)}
                                       className="form-input"
                                       style={{
-                                        height: '26px',
+                                        height: '28px',
                                         fontSize: '0.95rem',
                                         fontWeight: 800,
                                         color: '#059669',
                                         flex: 1,
                                         margin: 0,
-                                        padding: '0 4px',
+                                        padding: '0 6px',
                                         borderRadius: '6px',
                                         background: 'var(--color-surface)',
                                         border: '1px solid rgba(16, 185, 129, 0.3)'
@@ -2380,8 +2373,8 @@ export default function DepositsPage() {
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        width: '26px',
-                                        height: '26px',
+                                        width: '28px',
+                                        height: '28px',
                                         boxShadow: 'var(--shadow-sm)'
                                       }}
                                       title="Xong"
@@ -2390,14 +2383,16 @@ export default function DepositsPage() {
                                     </button>
                                   </div>
                                 ) : (
-                                  <span className="stat-value" style={{ fontWeight: 800, color: '#059669', fontSize: '1.05rem', margin: 0 }}>
+                                  <div className="stat-value" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
                                     {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission)}
-                                  </span>
+                                  </div>
                                 )}
-                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                                  Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission)}</strong>
-                                </span>
+                                <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                                    Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission)}</strong>
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
