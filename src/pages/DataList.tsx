@@ -952,6 +952,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [expandedSales, setExpandedSales] = useState<Record<string, boolean>>({});
   const [activePOId, setActivePOId] = useState<number | null>(null);
   const [activeSOId, setActiveSOId] = useState<number | null>(null);
+  const [financeSummary, setFinanceSummary] = useState<any>(null);
 
   const handleOpenPO = (poId: number) => {
     setActivePOId(poId);
@@ -1032,6 +1033,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
       const json = await fetchAPI(`get_calendar_stats&year=${year}&month=${month}&consultant=${encodeURIComponent(consultantFilter)}`);
       if (json.success) {
         setCalendarData(json.data || {});
+        setFinanceSummary(json.finance_summary || null);
       }
     } catch (e: any) {
       toast.error(t('Lỗi tải dữ liệu lịch: ') + e.message);
@@ -1979,21 +1981,23 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 {t('Hôm nay')}
               </button>
 
-              <CustomSelect
-                options={[
-                  { value: 'all', label: t('Tất cả TVV'), icon: <User size={16} /> },
-                  ...consultants.map(c => ({
-                    value: c.name,
-                    label: c.name,
-                    avatar: c.avatar
-                  }))
-                ]}
-                value={consultantFilter}
-                onChange={val => updateParams('consultant', val.toString())}
-                showAvatars={true}
-                searchable={true}
-                width={180}
-              />
+              {String(user?.role).toLowerCase() !== 'accountant' && (
+                <CustomSelect
+                  options={[
+                    { value: 'all', label: t('Tất cả TVV'), icon: <User size={16} /> },
+                    ...consultants.map(c => ({
+                      value: c.name,
+                      label: c.name,
+                      avatar: c.avatar
+                    }))
+                  ]}
+                  value={consultantFilter}
+                  onChange={val => updateParams('consultant', val.toString())}
+                  showAvatars={true}
+                  searchable={true}
+                  width={180}
+                />
+              )}
             </div>
 
             {/* Calendar Legend */}
@@ -2035,6 +2039,101 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
               )}
             </div>
           </div>
+
+          {/* Finance Statistics Cards for Accountant */}
+          {String(user?.role).toLowerCase() === 'accountant' && financeSummary && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1rem',
+              marginTop: '0.25rem'
+            }}>
+              {/* Card 1: Doanh thu SO */}
+              <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TỔNG DOANH THU (SO)</span>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></div>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((financeSummary.so_paid || 0) + (financeSummary.so_pending || 0))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border-light)', paddingTop: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Đã thu:</span>
+                    <strong style={{ color: 'var(--color-success)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.so_paid || 0)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Chờ thanh toán:</span>
+                    <strong style={{ color: 'var(--color-warning)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.so_pending || 0)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Chi phí PO */}
+              <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>TỔNG CHI PHÍ (PO)</span>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></div>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((financeSummary.po_approved || 0) + (financeSummary.po_pending || 0))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border-light)', paddingTop: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Đã duyệt:</span>
+                    <strong style={{ color: 'var(--color-success)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.po_approved || 0)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Chờ duyệt:</span>
+                    <strong style={{ color: 'var(--color-warning)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.po_pending || 0)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Dòng tiền thực tế */}
+              <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>DÒNG TIỀN THỰC TẾ</span>
+                  <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)', borderRadius: '4px', fontWeight: 700 }}>Thực tế</span>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: ((financeSummary.so_paid || 0) - (financeSummary.po_approved || 0)) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((financeSummary.so_paid || 0) - (financeSummary.po_approved || 0))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border-light)', paddingTop: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Thực thu:</span>
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.so_paid || 0)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Thực chi:</span>
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.po_approved || 0)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Dự báo dòng tiền */}
+              <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>DỰ BÁO DÒNG TIỀN</span>
+                  <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)', borderRadius: '4px', fontWeight: 700 }}>Dự báo</span>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: ((financeSummary.so_pending || 0) - (financeSummary.po_pending || 0)) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((financeSummary.so_pending || 0) - (financeSummary.po_pending || 0))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border-light)', paddingTop: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Sắp thu:</span>
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.so_pending || 0)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Sắp chi:</span>
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(financeSummary.po_pending || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Calendar Body */}
           <div className="responsive-table-wrap" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

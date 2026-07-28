@@ -70,7 +70,7 @@ export const InvoiceQuickViewModal: React.FC<InvoiceQuickViewModalProps> = ({
           inset: 0,
           background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(4px)',
-          zIndex: 1000020,
+          zIndex: 3000020,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -144,7 +144,7 @@ export const InvoiceQuickViewModal: React.FC<InvoiceQuickViewModalProps> = ({
             style={{ 
               width: '90%', 
               maxWidth: 700, 
-              zIndex: 1000030, 
+              zIndex: 3000030, 
               padding: 0, 
               borderRadius: 'var(--radius-2xl)', 
               margin: 'auto', 

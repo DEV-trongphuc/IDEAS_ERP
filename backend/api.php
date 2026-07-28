@@ -3723,7 +3723,39 @@ switch ($action) {
             }
         }
 
-        echo json_encode(['success' => true, 'data' => $stats]);
+        $financeSummary = null;
+        if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
+            $soSumRes = $conn->query("
+                SELECT 
+                    SUM(CASE WHEN i.status = 'paid' THEN i.total ELSE 0 END) as so_paid,
+                    SUM(CASE WHEN i.status IN ('pending', 'overdue') THEN i.total ELSE 0 END) as so_pending
+                FROM invoices i
+                WHERE i.issue_date >= '$startDate' AND i.issue_date <= '$endDate' AND i.deleted_at IS NULL
+            ");
+            $soSums = $soSumRes ? $soSumRes->fetch_assoc() : ['so_paid' => 0, 'so_pending' => 0];
+
+            $poSumRes = $conn->query("
+                SELECT 
+                    SUM(CASE WHEN e.status = 'approved' THEN e.amount ELSE 0 END) as po_approved,
+                    SUM(CASE WHEN e.status = 'pending' THEN e.amount ELSE 0 END) as po_pending
+                FROM expenses e
+                WHERE e.date >= '$startDate' AND e.date <= '$endDate' AND e.deleted_at IS NULL
+            ");
+            $poSums = $poSumRes ? $poSumRes->fetch_assoc() : ['po_approved' => 0, 'po_pending' => 0];
+
+            $financeSummary = [
+                'so_paid' => (float)($soSums['so_paid'] ?? 0),
+                'so_pending' => (float)($soSums['so_pending'] ?? 0),
+                'po_approved' => (float)($poSums['po_approved'] ?? 0),
+                'po_pending' => (float)($poSums['po_pending'] ?? 0),
+            ];
+        }
+
+        echo json_encode([
+            'success' => true, 
+            'data' => $stats,
+            'finance_summary' => $financeSummary
+        ]);
         break;
 
     case 'get_calendar_day_details':
