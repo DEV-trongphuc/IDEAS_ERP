@@ -12,9 +12,9 @@ echo "====================================================\n\n";
 // --- BƯỚC 1: KHỞI TẠO DỮ LIỆU GIẢ LẬP (MOCK DATA) ---
 echo "1. Đang khởi tạo dữ liệu kiểm thử...\n";
 $tenantId = 1;
-$ownerId = 1001; // ID Nhân viên kinh doanh
-$accountantId = 1003; // ID Kế toán
-$projectId = 1; // ID dự án
+$ownerId = 100012; // ID Nhân viên kinh doanh thực tế
+$accountantId = 100014; // ID Kế toán thực tế
+$projectId = 2; // ID dự án thực tế
 
 // Tạo một khách hàng tiềm năng thử nghiệm
 $conn->query("
@@ -58,7 +58,7 @@ if ($approvedCount === 0) {
     
     // Tìm stage_id tương ứng với booking
     $stmtStage = $conn->query("SELECT id FROM pipeline_stages WHERE tenant_id = {$tenantId} AND system_slug = 'booking' LIMIT 1");
-    $bookingStageId = $stmtStage && $stmtStage->num_rows > 0 ? (int)$stmtStage->fetch_assoc()['id'] : 4;
+    $bookingStageId = $stmtStage && $stmtStage->num_rows > 0 ? (int)$stmtStage->fetch_assoc()['id'] : 5;
     
     $expiresAt = date('Y-m-d H:i:s', strtotime('+3 months'));
     
