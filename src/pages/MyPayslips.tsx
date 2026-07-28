@@ -413,7 +413,7 @@ export default function MyPayslips() {
       <div className="page-header" style={{ marginBottom: '1.5rem' }}>
         <div>
           <h1 className="page-title">
-            {t('Cổng Nhân sự Cá nhân')}
+            {t('Phiếu lương')}
           </h1>
           <p className="page-subtitle">
             {t('Tra cứu phiếu lương, đăng ký lịch nghỉ phép và tạm ứng thu nhập nhanh chóng.')}
@@ -423,39 +423,13 @@ export default function MyPayslips() {
         {activeSubTab === 'payslip' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, whiteSpace: 'nowrap' }} className="no-print">
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', display: 'inline-block' }}>{t('Chọn năm')}:</span>
-            <select
-              value={selectedYear}
-              onChange={e => setSelectedYear(parseInt(e.target.value, 10))}
-              className="form-input"
-              style={{
-                height: 38,
-                padding: '0 30px 0 16px',
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                minWidth: '100px',
-                width: 'auto',
-                borderRadius: '12px',
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)',
-                outline: 'none',
-                transition: 'all 0.2s',
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 12 12%27%3E%3Cpath fill=%27%236b7280%27 d=%27M6 8L2 4h8z%27/%3E%3C/svg%3E")',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 12px center',
-                backgroundSize: '10px'
-              }}
-            >
-              {years.map(yr => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
+            <div style={{ width: '120px' }}>
+              <CustomSelect
+                options={years.map(yr => ({ value: yr, label: yr.toString() }))}
+                value={selectedYear}
+                onChange={val => setSelectedYear(Number(val))}
+              />
+            </div>
           </div>
         )}
       </div>

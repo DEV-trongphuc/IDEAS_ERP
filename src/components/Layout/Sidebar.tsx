@@ -75,7 +75,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Lịch trình', href: '/calendar', icon: Calendar },
       { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director'] },
       { name: 'Quản trị nhân sự & lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
-      { name: 'Phiếu lương cá nhân', href: '/my-payslips', icon: FileText }
+      { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
     ]
   },
   {
