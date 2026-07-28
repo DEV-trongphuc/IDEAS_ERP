@@ -100,7 +100,7 @@ const ConsultantsInner = () => {
   const { user } = useAuth();
   const userRole = user?.role;
   const isSale = userRole === 'sale';
-  const isWriteAuthorized = ['admin', 'superadmin', 'super_admin', 'director', 'manager'].includes(userRole || '');
+  const isWriteAuthorized = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr'].includes(userRole || '');
 
   const renderLastLogin = (lastLoginStr: string | null) => {
     if (!lastLoginStr) {
@@ -193,7 +193,7 @@ const ConsultantsInner = () => {
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const showAllTabs = ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales'].includes(userRole || '');
+  const showAllTabs = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'sale', 'sales', 'hr'].includes(userRole || '');
   const activeTabRaw = queryParams.get('tab') || 'consultants';
   const activeTab = showAllTabs ? activeTabRaw : 'consultants';
 
