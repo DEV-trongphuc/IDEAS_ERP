@@ -9,8 +9,8 @@ class TeamController
 
     public function index(array $auth): void
     {
-        // Only managers, admins, superadmins, and sales can access team list
-        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales', 'hr'], true)) {
+        // Allow all system roles to view the full team list
+        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales', 'hr', 'accountant', 'marketing', 'assistant', 'viewer'], true)) {
             respond(403, null, 'Quyền truy cập bị từ chối', false);
         }
 
@@ -18,24 +18,6 @@ class TeamController
         $uid = (int)$auth['user_id'];
         $where = "";
         $params = [];
-
-        if ($role === 'manager') {
-            $where = " WHERE (FIND_IN_SET(?, CONCAT(t.leader_id, CHAR(44), COALESCE(t.co_leader_ids, t.leader_id))) OR t.id = (SELECT team_id FROM users WHERE id = ?))";
-            $params[] = $uid;
-            $params[] = $uid;
-        } else if (in_array($role, ['sale', 'sales'], true)) {
-            $uStmt = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
-            $uStmt->execute([$uid]);
-            $uRow = $uStmt->fetch();
-            $teamId = $uRow ? $uRow['team_id'] : null;
-
-            if ($teamId) {
-                $where = " WHERE t.id = ?";
-                $params[] = $teamId;
-            } else {
-                $where = " WHERE 1=0";
-            }
-        }
 
         try {
             $stmt = $this->db->prepare("

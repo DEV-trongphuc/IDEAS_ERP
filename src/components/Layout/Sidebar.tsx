@@ -69,8 +69,8 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     title: 'NHÂN SỰ',
     items: [
       { name: 'Tài khoản cá nhân', href: '/account', icon: User },
-      { name: 'Phòng ban', href: '/consultants?tab=teams', icon: Users, hideForRoles: ['assistant', 'viewer', 'accountant', 'marketing'] },
-      { name: 'Nhân viên kinh doanh', href: '/consultants', icon: Users, hideForRoles: ['assistant', 'viewer', 'accountant', 'marketing'] },
+      { name: 'Phòng ban', href: '/consultants?tab=teams', icon: Users },
+      { name: 'Nhân sự công ty', href: '/consultants', icon: Users },
       { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
       { name: 'Lịch trình', href: '/calendar', icon: Calendar },
       { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'manager', 'viewer', 'director', 'hr', 'accountant', 'marketing'] },
@@ -90,6 +90,80 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     ]
   }
 ];
+
+interface QuickNavItem {
+  name: string;
+  href: string;
+  icon: any;
+  badgeKey?: string;
+}
+
+const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
+  admin: [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
+    { name: 'Duyệt công', href: '/attendance', icon: Clock },
+    { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu }
+  ],
+  superadmin: [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
+    { name: 'Duyệt công', href: '/attendance', icon: Clock },
+    { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu }
+  ],
+  super_admin: [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
+    { name: 'Duyệt công', href: '/attendance', icon: Clock },
+    { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu }
+  ],
+  director: [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Phê duyệt', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
+    { name: 'Duyệt công', href: '/attendance', icon: Clock },
+    { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu }
+  ],
+  sale: [
+    { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
+    { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
+    { name: 'Khách hàng', href: '/contacts', icon: Users },
+    { name: 'Chấm công', href: '/attendance', icon: Clock }
+  ],
+  sales: [
+    { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
+    { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
+    { name: 'Khách hàng', href: '/contacts', icon: Users },
+    { name: 'Chấm công', href: '/attendance', icon: Clock }
+  ],
+  accountant: [
+    { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
+    { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
+    { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
+    { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
+  ],
+  hr: [
+    { name: 'Nhân sự', href: '/hrm', icon: ShieldCheck },
+    { name: 'Duyệt công', href: '/attendance', icon: Clock },
+    { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
+    { name: 'Lịch trình', href: '/calendar', icon: Calendar }
+  ],
+  marketing: [
+    { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers },
+    { name: 'Pre-screener', href: '/gatekeeper', icon: Filter, badgeKey: 'gatekeeper' },
+    { name: 'Tích hợp', href: '/integrations', icon: Link2 },
+    { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2 }
+  ]
+};
+
+const GROUP_ORDER_BY_ROLE: Record<string, string[]> = {
+  admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  superadmin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  super_admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  director: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  accountant: ['TỔNG QUAN', 'TÀI CHÍNH', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
+  hr: ['TỔNG QUAN', 'NHÂN SỰ', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH'],
+  marketing: ['TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
+};
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileClose }: { isCollapsed: boolean; onToggleCollapse: () => void; isMobileOpen?: boolean; onMobileClose?: () => void }) => {
   const { user } = useAuth();
@@ -334,9 +408,12 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
         return group;
       });
     }
+  }
 
-    // Rearrange group order for accountant
-    const groupOrder = ['TỔNG QUAN', 'TÀI CHÍNH', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'];
+  // Dynamic Group Re-ordering based on role
+  const activeRole = String(user?.role || '').toLowerCase();
+  const groupOrder = GROUP_ORDER_BY_ROLE[activeRole];
+  if (groupOrder) {
     visibleGroups.sort((a, b) => {
       const idxA = groupOrder.indexOf(a.title);
       const idxB = groupOrder.indexOf(b.title);
@@ -429,54 +506,56 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
         </div>
 
         {/* Quick Action Button */}
-        <div style={{ padding: isCollapsed ? '0.5rem 0.25rem' : '0.875rem 0.75rem', display: 'flex', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          {isCollapsed ? (
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('open-quick-add-lead'));
-                if (onMobileClose) onMobileClose();
-              }}
-              style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #BD1D2D 0%, #9e1824 50%, #660f17 100%)',
-                color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', boxShadow: '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)', transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(189, 29, 45, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
-              }}
-              title={((user?.role as string) === 'sale' || (user?.role as string) === 'sales') ? t("Thêm data cá nhân") : t("Thêm data nhanh")}
-            >
-              <Plus size={16} />
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('open-quick-add-lead'));
-                if (onMobileClose) onMobileClose();
-              }}
-              className="btn primary"
-              style={{
-                width: '100%', height: 34, borderRadius: '8px',
-                background: 'linear-gradient(135deg, #BD1D2D 0%, #9e1824 50%, #660f17 100%)',
-                color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 6, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)', transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(189, 29, 45, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
-              }}
-            >
-              <Plus size={14} /> {((user?.role as string) === 'sale' || (user?.role as string) === 'sales') ? t("Thêm data cá nhân") : t("Thêm data nhanh")}
-            </button>
-          )}
-        </div>
+        {['admin', 'superadmin', 'super_admin', 'director', 'sale', 'sales', 'marketing'].includes(String(user?.role || '').toLowerCase()) && (
+          <div style={{ padding: isCollapsed ? '0.5rem 0.25rem' : '0.875rem 0.75rem', display: 'flex', justifyContent: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {isCollapsed ? (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-quick-add-lead'));
+                  if (onMobileClose) onMobileClose();
+                }}
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #BD1D2D 0%, #9e1824 50%, #660f17 100%)',
+                  color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', boxShadow: '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)', transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(189, 29, 45, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
+                }}
+                title={((user?.role as string) === 'sale' || (user?.role as string) === 'sales') ? t("Thêm data cá nhân") : t("Thêm data nhanh")}
+              >
+                <Plus size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('open-quick-add-lead'));
+                  if (onMobileClose) onMobileClose();
+                }}
+                className="btn primary"
+                style={{
+                  width: '100%', height: 34, borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #BD1D2D 0%, #9e1824 50%, #660f17 100%)',
+                  color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: 6, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)', transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(189, 29, 45, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(189, 29, 45, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
+                }}
+              >
+                <Plus size={14} /> {((user?.role as string) === 'sale' || (user?.role as string) === 'sales') ? t("Thêm data cá nhân") : t("Thêm data nhanh")}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Collapse Button */}
         <button

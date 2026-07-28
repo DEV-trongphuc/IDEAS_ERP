@@ -5450,36 +5450,6 @@ switch ($action) {
         $currentUserId = (int)($decodedUser['id'] ?? 0);
         $where = "";
 
-        if (($role === 'sale' || $role === 'sales') && !isset($_GET['all'])) {
-            $tStmt = $conn->prepare("SELECT team_id FROM users WHERE id = ?");
-            $tStmt->bind_param("i", $currentUserId);
-            $tStmt->execute();
-            $tRes = $tStmt->get_result()->fetch_assoc();
-            $teamId = $tRes ? $tRes['team_id'] : null;
-            $tStmt->close();
-
-            if ($teamId) {
-                $where = " WHERE c.team_id = " . (int)$teamId;
-            } else {
-                $where = " WHERE c.id = " . $currentUserId;
-            }
-        } else if ($role === 'manager') {
-            $tStmt = $conn->prepare("SELECT id FROM teams WHERE leader_id = ?");
-            $tStmt->bind_param("i", $currentUserId);
-            $tStmt->execute();
-            $tRes = $tStmt->get_result();
-            $teamIds = [];
-            while ($tRow = $tRes->fetch_assoc()) {
-                $teamIds[] = (int)$tRow['id'];
-            }
-            $tStmt->close();
-
-            if (!empty($teamIds)) {
-                $where = " WHERE c.team_id IN (" . implode(',', $teamIds) . ") OR c.id = " . $currentUserId;
-            } else {
-                $where = " WHERE c.id = " . $currentUserId;
-            }
-        }
 
         $res = $conn->query("
             SELECT 
@@ -12084,27 +12054,7 @@ switch ($action) {
 
 
     case 'get_accounts':
-        if ($decodedUser['role'] !== 'admin' && $decodedUser['role'] !== 'superadmin' && $decodedUser['role'] !== 'super_admin' && $decodedUser['role'] !== 'manager' && $decodedUser['role'] !== 'director' && $decodedUser['role'] !== 'hr') {
-            // Find current user's team
-            $uStmt = $conn->prepare("SELECT team_id FROM users WHERE id = ?");
-            $uStmt->bind_param("i", $decodedUser['id']);
-            $uStmt->execute();
-            $uRow = $uStmt->get_result()->fetch_assoc();
-            $teamId = $uRow ? $uRow['team_id'] : null;
-            $uStmt->close();
-
-            if ($teamId) {
-                $stmt = $conn->prepare("SELECT id, username, name, email, role, created_at, zalo_chat_id, telegram_chat_id, is_confirmed, last_login, avatar, dob, gender, citizen_id, address, bank_name, bank_account, phone, is_active, team_id FROM accounts WHERE team_id = ? OR id = ?");
-                $stmt->bind_param("ii", $teamId, $decodedUser['id']);
-            } else {
-                $stmt = $conn->prepare("SELECT id, username, name, email, role, created_at, zalo_chat_id, telegram_chat_id, is_confirmed, last_login, avatar, dob, gender, citizen_id, address, bank_name, bank_account, phone, is_active, team_id FROM accounts WHERE id = ?");
-                $stmt->bind_param("i", $decodedUser['id']);
-            }
-            $stmt->execute();
-            $res = $stmt->get_result();
-        } else {
-            $res = $conn->query("SELECT id, username, name, email, role, created_at, zalo_chat_id, telegram_chat_id, is_confirmed, last_login, avatar, dob, gender, citizen_id, address, bank_name, bank_account, phone, is_active, team_id FROM accounts ORDER BY created_at DESC");
-        }
+        $res = $conn->query("SELECT id, username, name, email, role, created_at, zalo_chat_id, telegram_chat_id, is_confirmed, last_login, avatar, dob, gender, citizen_id, address, bank_name, bank_account, phone, is_active, team_id FROM accounts ORDER BY created_at DESC");
         $data = [];
         while ($row = $res->fetch_assoc()) {
             if (isset($row['role']) && $row['role'] === 'sales') {

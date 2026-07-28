@@ -1733,9 +1733,21 @@ export const Header = ({
                 return group;
               });
             }
+          }
 
-            // Rearrange group order for accountant
-            const groupOrder = ['TỔNG QUAN', 'TÀI CHÍNH', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'];
+          // Dynamic Group Re-ordering based on role
+          const GROUP_ORDER_BY_ROLE: Record<string, string[]> = {
+            admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            superadmin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            super_admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            director: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            accountant: ['TỔNG QUAN', 'TÀI CHÍNH', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
+            hr: ['TỔNG QUAN', 'NHÂN SỰ', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH'],
+            marketing: ['TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
+          };
+          const activeRole = role.toLowerCase();
+          const groupOrder = GROUP_ORDER_BY_ROLE[activeRole];
+          if (groupOrder) {
             visibleGroups.sort((a, b) => {
               const idxA = groupOrder.indexOf(a.title);
               const idxB = groupOrder.indexOf(b.title);
@@ -1755,9 +1767,19 @@ export const Header = ({
               )
             : [];
 
-          const recentTargets = role === 'accountant'
-            ? ['Purchase Order', 'Sales Order', 'Quy trình phê duyệt', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Báo cáo', 'Bàn làm việc']
-            : ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Giỏ hàng', 'Kho Databank', 'Lịch biểu', 'Dự án'];
+          const RECENT_TARGETS_BY_ROLE: Record<string, string[]> = {
+            admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            superadmin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            super_admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            director: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình phê duyệt', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            sale: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
+            sales: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
+            accountant: ['Sales Order', 'Purchase Order', 'Quy trình phê duyệt', 'Phiếu lương cá nhân', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc'],
+            hr: ['Quản trị nhân sự & lương', 'Quản lý chấm công', 'Quy trình phê duyệt', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu'],
+            marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data']
+          };
+
+          const recentTargets = RECENT_TARGETS_BY_ROLE[role.toLowerCase()] || ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Lịch trình'];
           const recentItems = recentTargets
             .map(name => allVisibleItems.find(item => item.name === name))
             .filter(Boolean)

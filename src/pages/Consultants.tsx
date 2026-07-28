@@ -1112,7 +1112,7 @@ const ConsultantsInner = () => {
                   }} />
 
                   {[
-                    { id: 'consultants', label: t('Tư vấn viên'), icon: <User size={14} /> },
+                    { id: 'consultants', label: t('Tài khoản & Nhân sự'), icon: <User size={14} /> },
                     { id: 'teams', label: t('Nhóm (Team)'), icon: <Users size={14} /> },
                     { id: 'branches', label: t('Chi nhánh'), icon: <Building2 size={14} /> }
                   ].map(tab => {
@@ -1168,7 +1168,7 @@ const ConsultantsInner = () => {
                 style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', height: '36px', flexShrink: 0 }}
               >
                 <Plus size={16} />
-                <span>{t('Thêm TVV')}</span>
+                <span>{t('Thêm tài khoản')}</span>
               </button>
             ) : null}
           </div>
@@ -1189,7 +1189,7 @@ const ConsultantsInner = () => {
               </svg>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span className="stat-label" style={{ fontSize: '0.725rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Tổng TVV')}</span>
+              <span className="stat-label" style={{ fontSize: '0.725rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Tổng nhân sự')}</span>
               <div className="stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(100, 116, 139, 0.08)', color: '#64748b', flexShrink: 0 }}>
                 <Users size={16} />
               </div>
@@ -1413,7 +1413,7 @@ const ConsultantsInner = () => {
             </div>
 
             <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-              {t('Tổng số')}: <strong style={{ color: 'var(--color-text)' }}>{filteredUsers.length}</strong> / {users.length} {t('tư vấn viên')}
+              {t('Tổng số')}: <strong style={{ color: 'var(--color-text)' }}>{filteredUsers.length}</strong> / {users.length} {t('nhân sự')}
             </div>
           </div>
           {isMobile ? (
@@ -1474,7 +1474,7 @@ const ConsultantsInner = () => {
               <table className="mobile-table-compact">
                 <thead>
                   <tr>
-                    <th style={{ position: 'sticky', top: 0, background: 'var(--color-bg)', zIndex: 10, borderBottom: '1px solid var(--color-border)' }}>{t('Tên TVV')}</th>
+                    <th style={{ position: 'sticky', top: 0, background: 'var(--color-bg)', zIndex: 10, borderBottom: '1px solid var(--color-border)' }}>{t('Tên nhân sự')}</th>
                     <th style={{ position: 'sticky', top: 0, background: 'var(--color-bg)', zIndex: 10, borderBottom: '1px solid var(--color-border)' }}>{t('Thông tin liên hệ')}</th>
                     <th style={{ position: 'sticky', top: 0, background: 'var(--color-bg)', zIndex: 10, borderBottom: '1px solid var(--color-border)' }}>{t('Zalo Bot')}</th>
                     <th style={{ position: 'sticky', top: 0, background: 'var(--color-bg)', zIndex: 10, borderBottom: '1px solid var(--color-border)' }}>{t('Telegram Bot')}</th>
@@ -1507,7 +1507,7 @@ const ConsultantsInner = () => {
                       onClick={() => openEditModal(u)}
                       title={t("Nhấp để xem chi tiết")}
                     >
-                      <td data-label={t('Tên TVV')}>
+                      <td data-label={t('Tên nhân sự')}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <Avatar
                             src={u.avatar}
