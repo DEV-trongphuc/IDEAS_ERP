@@ -184,7 +184,7 @@ const AppTabs = () => {
       case '/activities':
         return <Navigate to="/" replace />;
       case '/products':
-        return <ProductsPage key="products" />;
+        return <Navigate to="/" replace />;
       case '/expenses':
         return <ExpensesPage key="expenses" />;
       case '/reports-crm':
@@ -194,7 +194,7 @@ const AppTabs = () => {
       case '/files':
         return <FilesPage key="files" />;
       case '/inventory':
-        return <InventoryPage key="inventory" />;
+        return <Navigate to="/" replace />;
       case '/tickets':
         return user?.role === 'sale' ? <SalePortal embedMode={true} activeTabProp="tickets" key="tickets" /> : <Tickets key="tickets" />;
       case '/support-tickets':

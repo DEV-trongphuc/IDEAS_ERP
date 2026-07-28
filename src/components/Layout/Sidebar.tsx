@@ -43,12 +43,10 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     ]
   },
   {
-    title: 'CHƯƠNG TRÌNH & SẢN PHẨM',
+    title: 'CHƯƠNG TRÌNH',
     items: [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
-      { name: 'Sản phẩm & Dịch vụ', href: '/products', icon: Package },
-      { name: 'Kho hàng hóa', href: '/inventory', icon: Boxes, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
       { name: 'Đối tác kinh doanh', href: '/companies', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck, hideForRoles: ['hr'] }

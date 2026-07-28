@@ -746,6 +746,7 @@ switch ($resource) {
         elseif ($resourceId === 'payroll' && $method === 'PUT') $ctrl->lockPayroll($auth);
         elseif ($resourceId === 'payroll' && $subResource === 'send' && $method === 'POST') $ctrl->sendPayslips($auth);
         elseif ($resourceId === 'payroll' && $subResource === 'confirm' && $method === 'POST') $ctrl->confirmPayslip($auth);
+        elseif ($resourceId === 'payroll' && $subResource === 'save' && $method === 'POST') $ctrl->savePayroll($auth);
         elseif ($resourceId === 'approvals' && $subResource === 'pending' && $method === 'GET') $ctrl->getPendingApprovals($auth);
         elseif ($resourceId === 'approvals' && $subResource === 'my-requests' && $method === 'GET') $ctrl->getMyRequests($auth);
         else respond(404, null, 'Route không tồn tại', false);

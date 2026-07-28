@@ -1715,14 +1715,20 @@ export default function ProjectsPage() {
                       <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700, display: 'block' }}>{editingProject?.developer || 'Chưa cập nhật'}</span>
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái bán</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái hoạt động</span>
                       <span
                         className={`badge ${editingProject?.status === 'active' ? 'success' : 'secondary'}`}
                         style={{ fontSize: '0.75rem', padding: '6px 12px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
                       >
-                        {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
+                        {editingProject?.status === 'active' ? 'Đang hoạt động' : 'Tạm dừng'}
                       </span>
                     </div>
+                    {editingProject?.location && (
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
+                        <span style={{ color: 'var(--color-text)', fontSize: '0.85rem', fontWeight: 700, display: 'block', lineHeight: 1.4 }}>{editingProject.location}</span>
+                      </div>
+                    )}
                     {editingProject?.reference_url && parseReferenceLinks(editingProject.reference_url).length > 0 && (
                       <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px solid var(--color-border-light)', paddingTop: '12px' }}>
                         <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '8px' }}>Website &amp; Tài liệu tham khảo</span>
@@ -1773,148 +1779,6 @@ export default function ProjectsPage() {
                         </div>
                       </div>
                     )}
-                  </div>
-                </div>
-
-                {/* Section 2: Vị trí & Quy mô & Pháp lý */}
-                <div style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border-light)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.25rem',
-                  boxShadow: '0 10px 30px -10px rgba(0,0,0,0.04)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      padding: '8px',
-                      background: 'rgba(100, 116, 139, 0.08)',
-                      borderRadius: '10px',
-                      color: 'var(--color-text-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <MapPin size={16} />
-                    </div>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vị trí, Quy mô & Pháp lý</h4>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
-                      <span style={{ color: 'var(--color-text)', fontSize: '0.85rem', fontWeight: 700, display: 'block', lineHeight: 1.4 }}>{editingProject?.location || 'Chưa cập nhật'}</span>
-                    </div>
-
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái thi công &amp; Tiến độ</span>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '6px' }}>
-                        <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700 }}>
-                          {editingProject?.construction_status || 'Chưa khởi công'}
-                        </span>
-                        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>
-                          {editingProject?.progress_percent ?? 0}%
-                        </span>
-                      </div>
-
-                      {/* Beautiful progress bar */}
-                      <div style={{ height: '8px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden', width: '100%' }}>
-                        <div
-                          style={{
-                            height: '100%',
-                            width: `${editingProject?.progress_percent ?? 0}%`,
-                            background: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)',
-                            borderRadius: '99px',
-                            transition: 'width 0.4s var(--transition-fluid)'
-                          }}
-                        />
-                      </div>
-
-                      {/* Milestone Timeline */}
-                      <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cột mốc chương trình (Milestones)</span>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', padding: '8px 0 24px' }}>
-                          {/* Connecting Line */}
-                          <div style={{ position: 'absolute', top: '23px', left: '10px', right: '10px', height: '2px', background: 'var(--color-border-light)', zIndex: 1 }} />
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: '23px',
-                              left: '10px',
-                              width: `${Math.min(100, Math.max(0, ((editingProject?.progress_percent ?? 0) / 100) * 100))}%`,
-                              height: '2px',
-                              background: 'var(--color-primary)',
-                              zIndex: 2,
-                              transition: 'width 0.3s ease'
-                            }}
-                          />
-
-                          {/* Milestone Nodes */}
-                          {[
-                            { name: 'Chuẩn bị', pct: 10, label: 'Khởi công' },
-                            { name: 'Phần móng', pct: 30, label: 'Xây móng' },
-                            { name: 'Phần thô', pct: 60, label: 'Xây thô' },
-                            { name: 'Cất nóc', pct: 85, label: 'Cất nóc' },
-                            { name: 'Bàn giao', pct: 100, label: 'Bàn giao' }
-                          ].map((milestone, idx) => {
-                            const isDone = (editingProject?.progress_percent ?? 0) >= milestone.pct;
-                            const isCurrent = (editingProject?.progress_percent ?? 0) === milestone.pct;
-                            return (
-                              <div
-                                key={idx}
-                                style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  zIndex: 3,
-                                  position: 'relative'
-                                }}
-                              >
-                                <div style={{
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '50%',
-                                  background: isDone ? 'var(--color-primary)' : '#ffffff',
-                                  border: isDone ? '2px solid var(--color-primary)' : '2px solid var(--color-border-light)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  color: isDone ? '#ffffff' : 'var(--color-text-muted)',
-                                  fontWeight: 800,
-                                  fontSize: '0.75rem',
-                                  boxShadow: isCurrent ? '0 0 0 4px rgba(189, 29, 45, 0.2)' : '0 2px 4px rgba(0,0,0,0.05)',
-                                  transition: 'all 0.2s ease',
-                                  transform: isCurrent ? 'scale(1.15)' : 'none'
-                                }}>
-                                  {isDone ? <Check size={14} strokeWidth={3} /> : idx + 1}
-                                </div>
-                                <span style={{
-                                  position: 'absolute',
-                                  bottom: '-20px',
-                                  fontSize: '0.68rem',
-                                  fontWeight: isDone ? 750 : 600,
-                                  color: isDone ? 'var(--color-text)' : 'var(--color-text-muted)',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {milestone.label}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái pháp lý</span>
-                      <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700, display: 'block' }}>{editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}</span>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Năm bàn giao dự kiến</span>
-                      <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700, display: 'block' }}>{editingProject?.handover_year || 2026}</span>
-                    </div>
-
                   </div>
                 </div>
 
@@ -2160,8 +2024,6 @@ export default function ProjectsPage() {
                   </div>
                 </div>
 
-                {/* Vòng phân bổ (Fair-Share Round) */}
-                {editingProject && renderLinkedRoundsSection('project', Number(editingProject.id))}
 
                 {/* Section: Đường dẫn Folder liên kết */}
                 <div style={{
@@ -3210,8 +3072,6 @@ export default function ProjectsPage() {
                   })()}
                 </div>
 
-                {/* Vòng phân bổ (Fair-Share Round) */}
-                {editingCampaign && renderLinkedRoundsSection('campaign', Number(editingCampaign.id))}
 
                 {/* Linked Tasks */}
                 <div style={{
@@ -4377,47 +4237,7 @@ export default function ProjectsPage() {
                         )}
                       </div>
 
-                      {/* Construction Progress Bar */}
-                      <div style={{ marginTop: '2px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.78rem' }}>
-                          <span style={{ fontWeight: 700, color: 'var(--color-text-light)' }}>
-                            Tiến độ: <span style={{ color: 'var(--color-text)' }}>{proj.construction_status || 'Chưa khởi công'}</span>
-                          </span>
-                          <span style={{ fontWeight: 800, color: (proj.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>{proj.progress_percent ?? 0}%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '8px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden' }}>
-                          <div style={{ width: `${proj.progress_percent ?? 0}%`, height: '100%', background: (proj.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)', borderRadius: '99px', transition: 'width 0.4s var(--transition-fluid)' }}></div>
-                        </div>
-                      </div>
 
-                      {/* Project Details Grid (Pháp lý, Bàn giao) */}
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '8px',
-                        padding: screenWidth <= 640 ? '6px 10px' : '10px 12px',
-                        background: 'var(--color-bg-light)',
-                        borderRadius: '14px',
-                        border: '1px solid var(--color-border-light)',
-                        fontSize: '0.75rem',
-                        color: 'var(--color-text-muted)',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        overflow: 'hidden'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', fontWeight: 600, flexShrink: 0 }}>Pháp lý:</span>
-                          <strong style={{ color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem' }} title={proj.legal_status || 'Đang hoàn thiện'}>
-                            {proj.legal_status || 'Đang hoàn thiện'}
-                          </strong>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0, borderLeft: '1px solid var(--color-border-light)', paddingLeft: '10px' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', fontWeight: 600, flexShrink: 0 }}>Bàn giao:</span>
-                          <strong style={{ color: 'var(--color-text)', fontSize: '0.75rem', flexShrink: 0 }}>{proj.handover_year || 2028}</strong>
-                        </div>
-                      </div>
 
                       {/* Roster, Docs, Campaigns Info Badges */}
                       <div
@@ -4950,14 +4770,20 @@ export default function ProjectsPage() {
                           <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingProject?.developer || 'Chưa cập nhật'}</span>
                         </div>
                         <div>
-                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái bán</span>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái hoạt động</span>
                           <span
                             className={`badge ${editingProject?.status === 'active' ? 'success' : 'secondary'}`}
                             style={{ fontSize: '0.75rem', padding: '5px 10px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
                           >
-                            {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
+                            {editingProject?.status === 'active' ? 'Đang hoạt động' : 'Tạm dừng'}
                           </span>
                         </div>
+                        {editingProject?.location && (
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
+                            <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject.location}</span>
+                          </div>
+                        )}
                         {editingProject?.reference_url && (
                           <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
                             <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Website / Link tham khảo</span>
@@ -4989,64 +4815,6 @@ export default function ProjectsPage() {
                             </a>
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {/* Section 2: Vị trí & Quy mô & Pháp lý */}
-                    <div style={{
-                      background: 'var(--color-surface)',
-                      border: '1px solid var(--color-border-light)',
-                      borderRadius: '16px',
-                      padding: '1.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '1rem',
-                      boxShadow: 'var(--shadow-sm)'
-                    }}>
-                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vị trí, Quy mô & Pháp lý</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                        <div>
-                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
-                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.location || 'Chưa cập nhật'}</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái thi công &amp; Tiến độ</span>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
-                            <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600 }}>
-                              {editingProject?.construction_status || 'Chưa khởi công'}
-                            </span>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 800, color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>
-                              {editingProject?.progress_percent ?? 0}%
-                            </span>
-                          </div>
-                          {/* Beautiful progress bar */}
-                          <div style={{ height: '10px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden', marginTop: '4px', width: '100%' }}>
-                            <div
-                              style={{
-                                height: '100%',
-                                width: `${editingProject?.progress_percent ?? 0}%`,
-                                background: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)',
-                                borderRadius: '99px',
-                                transition: 'width 0.4s var(--transition-fluid)'
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái pháp lý</span>
-                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}</span>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Năm bàn giao dự kiến</span>
-                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.handover_year || 2026}</span>
-                        </div>
-
-                        <div>
-                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Đường dẫn Folder</span>
-                          <div style={{ marginTop: '4px' }}>
-                            {renderFolderPathLink(editingProject?.folder_path, editingProject?.id)}
-                          </div>
-                        </div>
                       </div>
                     </div>
 
@@ -5405,7 +5173,7 @@ export default function ProjectsPage() {
                     </div>
 
                     <div>
-                      <label className="form-label" style={{ fontWeight: 600 }}>Trạng thái bán</label>
+                      <label className="form-label" style={{ fontWeight: 600 }}>Trạng thái hoạt động</label>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -5417,11 +5185,11 @@ export default function ProjectsPage() {
                         height: '42px'
                       }}>
                         <div>
-                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Cho phép mở bán</span>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Cho phép hoạt động</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: editingProject?.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                            {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
+                            {editingProject?.status === 'active' ? 'Đang hoạt động' : 'Tạm dừng'}
                           </span>
                           <ToggleSwitch
                             checked={editingProject?.status === 'active'}
@@ -5525,133 +5293,7 @@ export default function ProjectsPage() {
                   </div>
                 </div>
 
-                {/* Card 2: Vị trí & Tiến độ */}
-                <div style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border-light)',
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  boxShadow: 'var(--shadow-sm)'
-                }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiến độ & Quy mô</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <label className="form-label" style={{ marginBottom: 0 }}>Tiến độ thi công</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={editingProject?.progress_percent ?? 0}
-                            onChange={e => {
-                              let val = Number(e.target.value);
-                              if (val < 0) val = 0;
-                              if (val > 100) val = 100;
-                              setEditingProject(prev => ({ ...prev, progress_percent: val }));
-                            }}
-                            style={{
-                              width: '64px',
-                              height: '28px',
-                              textAlign: 'center',
-                              fontSize: '0.85rem',
-                              fontWeight: 800,
-                              padding: '2px 4px',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: '6px',
-                              background: 'var(--color-surface)',
-                              color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)'
-                            }}
-                          />
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-muted)' }}>%</span>
-                        </div>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={editingProject?.progress_percent ?? 0}
-                        onChange={e => setEditingProject(prev => ({ ...prev, progress_percent: Number(e.target.value) }))}
-                        className="progress-slider"
-                        style={{
-                          background: (editingProject?.progress_percent ?? 0) === 100
-                            ? 'var(--color-success)'
-                            : 'linear-gradient(to right, #BD1D2D 0%, #F97316 ' + (editingProject?.progress_percent ?? 0) + '%, var(--color-border-light) ' + (editingProject?.progress_percent ?? 0) + '%, var(--color-border-light) 100%)'
-                        }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                        <span>0%</span>
-                        <span>50%</span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="form-label">Trạng thái thi công</label>
-                      <CustomSelect
-                        searchable={true}
-                        options={[
-                          { value: 'Chưa khởi công', label: 'Chưa khởi công' },
-                          { value: 'Đang thi công', label: 'Đang thi công' },
-                          { value: 'Đang thi công móng', label: 'Đang thi công móng' },
-                          { value: 'Đang xây thân', label: 'Đang xây thân' },
-                          { value: 'Đã cất nóc', label: 'Đã cất nóc' },
-                          { value: 'Đang hoàn thiện', label: 'Đang hoàn thiện' },
-                          { value: 'Đã bàn giao', label: 'Đã bàn giao' }
-                        ]}
-                        value={editingProject?.construction_status || 'Chưa khởi công'}
-                        onChange={val => {
-                          const status = String(val);
-                          let progress = editingProject?.progress_percent ?? 0;
-                          if (status === 'Chưa khởi công') progress = 0;
-                          else if (status === 'Đang thi công móng') progress = 15;
-                          else if (status === 'Đang thi công') progress = 30;
-                          else if (status === 'Đang xây thân') progress = 50;
-                          else if (status === 'Đã cất nóc') progress = 75;
-                          else if (status === 'Đang hoàn thiện') progress = 90;
-                          else if (status === 'Đã bàn giao') progress = 100;
-                          setEditingProject(prev => ({
-                            ...prev,
-                            construction_status: status,
-                            progress_percent: progress
-                          }));
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">Trạng thái pháp lý</label>
-                      <CustomSelect
-                        searchable={true}
-                        options={[
-                          { value: 'Đang hoàn thiện pháp lý', label: 'Đang hoàn thiện pháp lý' },
-                          { value: 'Quy hoạch 1/500', label: 'Quy hoạch 1/500' },
-                          { value: 'Giấy phép xây dựng', label: 'Giấy phép xây dựng' },
-                          { value: 'Sổ hồng riêng từng căn', label: 'Sổ hồng riêng từng căn' }
-                        ]}
-                        value={editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}
-                        onChange={val => setEditingProject(prev => ({ ...prev, legal_status: String(val) }))}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="form-label">Năm bàn giao dự kiến</label>
-                      <input
-                        type="number"
-                        value={editingProject?.handover_year ?? 2026}
-                        onChange={e => setEditingProject(prev => ({ ...prev, handover_year: Number(e.target.value) }))}
-                        className="form-input"
-                        placeholder="ví dụ: 2026"
-                      />
-                    </div>
-
-
-                  </div>
-                </div>
 
                 {/* Card 3: Mô tả */}
                 <div style={{

@@ -1071,4 +1071,59 @@ class HRMController {
 
         respond(200, $pending);
     }
+
+    public function savePayroll(array $auth): void {
+        if (!$this->isAdmin($auth)) respond(403, null, 'Không có quyền truy cập', false);
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $payslips = $data['payslips'] ?? [];
+        
+        if (!is_array($payslips)) respond(400, null, 'Dữ liệu không hợp lệ', false);
+        
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE monthly_payslips SET
+                    work_days_actual = ?,
+                    lateness_minutes = ?,
+                    lateness_penalty = ?,
+                    salary_basic_calculated = ?,
+                    allowance_total = ?,
+                    kpi_bonus = ?,
+                    insurance_bhxh = ?,
+                    tax_pit = ?,
+                    advance_deduction = ?,
+                    net_salary = ?,
+                    overtime_days = ?,
+                    overtime_salary = ?,
+                    diligence_bonus = ?
+                WHERE id = ?
+            ");
+            
+            foreach ($payslips as $ps) {
+                $stmt->execute([
+                    $ps['work_days_actual'],
+                    $ps['lateness_minutes'],
+                    $ps['lateness_penalty'],
+                    $ps['salary_basic_calculated'],
+                    $ps['allowance_total'],
+                    $ps['kpi_bonus'],
+                    $ps['insurance_bhxh'],
+                    $ps['tax_pit'],
+                    $ps['advance_deduction'],
+                    $ps['net_salary'],
+                    $ps['overtime_days'],
+                    $ps['overtime_salary'],
+                    $ps['diligence_bonus'],
+                    $ps['id']
+                ]);
+            }
+            
+            $this->db->commit();
+            respond(200, ['success' => true]);
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            respond(500, null, $e->getMessage(), false);
+        }
+    }
 }
