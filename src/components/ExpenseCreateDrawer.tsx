@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
@@ -72,6 +72,76 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   const isInitializedRef = useRef(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [allocationType, setAllocationType] = useState<'contact' | 'company'>('contact');
+
+  // Combine and filter suppliers and companies/partners for vendor search
+  const filteredVendors = useMemo(() => {
+    const searchLower = vendorSearch.toLowerCase();
+    
+    const matchedSuppliers = (Array.isArray(suppliers) ? suppliers : [])
+      .filter(s => (s.name || s.company_name || '').toLowerCase().includes(searchLower))
+      .map(s => ({
+        id: `supplier-${s.id}`,
+        type: 'supplier',
+        name: s.name || s.company_name || '',
+        phone: s.phone || '',
+        raw: s
+      }));
+      
+    const matchedCompanies = (Array.isArray(companies) ? companies : [])
+      .filter(c => (c.name || c.company_name || '').toLowerCase().includes(searchLower))
+      .map(c => ({
+        id: `company-${c.id}`,
+        type: 'company',
+        name: c.name || c.company_name || '',
+        phone: c.phone || '',
+        raw: c
+      }));
+      
+    return [...matchedSuppliers, ...matchedCompanies].slice(0, 8);
+  }, [suppliers, companies, vendorSearch]);
+
+  const handleSelectVendor = (vendor: any) => {
+    const name = vendor.name;
+    setVendorSearch(name);
+    
+    let bankUpdate: any = {};
+    if (vendor.type === 'company') {
+      const co = vendor.raw;
+      if (co.bank_name || co.bank_account_number || co.bank_account_name) {
+        bankUpdate = {
+          request_bank_transfer: true,
+          bank_name: co.bank_name || '',
+          bank_account_number: co.bank_account_number || '',
+          bank_account_name: co.bank_account_name || ''
+        };
+      }
+    } else if (vendor.type === 'supplier') {
+      const sup = vendor.raw;
+      if (sup.bank_account) {
+        const match = sup.bank_account.match(/(.*?)\s+(\d+)\s+-\s+(.*)/) || sup.bank_account.match(/(.*?)\s+(\d+)/);
+        if (match) {
+          bankUpdate = {
+            request_bank_transfer: true,
+            bank_name: match[1].trim(),
+            bank_account_number: match[2].trim(),
+            bank_account_name: match[3] ? match[3].trim() : ''
+          };
+        } else {
+          bankUpdate = {
+            request_bank_transfer: true,
+            bank_account_number: sup.bank_account
+          };
+        }
+      }
+    }
+    
+    setForm((prev: any) => ({
+      ...prev,
+      vendor_name: name,
+      ...bankUpdate
+    }));
+    setShowVendorDropdown(false);
+  };
 
   useEffect(() => {
     if (isOpen && editItem) {
@@ -465,22 +535,38 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
 
                   {showVendorDropdown && (
                     <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: 'var(--color-surface)', borderRadius: '14px', border: '1px solid var(--color-border-light)', boxShadow: '0 16px 32px -8px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden' }}>
-                      {(Array.isArray(suppliers) ? suppliers : []).filter(s => (s.name || s.company_name || '').toLowerCase().includes(vendorSearch.toLowerCase())).slice(0, 6).map(s => (
+                      {filteredVendors.map(v => (
                         <div
-                          key={s.id}
-                          onMouseDown={() => { const n = s.name || s.company_name || ''; setVendorSearch(n); setForm({ ...form, vendor_name: n }); setShowVendorDropdown(false); }}
+                          key={v.id}
+                          onMouseDown={() => handleSelectVendor(v)}
                           style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', cursor: 'pointer', transition: 'background 0.15s' }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <div style={{ width: 30, height: 30, borderRadius: '8px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem', flexShrink: 0 }}>{(s.name || s.company_name || '?')[0]}</div>
-                          <div>
-                            <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{s.name || s.company_name}</p>
-                            {s.phone && <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>{s.phone}</p>}
+                          <div style={{ 
+                            width: 30, 
+                            height: 30, 
+                            borderRadius: '8px', 
+                            background: v.type === 'company' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-primary-light)', 
+                            color: v.type === 'company' ? '#3b82f6' : 'var(--color-primary)', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            fontWeight: 800, 
+                            fontSize: '0.8rem', 
+                            flexShrink: 0 
+                          }}>
+                            {v.name[0] || '?'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</p>
+                            <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                              {v.type === 'company' ? 'Đối tác' : 'Nhà cung cấp'} {v.phone ? `· ${v.phone}` : ''}
+                            </p>
                           </div>
                         </div>
                       ))}
-                      {vendorSearch && !suppliers.find(s => (s.name || s.company_name) === vendorSearch) && (
+                      {vendorSearch && !filteredVendors.find(v => v.name === vendorSearch) && (
                         <div
                           onMouseDown={() => { setForm({ ...form, vendor_name: vendorSearch }); setShowVendorDropdown(false); }}
                           style={{ padding: '9px 14px', cursor: 'pointer', borderTop: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 700 }}
@@ -958,7 +1044,18 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                     onChange={(val) => {
                       const found = companies.find(c => String(c.id) === val);
                       if (found) {
-                        setForm({ ...form, entities: [...form.entities, { entity_type: 'company', entity_id: found.id, name: found.name || found.company_name || 'Không tên', avatar_url: found.logo_url || found.logo }] });
+                        const bankUpdate = (found.bank_name || found.bank_account_number || found.bank_account_name) && !form.bank_account_number ? {
+                          request_bank_transfer: true,
+                          bank_name: found.bank_name || form.bank_name || '',
+                          bank_account_number: found.bank_account_number || form.bank_account_number || '',
+                          bank_account_name: found.bank_account_name || form.bank_account_name || ''
+                        } : {};
+
+                        setForm(prev => ({ 
+                          ...prev, 
+                          entities: [...prev.entities, { entity_type: 'company', entity_id: found.id, name: found.name || found.company_name || 'Không tên', avatar_url: found.logo_url || found.logo }],
+                          ...bankUpdate
+                        }));
                       }
                     }}
                     placeholder="+ Thêm đối tác / giảng viên chia tiền bill..."

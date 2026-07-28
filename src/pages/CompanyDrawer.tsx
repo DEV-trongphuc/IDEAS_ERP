@@ -76,10 +76,11 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const visibleTabs = useMemo(() => {
+    const list = TABS.filter(t => t.id !== 'deals' && t.id !== 'invoices');
     if (isSale) {
-      return TABS.filter(t => ['info', 'contacts', 'docs', 'activities'].includes(t.id));
+      return list.filter(t => ['info', 'contacts', 'docs', 'activities'].includes(t.id));
     }
-    return disableEdit ? TABS.filter(t => t.id !== 'settings') : TABS;
+    return disableEdit ? list.filter(t => t.id !== 'settings') : list;
   }, [disableEdit, isSale]);
 
   const [users, setUsers] = useState<any[]>([]);
@@ -537,7 +538,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                   <div>
                     <h2 className={styles.title}>{formData?.name || 'Tên Đối tác'}</h2>
                     <p className={styles.subtitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Briefcase size={14} /> {formData?.tier ? formData.tier.toUpperCase() : 'F1'} · {formData?.focus_markets || 'Chưa cập nhật thế mạnh'} · MST: {formData?.tax_id || 'Chưa cập nhật'}
+                      <Briefcase size={14} /> {formData?.tier ? formData.tier.toUpperCase() : 'F1'} · {formData?.focus_markets || 'Chưa cập nhật thế mạnh'}
                     </p>
                     <div style={{ 
                       display: 'flex', 
@@ -734,8 +735,19 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                      <span style={{ color: 'var(--color-text-muted)' }}>Mã số thuế:</span>
-                      <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{formData?.tax_id?.trim() || 'Chưa cập nhật'}</span>
+                      <span style={{ color: 'var(--color-text-muted)' }}>Ngân hàng:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{formData?.bank_name || 'Chưa cập nhật'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>Số tài khoản:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {formData?.bank_account_number || 'Chưa cập nhật'}
+                        {formData?.bank_account_number && <CopyButton text={formData.bank_account_number} />}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>Chủ tài khoản:</span>
+                      <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{formData?.bank_account_name || 'Chưa cập nhật'}</span>
                     </div>
                     {formData?.website && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', minWidth: 0 }}>
@@ -973,9 +985,34 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                           <input className="form-input" placeholder="Tên người liên hệ..." value={formData?.legal_representative || ''} onChange={e => setFormData((prev: any) => ({ ...prev, legal_representative: e.target.value }))} />
                         </div>
 
-                        <div className="form-group">
-                          <label className="form-label">Mã số thuế (Tax ID)</label>
-                          <input className="form-input" placeholder="Nhập MST..." value={formData?.tax_id || ''} onChange={e => setFormData((prev: any) => ({ ...prev, tax_id: e.target.value }))} />
+                        <div style={{ 
+                          border: '1px dashed var(--color-border, #e2e8f0)',
+                          borderRadius: '12px',
+                          padding: '16px',
+                          marginBottom: '16px',
+                          background: 'var(--color-bg, #f8fafc)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          gridColumn: '1 / -1'
+                        }}>
+                          <h4 style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--color-text, #1e293b)', margin: 0 }}>
+                            📌 THÔNG TIN THANH TOÁN (BANKING)
+                          </h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label">Tên ngân hàng</label>
+                              <input className="form-input" placeholder="Ví dụ: Vietcombank..." value={formData?.bank_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, bank_name: e.target.value }))} />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label className="form-label">Số tài khoản (STK)</label>
+                              <input className="form-input" placeholder="Nhập số tài khoản..." value={formData?.bank_account_number || ''} onChange={e => setFormData((prev: any) => ({ ...prev, bank_account_number: e.target.value }))} />
+                            </div>
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label">Chủ tài khoản thanh toán</label>
+                            <input className="form-input" placeholder="Nhập tên chủ tài khoản..." value={formData?.bank_account_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, bank_account_name: e.target.value.toUpperCase() }))} />
+                          </div>
                         </div>
 
                         {!isSale && (
