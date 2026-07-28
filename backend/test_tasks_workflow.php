@@ -27,6 +27,12 @@ if (!function_exists('getBody')) {
     }
 }
 
+if (!function_exists('logActivity')) {
+    function logActivity($db, $tid, $uid, string $action, ?string $resource = null, $resourceId = null, ?string $data = null): void {
+        // Mocked logActivity for testing environment
+    }
+}
+
 echo "====================================================\n";
 echo "🧪 KHỞI CHẠY KIỂM THỬ TÍCH HỢP QUY TRÌNH TASK & PHÊ DUYỆT\n";
 echo "====================================================\n\n";
