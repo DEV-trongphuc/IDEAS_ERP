@@ -177,11 +177,12 @@ class DepositController {
             }
 
             $stmtM = $this->db->prepare("
-                INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, status)
-                VALUES (?, ?, ?, 'pending')
+                INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, expected_pay_date, status)
+                VALUES (?, ?, ?, ?, 'pending')
             ");
             foreach ($milestones as $m) {
-                $stmtM->execute([$depositId, trim($m['name']), (float)$m['amount']]);
+                $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
+                $stmtM->execute([$depositId, trim($m['name'] ?? $m['milestone_name']), (float)$m['amount'], $payDate]);
             }
 
             // Update contact pipeline stage to deal won status and set temperature to 'hot' (Sôi = xuống tiền)
@@ -899,8 +900,9 @@ class DepositController {
 
             // Update or Insert milestones
             foreach ($milestones as $m) {
-                $mName = trim($m['milestone_name'] ?? '');
-                $mAmount = (float)($m['expected_amount'] ?? 0);
+                $mName = trim($m['milestone_name'] ?? $m['name'] ?? '');
+                $mAmount = (float)($m['expected_amount'] ?? $m['amount'] ?? 0);
+                $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
                 if (empty($mName)) continue;
 
                 if (isset($m['id']) && !empty($m['id'])) {
@@ -914,17 +916,17 @@ class DepositController {
                         }
                     }
                     if ($dbMilestone && ($dbMilestone['status'] === 'approved' || $dbMilestone['status'] === 'paid')) {
-                        // Allow updating name, but prevent changing amount
-                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ? WHERE id = ?");
-                        $stmtUpd->execute([$mName, $mId]);
+                        // Allow updating name and pay date, but prevent changing amount
+                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_pay_date = ? WHERE id = ?");
+                        $stmtUpd->execute([$mName, $payDate, $mId]);
                     } else {
-                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_amount = ? WHERE id = ?");
-                        $stmtUpd->execute([$mName, $mAmount, $mId]);
+                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_amount = ?, expected_pay_date = ? WHERE id = ?");
+                        $stmtUpd->execute([$mName, $mAmount, $payDate, $mId]);
                     }
                 } else {
                     // Insert new
-                    $stmtIns = $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, status) VALUES (?, ?, ?, 'pending')");
-                    $stmtIns->execute([$id, $mName, $mAmount]);
+                    $stmtIns = $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, expected_pay_date, status) VALUES (?, ?, ?, ?, 'pending')");
+                    $stmtIns->execute([$id, $mName, $mAmount, $payDate]);
                 }
             }
 

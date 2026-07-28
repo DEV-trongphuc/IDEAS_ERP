@@ -206,14 +206,11 @@ const resolveAttachmentUrl = (url: string | null | undefined): string => {
 const TABS = [
   { id: 'info', label: 'Thông tin chung', icon: <User size={16} /> },
   { id: 'tags', label: 'Tags & Ghi chú', icon: <TagIcon size={16} /> },
-  { id: 'cooperation', label: 'Hợp tác', icon: <Users size={16} /> },
   { id: 'tasks', label: 'Công việc', icon: <CheckSquare size={16} /> },
   { id: 'docs', label: 'Hồ sơ & Tài liệu', icon: <Paperclip size={16} /> },
   { id: 'timeline', label: 'Lịch sử tương tác', icon: <History size={16} /> },
   { id: 'scoring', label: 'Scoring', icon: <Target size={16} /> },
-  { id: 'invoices', label: 'Hóa đơn', icon: <FileText size={16} /> },
-  { id: 'deals', label: 'Phiếu đặt cọc', icon: <CreditCard size={16} /> },
-  { id: 'quotes', label: 'Báo giá', icon: <ShoppingCart size={16} /> },
+  { id: 'deals', label: 'Thanh toán', icon: <CreditCard size={16} /> },
   { id: 'expenses', label: 'Chi phí', icon: <DollarSign size={16} /> },
   { id: 'tickets', label: 'Hỗ trợ & Khiếu nại', icon: <LifeBuoy size={16} /> },
 ];
@@ -8707,7 +8704,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   {activeTab === 'deals' && (
                     <div className="animate-fade">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Phiếu đặt cọc - {deals.length}</h3>
+                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Phiếu thanh toán - {deals.length}</h3>
                         {!isViewer && (
                           <button className="btn primary sm" onClick={() => {
                             setDepositProjectId('');
@@ -8717,9 +8714,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             setDepositExpectedCommission('');
                             setCommissionType('amount');
                             setCommissionPercent('');
-                            setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }]);
+                            setDepositMilestones([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);
                             setShowDealModal(true);
-                          }}><Plus size={14} /> Tạo phiếu đặt cọc</button>
+                          }}><Plus size={14} /> Tạo phiếu thanh toán</button>
                         )}
                       </div>
                       {loadingRelated ? (
@@ -8731,8 +8728,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       ) : deals.length === 0 ? (
                         <div className="card-panel" style={{ textAlign: 'center', padding: '4rem 2rem', border: '2px dashed var(--color-border-light)', borderRadius: '24px' }}>
                           <CreditCard size={48} style={{ color: 'var(--color-border)', margin: '0 auto 1.5rem', opacity: 0.4 }} />
-                          <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Chưa có phiếu đặt cọc</h4>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '240px', margin: '0 auto' }}>Đang không có phiếu đặt cọc nào cho khách hàng này.</p>
+                          <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Chưa có phiếu thanh toán</h4>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '240px', margin: '0 auto' }}>Đang không có phiếu thanh toán nào cho khách hàng này.</p>
                         </div>
                       ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
@@ -8802,7 +8799,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                           onClick={(e) => { e.stopPropagation(); handleCancelDeposit(d.id); }}
                                           style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '28px', fontSize: '0.75rem', padding: '0 10px', cursor: 'pointer' }}
                                         >
-                                          <Ban size={12} /> Hủy đặt cọc (Bể cọc)
+                                          <Ban size={12} /> Hủy giao dịch (Bể cọc)
                                         </button>
                                       </div>
                                     );
@@ -11311,8 +11308,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     <CreditCard size={20} />
                   </div>
                   <div>
-                    <h3 style={{ fontWeight: 800 }}>Tạo phiếu đặt cọc mới</h3>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>Thiết lập thông tin giao dịch đặt cọc dự án</p>
+                    <h3 style={{ fontWeight: 800 }}>Tạo phiếu thanh toán mới</h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>Thiết lập lộ trình thanh toán chương trình</p>
                   </div>
                 </div>
                 <button className="btn-icon sm" onClick={() => setShowDealModal(false)}><X size={18} /></button>
@@ -11334,7 +11331,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   {/* Left Column: Project & Price */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Dự án giao dịch *</label>
+                      <label className="form-label" style={{ fontWeight: 700 }}>Chương trình giao dịch *</label>
                       <CustomSelect
                         searchable
                         options={projectsList.map(p => ({
@@ -11343,15 +11340,15 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         }))}
                         value={depositProjectId}
                         onChange={val => setDepositProjectId(val.toString())}
-                        placeholder="-- Chọn dự án --"
+                        placeholder="-- Chọn chương trình --"
                       />
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Mã căn hộ/Lô đất *</label>
+                      <label className="form-label" style={{ fontWeight: 700 }}>Mã Học viên/Khách hàng *</label>
                       <input
                         type="text"
-                        placeholder="VD: A-12.05, LK-04..."
+                        placeholder="VD: HV001, MS105..."
                         value={depositUnitCode}
                         onChange={e => setDepositUnitCode(e.target.value.toUpperCase())}
                         className="form-input"
@@ -11360,7 +11357,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Doanh thu dự kiến (Giá bán) *</label>
+                      <label className="form-label" style={{ fontWeight: 700 }}>Tổng doanh thu dự kiến *</label>
                       <CurrencyInput
                         value={depositPrice}
                         onChange={val => setDepositPrice(String(val))}
@@ -11483,9 +11480,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-border-light)', marginTop: '1.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700 }}>Lịch trình thanh toán cọc</h4>
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700 }}>Lịch trình thanh toán</h4>
                       <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                        (Tổng tiền các đợt cọc có thể nhỏ hơn doanh thu dự kiến)
+                        (Tổng tiền các đợt thanh toán có thể nhỏ hơn tổng doanh thu dự kiến)
                       </span>
                     </div>
                     <button

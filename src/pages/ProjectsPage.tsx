@@ -662,7 +662,7 @@ export default function ProjectsPage() {
 
       const res = await fetchAPI(`${entityType}s/${entityId}/comments`, {
         method: 'POST',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           body: commentText,
           attachments: uploadedUrls,
           parent_id: replyTo ? replyTo.id : null
@@ -743,7 +743,7 @@ export default function ProjectsPage() {
             </div>
             {comment.body ? (
               /<[a-z][\s\S]*>/i.test(comment.body) ? (
-                <div 
+                <div
                   className="rich-text-editor-content"
                   dangerouslySetInnerHTML={{ __html: comment.body }}
                   style={{ margin: 0, color: 'var(--color-text-light)', lineHeight: '1.4' }}
@@ -776,18 +776,18 @@ export default function ProjectsPage() {
                     return (
                       <div key={aIdx} style={{ marginTop: '2px', display: 'inline-block' }}>
                         <a href={href} target="_blank" rel="noreferrer">
-                          <img 
-                            src={href} 
-                            alt={filename} 
-                            style={{ 
-                              maxWidth: '220px', 
-                              maxHeight: '140px', 
-                              borderRadius: '8px', 
-                              border: '1px solid var(--color-border-light)', 
+                          <img
+                            src={href}
+                            alt={filename}
+                            style={{
+                              maxWidth: '220px',
+                              maxHeight: '140px',
+                              borderRadius: '8px',
+                              border: '1px solid var(--color-border-light)',
                               objectFit: 'cover',
                               cursor: 'zoom-in',
                               boxShadow: 'var(--shadow-sm)'
-                            }} 
+                            }}
                           />
                         </a>
                       </div>
@@ -846,7 +846,7 @@ export default function ProjectsPage() {
         <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>
           Thảo luận & Trao đổi ({detailComments.length})
         </span>
-        
+
         <div style={{ background: 'var(--color-bg-light)', border: '1px solid var(--color-border-light)', padding: '12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
           {replyTo && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(163, 20, 34, 0.08)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', color: '#a31422', fontWeight: 700, marginBottom: '6px' }}>
@@ -1060,7 +1060,7 @@ export default function ProjectsPage() {
                 bubble.style.background = originalBg;
               }, 2500);
             }
-            
+
             // Clean URL parameters
             const newParams = new URLSearchParams(window.location.search);
             newParams.delete('highlight_comment_id');
@@ -1073,18 +1073,18 @@ export default function ProjectsPage() {
   }, [detailComments, isEditModalOpen, isCampaignModalOpen]);
 
   const renderDrawer = (
-    isOpen: boolean, 
-    onClose: () => void, 
-    title: string, 
-    content: React.ReactNode, 
-    width: string = '850px', 
+    isOpen: boolean,
+    onClose: () => void,
+    title: string,
+    content: React.ReactNode,
+    width: string = '850px',
     headerActions?: React.ReactNode,
     isCampaign?: boolean
   ) => {
     if (!isOpen) return null;
     return createPortal(
       <>
-        <div 
+        <div
           className="drawer-backdrop"
           onClick={onClose}
           style={{
@@ -1097,7 +1097,7 @@ export default function ProjectsPage() {
             cursor: 'pointer'
           }}
         />
-        <div 
+        <div
           className="drawer-sheet"
           style={{
             left: window.innerWidth <= 768 ? 0 : 'var(--sidebar-width, 220px)',
@@ -1141,8 +1141,8 @@ export default function ProjectsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               {headerActions}
               {(!isCampaign || !isMobile) && (
-                <button 
-                  onClick={onClose} 
+                <button
+                  onClick={onClose}
                   style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
                   className="hover-lift"
                 >
@@ -1213,7 +1213,7 @@ export default function ProjectsPage() {
   const canEditRoster = React.useMemo(() => {
     if (!user) return false;
     if (['admin', 'superadmin', 'super_admin', 'director'].includes(user.role)) return true;
-    
+
     const isManagerOrLeader = user.role === 'manager' || teams.some(t => Number(t.leader_id) === Number(user.id));
     if (isManagerOrLeader) {
       if (isRosterModalOpen && rosterMembers.length > 0) {
@@ -1226,7 +1226,7 @@ export default function ProjectsPage() {
   const isManagerOrLeader = React.useMemo(() => {
     if (!user) return false;
     return ['admin', 'superadmin', 'super_admin', 'director', 'manager'].includes(user.role) ||
-           teams.some(t => Number(t.leader_id) === Number(user.id));
+      teams.some(t => Number(t.leader_id) === Number(user.id));
   }, [user, teams]);
 
   const formatLastUpdated = (updatedAtStr: string | undefined, createdAtStr: string | undefined) => {
@@ -1264,7 +1264,7 @@ export default function ProjectsPage() {
   const canEditCampaign = (camp: any) => {
     if (!user) return false;
     if (isSystemAdmin || ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role)) return true;
-    
+
     // Bypass if user is the project manager or creator of the parent project
     if (camp.project_id) {
       const parentProj = projects.find(p => String(p.id) === String(camp.project_id));
@@ -1414,7 +1414,7 @@ export default function ProjectsPage() {
       if (val.startsWith('[')) {
         try {
           return JSON.parse(val).map(String);
-        } catch (e) {}
+        } catch (e) { }
       }
       return val.split(',').map(s => s.trim()).filter(Boolean);
     }
@@ -1427,16 +1427,16 @@ export default function ProjectsPage() {
     if (isUrl) {
       const isDriveUrl = path.toLowerCase().includes('drive');
       return (
-        <a 
-          href={path} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          style={{ 
-            color: '#64748b', 
-            textDecoration: 'none', 
-            fontWeight: 700, 
-            display: 'inline-flex', 
-            alignItems: 'center', 
+        <a
+          href={path}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: '#64748b',
+            textDecoration: 'none',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
             gap: '8px',
             background: 'rgba(100, 116, 139, 0.05)',
             border: '1px solid rgba(100, 116, 139, 0.12)',
@@ -1459,10 +1459,10 @@ export default function ProjectsPage() {
         >
           {isDriveUrl ? (
             <>
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/1280px-Google_Drive_icon_%282020%29.svg.png" 
-                alt="Google Drive" 
-                style={{ width: '14px', height: '14px', objectFit: 'contain', flexShrink: 0 }} 
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/1280px-Google_Drive_icon_%282020%29.svg.png"
+                alt="Google Drive"
+                style={{ width: '14px', height: '14px', objectFit: 'contain', flexShrink: 0 }}
               />
               <span>Mở Google Drive</span>
             </>
@@ -1475,9 +1475,9 @@ export default function ProjectsPage() {
         </a>
       );
     }
-    
+
     return (
-      <button 
+      <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -1487,14 +1487,14 @@ export default function ProjectsPage() {
             addToast('Không tìm thấy dự án liên kết', 'error');
           }
         }}
-        style={{ 
-          color: '#64748b', 
+        style={{
+          color: '#64748b',
           border: '1px solid rgba(100, 116, 139, 0.12)',
           background: 'rgba(100, 116, 139, 0.05)',
           cursor: 'pointer',
-          fontWeight: 700, 
-          display: 'inline-flex', 
-          alignItems: 'center', 
+          fontWeight: 700,
+          display: 'inline-flex',
+          alignItems: 'center',
           gap: '8px',
           padding: '0 12px',
           borderRadius: '10px',
@@ -1529,20 +1529,20 @@ export default function ProjectsPage() {
             {projectStats && (
               <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 {/* 1. Tổng Khách Hàng */}
-                <div 
-                  className="stat-card hover-lift" 
+                <div
+                  className="stat-card hover-lift"
                   onClick={user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? () => {
                     if (editingProject?.id) {
                       navigate(`/contacts?project_id=${editingProject.id}`);
                     }
                   } : undefined}
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     cursor: user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? 'pointer' : 'default',
                     transition: 'all 0.2s ease',
@@ -1569,15 +1569,15 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 2. Cơ Hội Bán Hàng */}
-                <div 
-                  className="stat-card hover-lift" 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                <div
+                  className="stat-card hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -1603,15 +1603,15 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 3. Doanh Thu */}
-                <div 
-                  className="stat-card hover-lift" 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                <div
+                  className="stat-card hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -1629,8 +1629,8 @@ export default function ProjectsPage() {
                   </div>
                   <div>
                     <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={projectStats.actual_revenue.toLocaleString('vi-VN') + ' VND'}>
-                      {projectStats.actual_revenue >= 1000000000 
-                        ? `${(projectStats.actual_revenue / 1000000000).toFixed(2)} tỷ` 
+                      {projectStats.actual_revenue >= 1000000000
+                        ? `${(projectStats.actual_revenue / 1000000000).toFixed(2)} tỷ`
                         : `${(projectStats.actual_revenue / 1000000).toFixed(0)} triệu`}
                     </div>
                     <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Từ hóa đơn thực tế</div>
@@ -1638,15 +1638,15 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 4. Tỷ Lệ Chốt */}
-                <div 
-                  className="stat-card hover-lift" 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                <div
+                  className="stat-card hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -1675,7 +1675,7 @@ export default function ProjectsPage() {
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.25rem', alignItems: 'start' }}>
               {/* Left Column (3/5) */}
               <div style={{ flex: 3, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                
+
                 {/* Section 1: Thông tin cơ bản */}
                 <div style={{
                   background: 'var(--color-surface)',
@@ -1716,7 +1716,7 @@ export default function ProjectsPage() {
                     </div>
                     <div>
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái bán</span>
-                      <span 
+                      <span
                         className={`badge ${editingProject?.status === 'active' ? 'success' : 'secondary'}`}
                         style={{ fontSize: '0.75rem', padding: '6px 12px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
                       >
@@ -1806,7 +1806,7 @@ export default function ProjectsPage() {
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
                       <span style={{ color: 'var(--color-text)', fontSize: '0.85rem', fontWeight: 700, display: 'block', lineHeight: 1.4 }}>{editingProject?.location || 'Chưa cập nhật'}</span>
                     </div>
-                    
+
                     <div style={{ gridColumn: 'span 2' }}>
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái thi công &amp; Tiến độ</span>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '6px' }}>
@@ -1817,17 +1817,17 @@ export default function ProjectsPage() {
                           {editingProject?.progress_percent ?? 0}%
                         </span>
                       </div>
-                      
+
                       {/* Beautiful progress bar */}
                       <div style={{ height: '8px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden', width: '100%' }}>
-                        <div 
-                          style={{ 
-                            height: '100%', 
-                            width: `${editingProject?.progress_percent ?? 0}%`, 
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${editingProject?.progress_percent ?? 0}%`,
                             background: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)',
                             borderRadius: '99px',
                             transition: 'width 0.4s var(--transition-fluid)'
-                          }} 
+                          }}
                         />
                       </div>
 
@@ -1837,19 +1837,19 @@ export default function ProjectsPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', padding: '8px 0 24px' }}>
                           {/* Connecting Line */}
                           <div style={{ position: 'absolute', top: '23px', left: '10px', right: '10px', height: '2px', background: 'var(--color-border-light)', zIndex: 1 }} />
-                          <div 
-                            style={{ 
-                              position: 'absolute', 
-                              top: '23px', 
-                              left: '10px', 
-                              width: `${Math.min(100, Math.max(0, ((editingProject?.progress_percent ?? 0) / 100) * 100))}%`, 
-                              height: '2px', 
-                              background: 'var(--color-primary)', 
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '23px',
+                              left: '10px',
+                              width: `${Math.min(100, Math.max(0, ((editingProject?.progress_percent ?? 0) / 100) * 100))}%`,
+                              height: '2px',
+                              background: 'var(--color-primary)',
                               zIndex: 2,
                               transition: 'width 0.3s ease'
-                            }} 
+                            }}
                           />
-                          
+
                           {/* Milestone Nodes */}
                           {[
                             { name: 'Chuẩn bị', pct: 10, label: 'Khởi công' },
@@ -1861,13 +1861,13 @@ export default function ProjectsPage() {
                             const isDone = (editingProject?.progress_percent ?? 0) >= milestone.pct;
                             const isCurrent = (editingProject?.progress_percent ?? 0) === milestone.pct;
                             return (
-                              <div 
+                              <div
                                 key={idx}
-                                style={{ 
-                                  display: 'flex', 
-                                  flexDirection: 'column', 
-                                  alignItems: 'center', 
-                                  zIndex: 3, 
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  zIndex: 3,
                                   position: 'relative'
                                 }}
                               >
@@ -1905,7 +1905,7 @@ export default function ProjectsPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Trạng thái pháp lý</span>
                       <span style={{ color: 'var(--color-text)', fontSize: '0.95rem', fontWeight: 700, display: 'block' }}>{editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}</span>
@@ -1955,7 +1955,7 @@ export default function ProjectsPage() {
 
               {/* Right Column (2/5) */}
               <div style={{ flex: 2, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                
+
                 {/* Section 3: Nhân sự & Tài liệu */}
                 <div style={{
                   background: 'var(--color-surface)',
@@ -2008,18 +2008,18 @@ export default function ProjectsPage() {
                       ) : projectRoster.length === 0 ? (
                         <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa phân công nhân sự</span>
                       ) : (
-                        <div 
+                        <div
                           onClick={() => setShowRosterModal(true)}
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            padding: '6px 12px', 
-                            background: 'var(--color-bg-light)', 
-                            border: '1px solid var(--color-border-light)', 
-                            borderRadius: '12px', 
-                            cursor: 'pointer', 
-                            width: 'fit-content', 
-                            transition: 'all 0.2s ease' 
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '6px 12px',
+                            background: 'var(--color-bg-light)',
+                            border: '1px solid var(--color-border-light)',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            width: 'fit-content',
+                            transition: 'all 0.2s ease'
                           }}
                           onMouseEnter={e => {
                             e.currentTarget.style.borderColor = 'var(--color-primary-light)';
@@ -2033,11 +2033,11 @@ export default function ProjectsPage() {
                         >
                           <div style={{ display: 'flex', alignItems: 'center' }}>
                             {projectRoster.slice(0, 5).map((member: any, idx: number) => (
-                              <div 
-                                key={member.id} 
-                                style={{ 
-                                  marginLeft: idx === 0 ? 0 : -8, 
-                                  border: '2px solid var(--color-surface)', 
+                              <div
+                                key={member.id}
+                                style={{
+                                  marginLeft: idx === 0 ? 0 : -8,
+                                  border: '2px solid var(--color-surface)',
                                   borderRadius: '50%',
                                   overflow: 'hidden',
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
@@ -2049,18 +2049,18 @@ export default function ProjectsPage() {
                               </div>
                             ))}
                             {projectRoster.length > 5 && (
-                              <div 
-                                style={{ 
-                                  marginLeft: -8, 
-                                  width: 28, 
-                                  height: 28, 
-                                  borderRadius: '50%', 
-                                  background: 'var(--color-border-light)', 
-                                  color: 'var(--color-text)', 
-                                  fontSize: '0.7rem', 
-                                  fontWeight: 800, 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
+                              <div
+                                style={{
+                                  marginLeft: -8,
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: '50%',
+                                  background: 'var(--color-border-light)',
+                                  color: 'var(--color-text)',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  display: 'flex',
+                                  alignItems: 'center',
                                   justifyContent: 'center',
                                   border: '2px solid var(--color-surface)',
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
@@ -2107,8 +2107,8 @@ export default function ProjectsPage() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {(() => {
-                      const linkedCamps = campaigns.filter(c => 
-                        String(c.project_id) === String(editingProject?.id) || 
+                      const linkedCamps = campaigns.filter(c =>
+                        String(c.project_id) === String(editingProject?.id) ||
                         (editingProject?.campaign_ids && editingProject.campaign_ids.split(',').map((s: string) => s.trim()).includes(c.name))
                       );
 
@@ -2247,13 +2247,13 @@ export default function ProjectsPage() {
                             title={fileObj.name}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ 
-                              color: '#64748b', 
-                              textDecoration: 'none', 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '8px', 
-                              fontSize: '0.8rem', 
+                            style={{
+                              color: '#64748b',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '0.8rem',
                               fontWeight: 700,
                               background: 'var(--color-bg-light)',
                               padding: '8px 12px',
@@ -2390,10 +2390,10 @@ export default function ProjectsPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                       <span style={{ fontWeight: 650, color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: '1.2' }}>{task.subject}</span>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Avatar 
-                                          src={performer?.avatar_url || performer?.avatar} 
-                                          name={performer?.full_name || performer?.name || 'Hệ thống'} 
-                                          size={18} 
+                                        <Avatar
+                                          src={performer?.avatar_url || performer?.avatar}
+                                          name={performer?.full_name || performer?.name || 'Hệ thống'}
+                                          size={18}
                                         />
                                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
                                           {performer?.full_name || 'Hệ thống'} {performer?.role ? `(${performer.role})` : ''}
@@ -2401,12 +2401,12 @@ export default function ProjectsPage() {
                                       </div>
                                     </div>
                                   </div>
-                                  <span style={{ 
-                                    fontSize: '0.72rem', 
-                                    fontWeight: 700, 
-                                    padding: '4px 10px', 
-                                    borderRadius: '100px', 
-                                    background: sc.bg, 
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    padding: '4px 10px',
+                                    borderRadius: '100px',
+                                    background: sc.bg,
                                     color: sc.text,
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.03em'
@@ -2491,7 +2491,7 @@ export default function ProjectsPage() {
               <div style={{ width: '3px', height: '14px', background: 'var(--color-primary)', borderRadius: '1.5px', flexShrink: 0 }} />
               <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch sử hoạt động của Dự án</h4>
             </div>
-            
+
             {statsLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
                 <RefreshCw className="spin" size={24} color="var(--color-text-muted)" />
@@ -2508,7 +2508,7 @@ export default function ProjectsPage() {
                       <div style={{ position: 'absolute', top: '16px', left: '7px', bottom: '-24px', width: '2px', background: 'var(--color-border-light)' }} />
                     )}
                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--color-primary)', border: '4px solid #ffffff', boxShadow: '0 0 0 1px var(--color-border-light)', flexShrink: 0, marginTop: '2px' }} />
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.85rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontWeight: 800, color: 'var(--color-text)' }}>{log.user_name || 'Hệ thống'}</span>
@@ -2729,20 +2729,20 @@ export default function ProjectsPage() {
             {campaignStats && (
               <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
                 {/* 1. Tổng Khách Hàng */}
-                <div 
-                  className="stat-card hover-lift" 
+                <div
+                  className="stat-card hover-lift"
                   onClick={user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? () => {
                     if (editingCampaign?.id) {
                       navigate(`/contacts?campaign_id=${editingCampaign.id}`);
                     }
                   } : undefined}
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     cursor: user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? 'pointer' : 'default',
                     transition: 'all 0.2s ease',
@@ -2769,15 +2769,15 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 2. Cơ Hội Bán Hàng */}
-                <div 
-                  className="stat-card hover-lift" 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                <div
+                  className="stat-card hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -2803,15 +2803,15 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 3. Doanh Thu */}
-                <div 
-                  className="stat-card hover-lift" 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                <div
+                  className="stat-card hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -2829,8 +2829,8 @@ export default function ProjectsPage() {
                   </div>
                   <div>
                     <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={campaignStats.actual_revenue.toLocaleString('vi-VN') + ' VND'}>
-                      {campaignStats.actual_revenue >= 1000000000 
-                        ? `${(campaignStats.actual_revenue / 1000000000).toFixed(2)} tỷ` 
+                      {campaignStats.actual_revenue >= 1000000000
+                        ? `${(campaignStats.actual_revenue / 1000000000).toFixed(2)} tỷ`
                         : `${(campaignStats.actual_revenue / 1000000).toFixed(0)} triệu`}
                     </div>
                     <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Từ hóa đơn thực tế</div>
@@ -2838,15 +2838,15 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* 4. Tỷ Lệ Chốt */}
-                <div 
-                  className="stat-card hover-lift" 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    padding: '0.75rem 1rem', 
-                    background: 'var(--color-surface)', 
-                    border: '1px solid var(--color-border-light)', 
-                    borderRadius: '12px', 
+                <div
+                  className="stat-card hover-lift"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                     position: 'relative',
                     overflow: 'hidden'
@@ -2875,7 +2875,7 @@ export default function ProjectsPage() {
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'start' }}>
               {/* Left Column (3/5) */}
               <div style={{ flex: 3, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                
+
                 {/* Section 1: Thông tin cơ bản */}
                 <div style={{
                   background: 'var(--color-surface)',
@@ -2898,7 +2898,7 @@ export default function ProjectsPage() {
                     </div>
                     <div>
                       <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái hoạt động</span>
-                      <span 
+                      <span
                         className={`badge ${editingCampaign?.status === 'active' ? 'success' : 'secondary'}`}
                         style={{ fontSize: '0.75rem', padding: '5px 10px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
                       >
@@ -2968,12 +2968,12 @@ export default function ProjectsPage() {
                     <div style={{ width: '3px', height: '14px', background: 'var(--color-primary)', borderRadius: '1.5px', flexShrink: 0 }} />
                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cột mốc & Tiến độ Chiến dịch</h4>
                   </div>
-                  
+
                   {(() => {
                     const today = new Date();
                     const start = editingCampaign?.start_date ? new Date(editingCampaign.start_date) : null;
                     const end = editingCampaign?.end_date ? new Date(editingCampaign.end_date) : null;
-                    
+
                     let phase = 1; // 1: Planning, 2: Active, 3: Completed
                     if (start && today >= start) {
                       phase = 2;
@@ -2981,24 +2981,24 @@ export default function ProjectsPage() {
                     if (end && today > end) {
                       phase = 3;
                     }
-                    
+
                     return (
                       <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', padding: '10px 0 20px' }}>
                         {/* Connecting Line */}
                         <div style={{ position: 'absolute', top: '25px', left: '10px', right: '10px', height: '2px', background: 'var(--color-border-light)', zIndex: 1 }} />
-                        <div 
-                          style={{ 
-                            position: 'absolute', 
-                            top: '25px', 
-                            left: '10px', 
-                            width: phase === 1 ? '0%' : (phase === 2 ? '50%' : '100%'), 
-                            height: '2px', 
-                            background: 'var(--color-primary)', 
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '25px',
+                            left: '10px',
+                            width: phase === 1 ? '0%' : (phase === 2 ? '50%' : '100%'),
+                            height: '2px',
+                            background: 'var(--color-primary)',
                             zIndex: 2,
                             transition: 'width 0.3s ease'
-                          }} 
+                          }}
                         />
-                        
+
                         {[
                           { label: 'Lập kế hoạch', desc: 'Trước ngày bắt đầu' },
                           { label: 'Đang triển khai', desc: start ? `Từ ${new Date(start).toLocaleDateString('vi-VN')}` : 'Chạy Ads & Thu Lead' },
@@ -3061,7 +3061,7 @@ export default function ProjectsPage() {
 
               {/* Right Column (2/5) */}
               <div style={{ flex: 2, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                
+
                 {/* Section 2: Dự án & Nhân sự phụ trách */}
                 <div style={{
                   background: 'var(--color-surface)',
@@ -3077,14 +3077,14 @@ export default function ProjectsPage() {
                     <div style={{ width: '3px', height: '14px', background: 'var(--color-text-muted)', borderRadius: '1.5px', flexShrink: 0 }} />
                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dự án &amp; Nhân sự phụ trách</h4>
                   </div>
-                  
+
                   {(() => {
-                    const associatedProjs = editingCampaign?.project_id 
+                    const associatedProjs = editingCampaign?.project_id
                       ? projects.filter(p => p.id === editingCampaign.project_id)
                       : projects.filter(p => {
-                          const campIds = p.campaign_ids ? p.campaign_ids.split(',').map((id: string) => id.trim()) : [];
-                          return campIds.includes(editingCampaign?.name);
-                        });
+                        const campIds = p.campaign_ids ? p.campaign_ids.split(',').map((id: string) => id.trim()) : [];
+                        return campIds.includes(editingCampaign?.name);
+                      });
 
                     const campaignManagers = parseIds(editingCampaign?.manager_ids).map(id => users.find(u => Number(u.id) === Number(id))).filter(Boolean);
                     const campaignStaff = parseIds(editingCampaign?.user_ids).map(id => users.find(u => Number(u.id) === Number(id))).filter(Boolean);
@@ -3139,7 +3139,7 @@ export default function ProjectsPage() {
                           return (
                             <div key={proj.id} style={{ border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '1rem', background: 'var(--color-bg-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dotted var(--color-border-light)', paddingBottom: '0.5rem' }}>
-                                <span 
+                                <span
                                   onClick={() => {
                                     setEditingProject(proj);
                                     setProjectModalMode('view');
@@ -3311,10 +3311,10 @@ export default function ProjectsPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                       <span style={{ fontWeight: 650, color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: '1.2' }}>{task.subject}</span>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Avatar 
-                                          src={performer?.avatar_url || performer?.avatar} 
-                                          name={performer?.full_name || performer?.name || 'Hệ thống'} 
-                                          size={18} 
+                                        <Avatar
+                                          src={performer?.avatar_url || performer?.avatar}
+                                          name={performer?.full_name || performer?.name || 'Hệ thống'}
+                                          size={18}
                                         />
                                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
                                           {performer?.full_name || 'Hệ thống'} {performer?.role ? `(${performer.role})` : ''}
@@ -3322,12 +3322,12 @@ export default function ProjectsPage() {
                                       </div>
                                     </div>
                                   </div>
-                                  <span style={{ 
-                                    fontSize: '0.72rem', 
-                                    fontWeight: 700, 
-                                    padding: '4px 10px', 
-                                    borderRadius: '100px', 
-                                    background: sc.bg, 
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    padding: '4px 10px',
+                                    borderRadius: '100px',
+                                    background: sc.bg,
                                     color: sc.text,
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.03em'
@@ -3419,7 +3419,7 @@ export default function ProjectsPage() {
               <div style={{ width: '3px', height: '14px', background: 'var(--color-primary)', borderRadius: '1.5px', flexShrink: 0 }} />
               <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch sử hoạt động của Chiến dịch</h4>
             </div>
-            
+
             {statsLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
                 <RefreshCw className="spin" size={24} color="var(--color-text-muted)" />
@@ -3436,7 +3436,7 @@ export default function ProjectsPage() {
                       <div style={{ position: 'absolute', top: '16px', left: '7px', bottom: '-24px', width: '2px', background: 'var(--color-border-light)' }} />
                     )}
                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--color-primary)', border: '4px solid #ffffff', boxShadow: '0 0 0 1px var(--color-border-light)', flexShrink: 0, marginTop: '2px' }} />
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.85rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontWeight: 800, color: 'var(--color-text)' }}>{log.user_name || 'Hệ thống'}</span>
@@ -3809,7 +3809,7 @@ export default function ProjectsPage() {
       formData.append('file', compressedFile);
       const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
       const url = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=projects/${selectedProjectId}/documents&token=${token}`;
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -3934,27 +3934,27 @@ export default function ProjectsPage() {
           >
             <div style={{ height: 75, background: 'linear-gradient(135deg, var(--color-primary) 0%, #8a0f1b 100%)' }} />
             <div style={{ padding: '0 1.25rem 1.25rem', textAlign: 'center', marginTop: -32 }}>
-              <div style={{ 
-                width: 64, 
-                height: 64, 
-                borderRadius: '50%', 
-                background: 'var(--color-surface)', 
-                margin: '0 auto 0.5rem', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)', 
-                border: '4px solid var(--color-surface)', 
-                fontSize: '1.5rem', 
-                fontWeight: 800, 
+              <div style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'var(--color-surface)',
+                margin: '0 auto 0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                border: '4px solid var(--color-surface)',
+                fontSize: '1.5rem',
+                fontWeight: 800,
                 color: 'var(--color-primary)',
                 overflow: 'hidden'
               }}>
                 {quickUserCard.avatarUrl ? (
-                  <img 
-                    src={quickUserCard.avatarUrl} 
-                    alt={quickUserCard.name} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  <img
+                    src={quickUserCard.avatarUrl}
+                    alt={quickUserCard.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
                   quickUserCard.name.charAt(0).toUpperCase()
@@ -3966,33 +3966,33 @@ export default function ProjectsPage() {
               <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
                 RL-{String(quickUserCard.id).padStart(4, '0')}
               </span>
-              
+
               <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                {[`admin`, `superadmin`, `super_admin`].includes(quickUserCard.role.toLowerCase()) 
-                  ? 'Quản trị viên' 
-                  : [`manager`, `director`].includes(quickUserCard.role.toLowerCase()) 
-                    ? 'Trưởng nhóm kinh doanh' 
+                {[`admin`, `superadmin`, `super_admin`].includes(quickUserCard.role.toLowerCase())
+                  ? 'Quản trị viên'
+                  : [`manager`, `director`].includes(quickUserCard.role.toLowerCase())
+                    ? 'Trưởng nhóm kinh doanh'
                     : 'Nhân viên kinh doanh'}
               </p>
-              
+
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-                <span style={{ 
-                  fontSize: '0.65rem', 
-                  padding: '3px 8px', 
-                  borderRadius: '100px', 
-                  background: quickUserCard.vacationMode === 1 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)', 
-                  color: quickUserCard.vacationMode === 1 ? '#d97706' : '#059669', 
+                <span style={{
+                  fontSize: '0.65rem',
+                  padding: '3px 8px',
+                  borderRadius: '100px',
+                  background: quickUserCard.vacationMode === 1 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                  color: quickUserCard.vacationMode === 1 ? '#d97706' : '#059669',
                   border: quickUserCard.vacationMode === 1 ? '1px solid rgba(245, 158, 11, 0.15)' : '1px solid rgba(16, 185, 129, 0.15)',
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <span style={{ 
-                    width: 6, 
-                    height: 6, 
-                    borderRadius: '50%', 
-                    background: quickUserCard.vacationMode === 1 ? '#d97706' : '#059669' 
+                  <span style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: quickUserCard.vacationMode === 1 ? '#d97706' : '#059669'
                   }} />
                   {quickUserCard.vacationMode === 1 ? 'Nghỉ phép (Tạm ngưng nhận lead)' : 'Đang hoạt động (Sẵn sàng nhận lead)'}
                 </span>
@@ -4037,9 +4037,9 @@ export default function ProjectsPage() {
 
               <div style={{ display: 'flex', gap: '8px', marginTop: '12px', width: '100%' }}>
                 {quickUserCard.email && (
-                  <a 
-                    href={`mailto:${quickUserCard.email}`} 
-                    className="btn primary sm" 
+                  <a
+                    href={`mailto:${quickUserCard.email}`}
+                    className="btn primary sm"
                     style={{ flex: 1, height: '32px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '8px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
                     <Mail size={12} />
@@ -4047,9 +4047,9 @@ export default function ProjectsPage() {
                   </a>
                 )}
                 {quickUserCard.phone && (
-                  <a 
-                    href={`tel:${quickUserCard.phone}`} 
-                    className="btn outline sm" 
+                  <a
+                    href={`tel:${quickUserCard.phone}`}
+                    className="btn outline sm"
                     style={{ flex: 1, height: '32px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '8px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
                     <Phone size={12} />
@@ -4110,7 +4110,7 @@ export default function ProjectsPage() {
             {activeSubTab === 'campaigns' ? t('Cấu hình chiến dịch tiếp thị và quản lý roster nhận lead') : t('Đăng ký dự án, roster đội ngũ phân phối và quản lý tài liệu')}
           </p>
         </div>
-        {(isAdmin || user?.role === 'manager' || (activeSubTab === 'campaigns' && projects.some(p => String(p.created_by) === String(user?.id) || (p.manager_ids && p.manager_ids.split(',').map(s=>s.trim()).includes(String(user?.id)))))) && (
+        {(isAdmin || user?.role === 'manager' || (activeSubTab === 'campaigns' && projects.some(p => String(p.created_by) === String(user?.id) || (p.manager_ids && p.manager_ids.split(',').map(s => s.trim()).includes(String(user?.id)))))) && (
           <div>
             {activeSubTab === 'projects' ? (
               (isAdmin || user?.role === 'manager') && (
@@ -4243,10 +4243,10 @@ export default function ProjectsPage() {
             </div>
           )}
 
-          <div style={{ 
+          <div style={{
             display: isMobile ? 'none' : 'flex',
-            fontSize: '0.8rem', 
-            color: 'var(--color-text-muted)', 
+            fontSize: '0.8rem',
+            color: 'var(--color-text-muted)',
             fontWeight: 700,
             background: 'var(--color-bg-light)',
             padding: '0 12px',
@@ -4256,8 +4256,8 @@ export default function ProjectsPage() {
             alignItems: 'center',
             boxSizing: 'border-box'
           }}>
-            {activeSubTab === 'projects' 
-              ? `Hiển thị ${projects.length} / ${totalProjects} dự án` 
+            {activeSubTab === 'projects'
+              ? `Hiển thị ${projects.length} / ${totalProjects} dự án`
               : `Hiển thị ${paginatedCampaigns.length} / ${filteredCampaigns.length} chiến dịch`
             }
           </div>
@@ -4266,340 +4266,305 @@ export default function ProjectsPage() {
 
       {/* Tab Panels with Enter Animation */}
       <div key={activeSubTab} className="subtab-enter-active" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      {/* Projects List */}
-      {activeSubTab === 'projects' && (
-        loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: screenWidth <= 640 ? '1fr' : (screenWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'), gap: screenWidth <= 640 ? '1rem' : '1.5rem' }}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <ProjectCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : projects.length === 0 ? (
-          <EmptyCard 
-            icon={<Building2 size={48} />}
-            title="Chưa có dự án nào"
-            description="Bắt đầu đăng ký các dự án bất động sản để phân phối và quản lý tài liệu."
-            actionText={isAdmin ? "Thêm ngay" : undefined}
-            onAction={isAdmin ? () => {
-              setEditingProject({ status: 'active', campaign_sharing_mode: 'independent' });
-              setAutoCode(true);
-              setIsEditModalOpen(true);
-            } : undefined}
-          />
-        ) : (
-          <>
+        {/* Projects List */}
+        {activeSubTab === 'projects' && (
+          loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: screenWidth <= 640 ? '1fr' : (screenWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'), gap: screenWidth <= 640 ? '1rem' : '1.5rem' }}>
-              {projects.map(proj => (
-                <div
-                  key={proj.id}
-                  className="card flex flex-col justify-between transition-all duration-300"
-                  style={{
-                    cursor: 'pointer',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '24px',
-                    padding: screenWidth <= 640 ? '1.15rem' : '1.5rem',
-                    boxShadow: '0 10px 30px -10px rgba(0,0,0,0.06)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                    e.currentTarget.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.1)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.borderColor = 'var(--color-border-light)';
-                    e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.06)';
-                  }}
-                  onClick={() => {
-                    setEditingProject(proj);
-                    setProjectModalMode('view');
-                    setIsEditModalOpen(true);
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    {/* Header Row */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <div style={{
-                          padding: '12px',
-                          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
-                          borderRadius: '16px',
-                          color: '#3b82f6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: 'inset 0 0 0 1px rgba(59, 130, 246, 0.15)'
-                        }}>
-                          <Building2 size={22} style={{ color: '#3b82f6' }} />
-                        </div>
-                        <div>
-                          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, lineHeight: 1.35, letterSpacing: '-0.01em' }}>{proj.name}</h3>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'inline-block', marginTop: '2px' }}>
-                            Mã: {proj.code}
-                          </span>
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          padding: '4px 10px',
-                          borderRadius: '100px',
-                          fontWeight: 700,
-                          background: proj.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                          color: proj.status === 'active' ? '#10b981' : '#ef4444',
-                          border: proj.status === 'active' ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0
-                        }}
-                      >
-                        {proj.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
-                      </span>
-                    </div>
-
-                    {/* Developer and Location with Icons */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      {proj.developer && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Briefcase size={13} /></span>
-                          <span>Nhà cung cấp: <strong style={{ color: 'var(--color-text)' }}>{proj.developer}</strong></span>
-                        </div>
-                      )}
-                      {proj.location && (
-                        <div style={{ display: 'flex', alignItems: 'start', gap: '6px' }}>
-                          <span style={{ color: 'var(--color-text-light)', display: 'inline-flex', marginTop: '2px' }}><MapPin size={13} /></span>
-                          <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>
-                            {proj.location}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Construction Progress Bar */}
-                    <div style={{ marginTop: '2px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.78rem' }}>
-                        <span style={{ fontWeight: 700, color: 'var(--color-text-light)' }}>
-                          Tiến độ: <span style={{ color: 'var(--color-text)' }}>{proj.construction_status || 'Chưa khởi công'}</span>
-                        </span>
-                        <span style={{ fontWeight: 800, color: (proj.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>{proj.progress_percent ?? 0}%</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden' }}>
-                        <div style={{ width: `${proj.progress_percent ?? 0}%`, height: '100%', background: (proj.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)', borderRadius: '99px', transition: 'width 0.4s var(--transition-fluid)' }}></div>
-                      </div>
-                    </div>
-
-                    {/* Project Details Grid (Pháp lý, Bàn giao) */}
-                    <div style={{ 
-                      display: 'flex', 
-                      flexDirection: 'row',
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      gap: '8px', 
-                      padding: screenWidth <= 640 ? '6px 10px' : '10px 12px', 
-                      background: 'var(--color-bg-light)', 
-                      borderRadius: '14px', 
-                      border: '1px solid var(--color-border-light)', 
-                      fontSize: '0.75rem', 
-                      color: 'var(--color-text-muted)',
-                      width: '100%',
-                      boxSizing: 'border-box',
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ProjectCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : projects.length === 0 ? (
+            <EmptyCard
+              icon={<Building2 size={48} />}
+              title="Chưa có dự án nào"
+              description="Bắt đầu đăng ký các dự án bất động sản để phân phối và quản lý tài liệu."
+              actionText={isAdmin ? "Thêm ngay" : undefined}
+              onAction={isAdmin ? () => {
+                setEditingProject({ status: 'active', campaign_sharing_mode: 'independent' });
+                setAutoCode(true);
+                setIsEditModalOpen(true);
+              } : undefined}
+            />
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: screenWidth <= 640 ? '1fr' : (screenWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'), gap: screenWidth <= 640 ? '1rem' : '1.5rem' }}>
+                {projects.map(proj => (
+                  <div
+                    key={proj.id}
+                    className="card flex flex-col justify-between transition-all duration-300"
+                    style={{
+                      cursor: 'pointer',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '24px',
+                      padding: screenWidth <= 640 ? '1.15rem' : '1.5rem',
+                      boxShadow: '0 10px 30px -10px rgba(0,0,0,0.06)',
+                      position: 'relative',
                       overflow: 'hidden'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', fontWeight: 600, flexShrink: 0 }}>Pháp lý:</span>
-                        <strong style={{ color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem' }} title={proj.legal_status || 'Đang hoàn thiện'}>
-                          {proj.legal_status || 'Đang hoàn thiện'}
-                        </strong>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0, borderLeft: '1px solid var(--color-border-light)', paddingLeft: '10px' }}>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', fontWeight: 600, flexShrink: 0 }}>Bàn giao:</span>
-                        <strong style={{ color: 'var(--color-text)', fontSize: '0.75rem', flexShrink: 0 }}>{proj.handover_year || 2028}</strong>
-                      </div>
-                    </div>
-
-                    {/* Roster, Docs, Campaigns Info Badges */}
-                    <div 
-                      style={{ 
-                        display: 'flex', 
-                        gap: screenWidth <= 640 ? '4px' : '6px', 
-                        fontSize: screenWidth <= 640 ? '0.68rem' : '0.72rem', 
-                        color: 'var(--color-text-muted)', 
-                        flexWrap: screenWidth <= 640 ? 'nowrap' : 'wrap', 
-                        alignItems: 'center',
-                        overflowX: screenWidth <= 640 ? 'auto' : 'visible',
-                        width: '100%'
-                      }} 
-                      className="no-scrollbar"
-                    >
-                      <span 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenRoster(proj.id);
-                        }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
-                          e.currentTarget.style.transform = 'scale(1.03)';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'rgba(100, 116, 139, 0.06)';
-                          e.currentTarget.style.transform = 'none';
-                        }}
-                      >
-                        <Users size={12} /> {proj.roster_count || 0} nhân sự
-                      </span>
-                      <span 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenDocs(proj.id);
-                        }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
-                          e.currentTarget.style.transform = 'scale(1.03)';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'rgba(100, 116, 139, 0.06)';
-                          e.currentTarget.style.transform = 'none';
-                        }}
-                      >
-                        <FileText size={12} /> {(proj.doc_count || 0) + parseIds(proj.document_ids).length} tài liệu
-                      </span>
-                      {(() => {
-                        const linkedCamps = campaigns.filter(c => c.project_id === proj.id || (proj.campaign_ids && proj.campaign_ids.split(',').map((name: string) => name.trim()).includes(c.name)));
-                        return (
-                          <span 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenQuickCampaigns(proj, linkedCamps);
-                            }}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
-                            onMouseEnter={e => {
-                              e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
-                              e.currentTarget.style.transform = 'scale(1.03)';
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.background = 'rgba(100, 116, 139, 0.06)';
-                              e.currentTarget.style.transform = 'none';
-                            }}
-                          >
-                            <Layers size={12} /> {linkedCamps.length} chiến dịch
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    {/* Project Managers Row with Overlapping Avatars and Text */}
-                    {(() => {
-                      const projManagers = parseIds(proj.manager_ids).map(id => users.find(u => Number(u.id) === Number(id))).filter(Boolean);
-                      if (projManagers.length === 0) return null;
-                      return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px', padding: '6px 12px', background: 'rgba(100, 116, 139, 0.05)', border: '1px solid rgba(100, 116, 139, 0.12)', borderRadius: '100px', width: 'fit-content' }}>
-                          <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Users size={12} /></span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Quản lý:</span>
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            {projManagers.map((m: any, idx) => (
-                              <div 
-                                key={m.id} 
-                                style={{ 
-                                  marginLeft: idx > 0 ? '-6px' : '0', 
-                                  zIndex: 10 - idx,
-                                  position: 'relative'
-                                }}
-                              >
-                                <Avatar src={m.avatar_url || m.avatar} name={m.full_name || m.username} size={18} />
-                              </div>
-                            ))}
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                      e.currentTarget.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.1)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                      e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.06)';
+                    }}
+                    onClick={() => {
+                      setEditingProject(proj);
+                      setProjectModalMode('view');
+                      setIsEditModalOpen(true);
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      {/* Header Row */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                          <div style={{
+                            padding: '12px',
+                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
+                            borderRadius: '16px',
+                            color: '#3b82f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: 'inset 0 0 0 1px rgba(59, 130, 246, 0.15)'
+                          }}>
+                            <Building2 size={22} style={{ color: '#3b82f6' }} />
                           </div>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                            {projManagers.length === 1 ? (
-                              projManagers[0].full_name || projManagers[0].username
-                            ) : (
-                              `${projManagers[0].full_name || projManagers[0].username} và +${projManagers.length - 1} người khác`
-                            )}
-                          </span>
+                          <div>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, lineHeight: 1.35, letterSpacing: '-0.01em' }}>{proj.name}</h3>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'inline-block', marginTop: '2px' }}>
+                              Mã: {proj.code}
+                            </span>
+                          </div>
                         </div>
-                      );
-                    })()}
-                    {/* Last updated timestamp */}
-                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ display: 'inline-flex', opacity: 0.6 }}><RefreshCw size={10} /></span>
-                      <span>{formatLastUpdated(proj.updated_at, proj.created_at)}</span>
-                    </div>
-                  </div>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '4px 10px',
+                            borderRadius: '100px',
+                            fontWeight: 700,
+                            background: proj.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                            color: proj.status === 'active' ? '#10b981' : '#ef4444',
+                            border: proj.status === 'active' ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                          }}
+                        >
+                          {proj.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                        </span>
+                      </div>
 
-                  {/* Actions Row */}
-                  <div className="flex gap-2 pt-4" style={{ borderTop: '1px solid var(--color-border-light)', marginTop: '1.25rem' }} onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDocs(proj.id);
-                      }}
-                      className="btn secondary sm flex-1 flex justify-center items-center gap-1.5"
-                      style={{
-                        borderRadius: '12px',
-                        fontWeight: 700,
-                        fontSize: '0.8rem',
-                        height: '36px',
-                        background: 'var(--color-bg)',
+                      {/* Developer and Location with Icons */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        {proj.developer && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Briefcase size={13} /></span>
+                            <span>Nhà cung cấp: <strong style={{ color: 'var(--color-text)' }}>{proj.developer}</strong></span>
+                          </div>
+                        )}
+                        {proj.location && (
+                          <div style={{ display: 'flex', alignItems: 'start', gap: '6px' }}>
+                            <span style={{ color: 'var(--color-text-light)', display: 'inline-flex', marginTop: '2px' }}><MapPin size={13} /></span>
+                            <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.4 }}>
+                              {proj.location}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Construction Progress Bar */}
+                      <div style={{ marginTop: '2px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.78rem' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--color-text-light)' }}>
+                            Tiến độ: <span style={{ color: 'var(--color-text)' }}>{proj.construction_status || 'Chưa khởi công'}</span>
+                          </span>
+                          <span style={{ fontWeight: 800, color: (proj.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>{proj.progress_percent ?? 0}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden' }}>
+                          <div style={{ width: `${proj.progress_percent ?? 0}%`, height: '100%', background: (proj.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)', borderRadius: '99px', transition: 'width 0.4s var(--transition-fluid)' }}></div>
+                        </div>
+                      </div>
+
+                      {/* Project Details Grid (Pháp lý, Bàn giao) */}
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        padding: screenWidth <= 640 ? '6px 10px' : '10px 12px',
+                        background: 'var(--color-bg-light)',
+                        borderRadius: '14px',
                         border: '1px solid var(--color-border-light)',
-                        color: 'var(--color-text)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'var(--color-border-light)';
-                        e.currentTarget.style.borderColor = 'var(--color-border)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'var(--color-bg)';
-                        e.currentTarget.style.borderColor = 'var(--color-border-light)';
-                      }}
-                    >
-                      <FileText size={14} />
-                      Tài liệu
-                    </button>
-                    {isManagerOrLeader && (
-                      <>
-                        <button
+                        fontSize: '0.75rem',
+                        color: 'var(--color-text-muted)',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', fontWeight: 600, flexShrink: 0 }}>Pháp lý:</span>
+                          <strong style={{ color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem' }} title={proj.legal_status || 'Đang hoàn thiện'}>
+                            {proj.legal_status || 'Đang hoàn thiện'}
+                          </strong>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0, borderLeft: '1px solid var(--color-border-light)', paddingLeft: '10px' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', fontWeight: 600, flexShrink: 0 }}>Bàn giao:</span>
+                          <strong style={{ color: 'var(--color-text)', fontSize: '0.75rem', flexShrink: 0 }}>{proj.handover_year || 2028}</strong>
+                        </div>
+                      </div>
+
+                      {/* Roster, Docs, Campaigns Info Badges */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: screenWidth <= 640 ? '4px' : '6px',
+                          fontSize: screenWidth <= 640 ? '0.68rem' : '0.72rem',
+                          color: 'var(--color-text-muted)',
+                          flexWrap: screenWidth <= 640 ? 'nowrap' : 'wrap',
+                          alignItems: 'center',
+                          overflowX: screenWidth <= 640 ? 'auto' : 'visible',
+                          width: '100%'
+                        }}
+                        className="no-scrollbar"
+                      >
+                        <span
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenRoster(proj.id);
                           }}
-                          className="btn secondary sm"
-                          style={{
-                            borderRadius: '12px',
-                            width: '36px',
-                            height: '36px',
-                            padding: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'var(--color-bg)',
-                            border: '1px solid var(--color-border-light)',
-                            color: 'var(--color-text)',
-                            transition: 'all 0.2s ease'
-                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.background = 'var(--color-border-light)';
-                            e.currentTarget.style.borderColor = 'var(--color-border)';
+                            e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
+                            e.currentTarget.style.transform = 'scale(1.03)';
                           }}
                           onMouseLeave={e => {
-                            e.currentTarget.style.background = 'var(--color-bg)';
-                            e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                            e.currentTarget.style.background = 'rgba(100, 116, 139, 0.06)';
+                            e.currentTarget.style.transform = 'none';
                           }}
-                          title="Roster nhân viên"
                         >
-                          <Users size={14} />
-                        </button>
-                        {canEditProject(proj) && (
+                          <Users size={12} /> {proj.roster_count || 0} nhân sự
+                        </span>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDocs(proj.id);
+                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
+                            e.currentTarget.style.transform = 'scale(1.03)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(100, 116, 139, 0.06)';
+                            e.currentTarget.style.transform = 'none';
+                          }}
+                        >
+                          <FileText size={12} /> {(proj.doc_count || 0) + parseIds(proj.document_ids).length} tài liệu
+                        </span>
+                        {(() => {
+                          const linkedCamps = campaigns.filter(c => c.project_id === proj.id || (proj.campaign_ids && proj.campaign_ids.split(',').map((name: string) => name.trim()).includes(c.name)));
+                          return (
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenQuickCampaigns(proj, linkedCamps);
+                              }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
+                                e.currentTarget.style.transform = 'scale(1.03)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = 'rgba(100, 116, 139, 0.06)';
+                                e.currentTarget.style.transform = 'none';
+                              }}
+                            >
+                              <Layers size={12} /> {linkedCamps.length} chiến dịch
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      {/* Project Managers Row with Overlapping Avatars and Text */}
+                      {(() => {
+                        const projManagers = parseIds(proj.manager_ids).map(id => users.find(u => Number(u.id) === Number(id))).filter(Boolean);
+                        if (projManagers.length === 0) return null;
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px', padding: '6px 12px', background: 'rgba(100, 116, 139, 0.05)', border: '1px solid rgba(100, 116, 139, 0.12)', borderRadius: '100px', width: 'fit-content' }}>
+                            <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Users size={12} /></span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Quản lý:</span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              {projManagers.map((m: any, idx) => (
+                                <div
+                                  key={m.id}
+                                  style={{
+                                    marginLeft: idx > 0 ? '-6px' : '0',
+                                    zIndex: 10 - idx,
+                                    position: 'relative'
+                                  }}
+                                >
+                                  <Avatar src={m.avatar_url || m.avatar} name={m.full_name || m.username} size={18} />
+                                </div>
+                              ))}
+                            </div>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                              {projManagers.length === 1 ? (
+                                projManagers[0].full_name || projManagers[0].username
+                              ) : (
+                                `${projManagers[0].full_name || projManagers[0].username} và +${projManagers.length - 1} người khác`
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                      {/* Last updated timestamp */}
+                      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ display: 'inline-flex', opacity: 0.6 }}><RefreshCw size={10} /></span>
+                        <span>{formatLastUpdated(proj.updated_at, proj.created_at)}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions Row */}
+                    <div className="flex gap-2 pt-4" style={{ borderTop: '1px solid var(--color-border-light)', marginTop: '1.25rem' }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDocs(proj.id);
+                        }}
+                        className="btn secondary sm flex-1 flex justify-center items-center gap-1.5"
+                        style={{
+                          borderRadius: '12px',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          height: '36px',
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border-light)',
+                          color: 'var(--color-text)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = 'var(--color-border-light)';
+                          e.currentTarget.style.borderColor = 'var(--color-border)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'var(--color-bg)';
+                          e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                        }}
+                      >
+                        <FileText size={14} />
+                        Tài liệu
+                      </button>
+                      {isManagerOrLeader && (
+                        <>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setEditingProject(proj);
-                              setAutoCode(false);
-                              setProjectModalMode('edit');
-                              setIsEditModalOpen(true);
+                              handleOpenRoster(proj.id);
                             }}
                             className="btn secondary sm"
                             style={{
@@ -4623,286 +4588,321 @@ export default function ProjectsPage() {
                               e.currentTarget.style.background = 'var(--color-bg)';
                               e.currentTarget.style.borderColor = 'var(--color-border-light)';
                             }}
-                            title="Sửa"
+                            title="Roster nhân viên"
                           >
-                            <Edit size={14} />
+                            <Users size={14} />
                           </button>
-                        )}
-                        {canDeleteProject(proj) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteProject(proj.id);
-                            }}
-                            className="btn secondary sm"
-                            style={{
-                              borderRadius: '12px',
-                              width: '36px',
-                              height: '36px',
-                              padding: 0,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              background: 'var(--color-bg)',
-                              border: '1px solid rgba(239, 68, 68, 0.15)',
-                              color: '#ef4444',
-                              transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={e => {
-                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.06)';
-                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.background = 'var(--color-bg)';
-                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.15)';
-                            }}
-                            title="Xóa"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </>
-                    )}
+                          {canEditProject(proj) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProject(proj);
+                                setAutoCode(false);
+                                setProjectModalMode('edit');
+                                setIsEditModalOpen(true);
+                              }}
+                              className="btn secondary sm"
+                              style={{
+                                borderRadius: '12px',
+                                width: '36px',
+                                height: '36px',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'var(--color-bg)',
+                                border: '1px solid var(--color-border-light)',
+                                color: 'var(--color-text)',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = 'var(--color-border-light)';
+                                e.currentTarget.style.borderColor = 'var(--color-border)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = 'var(--color-bg)';
+                                e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                              }}
+                              title="Sửa"
+                            >
+                              <Edit size={14} />
+                            </button>
+                          )}
+                          {canDeleteProject(proj) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteProject(proj.id);
+                              }}
+                              className="btn secondary sm"
+                              style={{
+                                borderRadius: '12px',
+                                width: '36px',
+                                height: '36px',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'var(--color-bg)',
+                                border: '1px solid rgba(239, 68, 68, 0.15)',
+                                color: '#ef4444',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.06)';
+                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = 'var(--color-bg)';
+                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.15)';
+                              }}
+                              title="Xóa"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', paddingBottom: '2.5rem' }}>
-              <Pagination
-                total={totalProjects}
-                page={projectPage}
-                pageSize={projectPageSize}
-                onChange={setProjectPage}
-                showSizeChanger={true}
-                onPageSizeChange={setProjectPageSize}
-              />
-            </div>
-          </>
-        )
-      )}
+                ))}
+              </div>
+              <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', paddingBottom: '2.5rem' }}>
+                <Pagination
+                  total={totalProjects}
+                  page={projectPage}
+                  pageSize={projectPageSize}
+                  onChange={setProjectPage}
+                  showSizeChanger={true}
+                  onPageSizeChange={setProjectPageSize}
+                />
+              </div>
+            </>
+          )
+        )}
 
-      {/* Campaigns List Tab */}
-      {activeSubTab === 'campaigns' && (
-        <>
+        {/* Campaigns List Tab */}
+        {activeSubTab === 'campaigns' && (
+          <>
 
 
-          {campaignsLoading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: screenWidth <= 640 ? '1fr' : (screenWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'), gap: screenWidth <= 640 ? '1rem' : '1.5rem' }}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <CampaignCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : filteredCampaigns.length === 0 ? (
-            <EmptyCard
-              icon={<Layers size={48} />}
-              title="Chưa có chiến dịch nào"
-              description="Bắt đầu tạo chiến dịch marketing để quản lý nguồn lead thu về."
-            />
-          ) : (
-            <>
+            {campaignsLoading ? (
               <div style={{ display: 'grid', gridTemplateColumns: screenWidth <= 640 ? '1fr' : (screenWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'), gap: screenWidth <= 640 ? '1rem' : '1.5rem' }}>
-                {paginatedCampaigns.map(camp => {
-                  const associatedProj = camp.project_id 
-                    ? projects.find(p => p.id === camp.project_id)
-                    : projects.find(p => {
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <CampaignCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : filteredCampaigns.length === 0 ? (
+              <EmptyCard
+                icon={<Layers size={48} />}
+                title="Chưa có chiến dịch nào"
+                description="Bắt đầu tạo chiến dịch marketing để quản lý nguồn lead thu về."
+              />
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: screenWidth <= 640 ? '1fr' : (screenWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'), gap: screenWidth <= 640 ? '1rem' : '1.5rem' }}>
+                  {paginatedCampaigns.map(camp => {
+                    const associatedProj = camp.project_id
+                      ? projects.find(p => p.id === camp.project_id)
+                      : projects.find(p => {
                         const campIds = p.campaign_ids ? p.campaign_ids.split(',').map((id: string) => id.trim()) : [];
                         return campIds.includes(camp.name);
                       });
-                  const docCount = parseIds(camp.document_ids).length;
-                  const staffCount = parseIds(camp.user_ids).length;
+                    const docCount = parseIds(camp.document_ids).length;
+                    const staffCount = parseIds(camp.user_ids).length;
 
-                  return (
-                    <div 
-                      key={camp.id} 
-                      onClick={() => handleOpenCampaignView(camp)}
-                      className="card flex flex-col justify-between transition-all duration-300"
-                      style={{
-                        cursor: 'pointer',
-                        background: 'var(--color-surface)',
-                        border: '1px solid var(--color-border-light)',
-                        borderRadius: '24px',
-                        padding: screenWidth <= 640 ? '1.15rem' : '1.5rem',
-                        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.06)',
-                        position: 'relative',
-                        overflow: 'hidden'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                        e.currentTarget.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.borderColor = 'var(--color-border-light)';
-                        e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.06)';
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        {/* Header Row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
-                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                            <div style={{
-                              padding: '12px',
-                              background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(225, 29, 72, 0.1))',
-                              borderRadius: '16px',
-                              color: 'var(--color-primary)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: 'inset 0 0 0 1px rgba(225, 29, 72, 0.15)'
-                            }}>
-                              <Layers size={22} style={{ color: 'var(--color-primary)' }} />
-                            </div>
-                            <div>
-                              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, lineHeight: 1.35, letterSpacing: '-0.01em' }} className="line-clamp-1">{camp.name}</h3>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'inline-block', marginTop: '2px' }}>
-                                ID: {camp.id}
-                              </span>
-                            </div>
-                          </div>
-                          <span 
-                            style={{
-                              fontSize: '0.72rem',
-                              padding: '4px 10px',
-                              borderRadius: '100px',
-                              fontWeight: 700,
-                              background: camp.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                              color: camp.status === 'active' ? '#10b981' : '#ef4444',
-                              border: camp.status === 'active' ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)',
-                              whiteSpace: 'nowrap',
-                              flexShrink: 0
-                            }}
-                          >
-                            {camp.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
-                          </span>
-                        </div>
-
-                        {/* Description */}
-                        {camp.description ? (
-                          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }} className="line-clamp-2">
-                            {camp.description}
-                          </p>
-                        ) : (
-                          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', fontStyle: 'italic', margin: 0 }}>
-                            Không có mô tả chi tiết
-                          </p>
-                        )}
-
-                        {/* Rich Campaign Info List (Dates, Project, Managers) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Building2 size={13} /></span>
-                            <span>Dự án liên kết: <strong style={{ color: 'var(--color-primary)' }}>{associatedProj ? associatedProj.name : 'Chưa liên kết'}</strong></span>
-                          </div>
-
-                          {(camp.start_date || camp.end_date) && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Calendar size={13} /></span>
-                              <span>Thời gian: <strong>{camp.start_date || '...'}</strong> đến <strong>{camp.end_date || '...'}</strong></span>
-                            </div>
-                          )}
-
-                          {/* Campaign Managers Row with Overlapping Avatars and Text */}
-                          {(() => {
-                            const campManagers = parseIds(camp.manager_ids).map(id => users.find(u => Number(u.id) === Number(id))).filter(Boolean);
-                            if (campManagers.length === 0) return null;
-                            return (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px', padding: '6px 12px', background: 'rgba(100, 116, 139, 0.05)', border: '1px solid rgba(100, 116, 139, 0.12)', borderRadius: '100px', width: 'fit-content' }}>
-                                <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Users size={12} /></span>
-                                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Quản lý:</span>
-                                <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                  {campManagers.map((m: any, idx) => (
-                                    <div 
-                                      key={m.id} 
-                                      style={{ 
-                                        marginLeft: idx > 0 ? '-6px' : '0', 
-                                        zIndex: 10 - idx,
-                                        position: 'relative'
-                                      }}
-                                    >
-                                      <Avatar src={m.avatar_url || m.avatar} name={m.full_name || m.username} size={18} />
-                                    </div>
-                                  ))}
-                                </div>
-                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                                  {campManagers.length === 1 ? (
-                                    campManagers[0].full_name || campManagers[0].username
-                                  ) : (
-                                    `${campManagers[0].full_name || campManagers[0].username} và +${campManagers.length - 1} người khác`
-                                  )}
+                    return (
+                      <div
+                        key={camp.id}
+                        onClick={() => handleOpenCampaignView(camp)}
+                        className="card flex flex-col justify-between transition-all duration-300"
+                        style={{
+                          cursor: 'pointer',
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border-light)',
+                          borderRadius: '24px',
+                          padding: screenWidth <= 640 ? '1.15rem' : '1.5rem',
+                          boxShadow: '0 10px 30px -10px rgba(0,0,0,0.06)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                          e.currentTarget.style.boxShadow = '0 20px 40px -15px rgba(0,0,0,0.1)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                          e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.06)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                          {/* Header Row */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                              <div style={{
+                                padding: '12px',
+                                background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(225, 29, 72, 0.1))',
+                                borderRadius: '16px',
+                                color: 'var(--color-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: 'inset 0 0 0 1px rgba(225, 29, 72, 0.15)'
+                              }}>
+                                <Layers size={22} style={{ color: 'var(--color-primary)' }} />
+                              </div>
+                              <div>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, lineHeight: 1.35, letterSpacing: '-0.01em' }} className="line-clamp-1">{camp.name}</h3>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'inline-block', marginTop: '2px' }}>
+                                  ID: {camp.id}
                                 </span>
                               </div>
-                            );
-                          })()}
-                        </div>
-                        {/* Last updated timestamp */}
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ display: 'inline-flex', opacity: 0.6 }}><RefreshCw size={10} /></span>
-                          <span>{formatLastUpdated(camp.updated_at, camp.created_at)}</span>
-                        </div>
-                      </div>
-
-                      {/* Footer Stats Bar */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
-                            <Folder size={12} style={{ color: 'var(--color-text-light)' }} />
-                            {docCount} Tài liệu
-                          </span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
-                            <Users size={12} style={{ color: 'var(--color-text-light)' }} />
-                            {staffCount} Roster
-                          </span>
-                        </div>
-                        {(isManagerOrLeader || canEditCampaign(camp)) && (
-                          <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                            {canEditCampaign(camp) && (
-                              <button
-                                onClick={() => {
-                                  setEditingCampaign(camp);
-                                  setCampaignModalMode('edit');
-                                  setIsCampaignModalOpen(true);
-                                }}
-                                className="btn outline icon-only sm"
-                                style={{ width: '28px', height: '28px', borderRadius: '8px', padding: 0 }}
-                                title="Sửa"
-                              >
-                                <Edit size={12} />
-                              </button>
-                            )}
-                            {canDeleteCampaign(camp) && (
-                              <button
-                                onClick={() => handleDeleteCampaign(camp.id)}
-                                className="btn outline icon-only sm"
-                                style={{ width: '28px', height: '28px', borderRadius: '8px', padding: 0, color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                                title="Xóa"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            )}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '4px 10px',
+                                borderRadius: '100px',
+                                fontWeight: 700,
+                                background: camp.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                color: camp.status === 'active' ? '#10b981' : '#ef4444',
+                                border: camp.status === 'active' ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
+                              }}
+                            >
+                              {camp.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                            </span>
                           </div>
-                        )}
+
+                          {/* Description */}
+                          {camp.description ? (
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }} className="line-clamp-2">
+                              {camp.description}
+                            </p>
+                          ) : (
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', fontStyle: 'italic', margin: 0 }}>
+                              Không có mô tả chi tiết
+                            </p>
+                          )}
+
+                          {/* Rich Campaign Info List (Dates, Project, Managers) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-muted)', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Building2 size={13} /></span>
+                              <span>Dự án liên kết: <strong style={{ color: 'var(--color-primary)' }}>{associatedProj ? associatedProj.name : 'Chưa liên kết'}</strong></span>
+                            </div>
+
+                            {(camp.start_date || camp.end_date) && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Calendar size={13} /></span>
+                                <span>Thời gian: <strong>{camp.start_date || '...'}</strong> đến <strong>{camp.end_date || '...'}</strong></span>
+                              </div>
+                            )}
+
+                            {/* Campaign Managers Row with Overlapping Avatars and Text */}
+                            {(() => {
+                              const campManagers = parseIds(camp.manager_ids).map(id => users.find(u => Number(u.id) === Number(id))).filter(Boolean);
+                              if (campManagers.length === 0) return null;
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px', padding: '6px 12px', background: 'rgba(100, 116, 139, 0.05)', border: '1px solid rgba(100, 116, 139, 0.12)', borderRadius: '100px', width: 'fit-content' }}>
+                                  <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Users size={12} /></span>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Quản lý:</span>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                    {campManagers.map((m: any, idx) => (
+                                      <div
+                                        key={m.id}
+                                        style={{
+                                          marginLeft: idx > 0 ? '-6px' : '0',
+                                          zIndex: 10 - idx,
+                                          position: 'relative'
+                                        }}
+                                      >
+                                        <Avatar src={m.avatar_url || m.avatar} name={m.full_name || m.username} size={18} />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                    {campManagers.length === 1 ? (
+                                      campManagers[0].full_name || campManagers[0].username
+                                    ) : (
+                                      `${campManagers[0].full_name || campManagers[0].username} và +${campManagers.length - 1} người khác`
+                                    )}
+                                  </span>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          {/* Last updated timestamp */}
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ display: 'inline-flex', opacity: 0.6 }}><RefreshCw size={10} /></span>
+                            <span>{formatLastUpdated(camp.updated_at, camp.created_at)}</span>
+                          </div>
+                        </div>
+
+                        {/* Footer Stats Bar */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                              <Folder size={12} style={{ color: 'var(--color-text-light)' }} />
+                              {docCount} Tài liệu
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                              <Users size={12} style={{ color: 'var(--color-text-light)' }} />
+                              {staffCount} Roster
+                            </span>
+                          </div>
+                          {(isManagerOrLeader || canEditCampaign(camp)) && (
+                            <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                              {canEditCampaign(camp) && (
+                                <button
+                                  onClick={() => {
+                                    setEditingCampaign(camp);
+                                    setCampaignModalMode('edit');
+                                    setIsCampaignModalOpen(true);
+                                  }}
+                                  className="btn outline icon-only sm"
+                                  style={{ width: '28px', height: '28px', borderRadius: '8px', padding: 0 }}
+                                  title="Sửa"
+                                >
+                                  <Edit size={12} />
+                                </button>
+                              )}
+                              {canDeleteCampaign(camp) && (
+                                <button
+                                  onClick={() => handleDeleteCampaign(camp.id)}
+                                  className="btn outline icon-only sm"
+                                  style={{ width: '28px', height: '28px', borderRadius: '8px', padding: 0, color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                                  title="Xóa"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', paddingBottom: '2.5rem' }}>
-              <Pagination
-                total={filteredCampaigns.length}
-                page={campaignPage}
-                pageSize={campaignPageSize}
-                onChange={setCampaignPage}
-                showSizeChanger={true}
-                onPageSizeChange={setCampaignPageSize}
-              />
-            </div>
+                    );
+                  })}
+                </div>
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', paddingBottom: '2.5rem' }}>
+                  <Pagination
+                    total={filteredCampaigns.length}
+                    page={campaignPage}
+                    pageSize={campaignPageSize}
+                    onChange={setCampaignPage}
+                    showSizeChanger={true}
+                    onPageSizeChange={setCampaignPageSize}
+                  />
+                </div>
+              </>
+            )
+            }
           </>
-        )
-      }
-      </>
-    )}
-    </div>
+        )}
+      </div>
 
       {/* Edit Modal (converted to Drawer) */}
       {renderDrawer(
@@ -4911,1182 +4911,1182 @@ export default function ProjectsPage() {
           setIsEditModalOpen(false);
           setEditingProject(null);
         },
-        projectModalMode === 'view' 
-          ? `Chi tiết Dự án: ${editingProject?.name}` 
+        projectModalMode === 'view'
+          ? `Chi tiết Dự án: ${editingProject?.name}`
           : editingProject?.id ? 'Chỉnh sửa dự án' : 'Thêm dự án mới',
         <>
-        {projectModalMode === 'view' ? (
-          <>
-            {renderProjectViewDrawer()}
-            {isLegacyLayoutEnabled && (
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
-            
-            {/* Left Column (3/5) */}
-            <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Section 1: Thông tin cơ bản */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Tên dự án</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingProject?.name}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Mã dự án</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block', fontFamily: 'monospace' }}>{editingProject?.code}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Nhà cung cấp / Đối tác</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingProject?.developer || 'Chưa cập nhật'}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái bán</span>
-                    <span 
-                      className={`badge ${editingProject?.status === 'active' ? 'success' : 'secondary'}`}
-                      style={{ fontSize: '0.75rem', padding: '5px 10px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
-                    >
-                      {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
-                    </span>
-                  </div>
-                  {editingProject?.reference_url && (
-                    <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
-                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Website / Link tham khảo</span>
-                      <a
-                        href={editingProject.reference_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          color: 'var(--color-primary)',
-                          textDecoration: 'none',
-                          fontWeight: 700,
-                          fontSize: '0.875rem'
-                        }}
-                      >
-                        {editingProject.reference_url.includes('docs.google.com/spreadsheets') || editingProject.reference_url.includes('google.com/sheets') ? (
-                          <>
-                            <FileSpreadsheet size={16} color="#10b981" />
-                            <span style={{ color: '#10b981' }}>Bảng tính Google Sheets</span>
-                          </>
-                        ) : (
-                          <>
-                            <Link2 size={16} />
-                            <span>Mở liên kết tham khảo</span>
-                          </>
+          {projectModalMode === 'view' ? (
+            <>
+              {renderProjectViewDrawer()}
+              {isLegacyLayoutEnabled && (
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
+
+                  {/* Left Column (3/5) */}
+                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                    {/* Section 1: Thông tin cơ bản */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Tên dự án</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingProject?.name}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Mã dự án</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block', fontFamily: 'monospace' }}>{editingProject?.code}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Nhà cung cấp / Đối tác</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingProject?.developer || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái bán</span>
+                          <span
+                            className={`badge ${editingProject?.status === 'active' ? 'success' : 'secondary'}`}
+                            style={{ fontSize: '0.75rem', padding: '5px 10px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
+                          >
+                            {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
+                          </span>
+                        </div>
+                        {editingProject?.reference_url && (
+                          <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
+                            <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Website / Link tham khảo</span>
+                            <a
+                              href={editingProject.reference_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                color: 'var(--color-primary)',
+                                textDecoration: 'none',
+                                fontWeight: 700,
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              {editingProject.reference_url.includes('docs.google.com/spreadsheets') || editingProject.reference_url.includes('google.com/sheets') ? (
+                                <>
+                                  <FileSpreadsheet size={16} color="#10b981" />
+                                  <span style={{ color: '#10b981' }}>Bảng tính Google Sheets</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Link2 size={16} />
+                                  <span>Mở liên kết tham khảo</span>
+                                </>
+                              )}
+                            </a>
+                          </div>
                         )}
-                      </a>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Section 2: Vị trí & Quy mô & Pháp lý */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vị trí, Quy mô & Pháp lý</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.location || 'Chưa cập nhật'}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái thi công &amp; Tiến độ</span>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
-                      <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600 }}>
-                        {editingProject?.construction_status || 'Chưa khởi công'}
-                      </span>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 800, color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>
-                        {editingProject?.progress_percent ?? 0}%
-                      </span>
-                    </div>
-                    {/* Beautiful progress bar */}
-                    <div style={{ height: '10px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden', marginTop: '4px', width: '100%' }}>
-                      <div 
-                        style={{ 
-                          height: '100%', 
-                          width: `${editingProject?.progress_percent ?? 0}%`, 
-                          background: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)',
-                          borderRadius: '99px',
-                          transition: 'width 0.4s var(--transition-fluid)'
-                        }} 
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái pháp lý</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Năm bàn giao dự kiến</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.handover_year || 2026}</span>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Đường dẫn Folder</span>
-                    <div style={{ marginTop: '4px' }}>
-                      {renderFolderPathLink(editingProject?.folder_path, editingProject?.id)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 4: Mô tả chi tiết */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>Mô tả chi tiết</span>
-                <p style={{ color: 'var(--color-text)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '0.875rem' }}>
-                  {editingProject?.description || 'Không có mô tả chi tiết'}
-                </p>
-              </div>
-
-              {/* Discussions/Comments */}
-              {editingProject && renderEntityComments('project', editingProject.id)}
-
-            </div>
-
-            {/* Right Column (2/5) */}
-            <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Section 3: Nhân sự & Tài liệu */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quản lý &amp; Tài liệu</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '6px' }}>Manager phụ trách chính</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {parseIds(editingProject?.manager_ids).length === 0 ? (
-                        <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa phân công manager phụ trách</span>
-                      ) : (
-                        parseIds(editingProject?.manager_ids).map(id => {
-                          const u = users.find(usr => String(usr.id) === String(id));
-                          if (!u) return null;
-                          return (
-                            <span key={id} style={{ background: 'var(--color-bg-light)', border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                              <Avatar src={u.avatar_url || u.avatar} name={u.full_name || u.fullname || u.username} size={18} />
-                              {u.full_name || u.fullname || u.username}
+                    {/* Section 2: Vị trí & Quy mô & Pháp lý */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vị trí, Quy mô & Pháp lý</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Vị trí / Địa chỉ</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.location || 'Chưa cập nhật'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái thi công &amp; Tiến độ</span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '4px' }}>
+                            <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600 }}>
+                              {editingProject?.construction_status || 'Chưa khởi công'}
                             </span>
-                          );
-                        })
-                      )}
+                            <span style={{ fontSize: '0.875rem', fontWeight: 800, color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)' }}>
+                              {editingProject?.progress_percent ?? 0}%
+                            </span>
+                          </div>
+                          {/* Beautiful progress bar */}
+                          <div style={{ height: '10px', background: 'var(--color-border-light)', borderRadius: '99px', overflow: 'hidden', marginTop: '4px', width: '100%' }}>
+                            <div
+                              style={{
+                                height: '100%',
+                                width: `${editingProject?.progress_percent ?? 0}%`,
+                                background: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, #BD1D2D, #F97316)',
+                                borderRadius: '99px',
+                                transition: 'width 0.4s var(--transition-fluid)'
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái pháp lý</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Năm bàn giao dự kiến</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingProject?.handover_year || 2026}</span>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Đường dẫn Folder</span>
+                          <div style={{ marginTop: '4px' }}>
+                            {renderFolderPathLink(editingProject?.folder_path, editingProject?.id)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Section 4: Mô tả chi tiết */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>Mô tả chi tiết</span>
+                      <p style={{ color: 'var(--color-text)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '0.875rem' }}>
+                        {editingProject?.description || 'Không có mô tả chi tiết'}
+                      </p>
+                    </div>
+
+                    {/* Discussions/Comments */}
+                    {editingProject && renderEntityComments('project', editingProject.id)}
+
                   </div>
-                  <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem' }}>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '6px' }}>Đội ngũ nhân sự phụ trách</span>
-                    {projectRosterLoading ? (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Đang tải danh sách nhân sự...</span>
-                    ) : projectRoster.length === 0 ? (
-                      <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa phân công nhân sự</span>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', padding: '2px 0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          {projectRoster.slice(0, 5).map((member: any, idx: number) => (
-                            <div 
-                              key={member.id} 
-                              style={{ 
-                                marginLeft: idx === 0 ? 0 : -8, 
-                                border: '2px solid var(--color-surface)', 
-                                borderRadius: '50%',
-                                overflow: 'hidden',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                zIndex: 10 - idx
-                              }}
-                              title={`${member.full_name || member.name} (${member.role || 'sales'})`}
-                            >
-                              <Avatar src={member.avatar_url || member.avatar} name={member.full_name || member.name} size={28} />
-                            </div>
-                          ))}
-                          {projectRoster.length > 5 && (
-                            <div 
-                              style={{ 
-                                marginLeft: -8, 
-                                width: 28, 
-                                height: 28, 
-                                borderRadius: '50%', 
-                                background: 'var(--color-border-light)', 
-                                color: 'var(--color-text)', 
-                                fontSize: '0.7rem', 
-                                fontWeight: 800, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                border: '2px solid var(--color-surface)',
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                zIndex: 5
-                              }}
-                            >
-                              +{projectRoster.length - 5}
+
+                  {/* Right Column (2/5) */}
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                    {/* Section 3: Nhân sự & Tài liệu */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quản lý &amp; Tài liệu</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '6px' }}>Manager phụ trách chính</span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {parseIds(editingProject?.manager_ids).length === 0 ? (
+                              <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa phân công manager phụ trách</span>
+                            ) : (
+                              parseIds(editingProject?.manager_ids).map(id => {
+                                const u = users.find(usr => String(usr.id) === String(id));
+                                if (!u) return null;
+                                return (
+                                  <span key={id} style={{ background: 'var(--color-bg-light)', border: '1px solid var(--color-border)', padding: '4px 10px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                    <Avatar src={u.avatar_url || u.avatar} name={u.full_name || u.fullname || u.username} size={18} />
+                                    {u.full_name || u.fullname || u.username}
+                                  </span>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem' }}>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '6px' }}>Đội ngũ nhân sự phụ trách</span>
+                          {projectRosterLoading ? (
+                            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Đang tải danh sách nhân sự...</span>
+                          ) : projectRoster.length === 0 ? (
+                            <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa phân công nhân sự</span>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', padding: '2px 0' }}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                {projectRoster.slice(0, 5).map((member: any, idx: number) => (
+                                  <div
+                                    key={member.id}
+                                    style={{
+                                      marginLeft: idx === 0 ? 0 : -8,
+                                      border: '2px solid var(--color-surface)',
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                      zIndex: 10 - idx
+                                    }}
+                                    title={`${member.full_name || member.name} (${member.role || 'sales'})`}
+                                  >
+                                    <Avatar src={member.avatar_url || member.avatar} name={member.full_name || member.name} size={28} />
+                                  </div>
+                                ))}
+                                {projectRoster.length > 5 && (
+                                  <div
+                                    style={{
+                                      marginLeft: -8,
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: '50%',
+                                      background: 'var(--color-border-light)',
+                                      color: 'var(--color-text)',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 800,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      border: '2px solid var(--color-surface)',
+                                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                      zIndex: 5
+                                    }}
+                                  >
+                                    +{projectRoster.length - 5}
+                                  </div>
+                                )}
+                              </div>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', marginLeft: '8px' }}>
+                                ({projectRoster.length} nhân sự)
+                              </span>
                             </div>
                           )}
                         </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', marginLeft: '8px' }}>
-                          ({projectRoster.length} nhân sự)
-                        </span>
+                        <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem' }}>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '6px' }}>Tài liệu liên kết</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {parseIds(editingProject?.document_ids).length === 0 ? (
+                              <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa liên kết tài liệu</span>
+                            ) : (
+                              parseIds(editingProject?.document_ids).map(docId => {
+                                const fileObj = allFiles.find(f => String(f.id) === String(docId));
+                                if (!fileObj) return null;
+                                return (
+                                  <a
+                                    key={docId}
+                                    href={`${import.meta.env.VITE_API_URL ?? '/backend'}/${fileObj.file_path}`}
+                                    download={fileObj.name}
+                                    title={fileObj.name}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 600 }}
+                                  >
+                                    <FileText size={14} style={{ flexShrink: 0 }} /> {formatFileName(fileObj.name, 75)}
+                                  </a>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem' }}>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '6px' }}>Tài liệu liên kết</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {parseIds(editingProject?.document_ids).length === 0 ? (
-                        <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>Chưa liên kết tài liệu</span>
-                      ) : (
-                        parseIds(editingProject?.document_ids).map(docId => {
-                          const fileObj = allFiles.find(f => String(f.id) === String(docId));
-                          if (!fileObj) return null;
-                          return (
-                            <a
-                              key={docId}
-                              href={`${import.meta.env.VITE_API_URL ?? '/backend'}/${fileObj.file_path}`}
-                              download={fileObj.name}
-                              title={fileObj.name}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 600 }}
-                            >
-                              <FileText size={14} style={{ flexShrink: 0 }} /> {formatFileName(fileObj.name, 75)}
-                            </a>
-                          );
-                        })
-                      )}
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Linked Tasks */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>
-                  Nhiệm vụ & Công việc liên kết ({linkedTasks.length})
-                </span>
-                {loadingLinkedTasks ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
-                    <RefreshCw className="spin" size={16} color="var(--color-text-muted)" />
-                  </div>
-                ) : linkedTasks.length === 0 ? (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '10px 14px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
-                    Chưa có công việc nào liên kết với dự án này.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {linkedTasks.map(task => {
-                      const statusColors: any = {
-                        planned: { bg: 'rgba(245, 158, 11, 0.08)', text: 'var(--color-warning)' },
-                        done: { bg: 'rgba(16, 185, 129, 0.08)', text: 'var(--color-success)' },
-                        cancelled: { bg: 'rgba(239, 68, 68, 0.08)', text: 'var(--color-danger)' }
-                      };
-                      const sc = statusColors[task.status] || statusColors.planned;
-                      const performer = users.find(u => Number(u.id) === Number(task.user_id));
-                      return (
-                        <div
-                          key={task.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            background: 'var(--color-bg-light)',
-                            border: '1px solid var(--color-border-light)',
-                            padding: '12px 16px',
-                            borderRadius: '12px',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.01)'
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                            e.currentTarget.style.background = '#ffffff';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(163, 20, 34, 0.06)';
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = 'var(--color-border-light)';
-                            e.currentTarget.style.background = 'var(--color-bg-light)';
-                            e.currentTarget.style.transform = 'none';
-                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.01)';
-                          }}
-                          onClick={() => handleOpenTask(task.id)}
-                          title={t('Click để xem chi tiết nhiệm vụ')}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <div style={{ marginTop: '3px' }}>
-                              <CheckSquare size={18} color={task.status === 'done' ? 'var(--color-success)' : 'var(--color-text-muted)'} style={{ opacity: 0.85 }} />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontWeight: 650, color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: '1.2' }}>{task.subject}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Avatar 
-                                  src={performer?.avatar_url || performer?.avatar} 
-                                  name={performer?.full_name || performer?.name || 'Hệ thống'} 
-                                  size={18} 
-                                />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                  {performer?.full_name || 'Hệ thống'} {performer?.role ? `(${performer.role})` : ''}
+                    {/* Linked Tasks */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>
+                        Nhiệm vụ & Công việc liên kết ({linkedTasks.length})
+                      </span>
+                      {loadingLinkedTasks ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+                          <RefreshCw className="spin" size={16} color="var(--color-text-muted)" />
+                        </div>
+                      ) : linkedTasks.length === 0 ? (
+                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '10px 14px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
+                          Chưa có công việc nào liên kết với dự án này.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {linkedTasks.map(task => {
+                            const statusColors: any = {
+                              planned: { bg: 'rgba(245, 158, 11, 0.08)', text: 'var(--color-warning)' },
+                              done: { bg: 'rgba(16, 185, 129, 0.08)', text: 'var(--color-success)' },
+                              cancelled: { bg: 'rgba(239, 68, 68, 0.08)', text: 'var(--color-danger)' }
+                            };
+                            const sc = statusColors[task.status] || statusColors.planned;
+                            const performer = users.find(u => Number(u.id) === Number(task.user_id));
+                            return (
+                              <div
+                                key={task.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: 'var(--color-bg-light)',
+                                  border: '1px solid var(--color-border-light)',
+                                  padding: '12px 16px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.85rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.01)'
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                                  e.currentTarget.style.background = '#ffffff';
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(163, 20, 34, 0.06)';
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                                  e.currentTarget.style.background = 'var(--color-bg-light)';
+                                  e.currentTarget.style.transform = 'none';
+                                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.01)';
+                                }}
+                                onClick={() => handleOpenTask(task.id)}
+                                title={t('Click để xem chi tiết nhiệm vụ')}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                  <div style={{ marginTop: '3px' }}>
+                                    <CheckSquare size={18} color={task.status === 'done' ? 'var(--color-success)' : 'var(--color-text-muted)'} style={{ opacity: 0.85 }} />
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontWeight: 650, color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: '1.2' }}>{task.subject}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Avatar
+                                        src={performer?.avatar_url || performer?.avatar}
+                                        name={performer?.full_name || performer?.name || 'Hệ thống'}
+                                        size={18}
+                                      />
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                        {performer?.full_name || 'Hệ thống'} {performer?.role ? `(${performer.role})` : ''}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '4px 10px',
+                                  borderRadius: '100px',
+                                  background: sc.bg,
+                                  color: sc.text,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.03em'
+                                }}>
+                                  {task.status === 'done' ? 'Đã xong' : 'Chưa xong'}
                                 </span>
                               </div>
-                            </div>
-                          </div>
-                          <span style={{ 
-                            fontSize: '0.72rem', 
-                            fontWeight: 700, 
-                            padding: '4px 10px', 
-                            borderRadius: '100px', 
-                            background: sc.bg, 
-                            color: sc.text,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.03em'
-                          }}>
-                            {task.status === 'done' ? 'Đã xong' : 'Chưa xong'}
-                          </span>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-          )}
-          </>
-        ) : (
-          <form id="project-form" onSubmit={handleSaveProject} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'start' }}>
-            <input 
-              type="file" 
-              ref={quickUploadInputRef} 
-              style={{ display: 'none' }} 
-              onChange={e => handleQuickUpload(e, editingProject?.id)} 
-            />
-            {/* Left Column (3/5) */}
-            <div style={{ flex: 3, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Card 1: Thông tin cơ bản */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                  <div>
-                    <label className="form-label">Tên dự án</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingProject?.name || ''}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setEditingProject(prev => {
-                          const next = { ...prev, name: val };
-                          if (autoCode && !prev?.id) {
-                            next.code = generateCodeFromName(val);
-                          }
-                          return next;
-                        });
-                      }}
-                      className="form-input"
-                      placeholder="Nhập tên dự án..."
-                    />
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <label className="form-label" style={{ marginBottom: 0 }}>Mã dự án</label>
-                      {!editingProject?.id && (
-                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={autoCode}
-                            onChange={e => {
-                              const checked = e.target.checked;
-                              setAutoCode(checked);
-                              if (checked && editingProject?.name) {
-                                setEditingProject(prev => ({ ...prev, code: generateCodeFromName(prev?.name || '') }));
-                              }
-                            }}
-                            style={{ accentColor: 'var(--color-primary)' }}
-                          />
-                          Tự động tạo mã
-                        </label>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      required
-                      disabled={autoCode && !editingProject?.id}
-                      value={editingProject?.code || ''}
-                      onChange={e => {
-                        setAutoCode(false);
-                        setEditingProject(prev => ({ ...prev, code: e.target.value.toUpperCase() }));
-                      }}
-                      className="form-input"
-                      placeholder={autoCode && !editingProject?.id ? 'Hệ thống tự động sinh' : 'Ví dụ: VGP'}
-                    />
-                  </div>
 
-                  <div>
-                    <label className="form-label">Nhà cung cấp / Đối tác</label>
-                    {developers.length === 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-                          Chưa có nhà cung cấp nào!
-                        </span>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <form id="project-form" onSubmit={handleSaveProject} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'start' }}>
+              <input
+                type="file"
+                ref={quickUploadInputRef}
+                style={{ display: 'none' }}
+                onChange={e => handleQuickUpload(e, editingProject?.id)}
+              />
+              {/* Left Column (3/5) */}
+              <div style={{ flex: 3, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                {/* Card 1: Thông tin cơ bản */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div>
+                      <label className="form-label">Tên dự án</label>
+                      <input
+                        type="text"
+                        required
+                        value={editingProject?.name || ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setEditingProject(prev => {
+                            const next = { ...prev, name: val };
+                            if (autoCode && !prev?.id) {
+                              next.code = generateCodeFromName(val);
+                            }
+                            return next;
+                          });
+                        }}
+                        className="form-input"
+                        placeholder="Nhập tên dự án..."
+                      />
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Mã dự án</label>
+                        {!editingProject?.id && (
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={autoCode}
+                              onChange={e => {
+                                const checked = e.target.checked;
+                                setAutoCode(checked);
+                                if (checked && editingProject?.name) {
+                                  setEditingProject(prev => ({ ...prev, code: generateCodeFromName(prev?.name || '') }));
+                                }
+                              }}
+                              style={{ accentColor: 'var(--color-primary)' }}
+                            />
+                            Tự động tạo mã
+                          </label>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        disabled={autoCode && !editingProject?.id}
+                        value={editingProject?.code || ''}
+                        onChange={e => {
+                          setAutoCode(false);
+                          setEditingProject(prev => ({ ...prev, code: e.target.value.toUpperCase() }));
+                        }}
+                        className="form-input"
+                        placeholder={autoCode && !editingProject?.id ? 'Hệ thống tự động sinh' : 'Ví dụ: VGP'}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Nhà cung cấp / Đối tác</label>
+                      {developers.length === 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 600 }}>
+                            Chưa có nhà cung cấp nào!
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditModalOpen(false);
+                              navigate('/suppliers');
+                            }}
+                            className="btn primary sm"
+                            style={{ width: '100%', height: '38px', fontSize: '0.75rem' }}
+                          >
+                            Thêm nhà cung cấp trước
+                          </button>
+                        </div>
+                      ) : (
+                        <CustomSelect
+                          searchable={true}
+                          options={developers.map(d => ({ value: d.name, label: d.name }))}
+                          value={editingProject?.developer || ''}
+                          onChange={val => setEditingProject(prev => ({ ...prev, developer: String(val) }))}
+                          placeholder="Chọn nhà cung cấp / đối tác..."
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ fontWeight: 600 }}>Trạng thái bán</label>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0 12px',
+                        background: 'var(--color-bg-light)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--color-border-light)',
+                        height: '42px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Cho phép mở bán</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: editingProject?.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                            {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
+                          </span>
+                          <ToggleSwitch
+                            checked={editingProject?.status === 'active'}
+                            onChange={checked => setEditingProject(prev => ({ ...prev, status: checked ? 'active' : 'inactive' }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <AddressSelect
+                        label="Vị trí / Địa chỉ dự án"
+                        value={editingProject?.location || ''}
+                        onChange={val => setEditingProject(prev => ({ ...prev, location: val }))}
+                        placeholder="Nhấp để chọn tỉnh/thành phố, xã/phường..."
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-border-light)', paddingTop: '16px', marginTop: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Website &amp; Tài liệu tham khảo liên kết</label>
                         <button
                           type="button"
                           onClick={() => {
-                            setIsEditModalOpen(false);
-                            navigate('/suppliers');
-                          }}
-                          className="btn primary sm"
-                          style={{ width: '100%', height: '38px', fontSize: '0.75rem' }}
-                        >
-                          Thêm nhà cung cấp trước
-                        </button>
-                      </div>
-                    ) : (
-                      <CustomSelect
-                        searchable={true}
-                        options={developers.map(d => ({ value: d.name, label: d.name }))}
-                        value={editingProject?.developer || ''}
-                        onChange={val => setEditingProject(prev => ({ ...prev, developer: String(val) }))}
-                        placeholder="Chọn nhà cung cấp / đối tác..."
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Trạng thái bán</label>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      padding: '0 12px', 
-                      background: 'var(--color-bg-light)', 
-                      borderRadius: 'var(--radius-md)', 
-                      border: '1px solid var(--color-border-light)', 
-                      height: '42px' 
-                    }}>
-                      <div>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>Cho phép mở bán</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: editingProject?.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                          {editingProject?.status === 'active' ? 'Đang mở bán' : 'Tạm dừng bán'}
-                        </span>
-                        <ToggleSwitch
-                          checked={editingProject?.status === 'active'}
-                          onChange={checked => setEditingProject(prev => ({ ...prev, status: checked ? 'active' : 'inactive' }))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <AddressSelect
-                      label="Vị trí / Địa chỉ dự án"
-                      value={editingProject?.location || ''}
-                      onChange={val => setEditingProject(prev => ({ ...prev, location: val }))}
-                      placeholder="Nhấp để chọn tỉnh/thành phố, xã/phường..."
-                    />
-                  </div>
-
-                  <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-border-light)', paddingTop: '16px', marginTop: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <label className="form-label" style={{ marginBottom: 0 }}>Website &amp; Tài liệu tham khảo liên kết</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentLinks = parseReferenceLinks(editingProject?.reference_url);
-                          const nextLinks = [...currentLinks, { title: 'Tài liệu tham khảo', url: '' }];
-                          setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(nextLinks) }));
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--color-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: 0
-                        }}
-                      >
-                        <Plus size={12} />
-                        <span>Thêm Link mới</span>
-                      </button>
-                    </div>
-
-                    {(() => {
-                      const currentLinks = parseReferenceLinks(editingProject?.reference_url);
-                      if (currentLinks.length === 0) {
-                        return (
-                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '8px 12px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
-                            Chưa có đường dẫn tham khảo nào. Bấm "Thêm Link mới" để cấu hình.
-                          </div>
-                        );
-                      }
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {currentLinks.map((link, idx) => (
-                            <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <input
-                                type="text"
-                                value={link.title}
-                                onChange={e => {
-                                  const updated = [...currentLinks];
-                                  updated[idx].title = e.target.value;
-                                  setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(updated) }));
-                                }}
-                                className="form-input"
-                                placeholder="Tên liên kết (Ví dụ: GG Sheets Phí)"
-                                style={{ flex: 1 }}
-                              />
-                              <input
-                                type="text"
-                                value={link.url}
-                                onChange={e => {
-                                  const updated = [...currentLinks];
-                                  updated[idx].url = e.target.value;
-                                  setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(updated) }));
-                                }}
-                                className="form-input"
-                                placeholder="https://..."
-                                style={{ flex: 2 }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = currentLinks.filter((_, i) => i !== idx);
-                                  setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(updated) }));
-                                }}
-                                className="btn secondary sm"
-                                style={{ color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: Vị trí & Tiến độ */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiến độ & Quy mô</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label className="form-label" style={{ marginBottom: 0 }}>Tiến độ thi công</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={editingProject?.progress_percent ?? 0}
-                          onChange={e => {
-                            let val = Number(e.target.value);
-                            if (val < 0) val = 0;
-                            if (val > 100) val = 100;
-                            setEditingProject(prev => ({ ...prev, progress_percent: val }));
+                            const currentLinks = parseReferenceLinks(editingProject?.reference_url);
+                            const nextLinks = [...currentLinks, { title: 'Tài liệu tham khảo', url: '' }];
+                            setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(nextLinks) }));
                           }}
                           style={{
-                            width: '64px',
-                            height: '28px',
-                            textAlign: 'center',
-                            fontSize: '0.85rem',
-                            fontWeight: 800,
-                            padding: '2px 4px',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '6px',
-                            background: 'var(--color-surface)',
-                            color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)'
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--color-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: 0
                           }}
-                        />
-                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-muted)' }}>%</span>
+                        >
+                          <Plus size={12} />
+                          <span>Thêm Link mới</span>
+                        </button>
                       </div>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={editingProject?.progress_percent ?? 0}
-                      onChange={e => setEditingProject(prev => ({ ...prev, progress_percent: Number(e.target.value) }))}
-                      className="progress-slider"
-                      style={{
-                        background: (editingProject?.progress_percent ?? 0) === 100
-                          ? 'var(--color-success)'
-                          : 'linear-gradient(to right, #BD1D2D 0%, #F97316 ' + (editingProject?.progress_percent ?? 0) + '%, var(--color-border-light) ' + (editingProject?.progress_percent ?? 0) + '%, var(--color-border-light) 100%)'
-                      }}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                      <span>0%</span>
-                      <span>50%</span>
-                      <span>100%</span>
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="form-label">Trạng thái thi công</label>
-                    <CustomSelect
-                      searchable={true}
-                      options={[
-                        { value: 'Chưa khởi công', label: 'Chưa khởi công' },
-                        { value: 'Đang thi công', label: 'Đang thi công' },
-                        { value: 'Đang thi công móng', label: 'Đang thi công móng' },
-                        { value: 'Đang xây thân', label: 'Đang xây thân' },
-                        { value: 'Đã cất nóc', label: 'Đã cất nóc' },
-                        { value: 'Đang hoàn thiện', label: 'Đang hoàn thiện' },
-                        { value: 'Đã bàn giao', label: 'Đã bàn giao' }
-                      ]}
-                      value={editingProject?.construction_status || 'Chưa khởi công'}
-                      onChange={val => {
-                        const status = String(val);
-                        let progress = editingProject?.progress_percent ?? 0;
-                        if (status === 'Chưa khởi công') progress = 0;
-                        else if (status === 'Đang thi công móng') progress = 15;
-                        else if (status === 'Đang thi công') progress = 30;
-                        else if (status === 'Đang xây thân') progress = 50;
-                        else if (status === 'Đã cất nóc') progress = 75;
-                        else if (status === 'Đang hoàn thiện') progress = 90;
-                        else if (status === 'Đã bàn giao') progress = 100;
-                        setEditingProject(prev => ({
-                          ...prev,
-                          construction_status: status,
-                          progress_percent: progress
-                        }));
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="form-label">Trạng thái pháp lý</label>
-                    <CustomSelect
-                      searchable={true}
-                      options={[
-                        { value: 'Đang hoàn thiện pháp lý', label: 'Đang hoàn thiện pháp lý' },
-                        { value: 'Quy hoạch 1/500', label: 'Quy hoạch 1/500' },
-                        { value: 'Giấy phép xây dựng', label: 'Giấy phép xây dựng' },
-                        { value: 'Sổ hồng riêng từng căn', label: 'Sổ hồng riêng từng căn' }
-                      ]}
-                      value={editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}
-                      onChange={val => setEditingProject(prev => ({ ...prev, legal_status: String(val) }))}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="form-label">Năm bàn giao dự kiến</label>
-                    <input
-                      type="number"
-                      value={editingProject?.handover_year ?? 2026}
-                      onChange={e => setEditingProject(prev => ({ ...prev, handover_year: Number(e.target.value) }))}
-                      className="form-input"
-                      placeholder="ví dụ: 2026"
-                    />
-                  </div>
-
-
-                </div>
-              </div>
-
-              {/* Card 3: Mô tả */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <label className="form-label">Mô tả chi tiết</label>
-                <textarea
-                  value={editingProject?.description || ''}
-                  onChange={e => setEditingProject(prev => ({ ...prev, description: e.target.value }))}
-                  className="form-textarea"
-                  style={{ minHeight: '100px' }}
-                  placeholder="Nhập mô tả thông tin dự án..."
-                />
-              </div>
-
-            </div>
-
-            {/* Right Column (2/5) */}
-            <div style={{ flex: 2, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Card 1: Nhân sự quản lý */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nhân sự quản lý</h4>
-                <div>
-                  <label className="form-label">Manager phụ trách chính</label>
-                  <CustomSelect
-                    multiple
-                    searchable={true}
-                    showAvatars={true}
-                    options={users
-                      .filter(u => ['manager', 'director', 'admin', 'superadmin', 'super_admin'].includes(u.role))
-                      .map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))
-                    }
-                    value={parseIds(editingProject?.manager_ids)}
-                    onChange={val => setEditingProject(prev => ({ ...prev, manager_ids: Array.isArray(val) ? val.join(',') : String(val) }))}
-                    placeholder="Chọn manager..."
-                  />
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                      Đội ngũ nhân sự phụ trách (Roster)
-                    </span>
-                     {editingProject?.id && (
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={() => handleOpenRoster(editingProject.id)}
-                        style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 700 }}
-                      >
-                        {canEditRoster ? 'Cấu hình Roster' : 'Xem Roster'}
-                      </button>
-                    )}
-                  </div>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
-                    background: 'var(--color-bg-light, #f8fafc)', 
-                    padding: '8px 12px', 
-                    borderRadius: '12px', 
-                    border: '1px solid var(--color-border-light)'
-                  }}>
-                    {projectRoster.length > 0 ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        {projectRoster
-                          .slice(0, 5)
-                          .map((m: any) => (
-                            <Avatar key={m.id} src={m.avatar_url} name={m.full_name} size={22} />
-                          ))
+                      {(() => {
+                        const currentLinks = parseReferenceLinks(editingProject?.reference_url);
+                        if (currentLinks.length === 0) {
+                          return (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '8px 12px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
+                              Chưa có đường dẫn tham khảo nào. Bấm "Thêm Link mới" để cấu hình.
+                            </div>
+                          );
                         }
-                        {projectRoster.length > 5 && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
-                            +{projectRoster.length - 5}
-                          </span>
-                        )}
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', marginLeft: '4px' }}>
-                          ({projectRoster.length} nhân sự)
-                        </span>
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                        Chưa phân công nhân sự phân phối
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: Tài liệu & Liên kết */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thư mục & Tài liệu</h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <label className="form-label" style={{ marginBottom: 0 }}>Đường dẫn Folder liên kết</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentFolders = parseFolderPaths(editingProject?.folder_path);
-                          const nextFolders = [...currentFolders, { type: 'link' as const, path: '' }];
-                          setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(nextFolders) }));
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--color-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: 0
-                        }}
-                      >
-                        <Plus size={12} />
-                        <span>Thêm Thư mục</span>
-                      </button>
-                    </div>
-
-                    {(() => {
-                      const currentFolders = parseFolderPaths(editingProject?.folder_path);
-                      if (currentFolders.length === 0) {
                         return (
-                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '8px 12px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
-                            Chưa liên kết thư mục nào. Bấm "Thêm Thư mục" để cấu hình.
-                          </div>
-                        );
-                      }
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          {currentFolders.map((f, idx) => (
-                            <div key={idx} style={{ background: 'var(--color-bg-light)', padding: '12px', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', background: 'var(--color-surface)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const updated = [...currentFolders];
-                                      updated[idx].type = 'link';
-                                      setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
-                                    }}
-                                    style={{
-                                      padding: '4px 8px',
-                                      borderRadius: '6px',
-                                      border: 'none',
-                                      background: f.type === 'link' ? 'var(--color-primary)' : 'transparent',
-                                      color: f.type === 'link' ? 'white' : 'var(--color-text-muted)',
-                                      fontSize: '0.7rem',
-                                      fontWeight: 700,
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    Dán Link (Drive)
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const updated = [...currentFolders];
-                                      updated[idx].type = 'select';
-                                      setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
-                                    }}
-                                    style={{
-                                      padding: '4px 8px',
-                                      borderRadius: '6px',
-                                      border: 'none',
-                                      background: f.type === 'select' ? 'var(--color-primary)' : 'transparent',
-                                      color: f.type === 'select' ? 'white' : 'var(--color-text-muted)',
-                                      fontSize: '0.7rem',
-                                      fontWeight: 700,
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    Chọn thư mục
-                                  </button>
-                                </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {currentLinks.map((link, idx) => (
+                              <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  value={link.title}
+                                  onChange={e => {
+                                    const updated = [...currentLinks];
+                                    updated[idx].title = e.target.value;
+                                    setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(updated) }));
+                                  }}
+                                  className="form-input"
+                                  placeholder="Tên liên kết (Ví dụ: GG Sheets Phí)"
+                                  style={{ flex: 1 }}
+                                />
+                                <input
+                                  type="text"
+                                  value={link.url}
+                                  onChange={e => {
+                                    const updated = [...currentLinks];
+                                    updated[idx].url = e.target.value;
+                                    setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(updated) }));
+                                  }}
+                                  className="form-input"
+                                  placeholder="https://..."
+                                  style={{ flex: 2 }}
+                                />
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const updated = currentFolders.filter((_, i) => i !== idx);
-                                    setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
+                                    const updated = currentLinks.filter((_, i) => i !== idx);
+                                    setEditingProject(prev => ({ ...prev, reference_url: JSON.stringify(updated) }));
                                   }}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--color-danger)',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    padding: '4px'
-                                  }}
+                                  className="btn secondary sm"
+                                  style={{ color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
                                   <Trash2 size={14} />
                                 </button>
                               </div>
-                              {f.type === 'link' ? (
-                                <input
-                                  type="text"
-                                  value={f.path}
-                                  onChange={e => {
-                                    const updated = [...currentFolders];
-                                    updated[idx].path = e.target.value;
-                                    setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
-                                  }}
-                                  className="form-input"
-                                  placeholder="Dán link thư mục Google Drive..."
-                                />
-                              ) : (
-                                <CustomSelect
-                                  options={fileCategories.map(cat => ({ value: cat.label, label: cat.label }))}
-                                  value={f.path}
-                                  onChange={val => {
-                                    const updated = [...currentFolders];
-                                    updated[idx].path = String(val);
-                                    setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
-                                  }}
-                                  placeholder="Chọn thư mục từ /files..."
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label className="form-label" style={{ marginBottom: 0 }}>Tài liệu đính kèm</label>
-                      <button
-                        type="button"
-                        onClick={() => quickUploadInputRef.current?.click()}
-                        disabled={uploadingDoc}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--color-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: 0
-                        }}
-                      >
-                        {uploadingDoc ? (
-                          <RefreshCw className="spin" size={12} />
-                        ) : (
-                          <Plus size={12} />
-                        )}
-                        <span>Tải tệp mới</span>
-                      </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
-                    <CustomSelect
-                      multiple
-                      searchable={true}
-                      options={allFiles.map(f => ({ value: String(f.id), label: f.name }))}
-                      value={parseIds(editingProject?.document_ids)}
-                      onChange={val => setEditingProject(prev => ({ ...prev, document_ids: Array.isArray(val) ? val.join(',') : String(val) }))}
-                      placeholder="Chọn tài liệu..."
-                    />
                   </div>
+                </div>
 
+                {/* Card 2: Vị trí & Tiến độ */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiến độ & Quy mô</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Tiến độ thi công</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={editingProject?.progress_percent ?? 0}
+                            onChange={e => {
+                              let val = Number(e.target.value);
+                              if (val < 0) val = 0;
+                              if (val > 100) val = 100;
+                              setEditingProject(prev => ({ ...prev, progress_percent: val }));
+                            }}
+                            style={{
+                              width: '64px',
+                              height: '28px',
+                              textAlign: 'center',
+                              fontSize: '0.85rem',
+                              fontWeight: 800,
+                              padding: '2px 4px',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '6px',
+                              background: 'var(--color-surface)',
+                              color: (editingProject?.progress_percent ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)'
+                            }}
+                          />
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-muted)' }}>%</span>
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={editingProject?.progress_percent ?? 0}
+                        onChange={e => setEditingProject(prev => ({ ...prev, progress_percent: Number(e.target.value) }))}
+                        className="progress-slider"
+                        style={{
+                          background: (editingProject?.progress_percent ?? 0) === 100
+                            ? 'var(--color-success)'
+                            : 'linear-gradient(to right, #BD1D2D 0%, #F97316 ' + (editingProject?.progress_percent ?? 0) + '%, var(--color-border-light) ' + (editingProject?.progress_percent ?? 0) + '%, var(--color-border-light) 100%)'
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="form-label">Trạng thái thi công</label>
+                      <CustomSelect
+                        searchable={true}
+                        options={[
+                          { value: 'Chưa khởi công', label: 'Chưa khởi công' },
+                          { value: 'Đang thi công', label: 'Đang thi công' },
+                          { value: 'Đang thi công móng', label: 'Đang thi công móng' },
+                          { value: 'Đang xây thân', label: 'Đang xây thân' },
+                          { value: 'Đã cất nóc', label: 'Đã cất nóc' },
+                          { value: 'Đang hoàn thiện', label: 'Đang hoàn thiện' },
+                          { value: 'Đã bàn giao', label: 'Đã bàn giao' }
+                        ]}
+                        value={editingProject?.construction_status || 'Chưa khởi công'}
+                        onChange={val => {
+                          const status = String(val);
+                          let progress = editingProject?.progress_percent ?? 0;
+                          if (status === 'Chưa khởi công') progress = 0;
+                          else if (status === 'Đang thi công móng') progress = 15;
+                          else if (status === 'Đang thi công') progress = 30;
+                          else if (status === 'Đang xây thân') progress = 50;
+                          else if (status === 'Đã cất nóc') progress = 75;
+                          else if (status === 'Đang hoàn thiện') progress = 90;
+                          else if (status === 'Đã bàn giao') progress = 100;
+                          setEditingProject(prev => ({
+                            ...prev,
+                            construction_status: status,
+                            progress_percent: progress
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Trạng thái pháp lý</label>
+                      <CustomSelect
+                        searchable={true}
+                        options={[
+                          { value: 'Đang hoàn thiện pháp lý', label: 'Đang hoàn thiện pháp lý' },
+                          { value: 'Quy hoạch 1/500', label: 'Quy hoạch 1/500' },
+                          { value: 'Giấy phép xây dựng', label: 'Giấy phép xây dựng' },
+                          { value: 'Sổ hồng riêng từng căn', label: 'Sổ hồng riêng từng căn' }
+                        ]}
+                        value={editingProject?.legal_status || 'Đang hoàn thiện pháp lý'}
+                        onChange={val => setEditingProject(prev => ({ ...prev, legal_status: String(val) }))}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Năm bàn giao dự kiến</label>
+                      <input
+                        type="number"
+                        value={editingProject?.handover_year ?? 2026}
+                        onChange={e => setEditingProject(prev => ({ ...prev, handover_year: Number(e.target.value) }))}
+                        className="form-input"
+                        placeholder="ví dụ: 2026"
+                      />
+                    </div>
+
+
+                  </div>
+                </div>
+
+                {/* Card 3: Mô tả */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <label className="form-label">Mô tả chi tiết</label>
+                  <textarea
+                    value={editingProject?.description || ''}
+                    onChange={e => setEditingProject(prev => ({ ...prev, description: e.target.value }))}
+                    className="form-textarea"
+                    style={{ minHeight: '100px' }}
+                    placeholder="Nhập mô tả thông tin dự án..."
+                  />
+                </div>
+
+              </div>
+
+              {/* Right Column (2/5) */}
+              <div style={{ flex: 2, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                {/* Card 1: Nhân sự quản lý */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nhân sự quản lý</h4>
                   <div>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Chiến dịch liên kết</label>
+                    <label className="form-label">Manager phụ trách chính</label>
                     <CustomSelect
                       multiple
                       searchable={true}
-                      options={campaigns.map(c => ({ value: String(c.id), label: c.name, faded: c.status !== 'active' }))}
-                      value={
-                        editingProject?.campaign_ids_array !== undefined
-                          ? editingProject.campaign_ids_array.map(String)
-                          : campaigns.filter(c => c.project_id === editingProject?.id).map(c => String(c.id))
+                      showAvatars={true}
+                      options={users
+                        .filter(u => ['manager', 'director', 'admin', 'superadmin', 'super_admin'].includes(u.role))
+                        .map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))
                       }
-                      onChange={val => {
-                        const selectedIds = Array.isArray(val) ? val.map(Number) : [];
-                        const selectedNames = campaigns.filter(c => selectedIds.includes(c.id)).map(c => c.name);
-                        setEditingProject(prev => ({
-                          ...prev,
-                          campaign_ids: selectedNames.join(','),
-                          campaign_ids_array: selectedIds
-                        }));
-                      }}
-                      placeholder="Chọn chiến dịch..."
+                      value={parseIds(editingProject?.manager_ids)}
+                      onChange={val => setEditingProject(prev => ({ ...prev, manager_ids: Array.isArray(val) ? val.join(',') : String(val) }))}
+                      placeholder="Chọn manager..."
                     />
                   </div>
 
-                  <div>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Cấu hình chia sẻ chiến dịch</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '8px', marginTop: '6px' }}>
-                      {/* Option 1: Công khai */}
-                      <div
-                        onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'public' }) : prev)}
-                        style={{
-                          border: `1px solid ${editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-                          background: editingProject?.campaign_sharing_mode === 'public' ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : '#cbd5e1' }}></span>
-                          Công khai
+                  <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                        Đội ngũ nhân sự phụ trách (Roster)
+                      </span>
+                      {editingProject?.id && (
+                        <button
+                          type="button"
+                          className="btn-link"
+                          onClick={() => handleOpenRoster(editingProject.id)}
+                          style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 700 }}
+                        >
+                          {canEditRoster ? 'Cấu hình Roster' : 'Xem Roster'}
+                        </button>
+                      )}
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'var(--color-bg-light, #f8fafc)',
+                      padding: '8px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--color-border-light)'
+                    }}>
+                      {projectRoster.length > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          {projectRoster
+                            .slice(0, 5)
+                            .map((m: any) => (
+                              <Avatar key={m.id} src={m.avatar_url} name={m.full_name} size={22} />
+                            ))
+                          }
+                          {projectRoster.length > 5 && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                              +{projectRoster.length - 5}
+                            </span>
+                          )}
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', marginLeft: '4px' }}>
+                            ({projectRoster.length} nhân sự)
+                          </span>
                         </div>
-                        <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
-                          Mọi nhân sự trong hệ thống đều thấy chiến dịch con.
+                      ) : (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                          Chưa phân công nhân sự phân phối
                         </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Tài liệu & Liên kết */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thư mục & Tài liệu</h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Đường dẫn Folder liên kết</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentFolders = parseFolderPaths(editingProject?.folder_path);
+                            const nextFolders = [...currentFolders, { type: 'link' as const, path: '' }];
+                            setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(nextFolders) }));
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--color-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: 0
+                          }}
+                        >
+                          <Plus size={12} />
+                          <span>Thêm Thư mục</span>
+                        </button>
                       </div>
 
-                      {/* Option 2: Nhân sự dự án */}
-                      <div
-                        onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'project_members' }) : prev)}
-                        style={{
-                          border: `1px solid ${editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-                          background: editingProject?.campaign_sharing_mode === 'project_members' ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : '#cbd5e1' }}></span>
-                          Nhân sự dự án
-                        </div>
-                        <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
-                          Chỉ nhân sự thuộc roster dự án thấy chiến dịch con.
-                        </span>
-                      </div>
+                      {(() => {
+                        const currentFolders = parseFolderPaths(editingProject?.folder_path);
+                        if (currentFolders.length === 0) {
+                          return (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '8px 12px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
+                              Chưa liên kết thư mục nào. Bấm "Thêm Thư mục" để cấu hình.
+                            </div>
+                          );
+                        }
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {currentFolders.map((f, idx) => (
+                              <div key={idx} style={{ background: 'var(--color-bg-light)', padding: '12px', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', background: 'var(--color-surface)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...currentFolders];
+                                        updated[idx].type = 'link';
+                                        setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        background: f.type === 'link' ? 'var(--color-primary)' : 'transparent',
+                                        color: f.type === 'link' ? 'white' : 'var(--color-text-muted)',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Dán Link (Drive)
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...currentFolders];
+                                        updated[idx].type = 'select';
+                                        setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        background: f.type === 'select' ? 'var(--color-primary)' : 'transparent',
+                                        color: f.type === 'select' ? 'white' : 'var(--color-text-muted)',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Chọn thư mục
+                                    </button>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = currentFolders.filter((_, i) => i !== idx);
+                                      setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
+                                    }}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: 'var(--color-danger)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      padding: '4px'
+                                    }}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                                {f.type === 'link' ? (
+                                  <input
+                                    type="text"
+                                    value={f.path}
+                                    onChange={e => {
+                                      const updated = [...currentFolders];
+                                      updated[idx].path = e.target.value;
+                                      setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
+                                    }}
+                                    className="form-input"
+                                    placeholder="Dán link thư mục Google Drive..."
+                                  />
+                                ) : (
+                                  <CustomSelect
+                                    options={fileCategories.map(cat => ({ value: cat.label, label: cat.label }))}
+                                    value={f.path}
+                                    onChange={val => {
+                                      const updated = [...currentFolders];
+                                      updated[idx].path = String(val);
+                                      setEditingProject(prev => ({ ...prev, folder_path: JSON.stringify(updated) }));
+                                    }}
+                                    placeholder="Chọn thư mục từ /files..."
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
 
-                      {/* Option 3: Chiến dịch độc lập */}
-                      <div
-                        onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'independent' }) : prev)}
-                        style={{
-                          border: `1px solid ${(!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-                          background: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
-                          padding: '10px 12px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          transition: 'all 0.2s ease'
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label className="form-label" style={{ marginBottom: 0 }}>Tài liệu đính kèm</label>
+                        <button
+                          type="button"
+                          onClick={() => quickUploadInputRef.current?.click()}
+                          disabled={uploadingDoc}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--color-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: 0
+                          }}
+                        >
+                          {uploadingDoc ? (
+                            <RefreshCw className="spin" size={12} />
+                          ) : (
+                            <Plus size={12} />
+                          )}
+                          <span>Tải tệp mới</span>
+                        </button>
+                      </div>
+                      <CustomSelect
+                        multiple
+                        searchable={true}
+                        options={allFiles.map(f => ({ value: String(f.id), label: f.name }))}
+                        value={parseIds(editingProject?.document_ids)}
+                        onChange={val => setEditingProject(prev => ({ ...prev, document_ids: Array.isArray(val) ? val.join(',') : String(val) }))}
+                        placeholder="Chọn tài liệu..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ fontWeight: 600 }}>Chiến dịch liên kết</label>
+                      <CustomSelect
+                        multiple
+                        searchable={true}
+                        options={campaigns.map(c => ({ value: String(c.id), label: c.name, faded: c.status !== 'active' }))}
+                        value={
+                          editingProject?.campaign_ids_array !== undefined
+                            ? editingProject.campaign_ids_array.map(String)
+                            : campaigns.filter(c => c.project_id === editingProject?.id).map(c => String(c.id))
+                        }
+                        onChange={val => {
+                          const selectedIds = Array.isArray(val) ? val.map(Number) : [];
+                          const selectedNames = campaigns.filter(c => selectedIds.includes(c.id)).map(c => c.name);
+                          setEditingProject(prev => ({
+                            ...prev,
+                            campaign_ids: selectedNames.join(','),
+                            campaign_ids_array: selectedIds
+                          }));
                         }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : '#cbd5e1' }}></span>
-                          Độc lập (Mặc định)
+                        placeholder="Chọn chiến dịch..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ fontWeight: 600 }}>Cấu hình chia sẻ chiến dịch</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '8px', marginTop: '6px' }}>
+                        {/* Option 1: Công khai */}
+                        <div
+                          onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'public' }) : prev)}
+                          style={{
+                            border: `1px solid ${editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
+                            background: editingProject?.campaign_sharing_mode === 'public' ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : 'var(--color-text)' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : '#cbd5e1' }}></span>
+                            Công khai
+                          </div>
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
+                            Mọi nhân sự trong hệ thống đều thấy chiến dịch con.
+                          </span>
                         </div>
-                        <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
-                          Chỉ thành viên của riêng chiến dịch đó mới thấy.
-                        </span>
+
+                        {/* Option 2: Nhân sự dự án */}
+                        <div
+                          onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'project_members' }) : prev)}
+                          style={{
+                            border: `1px solid ${editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
+                            background: editingProject?.campaign_sharing_mode === 'project_members' ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : 'var(--color-text)' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : '#cbd5e1' }}></span>
+                            Nhân sự dự án
+                          </div>
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
+                            Chỉ nhân sự thuộc roster dự án thấy chiến dịch con.
+                          </span>
+                        </div>
+
+                        {/* Option 3: Chiến dịch độc lập */}
+                        <div
+                          onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'independent' }) : prev)}
+                          style={{
+                            border: `1px solid ${(!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
+                            background: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : 'var(--color-text)' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : '#cbd5e1' }}></span>
+                            Độc lập (Mặc định)
+                          </div>
+                          <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
+                            Chỉ thành viên của riêng chiến dịch đó mới thấy.
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-            </div>
-          </form>
-        )}
-      </>,
-      '960px',
-      projectModalMode === 'view' ? (
-        <button
-          onClick={() => setProjectDrawerTab(projectDrawerTab === 'details' ? 'changelog' : 'details')}
-          style={{
-            border: 'none',
-            background: projectDrawerTab === 'changelog' ? 'rgba(163, 20, 34, 0.08)' : 'transparent',
-            cursor: 'pointer',
-            color: projectDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            borderRadius: '8px',
-            transition: 'all 0.2s ease',
-            outline: 'none'
-          }}
-          title={projectDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
-          className="hover-lift"
-        >
-          <History size={20} />
-        </button>
-      ) : (
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              </div>
+            </form>
+          )}
+        </>,
+        '960px',
+        projectModalMode === 'view' ? (
           <button
-            type="submit"
-            form="project-form"
-            className="btn primary sm"
-            disabled={isSaving}
-            style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+            onClick={() => setProjectDrawerTab(projectDrawerTab === 'details' ? 'changelog' : 'details')}
+            style={{
+              border: 'none',
+              background: projectDrawerTab === 'changelog' ? 'rgba(163, 20, 34, 0.08)' : 'transparent',
+              cursor: 'pointer',
+              color: projectDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+              outline: 'none'
+            }}
+            title={projectDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
+            className="hover-lift"
           >
-            {isSaving ? 'Đang lưu...' : 'Lưu dự án'}
+            <History size={20} />
           </button>
-        </div>
-      )
-    )}
+        ) : (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              type="submit"
+              form="project-form"
+              className="btn primary sm"
+              disabled={isSaving}
+              style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+            >
+              {isSaving ? 'Đang lưu...' : 'Lưu dự án'}
+            </button>
+          </div>
+        )
+      )}
 
       {/* Roster Drawer */}
       {renderDrawer(
@@ -6094,7 +6094,7 @@ export default function ProjectsPage() {
         () => setIsRosterModalOpen(false),
         "Cấu hình Roster Nhân Sự Phân Phối",
         (() => {
-          const filtered = rosterMembers.filter(m => 
+          const filtered = rosterMembers.filter(m =>
             (m.full_name || '').toLowerCase().includes(rosterSearch.toLowerCase()) ||
             (m.email || '').toLowerCase().includes(rosterSearch.toLowerCase())
           );
@@ -6129,13 +6129,13 @@ export default function ProjectsPage() {
 
               {/* Add Team Dropdown / Buttons */}
               {canEditRoster && teams.length > 0 && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '12px', 
-                  background: 'rgba(0, 0, 0, 0.015)', 
-                  padding: '10px 16px', 
-                  borderRadius: '12px', 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'rgba(0, 0, 0, 0.015)',
+                  padding: '10px 16px',
+                  borderRadius: '12px',
                   border: '1px solid var(--color-border-light)'
                 }}>
                   <div style={{ flexShrink: 0 }}>
@@ -6204,10 +6204,10 @@ export default function ProjectsPage() {
                       onClick={() => {
                         setRosterMembers(prev => prev.map(m => ({ ...m, is_assigned: 0 })));
                       }}
-                      style={{ 
-                        borderRadius: '8px', 
-                        padding: '6px 12px', 
-                        fontSize: '0.75rem', 
+                      style={{
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.75rem',
                         fontWeight: 600,
                         whiteSpace: 'nowrap',
                         height: '38px',
@@ -6222,11 +6222,11 @@ export default function ProjectsPage() {
                 </div>
               )}
 
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
-                gap: '0.75rem', 
-                overflowY: 'auto', 
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '0.75rem',
+                overflowY: 'auto',
                 paddingRight: '4px',
                 maxHeight: '450px'
               }}>
@@ -6293,28 +6293,28 @@ export default function ProjectsPage() {
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             {canEditRoster ? (
               <>
-                <button 
-                  type="button" 
-                  className="btn secondary sm" 
-                  style={{ borderRadius: '100px', fontWeight: 700 }} 
+                <button
+                  type="button"
+                  className="btn secondary sm"
+                  style={{ borderRadius: '100px', fontWeight: 700 }}
                   onClick={() => setIsRosterModalOpen(false)}
                 >
                   Hủy
                 </button>
-                <button 
-                  type="button" 
-                  className="btn primary sm" 
-                  style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none' }} 
+                <button
+                  type="button"
+                  className="btn primary sm"
+                  style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none' }}
                   onClick={handleSaveRoster}
                 >
                   Lưu thay đổi
                 </button>
               </>
             ) : (
-              <button 
-                type="button" 
-                className="btn secondary sm" 
-                style={{ borderRadius: '100px', fontWeight: 700 }} 
+              <button
+                type="button"
+                className="btn secondary sm"
+                style={{ borderRadius: '100px', fontWeight: 700 }}
                 onClick={() => setIsRosterModalOpen(false)}
               >
                 Đóng
@@ -6334,7 +6334,7 @@ export default function ProjectsPage() {
         (() => {
           const selectedProj = projects.find(p => p.id === selectedProjectId);
           const linkedDocIds = selectedProj?.document_ids ? parseIds(selectedProj.document_ids) : [];
-          
+
           const formattedLinkedDocs = allFiles
             .filter(f => linkedDocIds.includes(String(f.id)))
             .map(f => ({
@@ -6552,7 +6552,7 @@ export default function ProjectsPage() {
                       {parseFolderPaths(selectedProj.folder_path).map((f, idx) => {
                         const isGdrive = f.type === 'link';
                         return (
-                          <div 
+                          <div
                             key={idx}
                             onClick={() => {
                               if (!isGdrive && selectedProjectId) {
@@ -6659,9 +6659,9 @@ export default function ProjectsPage() {
                         {/* Categories Sidebar */}
                         <div className="category-sidebar">
                           {(getCount('all') > 0 || combinedDocs.length === 0) && (
-                            <button 
+                            <button
                               type="button"
-                              onClick={() => setDocFilterCategory('all')} 
+                              onClick={() => setDocFilterCategory('all')}
                               className={`category-btn ${docFilterCategory === 'all' ? 'active' : ''}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -6673,9 +6673,9 @@ export default function ProjectsPage() {
                           )}
 
                           {getCount('gdrive') > 0 && (
-                            <button 
+                            <button
                               type="button"
-                              onClick={() => setDocFilterCategory('gdrive')} 
+                              onClick={() => setDocFilterCategory('gdrive')}
                               className={`category-btn gdrive ${docFilterCategory === 'gdrive' ? 'active' : ''}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -6687,9 +6687,9 @@ export default function ProjectsPage() {
                           )}
 
                           {getCount('pdf') > 0 && (
-                            <button 
+                            <button
                               type="button"
-                              onClick={() => setDocFilterCategory('pdf')} 
+                              onClick={() => setDocFilterCategory('pdf')}
                               className={`category-btn pdf ${docFilterCategory === 'pdf' ? 'active' : ''}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -6701,9 +6701,9 @@ export default function ProjectsPage() {
                           )}
 
                           {getCount('excel') > 0 && (
-                            <button 
+                            <button
                               type="button"
-                              onClick={() => setDocFilterCategory('excel')} 
+                              onClick={() => setDocFilterCategory('excel')}
                               className={`category-btn excel ${docFilterCategory === 'excel' ? 'active' : ''}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -6715,9 +6715,9 @@ export default function ProjectsPage() {
                           )}
 
                           {getCount('image') > 0 && (
-                            <button 
+                            <button
                               type="button"
-                              onClick={() => setDocFilterCategory('image')} 
+                              onClick={() => setDocFilterCategory('image')}
                               className={`category-btn image ${docFilterCategory === 'image' ? 'active' : ''}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -6729,9 +6729,9 @@ export default function ProjectsPage() {
                           )}
 
                           {getCount('other') > 0 && (
-                            <button 
+                            <button
                               type="button"
-                              onClick={() => setDocFilterCategory('other')} 
+                              onClick={() => setDocFilterCategory('other')}
                               className={`category-btn ${docFilterCategory === 'other' ? 'active' : ''}`}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -6746,12 +6746,12 @@ export default function ProjectsPage() {
                         {/* List/Table view */}
                         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                           {filteredDocs.length === 0 ? (
-                            <div style={{ 
-                              textAlign: 'center', 
-                              padding: '4rem 0', 
-                              color: 'var(--color-text-muted)', 
-                              background: 'var(--color-bg-secondary)', 
-                              borderRadius: '12px', 
+                            <div style={{
+                              textAlign: 'center',
+                              padding: '4rem 0',
+                              color: 'var(--color-text-muted)',
+                              background: 'var(--color-bg-secondary)',
+                              borderRadius: '12px',
                               border: '2px dashed var(--color-border-light)',
                               display: 'flex',
                               flexDirection: 'column',
@@ -6876,8 +6876,8 @@ export default function ProjectsPage() {
                                                   </button>
                                                 </div>
                                               ) : (
-                                                <span 
-                                                  style={{ fontWeight: 600, color: 'var(--color-text)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} 
+                                                <span
+                                                  style={{ fontWeight: 600, color: 'var(--color-text)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                                                   title={doc.name}
                                                 >
                                                   {doc.name}
@@ -6978,654 +6978,654 @@ export default function ProjectsPage() {
           setIsCampaignModalOpen(false);
           setEditingCampaign(null);
         },
-        campaignModalMode === 'view' 
-          ? `Chi tiết Chiến dịch: ${editingCampaign?.name}` 
+        campaignModalMode === 'view'
+          ? `Chi tiết Chiến dịch: ${editingCampaign?.name}`
           : editingCampaign?.id ? 'Chỉnh sửa Chiến dịch' : 'Thêm Chiến dịch mới',
         <>
-        {campaignModalMode === 'view' ? (
-          <>
-            {renderCampaignViewDrawer()}
-            {isLegacyLayoutEnabled && (
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
-            
-            {/* Left Column (3/5) */}
-            <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Section 1: Thông tin cơ bản */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Tên chiến dịch</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingCampaign?.name}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái hoạt động</span>
-                    <span 
-                      className={`badge ${editingCampaign?.status === 'active' ? 'success' : 'secondary'}`}
-                      style={{ fontSize: '0.75rem', padding: '5px 10px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
-                    >
-                      {editingCampaign?.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Ngày bắt đầu</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingCampaign?.start_date || 'Chưa thiết lập'}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Ngày kết thúc</span>
-                    <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingCampaign?.end_date || 'Chưa thiết lập'}</span>
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Đường dẫn Folder</span>
-                    <div style={{ marginTop: '4px' }}>
-                      {renderFolderPathLink(editingCampaign?.folder_path, editingCampaign?.project_id)}
-                    </div>
-                  </div>
-                  {editingCampaign?.reference_url && (
-                    <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
-                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Website / Link tham khảo</span>
-                      <a
-                        href={editingCampaign.reference_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          color: 'var(--color-primary)',
-                          textDecoration: 'none',
-                          fontWeight: 700,
-                          fontSize: '0.875rem'
-                        }}
-                      >
-                        {editingCampaign.reference_url.includes('docs.google.com/spreadsheets') || editingCampaign.reference_url.includes('google.com/sheets') ? (
-                          <>
-                            <FileSpreadsheet size={16} color="#10b981" />
-                            <span style={{ color: '#10b981' }}>Bảng tính Google Sheets</span>
-                          </>
-                        ) : (
-                          <>
-                            <Link2 size={16} />
-                            <span>Mở liên kết tham khảo</span>
-                          </>
-                        )}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {campaignModalMode === 'view' ? (
+            <>
+              {renderCampaignViewDrawer()}
+              {isLegacyLayoutEnabled && (
+                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
 
-              {/* Section 3: Mô tả chiến dịch */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>Mô tả chiến dịch</span>
-                <p style={{ color: 'var(--color-text)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '0.875rem' }}>
-                  {editingCampaign?.description || 'Không có mô tả chi tiết'}
-                </p>
-              </div>
+                  {/* Left Column (3/5) */}
+                  <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-              {/* Thảo luận & Trao đổi */}
-              {editingCampaign && renderEntityComments('campaign', editingCampaign.id)}
-
-            </div>
-
-            {/* Right Column (2/5) */}
-            <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Section 2: Dự án liên kết & Nhân sự */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dự án &amp; Nhân sự phụ trách</h4>
-                
-                {(() => {
-                  const associatedProjs = projects.filter(p => {
-                    const campIds = p.campaign_ids ? p.campaign_ids.split(',').map((id: string) => id.trim()) : [];
-                    return campIds.includes(editingCampaign?.name);
-                  });
-
-                  if (associatedProjs.length === 0) {
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#f3f4f6', border: '1px solid var(--color-border-light)', borderRadius: '12px', color: '#6b7280', fontSize: '0.8rem', fontWeight: 550, cursor: 'not-allowed' }}>
-                        <Info size={12} style={{ opacity: 0.6 }} />
-                        <span>Chưa liên kết dự án nào</span>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      {associatedProjs.map(proj => {
-                        const docIds = proj.document_ids ? proj.document_ids.split(',').map((id: string) => id.trim()) : [];
-                        const projDocs = allFiles.filter(f => docIds.includes(String(f.id)));
-                        const rosterList = campaignRosters[proj.id] || [];
-
-                        return (
-                          <div key={proj.id} style={{ border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '1rem', background: 'var(--color-bg-light)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px dotted var(--color-border-light)', paddingBottom: '0.5rem' }}>
-                              <span 
-                                onClick={() => {
-                                  setEditingProject(proj);
-                                  setProjectModalMode('view');
-                                  setIsCampaignModalOpen(false);
-                                  setIsEditModalOpen(true);
-                                }}
-                                style={{ color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <Building2 size={14} /> {proj.name}
-                              </span>
-                              <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{proj.code}</span>
-                            </div>
-
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
-                              <span>Thư mục:</span> 
-                              {parseFolderPaths(proj.folder_path).map((f, idx) => (
-                                <span key={idx}>{renderFolderPathLink(f.path, proj.id)}</span>
-                              ))}
-                            </div>
-
-                            <div style={{ marginBottom: '8px' }}>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Tài liệu:</span>
-                              {projDocs.length === 0 ? (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>Không có tài liệu</span>
-                              ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  {projDocs.map(doc => (
-                                    <a
-                                      key={doc.id}
-                                      href={`${import.meta.env.VITE_API_URL ?? '/backend'}/${doc.file_path}`}
-                                      download={doc.name}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600 }}
-                                    >
-                                      <FileText size={12} style={{ flexShrink: 0 }} /> {doc.name}
-                                    </a>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Nhân sự phụ trách:</span>
-                              {campaignRostersLoading ? (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>Đang tải...</span>
-                              ) : rosterList.length === 0 ? (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>Chưa phân công</span>
-                              ) : (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                  {rosterList.map(member => (
-                                    <span key={member.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                      <Avatar src={member.avatar_url || member.avatar} name={member.full_name || member.name} size={16} />
-                                      {member.full_name || member.name}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Linked Tasks */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>
-                  Nhiệm vụ & Công việc liên kết ({linkedTasks.length})
-                </span>
-                {loadingLinkedTasks ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
-                    <RefreshCw className="spin" size={16} color="var(--color-text-muted)" />
-                  </div>
-                ) : linkedTasks.length === 0 ? (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '10px 14px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
-                    Chưa có công việc nào liên kết với chiến dịch này.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {linkedTasks.map(task => {
-                      const statusColors: any = {
-                        planned: { bg: 'rgba(245, 158, 11, 0.08)', text: 'var(--color-warning)' },
-                        done: { bg: 'rgba(16, 185, 129, 0.08)', text: 'var(--color-success)' },
-                        cancelled: { bg: 'rgba(239, 68, 68, 0.08)', text: 'var(--color-danger)' }
-                      };
-                      const sc = statusColors[task.status] || statusColors.planned;
-                      const performer = users.find(u => Number(u.id) === Number(task.user_id));
-                      return (
-                        <div
-                          key={task.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            background: 'var(--color-bg-light)',
-                            border: '1px solid var(--color-border-light)',
-                            padding: '12px 16px',
-                            borderRadius: '12px',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.01)'
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                            e.currentTarget.style.background = '#ffffff';
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(163, 20, 34, 0.06)';
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = 'var(--color-border-light)';
-                            e.currentTarget.style.background = 'var(--color-bg-light)';
-                            e.currentTarget.style.transform = 'none';
-                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.01)';
-                          }}
-                          onClick={() => handleOpenTask(task.id)}
-                          title={t('Click để xem chi tiết nhiệm vụ')}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <div style={{ marginTop: '3px' }}>
-                              <CheckSquare size={18} color={task.status === 'done' ? 'var(--color-success)' : 'var(--color-text-muted)'} style={{ opacity: 0.85 }} />
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <span style={{ fontWeight: 650, color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: '1.2' }}>{task.subject}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Avatar 
-                                  src={performer?.avatar_url || performer?.avatar} 
-                                  name={performer?.full_name || performer?.name || 'Hệ thống'} 
-                                  size={18} 
-                                />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                  {performer?.full_name || 'Hệ thống'} {performer?.role ? `(${performer.role})` : ''}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <span style={{ 
-                            fontSize: '0.72rem', 
-                            fontWeight: 700, 
-                            padding: '4px 10px', 
-                            borderRadius: '100px', 
-                            background: sc.bg, 
-                            color: sc.text,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.03em'
-                          }}>
-                            {task.status === 'done' ? 'Đã xong' : 'Chưa xong'}
+                    {/* Section 1: Thông tin cơ bản */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Tên chiến dịch</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.925rem', fontWeight: 700, display: 'block' }}>{editingCampaign?.name}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Trạng thái hoạt động</span>
+                          <span
+                            className={`badge ${editingCampaign?.status === 'active' ? 'success' : 'secondary'}`}
+                            style={{ fontSize: '0.75rem', padding: '5px 10px', borderRadius: '100px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}
+                          >
+                            {editingCampaign?.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
                           </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-            </div>
-          </div>
-          )}
-          </>
-        ) : (
-          <form id="campaign-form" onSubmit={handleSaveCampaign} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'start' }}>
-            <input 
-              type="file" 
-              ref={quickUploadInputRef} 
-              style={{ display: 'none' }} 
-              onChange={e => handleQuickUpload(e)} 
-            />
-            {/* Left Column (3/5) */}
-            <div style={{ flex: 3, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Card 1: Thông tin cơ bản */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Tên Chiến dịch <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Ví dụ: Facebook Lead Ads - HCMC"
-                      value={editingCampaign?.name || ''}
-                      onChange={e => setEditingCampaign({ ...editingCampaign, name: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600 }}>Ngày bắt đầu</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={editingCampaign?.start_date || ''}
-                        onChange={e => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
-                      />
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Ngày bắt đầu</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingCampaign?.start_date || 'Chưa thiết lập'}</span>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Ngày kết thúc</span>
+                          <span style={{ color: 'var(--color-text)', fontSize: '0.875rem', fontWeight: 600, display: 'block' }}>{editingCampaign?.end_date || 'Chưa thiết lập'}</span>
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Đường dẫn Folder</span>
+                          <div style={{ marginTop: '4px' }}>
+                            {renderFolderPathLink(editingCampaign?.folder_path, editingCampaign?.project_id)}
+                          </div>
+                        </div>
+                        {editingCampaign?.reference_url && (
+                          <div style={{ gridColumn: 'span 2', marginTop: '4px', borderTop: '1px dotted var(--color-border-light)', paddingTop: '8px' }}>
+                            <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block', marginBottom: '4px' }}>Website / Link tham khảo</span>
+                            <a
+                              href={editingCampaign.reference_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                color: 'var(--color-primary)',
+                                textDecoration: 'none',
+                                fontWeight: 700,
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              {editingCampaign.reference_url.includes('docs.google.com/spreadsheets') || editingCampaign.reference_url.includes('google.com/sheets') ? (
+                                <>
+                                  <FileSpreadsheet size={16} color="#10b981" />
+                                  <span style={{ color: '#10b981' }}>Bảng tính Google Sheets</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Link2 size={16} />
+                                  <span>Mở liên kết tham khảo</span>
+                                </>
+                              )}
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 600 }}>Ngày kết thúc</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={editingCampaign?.end_date || ''}
-                        onChange={e => setEditingCampaign({ ...editingCampaign, end_date: e.target.value })}
-                      />
+
+                    {/* Section 3: Mô tả chiến dịch */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>Mô tả chiến dịch</span>
+                      <p style={{ color: 'var(--color-text)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '0.875rem' }}>
+                        {editingCampaign?.description || 'Không có mô tả chi tiết'}
+                      </p>
                     </div>
+
+                    {/* Thảo luận & Trao đổi */}
+                    {editingCampaign && renderEntityComments('campaign', editingCampaign.id)}
+
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Website hoặc Link tham khảo (GG Sheets, tài liệu...)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Dán đường dẫn link website hoặc Google Sheets tham khảo..."
-                      value={editingCampaign?.reference_url || ''}
-                      onChange={e => setEditingCampaign({ ...editingCampaign, reference_url: e.target.value })}
-                    />
-                  </div>
+                  {/* Right Column (2/5) */}
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                  <div>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Trạng thái chiến dịch</label>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', background: 'var(--color-bg-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-light)', height: '44px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: editingCampaign?.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
-                        {editingCampaign?.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                    {/* Section 2: Dự án liên kết & Nhân sự */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dự án &amp; Nhân sự phụ trách</h4>
+
+                      {(() => {
+                        const associatedProjs = projects.filter(p => {
+                          const campIds = p.campaign_ids ? p.campaign_ids.split(',').map((id: string) => id.trim()) : [];
+                          return campIds.includes(editingCampaign?.name);
+                        });
+
+                        if (associatedProjs.length === 0) {
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#f3f4f6', border: '1px solid var(--color-border-light)', borderRadius: '12px', color: '#6b7280', fontSize: '0.8rem', fontWeight: 550, cursor: 'not-allowed' }}>
+                              <Info size={12} style={{ opacity: 0.6 }} />
+                              <span>Chưa liên kết dự án nào</span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {associatedProjs.map(proj => {
+                              const docIds = proj.document_ids ? proj.document_ids.split(',').map((id: string) => id.trim()) : [];
+                              const projDocs = allFiles.filter(f => docIds.includes(String(f.id)));
+                              const rosterList = campaignRosters[proj.id] || [];
+
+                              return (
+                                <div key={proj.id} style={{ border: '1px solid var(--color-border-light)', borderRadius: '12px', padding: '1rem', background: 'var(--color-bg-light)' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px dotted var(--color-border-light)', paddingBottom: '0.5rem' }}>
+                                    <span
+                                      onClick={() => {
+                                        setEditingProject(proj);
+                                        setProjectModalMode('view');
+                                        setIsCampaignModalOpen(false);
+                                        setIsEditModalOpen(true);
+                                      }}
+                                      style={{ color: 'var(--color-primary)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    >
+                                      <Building2 size={14} /> {proj.name}
+                                    </span>
+                                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{proj.code}</span>
+                                  </div>
+
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '8px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+                                    <span>Thư mục:</span>
+                                    {parseFolderPaths(proj.folder_path).map((f, idx) => (
+                                      <span key={idx}>{renderFolderPathLink(f.path, proj.id)}</span>
+                                    ))}
+                                  </div>
+
+                                  <div style={{ marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Tài liệu:</span>
+                                    {projDocs.length === 0 ? (
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>Không có tài liệu</span>
+                                    ) : (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        {projDocs.map(doc => (
+                                          <a
+                                            key={doc.id}
+                                            href={`${import.meta.env.VITE_API_URL ?? '/backend'}/${doc.file_path}`}
+                                            download={doc.name}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 600 }}
+                                          >
+                                            <FileText size={12} style={{ flexShrink: 0 }} /> {doc.name}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Nhân sự phụ trách:</span>
+                                    {campaignRostersLoading ? (
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>Đang tải...</span>
+                                    ) : rosterList.length === 0 ? (
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>Chưa phân công</span>
+                                    ) : (
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                        {rosterList.map(member => (
+                                          <span key={member.id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            <Avatar src={member.avatar_url || member.avatar} name={member.full_name || member.name} size={16} />
+                                            {member.full_name || member.name}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Linked Tasks */}
+                    <div style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', fontWeight: 750, display: 'block' }}>
+                        Nhiệm vụ & Công việc liên kết ({linkedTasks.length})
                       </span>
-                      <ToggleSwitch
-                        checked={editingCampaign?.status === 'active'}
-                        onChange={checked => setEditingCampaign({ ...editingCampaign, status: checked ? 'active' : 'inactive' })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: Mô tả */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <label className="form-label" style={{ fontWeight: 600 }}>Mô tả chiến dịch</label>
-                <textarea
-                  className="form-input"
-                  placeholder="Mô tả mục tiêu, nguồn lead, ngân sách..."
-                  rows={3}
-                  value={editingCampaign?.description || ''}
-                  onChange={e => setEditingCampaign({ ...editingCampaign, description: e.target.value })}
-                  style={{ minHeight: '80px', padding: '10px 14px' }}
-                />
-              </div>
-
-            </div>
-
-            {/* Right Column (2/5) */}
-            <div style={{ flex: 2, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
-              {/* Card 1: Nhân sự & Dự án liên kết */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nhân sự &amp; Dự án</h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Dự án liên kết</label>
-                    <CustomSelect
-                      searchable={true}
-                      options={projects.map(p => ({ value: String(p.id), label: `${p.name} (${p.code})` }))}
-                      value={editingCampaign?.project_id ? String(editingCampaign.project_id) : ''}
-                      onChange={val => setEditingCampaign({ 
-                        ...editingCampaign, 
-                        project_id: val ? Number(val) : null,
-                        project_ids: val ? (projects.find(p => String(p.id) === String(val))?.name || '') : ''
-                      })}
-                      placeholder="Chọn dự án..."
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Manager phụ trách chính</label>
-                    <CustomSelect
-                      multiple
-                      searchable={true}
-                      showAvatars={true}
-                      options={users
-                        .filter(u => ['manager', 'director', 'admin', 'superadmin', 'super_admin'].includes(u.role))
-                        .map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))
-                      }
-                      value={parseIds(editingCampaign?.manager_ids)}
-                      onChange={val => setEditingCampaign({ ...editingCampaign, manager_ids: Array.isArray(val) ? val.join(',') : String(val) })}
-                      placeholder="Chọn manager..."
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Nhân sự liên kết</label>
-                    <CustomSelect
-                      multiple
-                      searchable={true}
-                      showAvatars={true}
-                      options={users.map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))}
-                      value={parseIds(editingCampaign?.user_ids)}
-                      onChange={val => setEditingCampaign({ ...editingCampaign, user_ids: Array.isArray(val) ? val.join(',') : String(val) })}
-                      placeholder="Chọn nhân sự..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: Tài liệu & Thư mục */}
-              <div style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border-light)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thư mục & Tài liệu</h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 600 }}>Đường dẫn Folder liên kết</label>
-                    <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '4px', borderRadius: '10px', marginBottom: '12px', border: '1px solid var(--color-border-light)' }}>
-                      <button
-                        type="button"
-                        onClick={() => setCampaignFolderLinkType('link')}
-                        style={{
-                          flex: 1,
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: campaignFolderLinkType === 'link' ? 'var(--color-primary)' : 'transparent',
-                          color: campaignFolderLinkType === 'link' ? 'white' : 'var(--color-text-muted)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: campaignFolderLinkType === 'link' ? '0 2px 4px rgba(163, 20, 34, 0.2)' : 'none'
-                        }}
-                      >
-                        Dán Link (Drive...)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCampaignFolderLinkType('select')}
-                        style={{
-                          flex: 1,
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: campaignFolderLinkType === 'select' ? 'var(--color-primary)' : 'transparent',
-                          color: campaignFolderLinkType === 'select' ? 'white' : 'var(--color-text-muted)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: campaignFolderLinkType === 'select' ? '0 2px 4px rgba(163, 20, 34, 0.2)' : 'none'
-                        }}
-                      >
-                        Chọn thư mục có sẵn
-                      </button>
+                      {loadingLinkedTasks ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+                          <RefreshCw className="spin" size={16} color="var(--color-text-muted)" />
+                        </div>
+                      ) : linkedTasks.length === 0 ? (
+                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic', padding: '10px 14px', background: 'var(--color-bg-light)', border: '1px dashed var(--color-border)', borderRadius: '10px' }}>
+                          Chưa có công việc nào liên kết với chiến dịch này.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {linkedTasks.map(task => {
+                            const statusColors: any = {
+                              planned: { bg: 'rgba(245, 158, 11, 0.08)', text: 'var(--color-warning)' },
+                              done: { bg: 'rgba(16, 185, 129, 0.08)', text: 'var(--color-success)' },
+                              cancelled: { bg: 'rgba(239, 68, 68, 0.08)', text: 'var(--color-danger)' }
+                            };
+                            const sc = statusColors[task.status] || statusColors.planned;
+                            const performer = users.find(u => Number(u.id) === Number(task.user_id));
+                            return (
+                              <div
+                                key={task.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: 'var(--color-bg-light)',
+                                  border: '1px solid var(--color-border-light)',
+                                  padding: '12px 16px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.85rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.01)'
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                                  e.currentTarget.style.background = '#ffffff';
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(163, 20, 34, 0.06)';
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.borderColor = 'var(--color-border-light)';
+                                  e.currentTarget.style.background = 'var(--color-bg-light)';
+                                  e.currentTarget.style.transform = 'none';
+                                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.01)';
+                                }}
+                                onClick={() => handleOpenTask(task.id)}
+                                title={t('Click để xem chi tiết nhiệm vụ')}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                  <div style={{ marginTop: '3px' }}>
+                                    <CheckSquare size={18} color={task.status === 'done' ? 'var(--color-success)' : 'var(--color-text-muted)'} style={{ opacity: 0.85 }} />
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontWeight: 650, color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: '1.2' }}>{task.subject}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Avatar
+                                        src={performer?.avatar_url || performer?.avatar}
+                                        name={performer?.full_name || performer?.name || 'Hệ thống'}
+                                        size={18}
+                                      />
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                        {performer?.full_name || 'Hệ thống'} {performer?.role ? `(${performer.role})` : ''}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '4px 10px',
+                                  borderRadius: '100px',
+                                  background: sc.bg,
+                                  color: sc.text,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.03em'
+                                }}>
+                                  {task.status === 'done' ? 'Đã xong' : 'Chưa xong'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
-                    {campaignFolderLinkType === 'link' ? (
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <form id="campaign-form" onSubmit={handleSaveCampaign} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'start' }}>
+              <input
+                type="file"
+                ref={quickUploadInputRef}
+                style={{ display: 'none' }}
+                onChange={e => handleQuickUpload(e)}
+              />
+              {/* Left Column (3/5) */}
+              <div style={{ flex: 3, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                {/* Card 1: Thông tin cơ bản */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thông tin cơ bản</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 600 }}>Tên Chiến dịch <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="Dán link thư mục Google Drive..."
-                        value={editingCampaign?.folder_path || ''}
-                        onChange={e => setEditingCampaign({ ...editingCampaign, folder_path: e.target.value })}
+                        placeholder="Ví dụ: Facebook Lead Ads - HCMC"
+                        value={editingCampaign?.name || ''}
+                        onChange={e => setEditingCampaign({ ...editingCampaign, name: e.target.value })}
+                        required
                       />
-                    ) : (
-                      <CustomSelect
-                        options={fileCategories.map(cat => ({ value: cat.label, label: cat.label }))}
-                        value={editingCampaign?.folder_path || ''}
-                        onChange={val => setEditingCampaign({ ...editingCampaign, folder_path: val as string })}
-                        placeholder="Chọn thư mục từ /files..."
-                      />
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>Tài liệu đính kèm</label>
-                      <button
-                        type="button"
-                        onClick={() => quickUploadInputRef.current?.click()}
-                        disabled={uploadingDoc}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--color-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: 0
-                        }}
-                      >
-                        {uploadingDoc ? (
-                          <RefreshCw className="spin" size={12} />
-                        ) : (
-                          <Plus size={12} />
-                        )}
-                        <span>Tải tệp mới</span>
-                      </button>
                     </div>
-                    <CustomSelect
-                      multiple
-                      searchable={true}
-                      options={allFiles.map(f => ({ value: String(f.id), label: f.name }))}
-                      value={parseIds(editingCampaign?.document_ids)}
-                      onChange={val => setEditingCampaign({ ...editingCampaign, document_ids: Array.isArray(val) ? val.join(',') : String(val) })}
-                      placeholder="Chọn tài liệu..."
-                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Ngày bắt đầu</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={editingCampaign?.start_date || ''}
+                          onChange={e => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Ngày kết thúc</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={editingCampaign?.end_date || ''}
+                          onChange={e => setEditingCampaign({ ...editingCampaign, end_date: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 600 }}>Website hoặc Link tham khảo (GG Sheets, tài liệu...)</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Dán đường dẫn link website hoặc Google Sheets tham khảo..."
+                        value={editingCampaign?.reference_url || ''}
+                        onChange={e => setEditingCampaign({ ...editingCampaign, reference_url: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ fontWeight: 600 }}>Trạng thái chiến dịch</label>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0.875rem', background: 'var(--color-bg-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-light)', height: '44px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: editingCampaign?.status === 'active' ? 'var(--color-success)' : 'var(--color-text-muted)' }}>
+                          {editingCampaign?.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                        </span>
+                        <ToggleSwitch
+                          checked={editingCampaign?.status === 'active'}
+                          onChange={checked => setEditingCampaign({ ...editingCampaign, status: checked ? 'active' : 'inactive' })}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Card 2: Mô tả */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <label className="form-label" style={{ fontWeight: 600 }}>Mô tả chiến dịch</label>
+                  <textarea
+                    className="form-input"
+                    placeholder="Mô tả mục tiêu, nguồn lead, ngân sách..."
+                    rows={3}
+                    value={editingCampaign?.description || ''}
+                    onChange={e => setEditingCampaign({ ...editingCampaign, description: e.target.value })}
+                    style={{ minHeight: '80px', padding: '10px 14px' }}
+                  />
+                </div>
+
               </div>
 
-            </div>
-          </form>
-        )}
-      </>,
-      '850px',
-      campaignModalMode === 'view' ? (
-        <button
-          onClick={() => setCampaignDrawerTab(campaignDrawerTab === 'details' ? 'changelog' : 'details')}
-          style={{
-            border: 'none',
-            background: campaignDrawerTab === 'changelog' ? 'rgba(100, 116, 139, 0.08)' : 'transparent',
-            cursor: 'pointer',
-            color: campaignDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            borderRadius: '8px',
-            transition: 'all 0.2s ease',
-            outline: 'none'
-          }}
-          title={campaignDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
-          className="hover-lift"
-        >
-          <History size={20} />
-        </button>
-      ) : (
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {/* Right Column (2/5) */}
+              <div style={{ flex: 2, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                {/* Card 1: Nhân sự & Dự án liên kết */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nhân sự &amp; Dự án</h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 600 }}>Dự án liên kết</label>
+                      <CustomSelect
+                        searchable={true}
+                        options={projects.map(p => ({ value: String(p.id), label: `${p.name} (${p.code})` }))}
+                        value={editingCampaign?.project_id ? String(editingCampaign.project_id) : ''}
+                        onChange={val => setEditingCampaign({
+                          ...editingCampaign,
+                          project_id: val ? Number(val) : null,
+                          project_ids: val ? (projects.find(p => String(p.id) === String(val))?.name || '') : ''
+                        })}
+                        placeholder="Chọn dự án..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 600 }}>Manager phụ trách chính</label>
+                      <CustomSelect
+                        multiple
+                        searchable={true}
+                        showAvatars={true}
+                        options={users
+                          .filter(u => ['manager', 'director', 'admin', 'superadmin', 'super_admin'].includes(u.role))
+                          .map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))
+                        }
+                        value={parseIds(editingCampaign?.manager_ids)}
+                        onChange={val => setEditingCampaign({ ...editingCampaign, manager_ids: Array.isArray(val) ? val.join(',') : String(val) })}
+                        placeholder="Chọn manager..."
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 600 }}>Nhân sự liên kết</label>
+                      <CustomSelect
+                        multiple
+                        searchable={true}
+                        showAvatars={true}
+                        options={users.map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))}
+                        value={parseIds(editingCampaign?.user_ids)}
+                        onChange={val => setEditingCampaign({ ...editingCampaign, user_ids: Array.isArray(val) ? val.join(',') : String(val) })}
+                        placeholder="Chọn nhân sự..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Tài liệu & Thư mục */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thư mục & Tài liệu</h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontWeight: 600 }}>Đường dẫn Folder liên kết</label>
+                      <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '4px', borderRadius: '10px', marginBottom: '12px', border: '1px solid var(--color-border-light)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setCampaignFolderLinkType('link')}
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: campaignFolderLinkType === 'link' ? 'var(--color-primary)' : 'transparent',
+                            color: campaignFolderLinkType === 'link' ? 'white' : 'var(--color-text-muted)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: campaignFolderLinkType === 'link' ? '0 2px 4px rgba(163, 20, 34, 0.2)' : 'none'
+                          }}
+                        >
+                          Dán Link (Drive...)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCampaignFolderLinkType('select')}
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: campaignFolderLinkType === 'select' ? 'var(--color-primary)' : 'transparent',
+                            color: campaignFolderLinkType === 'select' ? 'white' : 'var(--color-text-muted)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: campaignFolderLinkType === 'select' ? '0 2px 4px rgba(163, 20, 34, 0.2)' : 'none'
+                          }}
+                        >
+                          Chọn thư mục có sẵn
+                        </button>
+                      </div>
+
+                      {campaignFolderLinkType === 'link' ? (
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Dán link thư mục Google Drive..."
+                          value={editingCampaign?.folder_path || ''}
+                          onChange={e => setEditingCampaign({ ...editingCampaign, folder_path: e.target.value })}
+                        />
+                      ) : (
+                        <CustomSelect
+                          options={fileCategories.map(cat => ({ value: cat.label, label: cat.label }))}
+                          value={editingCampaign?.folder_path || ''}
+                          onChange={val => setEditingCampaign({ ...editingCampaign, folder_path: val as string })}
+                          placeholder="Chọn thư mục từ /files..."
+                        />
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label className="form-label" style={{ fontWeight: 600, marginBottom: 0 }}>Tài liệu đính kèm</label>
+                        <button
+                          type="button"
+                          onClick={() => quickUploadInputRef.current?.click()}
+                          disabled={uploadingDoc}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--color-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: 0
+                          }}
+                        >
+                          {uploadingDoc ? (
+                            <RefreshCw className="spin" size={12} />
+                          ) : (
+                            <Plus size={12} />
+                          )}
+                          <span>Tải tệp mới</span>
+                        </button>
+                      </div>
+                      <CustomSelect
+                        multiple
+                        searchable={true}
+                        options={allFiles.map(f => ({ value: String(f.id), label: f.name }))}
+                        value={parseIds(editingCampaign?.document_ids)}
+                        onChange={val => setEditingCampaign({ ...editingCampaign, document_ids: Array.isArray(val) ? val.join(',') : String(val) })}
+                        placeholder="Chọn tài liệu..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </form>
+          )}
+        </>,
+        '850px',
+        campaignModalMode === 'view' ? (
           <button
-            type="submit"
-            form="campaign-form"
-            className="btn primary sm"
-            disabled={isSaving}
-            style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+            onClick={() => setCampaignDrawerTab(campaignDrawerTab === 'details' ? 'changelog' : 'details')}
+            style={{
+              border: 'none',
+              background: campaignDrawerTab === 'changelog' ? 'rgba(100, 116, 139, 0.08)' : 'transparent',
+              cursor: 'pointer',
+              color: campaignDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+              outline: 'none'
+            }}
+            title={campaignDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
+            className="hover-lift"
           >
-            {isSaving ? 'Đang lưu...' : 'Lưu chiến dịch'}
+            <History size={20} />
           </button>
-        </div>
-      ),
-      true
-    )}
+        ) : (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              type="submit"
+              form="campaign-form"
+              className="btn primary sm"
+              disabled={isSaving}
+              style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none', opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'not-allowed' : 'pointer' }}
+            >
+              {isSaving ? 'Đang lưu...' : 'Lưu chiến dịch'}
+            </button>
+          </div>
+        ),
+        true
+      )}
       {/* Explanation of Projects & Campaigns Modal */}
       <CustomModal
         isOpen={showInfoModal}
@@ -7634,14 +7634,14 @@ export default function ProjectsPage() {
         width="760px"
       >
         <div style={{ padding: '0.25rem 0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 12, 
-            padding: '0.875rem 1rem', 
-            background: 'var(--color-primary-light)', 
-            border: '1px solid rgba(163, 20, 34, 0.15)', 
-            borderRadius: 12 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '0.875rem 1rem',
+            background: 'var(--color-primary-light)',
+            border: '1px solid rgba(163, 20, 34, 0.15)',
+            borderRadius: 12
           }}>
             <Info size={24} color="var(--color-primary)" style={{ flexShrink: 0 }} />
             <p style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', lineHeight: 1.5, margin: 0 }}>
@@ -7651,12 +7651,12 @@ export default function ProjectsPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {/* Dự án */}
-            <div style={{ 
-              display: 'flex', 
-              gap: 12, 
-              padding: '1rem', 
-              background: theme === 'dark' ? 'rgba(59, 130, 246, 0.04)' : 'rgba(59, 130, 246, 0.02)', 
-              borderLeft: '4px solid #3b82f6', 
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              padding: '1rem',
+              background: theme === 'dark' ? 'rgba(59, 130, 246, 0.04)' : 'rgba(59, 130, 246, 0.02)',
+              borderLeft: '4px solid #3b82f6',
               borderTop: '1px solid var(--color-border-light)',
               borderRight: '1px solid var(--color-border-light)',
               borderBottom: '1px solid var(--color-border-light)',
@@ -7675,12 +7675,12 @@ export default function ProjectsPage() {
             </div>
 
             {/* Chiến dịch */}
-            <div style={{ 
-              display: 'flex', 
-              gap: 12, 
-              padding: '1rem', 
-              background: theme === 'dark' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(16, 185, 129, 0.02)', 
-              borderLeft: '4px solid #10b981', 
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              padding: '1rem',
+              background: theme === 'dark' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(16, 185, 129, 0.02)',
+              borderLeft: '4px solid #10b981',
               borderTop: '1px solid var(--color-border-light)',
               borderRight: '1px solid var(--color-border-light)',
               borderBottom: '1px solid var(--color-border-light)',
@@ -7698,12 +7698,12 @@ export default function ProjectsPage() {
             </div>
 
             {/* Roster */}
-            <div style={{ 
-              display: 'flex', 
-              gap: 12, 
-              padding: '1rem', 
-              background: theme === 'dark' ? 'rgba(245, 158, 11, 0.04)' : 'rgba(245, 158, 11, 0.02)', 
-              borderLeft: '4px solid #f59e0b', 
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              padding: '1rem',
+              background: theme === 'dark' ? 'rgba(245, 158, 11, 0.04)' : 'rgba(245, 158, 11, 0.02)',
+              borderLeft: '4px solid #f59e0b',
               borderTop: '1px solid var(--color-border-light)',
               borderRight: '1px solid var(--color-border-light)',
               borderBottom: '1px solid var(--color-border-light)',
@@ -7739,16 +7739,16 @@ export default function ProjectsPage() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto', paddingRight: '4px' }}>
             {projectRoster.map((member: any) => (
-              <div 
-                key={member.id} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  padding: '10px 14px', 
-                  background: 'var(--color-bg-light)', 
-                  border: '1px solid var(--color-border-light)', 
-                  borderRadius: '12px' 
+              <div
+                key={member.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: 'var(--color-bg-light)',
+                  border: '1px solid var(--color-border-light)',
+                  borderRadius: '12px'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -7762,7 +7762,7 @@ export default function ProjectsPage() {
                     </span>
                   </div>
                 </div>
-                <span 
+                <span
                   className={`badge ${member.role === 'manager' ? 'primary' : 'secondary'}`}
                   style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '100px', fontWeight: 700, textTransform: 'uppercase' }}
                 >
@@ -7788,11 +7788,11 @@ export default function ProjectsPage() {
             </span>
             {folderModalProjectId && (
               <div>
-                <input 
-                  type="file" 
-                  id="folder-modal-upload" 
-                  style={{ display: 'none' }} 
-                  onChange={(e) => folderModalProjectId && handleQuickUpload(e, folderModalProjectId)} 
+                <input
+                  type="file"
+                  id="folder-modal-upload"
+                  style={{ display: 'none' }}
+                  onChange={(e) => folderModalProjectId && handleQuickUpload(e, folderModalProjectId)}
                 />
                 <button
                   type="button"
@@ -7820,15 +7820,15 @@ export default function ProjectsPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto', paddingRight: '4px' }}>
               {folderFiles.map((fileObj: any) => (
-                <div 
-                  key={fileObj.id} 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    padding: '10px 14px', 
-                    background: 'var(--color-bg-light)', 
-                    border: '1px solid var(--color-border-light)', 
+                <div
+                  key={fileObj.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    background: 'var(--color-bg-light)',
+                    border: '1px solid var(--color-border-light)',
                     borderRadius: '12px',
                     transition: 'all 0.2s ease'
                   }}

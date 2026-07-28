@@ -970,23 +970,33 @@ class NotificationService {
                 $leaveType = $payload['leave_type_text'] ?? 'Nghỉ phép';
                 $statusText = $payload['status_text'] ?? 'được cập nhật';
                 $leavePeriod = ($payload['start_date'] ?? '') . ' -> ' . ($payload['end_date'] ?? '');
+                
+                $balanceStr = '';
+                if (isset($payload['remaining_annual_leave'])) {
+                    $balanceStr = "\nSố phép năm còn lại: " . $payload['remaining_annual_leave'] . " ngày. Nghỉ bù còn lại: " . ($payload['remaining_compensatory_leave'] ?? 0) . " ngày.";
+                }
+                $balanceHtml = '';
+                if (isset($payload['remaining_annual_leave'])) {
+                    $balanceHtml = "<br/><br/><strong>Số dư ngày phép hiện tại của bạn:</strong><br/>- Phép năm còn lại: <strong>" . $payload['remaining_annual_leave'] . " ngày</strong><br/>- Nghỉ bù còn lại: <strong>" . ($payload['remaining_compensatory_leave'] ?? 0) . " ngày</strong>";
+                }
+
                 return [
                     'recipients' => $recipients,
                     'title' => "Kết quả duyệt nghỉ phép ($leaveType)",
-                    'body' => "Đơn xin nghỉ $leaveType từ $leavePeriod của bạn đã được $statusText. Ghi chú: \"$reason\"",
+                    'body' => "Đơn xin nghỉ $leaveType từ $leavePeriod của bạn đã được $statusText. Ghi chú: \"$reason\"" . $balanceStr,
                     'type' => "leave",
                     'link' => "/my-payslips",
                     'zalo_msg' => "✅ [ KẾT QUẢ DUYỆT NGHỈ PHÉP ]\n\n"
                         . "Đơn xin nghỉ $leaveType ($leavePeriod) của bạn đã được $statusText.\n"
-                        . "Ghi chú: \"$reason\"",
+                        . "Ghi chú: \"$reason\"" . $balanceStr,
                     'tg_msg' => "✅ <b>[ KẾT QUẢ DUYỆT NGHỈ PHÉP ]</b>\n\n"
                         . "Đơn xin nghỉ $leaveType (<code>$leavePeriod</code>) của bạn đã được <b>$statusText</b>.\n"
-                        . "Ghi chú: <i>\"$reason\"</i>",
+                        . "Ghi chú: <i>\"$reason\"</i>" . $balanceStr,
                     'email_subject' => "[IDEAS] Kết quả duyệt đơn nghỉ $leaveType của bạn",
                     'email_title' => "KẾT QUẢ DUYỆT NGHỈ PHÉP",
                     'email_content' => "Chào <strong>$userName</strong>,<br/><br/>" .
                                     "Đơn xin nghỉ <strong>$leaveType</strong> từ $leavePeriod của bạn đã được <strong>$statusText</strong> bởi quản lý.<br/>" .
-                                    "Ghi chú/lý do: <em>\"$reason\"</em>."
+                                    "Ghi chú/lý do: <em>\"$reason\"</em>." . $balanceHtml
                 ];
 
             case 'HRM_ADVANCE_REQUEST':

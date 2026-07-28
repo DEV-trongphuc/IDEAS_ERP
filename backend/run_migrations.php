@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 197;
+$targetVersion = 199;
 $currentVersion = 186;
 
 // Query current DB version
@@ -771,8 +771,50 @@ try {
         $logMsg("Nâng cấp lên phiên bản 197 hoàn tất.", "success");
     }
 
+    // 9.7. Version 198: Add hrm leave balance and overtime payslip columns
+    if ($currentVersion < 198 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 198 (Trường phép năm, nghỉ bù, tăng ca và chuyên cần)...", "info");
+        
+        try {
+            $conn->query("ALTER TABLE `hrm_profiles` 
+                ADD COLUMN `annual_leave_total` DECIMAL(4,1) DEFAULT 12.0 COMMENT 'Tổng ngày phép năm được hưởng',
+                ADD COLUMN `annual_leave_used` DECIMAL(4,1) DEFAULT 0.0 COMMENT 'Số ngày phép năm đã sử dụng',
+                ADD COLUMN `compensatory_leave_total` DECIMAL(4,1) DEFAULT 0.0 COMMENT 'Tổng ngày nghỉ bù tích lũy',
+                ADD COLUMN `compensatory_leave_used` DECIMAL(4,1) DEFAULT 0.0 COMMENT 'Số ngày nghỉ bù đã sử dụng'");
+            $logMsg("Đã bổ sung các cột phép năm và nghỉ bù vào bảng hrm_profiles.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột phép năm/nghỉ bù đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+
+        try {
+            $conn->query("ALTER TABLE `monthly_payslips`
+                ADD COLUMN `overtime_days` DECIMAL(4,1) DEFAULT 0.0 COMMENT 'Số ngày tăng ca',
+                ADD COLUMN `overtime_salary` DECIMAL(15,2) DEFAULT 0.00 COMMENT 'Lương tăng ca',
+                ADD COLUMN `diligence_bonus` DECIMAL(15,2) DEFAULT 0.00 COMMENT 'Thưởng chuyên cần'");
+            $logMsg("Đã bổ sung các cột overtime và chuyên cần vào bảng monthly_payslips.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột overtime/chuyên cần đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 198 hoàn tất.", "success");
+    }
+
+    // 9.8. Version 199: Add expected_pay_date column to deposit_milestones table
+    if ($currentVersion < 199 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 199 (Thêm cột expected_pay_date)...", "info");
+        
+        try {
+            $conn->query("ALTER TABLE `deposit_milestones` ADD COLUMN `expected_pay_date` DATE NULL COMMENT 'Ngày thanh toán dự kiến' AFTER `expected_amount`");
+            $logMsg("Đã bổ sung cột expected_pay_date vào bảng deposit_milestones.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột expected_pay_date đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 199 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '197') ON DUPLICATE KEY UPDATE setting_value = '197'");
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '199') ON DUPLICATE KEY UPDATE setting_value = '199'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '../utils/api';
 import { 
   Users, Calendar, CreditCard, DollarSign, Check, X, ShieldAlert,
   Send, Lock, Award, FileText, ChevronLeft, ChevronRight, Play, CheckCircle,
-  LayoutDashboard, Clock
+  LayoutDashboard, Clock, User, Building2, MapPin, ClipboardList, PenTool, MessageSquare, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
+import { Avatar } from '../components/ui/Avatar';
 import { 
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Line, AreaChart, Area 
@@ -22,6 +23,29 @@ const FMT_COMPACT = (n: any) => {
 
 export default function HRM() {
   const { t } = useLanguage();
+  
+  const getRoleBadgeStyle = (role: string) => {
+    switch (String(role).toLowerCase()) {
+      case 'super_admin':
+      case 'superadmin':
+      case 'admin':
+        return { bg: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', text: t('Admin') };
+      case 'director':
+        return { bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', text: t('Director') };
+      case 'manager':
+        return { bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', text: t('Manager') };
+      case 'hr':
+        return { bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981', text: t('HR') };
+      case 'accountant':
+        return { bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6', text: t('Kế toán') };
+      case 'marketing':
+        return { bg: 'rgba(13, 148, 136, 0.08)', color: '#0d9488', text: t('Marketing') };
+      case 'sales':
+      default:
+        return { bg: 'rgba(100, 116, 139, 0.08)', color: '#64748b', text: t('Sales') };
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'profiles' | 'leaves' | 'advances' | 'payroll'>('dashboard');
   const [profiles, setProfiles] = useState<any[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
@@ -41,6 +65,19 @@ export default function HRM() {
   const [calculating, setCalculating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [locking, setLocking] = useState(false);
+  
+  // Teams and Leave balances
+  const [teams, setTeams] = useState<any[]>([]);
+  const [annualLeaveTotal, setAnnualLeaveTotal] = useState(12.0);
+  const [annualLeaveUsed, setAnnualLeaveUsed] = useState(0.0);
+  const [compensatoryLeaveTotal, setCompensatoryLeaveTotal] = useState(0.0);
+  const [compensatoryLeaveUsed, setCompensatoryLeaveUsed] = useState(0.0);
+
+  useEffect(() => {
+    fetchAPI('hrm/teams').then(res => {
+      setTeams(res?.data || []);
+    }).catch(() => {});
+  }, []);
 
   // Edit Profile modal/drawer state
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -108,6 +145,10 @@ export default function HRM() {
     setAllowanceTravel(Number(user.allowance_travel || 0));
     setAllowancePhone(Number(user.allowance_phone || 0));
     setKpiTarget(Number(user.kpi_target || 0));
+    setAnnualLeaveTotal(Number(user.annual_leave_total ?? 12.0));
+    setAnnualLeaveUsed(Number(user.annual_leave_used ?? 0.0));
+    setCompensatoryLeaveTotal(Number(user.compensatory_leave_total ?? 0.0));
+    setCompensatoryLeaveUsed(Number(user.compensatory_leave_used ?? 0.0));
   };
 
   const handleSaveProfile = async () => {
@@ -125,7 +166,11 @@ export default function HRM() {
           allowance_meal: allowanceMeal,
           allowance_travel: allowanceTravel,
           allowance_phone: allowancePhone,
-          kpi_target: kpiTarget
+          kpi_target: kpiTarget,
+          annual_leave_total: annualLeaveTotal,
+          annual_leave_used: annualLeaveUsed,
+          compensatory_leave_total: compensatoryLeaveTotal,
+          compensatory_leave_used: compensatoryLeaveUsed
         })
       });
       toast.success(t('Cập nhật hồ sơ nhân sự thành công!'));
@@ -468,40 +513,104 @@ export default function HRM() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                    <th style={{ padding: '12px 8px' }}>{t('Họ và Tên')}</th>
-                    <th style={{ padding: '12px 8px' }}>{t('Vai trò')}</th>
-                    <th style={{ padding: '12px 8px' }}>{t('Ngày vào làm')}</th>
-                    <th style={{ padding: '12px 8px' }}>{t('Lương Net thỏa thuận')}</th>
+                  <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                    <th style={{ padding: '12px 16px' }}>{t('Nhân sự')}</th>
+                    <th style={{ padding: '12px 8px' }}>{t('Phòng ban / Vai trò')}</th>
+                    <th style={{ padding: '12px 8px' }}>{t('Ngày phép (Phép/Bù)')}</th>
+                    <th style={{ padding: '12px 8px' }}>{t('Lương Net thực tế')}</th>
                     <th style={{ padding: '12px 8px' }}>{t('Lương BHXH')}</th>
                     <th style={{ padding: '12px 8px' }}>{t('Phụ cấp')}</th>
                     <th style={{ padding: '12px 8px' }}>{t('KPI Target')}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>{t('Thao tác')}</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>{t('Thao tác')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {profiles.map(user => (
-                    <tr key={user.id} style={{ borderBottom: '1px solid var(--color-border)', fontSize: '0.875rem' }}>
-                      <td style={{ padding: '14px 8px', fontWeight: 600 }}>{user.full_name}</td>
-                      <td style={{ padding: '14px 8px' }}>{user.role}</td>
-                      <td style={{ padding: '14px 8px' }}>{user.joined_date || <span style={{ color: '#ef4444' }}>{t('Chưa thiết lập')}</span>}</td>
-                      <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>{user.deal_salary ? formatCurrency(user.deal_salary) : '0đ'}</td>
-                      <td style={{ padding: '14px 8px' }}>{user.base_salary ? formatCurrency(user.base_salary) : '0đ'}</td>
-                      <td style={{ padding: '14px 8px' }}>
-                        {formatCurrency(Number(user.allowance_meal || 0) + Number(user.allowance_travel || 0) + Number(user.allowance_phone || 0))}
-                      </td>
-                      <td style={{ padding: '14px 8px' }}>{user.kpi_target ? formatCurrency(user.kpi_target) : '0đ'}</td>
-                      <td style={{ padding: '14px 8px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => handleEditProfile(user)}
-                          className="btn sm primary"
-                          style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                        >
-                          {t('Thiết lập')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {profiles.map(user => {
+                    const userTeam = teams.find(t => Number(t.id) === Number(user.team_id));
+                    const teamName = userTeam ? userTeam.name : '';
+                    
+                    const roleBadge = getRoleBadgeStyle(user.role);
+                    const remainingAnnual = Number(user.annual_leave_total ?? 12.0) - Number(user.annual_leave_used ?? 0.0);
+                    const remainingComp = Number(user.compensatory_leave_total ?? 0.0) - Number(user.compensatory_leave_used ?? 0.0);
+                    
+                    return (
+                      <tr key={user.id} className="hover-bg-secondary" style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.875rem', transition: 'background-color 0.2s' }}>
+                        <td style={{ padding: '14px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <Avatar src={user.avatar_url || user.avatar} name={user.full_name} size={36} />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{user.full_name}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                {user.email || user.phone || t('Chưa cập nhật liên hệ')}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', marginTop: '1px' }}>
+                                {t('Vào làm')}: {user.joined_date ? new Date(user.joined_date).toLocaleDateString('vi-VN') : t('Chưa thiết lập')}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 8px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                            <span style={{ 
+                              fontSize: '0.725rem', 
+                              fontWeight: 800, 
+                              padding: '2px 8px', 
+                              borderRadius: '20px', 
+                              backgroundColor: roleBadge.bg, 
+                              color: roleBadge.color,
+                              textTransform: 'uppercase'
+                            }}>
+                              {roleBadge.text}
+                            </span>
+                            {teamName && (
+                              <span style={{ 
+                                fontSize: '0.7rem', 
+                                fontWeight: 700, 
+                                padding: '2px 8px', 
+                                borderRadius: '6px', 
+                                backgroundColor: 'var(--color-bg-light)', 
+                                border: '1px solid var(--color-border-light)',
+                                color: 'var(--color-text)' 
+                              }}>
+                                {teamName}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 8px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: remainingAnnual <= 2 ? '#ef4444' : 'var(--color-success)' }}>
+                              ☘️ {t('Phép năm')}: <strong>{remainingAnnual}</strong>/{user.annual_leave_total ?? 12}
+                            </span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                              ⏳ {t('Nghỉ bù')}: <strong>{remainingComp}</strong>/{user.compensatory_leave_total ?? 0}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                          {user.deal_salary ? formatCurrency(user.deal_salary) : '0đ'}
+                        </td>
+                        <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)' }}>
+                          {user.base_salary ? formatCurrency(user.base_salary) : '0đ'}
+                        </td>
+                        <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)' }}>
+                          {formatCurrency(Number(user.allowance_meal || 0) + Number(user.allowance_travel || 0) + Number(user.allowance_phone || 0))}
+                        </td>
+                        <td style={{ padding: '14px 8px', color: 'var(--color-text-muted)' }}>
+                          {user.kpi_target ? formatCurrency(user.kpi_target) : '0đ'}
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => handleEditProfile(user)}
+                            className="btn sm outline hover-lift"
+                            style={{ borderRadius: '8px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700, borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                          >
+                            {t('Thiết lập')}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -514,45 +623,153 @@ export default function HRM() {
             {leaves.length === 0 ? (
               <EmptyCard
                 icon={<Calendar />}
-                title={t('Không có đơn nghỉ phép')}
-                description={t('Không có đơn nghỉ phép nào.')}
+                title={t('Không có đơn nghỉ phép & tăng ca')}
+                description={t('Không có đơn nghỉ phép hay tăng ca nào.')}
               />
             ) : (
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {leaves.map(req => (
-                  <div key={req.id} style={{ border: '1px solid var(--color-border)', borderRadius: 12, padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg-secondary)' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <strong style={{ fontSize: '1rem' }}>{req.employee_name}</strong>
-                        <span style={{ fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 8px', borderRadius: 10, fontWeight: 700 }}>
-                          {req.leave_type === 'annual' ? t('Phép năm') : req.leave_type === 'sick' ? t('Nghỉ ốm') : t('Không lương')}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                        {t('Từ ngày')}: {new Date(req.start_date).toLocaleDateString('vi-VN')} {t('đến')} {new Date(req.end_date).toLocaleDateString('vi-VN')} ({req.total_days} {t('ngày')})
-                      </p>
-                      <p style={{ fontSize: '0.875rem', marginTop: 8 }}>
-                        <strong>{t('Lý do')}:</strong> {req.reason || t('Không có lý do chi tiết')}
-                      </p>
-                    </div>
-                    <div>
-                      {req.status === 'pending' ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => handleApproveLeave(req.id, 'approved')} className="btn sm primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#10b981' }}>
-                            <Check size={14} /> {t('Duyệt')}
-                          </button>
-                          <button onClick={() => handleApproveLeave(req.id, 'rejected')} className="btn sm secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#ef4444', color: 'white' }}>
-                            <X size={14} /> {t('Từ chối')}
-                          </button>
+              <div style={{ display: 'grid', gap: '1.25rem' }}>
+                {leaves.map(req => {
+                  const user = profiles.find(p => Number(p.id) === Number(req.user_id));
+                  const approver1 = profiles.find(p => Number(p.id) === Number(req.approver_id));
+                  const approver2 = profiles.find(p => Number(p.id) === Number(req.approver_id_2));
+                  
+                  const isPending = req.status === 'pending';
+                  const isApproved = req.status === 'approved';
+                  const isRejected = req.status === 'rejected';
+                  
+                  // Left border color based on status
+                  const statusColor = isApproved ? '#10b981' : (isRejected ? '#ef4444' : '#f59e0b');
+                  
+                  const leaveTypeText = req.leave_type === 'annual' ? t('Phép năm') : 
+                                      req.leave_type === 'sick' ? t('Nghỉ ốm') : 
+                                      req.leave_type === 'compensatory' ? t('Nghỉ bù') : 
+                                      req.leave_type === 'overtime' ? t('Tăng ca') :
+                                      req.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Không lương');
+
+                  return (
+                    <div 
+                      key={req.id} 
+                      className="card hover-lift" 
+                      style={{ 
+                        borderLeft: `4px solid ${statusColor}`, 
+                        borderRadius: '16px', 
+                        padding: '1.5rem', 
+                        display: 'flex', 
+                        flexDirection: isMobile ? 'column' : 'row',
+                        justifyContent: 'space-between', 
+                        alignItems: isMobile ? 'stretch' : 'center', 
+                        gap: '1.5rem',
+                        background: 'var(--color-surface)',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}
+                    >
+                      {/* Left Block: Applicant, Type & Details */}
+                      <div style={{ flex: 1, display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                        <Avatar src={user?.avatar_url || user?.avatar} name={req.employee_name} size={42} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <strong style={{ fontSize: '1rem', color: 'var(--color-text)' }}>{req.employee_name}</strong>
+                            <span style={{ 
+                              fontSize: '0.725rem', 
+                              fontWeight: 800, 
+                              backgroundColor: req.leave_type === 'overtime' ? 'rgba(139, 92, 246, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+                              color: req.leave_type === 'overtime' ? '#8b5cf6' : '#3b82f6', 
+                              padding: '2px 10px', 
+                              borderRadius: '20px', 
+                              textTransform: 'uppercase' 
+                            }}>
+                              {leaveTypeText}
+                            </span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                            <Calendar size={14} style={{ color: 'var(--color-text-light)' }} />
+                            <span>
+                              {t('Thời gian')}: <strong>{new Date(req.start_date).toLocaleDateString('vi-VN')}</strong> {t('đến')} <strong>{new Date(req.end_date).toLocaleDateString('vi-VN')}</strong> ({req.total_days} {t('ngày')})
+                            </span>
+                          </div>
+
+                          {req.reason && (
+                            <div style={{ 
+                              fontSize: '0.8125rem', 
+                              marginTop: '8px', 
+                              background: 'var(--color-bg-secondary)', 
+                              padding: '6px 12px', 
+                              borderRadius: '8px', 
+                              borderLeft: '2.5px solid var(--color-border)', 
+                              color: 'var(--color-text-muted)',
+                              fontStyle: 'italic'
+                            }}>
+                              "{req.reason}"
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', color: req.status === 'approved' ? '#10b981' : '#ef4444' }}>
-                          {req.status === 'approved' ? t('Đã duyệt') : t('Đã từ chối')}
+                      </div>
+
+                      {/* Middle Block: Timeline Approvals */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
+                        <span style={{ fontSize: '0.725rem', textTransform: 'uppercase', fontWeight: 800, color: 'var(--color-text-light)', letterSpacing: '0.05em' }}>
+                          {t('Quy trình phê duyệt')}
                         </span>
-                      )}
+                        
+                        {/* Level 1 Approver */}
+                        {approver1 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                            <div style={{ width: 14, height: 14, borderRadius: '50%', background: req.status_level_1 === 'approved' ? '#e6f4ea' : (req.status_level_1 === 'rejected' ? '#fce8e6' : 'rgba(0,0,0,0.03)'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: req.status_level_1 === 'approved' ? '#10b981' : (req.status_level_1 === 'rejected' ? '#ef4444' : '#6b7280') }}>
+                              {req.status_level_1 === 'approved' ? '✓' : (req.status_level_1 === 'rejected' ? '✕' : '•')}
+                            </div>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Cấp 1: <strong>{approver1.full_name}</strong></span>
+                          </div>
+                        )}
+
+                        {/* Level 2 Approver */}
+                        {approver2 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                            <div style={{ width: 14, height: 14, borderRadius: '50%', background: req.status_level_2 === 'approved' ? '#e6f4ea' : (req.status_level_2 === 'rejected' ? '#fce8e6' : 'rgba(0,0,0,0.03)'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: req.status_level_2 === 'approved' ? '#10b981' : (req.status_level_2 === 'rejected' ? '#ef4444' : '#6b7280') }}>
+                              {req.status_level_2 === 'approved' ? '✓' : (req.status_level_2 === 'rejected' ? '✕' : '•')}
+                            </div>
+                            <span style={{ color: 'var(--color-text-muted)' }}>Cấp 2: <strong>{approver2.full_name}</strong></span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right Block: Action Buttons or Final Status */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', minWidth: '130px' }}>
+                        {isPending ? (
+                          <div style={{ display: 'flex', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
+                            <button 
+                              onClick={() => handleApproveLeave(req.id, 'approved')} 
+                              className="btn sm" 
+                              style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '0.75rem', fontWeight: 700 }}
+                            >
+                              <Check size={14} /> {t('Duyệt')}
+                            </button>
+                            <button 
+                              onClick={() => handleApproveLeave(req.id, 'rejected')} 
+                              className="btn sm outline" 
+                              style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4, borderColor: '#ef4444', color: '#ef4444', borderRadius: '8px', padding: '6px 14px', fontSize: '0.75rem', fontWeight: 700 }}
+                            >
+                              <X size={14} /> {t('Từ chối')}
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ 
+                            fontWeight: 800, 
+                            textTransform: 'uppercase', 
+                            fontSize: '0.75rem', 
+                            color: isApproved ? '#10b981' : '#ef4444',
+                            backgroundColor: isApproved ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {isApproved ? t('Đã duyệt') : t('Đã từ chối')}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -700,11 +917,14 @@ export default function HRM() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                    <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                       <th style={{ padding: '12px 8px' }}>{t('Nhân viên')}</th>
                       <th style={{ padding: '12px 8px' }}>{t('Công thực tế')}</th>
                       <th style={{ padding: '12px 8px' }}>{t('Đi trễ (phút)')}</th>
+                      <th style={{ padding: '12px 8px' }}>{t('Tăng ca (ngày)')}</th>
                       <th style={{ padding: '12px 8px' }}>{t('Lương ngày công')}</th>
+                      <th style={{ padding: '12px 8px' }}>{t('Lương tăng ca')}</th>
+                      <th style={{ padding: '12px 8px' }}>{t('Thưởng chuyên cần')}</th>
                       <th style={{ padding: '12px 8px' }}>{t('Thưởng KPI')}</th>
                       <th style={{ padding: '12px 8px' }}>{t('Phụ cấp')}</th>
                       <th style={{ padding: '12px 8px' }}>{t('Khấu trừ BHXH')}</th>
@@ -716,11 +936,14 @@ export default function HRM() {
                   </thead>
                   <tbody>
                     {payslips.map(ps => (
-                      <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border)', fontSize: '0.85rem' }}>
+                      <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
                         <td style={{ padding: '14px 8px', fontWeight: 600 }}>{ps.employee_name}</td>
                         <td style={{ padding: '14px 8px' }}>{ps.work_days_actual} / {ps.work_days_required}</td>
                         <td style={{ padding: '14px 8px', color: ps.lateness_minutes > 0 ? '#ef4444' : 'inherit' }}>{ps.lateness_minutes} {t('phút')}</td>
+                        <td style={{ padding: '14px 8px', fontWeight: 700 }}>{ps.overtime_days || 0}</td>
                         <td style={{ padding: '14px 8px' }}>{formatCurrency(ps.salary_basic_calculated)}</td>
+                        <td style={{ padding: '14px 8px', color: '#10b981', fontWeight: 600 }}>{formatCurrency(ps.overtime_salary || 0)}</td>
+                        <td style={{ padding: '14px 8px', color: '#10b981', fontWeight: 600 }}>{formatCurrency(ps.diligence_bonus || 0)}</td>
                         <td style={{ padding: '14px 8px', color: '#10b981', fontWeight: 600 }}>{formatCurrency(ps.kpi_bonus)}</td>
                         <td style={{ padding: '14px 8px' }}>{formatCurrency(ps.allowance_total)}</td>
                         <td style={{ padding: '14px 8px', color: '#ef4444' }}>{formatCurrency(Number(ps.insurance_bhxh || 0) + Number(ps.insurance_bhyt || 0) + Number(ps.insurance_bhtn || 0))}</td>
@@ -827,6 +1050,52 @@ export default function HRM() {
                   value={kpiTarget}
                   onChange={e => setKpiTarget(Number(e.target.value))}
                 />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label className="form-label">{t('Tổng phép năm')}</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    step="0.5"
+                    value={annualLeaveTotal}
+                    onChange={e => setAnnualLeaveTotal(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">{t('Phép năm đã dùng')}</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    step="0.5"
+                    value={annualLeaveUsed}
+                    onChange={e => setAnnualLeaveUsed(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label className="form-label">{t('Tổng nghỉ bù')}</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    step="0.5"
+                    value={compensatoryLeaveTotal}
+                    onChange={e => setCompensatoryLeaveTotal(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">{t('Nghỉ bù đã dùng')}</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    step="0.5"
+                    value={compensatoryLeaveUsed}
+                    onChange={e => setCompensatoryLeaveUsed(Number(e.target.value))}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

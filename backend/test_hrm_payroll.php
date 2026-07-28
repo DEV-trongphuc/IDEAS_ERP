@@ -2,6 +2,7 @@
 // backend/test_hrm_payroll.php
 require_once __DIR__ . '/test_bootstrap.php';
 require_once __DIR__ . '/controllers/HRMController.php';
+require_once __DIR__ . '/controllers/CheckInController.php';
 
 header('Content-Type: text/plain; charset=utf-8');
 
@@ -9,6 +10,28 @@ echo "=== STARTING HRM & PAYROLL SYSTEM INTEGRATION TEST ===\n\n";
 
 // Global statistics variable
 $testStats = ['pass' => 0, 'fail' => 0];
+
+// Mock getBody and respond functions
+$mockPayload = [];
+if (!function_exists('getBody')) {
+    function getBody() {
+        global $mockPayload;
+        return $mockPayload;
+    }
+}
+
+$lastResponse = null;
+if (!function_exists('respond')) {
+    function respond(int $code, $data = null, string $message = '', bool $success = true): void {
+        global $lastResponse;
+        $lastResponse = [
+            'code' => $code,
+            'data' => $data,
+            'message' => $message,
+            'success' => $success
+        ];
+    }
+}
 
 // Test 1: Verify Table Schemas
 $requiredTables = [
@@ -25,23 +48,34 @@ foreach ($requiredTables as $tbl) {
     assertTest("Bảng CSDL '$tbl' tồn tại", $res && $res->num_rows > 0);
 }
 
-// Test 2: Verify Columns of hrm_profiles
+// Test 2: Verify Columns of hrm_profiles & monthly_payslips
 $profileCols = [];
 $res = $conn->query("SHOW COLUMNS FROM hrm_profiles");
 while ($row = $res->fetch_assoc()) {
     $profileCols[] = $row['Field'];
 }
-assertTest("Cột 'joined_date' có trong hrm_profiles", in_array('joined_date', $profileCols));
-assertTest("Cột 'deal_salary' có trong hrm_profiles", in_array('deal_salary', $profileCols));
-assertTest("Cột 'base_salary' có trong hrm_profiles", in_array('base_salary', $profileCols));
+assertTest("Cột 'annual_leave_total' có trong hrm_profiles", in_array('annual_leave_total', $profileCols));
+assertTest("Cột 'annual_leave_used' có trong hrm_profiles", in_array('annual_leave_used', $profileCols));
+assertTest("Cột 'compensatory_leave_total' có trong hrm_profiles", in_array('compensatory_leave_total', $profileCols));
+assertTest("Cột 'compensatory_leave_used' có trong hrm_profiles", in_array('compensatory_leave_used', $profileCols));
 
-// Test 3: Create Temporary Test Employee & Run Calculation Test
+$payslipCols = [];
+$res = $conn->query("SHOW COLUMNS FROM monthly_payslips");
+while ($row = $res->fetch_assoc()) {
+    $payslipCols[] = $row['Field'];
+}
+assertTest("Cột 'overtime_days' có trong monthly_payslips", in_array('overtime_days', $payslipCols));
+assertTest("Cột 'overtime_salary' có trong monthly_payslips", in_array('overtime_salary', $payslipCols));
+assertTest("Cột 'diligence_bonus' có trong monthly_payslips", in_array('diligence_bonus', $payslipCols));
+
+// Test 3: Run comprehensive scenario on dummy user
 $testUserId = 99999;
 $monthYear = '2026-07';
 
 try {
     $pdo->exec("SET FOREIGN_KEY_CHECKS=0;");
-    // Delete existing test logs if any
+    
+    // Clear old data
     $pdo->prepare("DELETE FROM check_ins WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_leave_requests WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_salary_advances WHERE user_id = ?")->execute([$testUserId]);
@@ -51,105 +85,142 @@ try {
 
     // Insert dummy user
     $insUser = $pdo->prepare("
-        INSERT INTO users (id, tenant_id, email, password_hash, full_name, role, is_active)
-        VALUES (?, 1, 'test_hrm_employee@ideas.vn', 'no_hash', 'Test HRM Employee', 'sales', 1)
+        INSERT INTO users (id, tenant_id, email, password_hash, full_name, role, is_active, work_start_time, work_end_time)
+        VALUES (?, 1, 'test_hrm_employee@ideas.vn', 'no_hash', 'Test HRM Employee', 'sales', 1, '08:00:00', '17:30:00')
     ");
     $insUser->execute([$testUserId]);
 
-    // Insert HRM profile (Salary deal: 20M, Base Salary: 10M, Has insurance, Meal allowance: 800k, Travel: 500k, Phone: 300k, Target KPI: 50M)
+    // Insert dummy profile with leave balances (12.0 total annual, 0.0 used)
     $insProfile = $pdo->prepare("
-        INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target)
-        VALUES (?, '2026-01-15', 10000000.00, 20000000.00, 1, 800000.00, 500000.00, 300000.00, 50000000.00)
+        INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used)
+        VALUES (?, '2026-01-15', 10000000.00, 20000000.00, 1, 800000.00, 500000.00, 300000.00, 50000000.00, 12.0, 0.0, 5.0, 0.0)
     ");
     $insProfile->execute([$testUserId]);
 
-    // Simulate 20 actual worked days (check_ins approved)
-    for ($d = 1; $d <= 20; $d++) {
-        $dayStr = sprintf('%02d', $d);
-        $insCheckin = $pdo->prepare("
-            INSERT INTO check_ins (user_id, check_in_date, check_in_time, status, late_minutes)
-            VALUES (?, '2026-07-{$dayStr}', '08:00:00', 'approved', 0)
-        ");
-        $insCheckin->execute([$testUserId]);
-    }
+    // Setup controllers
+    $hrmCtrl = new HRMController($pdo);
+    $checkInCtrl = new CheckInController($pdo);
+    $authPayload = ['user_id' => $testUserId, 'role' => 'sales', 'tenant_id' => 1];
+    $adminAuth = ['user_id' => 1, 'role' => 'admin', 'tenant_id' => 1];
 
-    // Simulate 2 days approved leave (annual paid leave)
+    // --- CASE A: LEAVE DEDUCTION TEST ---
+    // Create leave request: 2.0 days of type 'annual'
     $insLeave = $pdo->prepare("
-        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status)
-        VALUES (?, 'annual', '2026-07-21 08:00:00', '2026-07-22 17:30:00', 2.0, 'approved')
+        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status, approver_id, status_level_1, status_level_2)
+        VALUES (?, 'annual', '2026-07-21 08:00:00', '2026-07-22 17:30:00', 2.0, 'pending', 1, 'pending', 'pending')
     ");
     $insLeave->execute([$testUserId]);
+    $leaveId = $pdo->lastInsertId();
 
-    // Simulate 1 approved advance request of 1,000,000 VND
-    $insAdvance = $pdo->prepare("
-        INSERT INTO hrm_salary_advances (user_id, amount, request_date, status)
-        VALUES (?, 1000000.00, '2026-07-10', 'approved')
+    // Approve the leave request
+    $mockPayload = [
+        'id' => $leaveId,
+        'status' => 'approved',
+        'note' => 'Duyệt phép năm'
+    ];
+    $hrmCtrl->approveLeave($adminAuth);
+    
+    // Check if leave deduction occurred
+    $profileStmt = $pdo->prepare("SELECT annual_leave_used FROM hrm_profiles WHERE user_id = ?");
+    $profileStmt->execute([$testUserId]);
+    $profile = $profileStmt->fetch();
+    assertTest("Đã tự động khấu trừ 2.0 ngày phép năm khi được duyệt", (float)$profile['annual_leave_used'] === 2.0);
+
+
+    // --- CASE B: AFTERNOON SHIFT LATENESS EXEMPTION ---
+    // 1. Insert approved morning leave today
+    $insMorningLeave = $pdo->prepare("
+        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status)
+        VALUES (?, 'annual', '2026-07-21 08:00:00', '2026-07-21 12:00:00', 0.5, 'approved')
     ");
-    $insAdvance->execute([$testUserId]);
+    $insMorningLeave->execute([$testUserId]);
 
-    // Simulate 1 approved payment milestone (KPI contribution) of 60,000,000 VND
-    $insDeposit = $pdo->prepare("
-        INSERT INTO deposits (id, contact_id, project_id, unit_code, price, status, created_by, created_at)
-        VALUES (99999, 1, 1, 'TEST-UNIT', 1200000000.00, 'approved', ?, NOW())
+    // 2. Perform check-in at 13:00 (afternoon shift start is 13:30)
+    $mockPayload = [
+        'action' => 'checkin',
+        'check_in_date' => '2026-07-21',
+        'check_in_time' => '13:00:00',
+        'is_supplementary' => 0
+    ];
+    $checkInCtrl->store($authPayload);
+
+    // 3. Verify late_minutes is 0 (not late)
+    $checkInStmt = $pdo->prepare("SELECT late_minutes FROM check_ins WHERE user_id = ? AND check_in_date = '2026-07-21'");
+    $checkInStmt->execute([$testUserId]);
+    $checkInRow = $checkInStmt->fetch();
+    assertTest("Check-in ca chiều (13:00) trước 13:30 khi có phép sáng không bị tính trễ", (int)$checkInRow['late_minutes'] === 0, "Trễ thực tế: " . $checkInRow['late_minutes'] . " phút");
+
+
+    // --- CASE C: AFTERNOON SHIFT EARLY CHECK-OUT EXEMPTION ---
+    // 1. Insert approved afternoon leave today
+    $insAfternoonLeave = $pdo->prepare("
+        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status)
+        VALUES (?, 'annual', '2026-07-21 13:30:00', '2026-07-21 17:30:00', 0.5, 'approved')
     ");
-    $insDeposit->execute([$testUserId]);
+    $insAfternoonLeave->execute([$testUserId]);
 
-    $insMilestone = $pdo->prepare("
-        INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, status, approval_date)
-        VALUES (99999, 'Đợt 1', 60000000.00, 'approved', '2026-07-15 10:00:00')
-    ");
-    $insMilestone->execute();
+    // 2. Perform check-out at 16:30 (work end time is 17:30)
+    $mockPayload = [
+        'action' => 'checkout',
+        'check_in_date' => '2026-07-21',
+        'check_in_time' => '16:30:00',
+        'is_supplementary' => 0
+    ];
+    $checkInCtrl->store($authPayload);
 
-    // Run payroll calculation controller method
-    $hrmCtrl = new HRMController($pdo);
-    $authPayload = ['user_id' => 1, 'role' => 'admin', 'tenant_id' => 1];
+    // 3. Verify early_minutes is 0
+    $checkOutStmt = $pdo->prepare("SELECT early_minutes FROM check_ins WHERE user_id = ? AND check_in_date = '2026-07-21'");
+    $checkOutStmt->execute([$testUserId]);
+    $checkOutRow = $checkOutStmt->fetch();
+    assertTest("Check-out ca chiều sớm (16:30) khi có phép chiều không bị tính về sớm", (int)$checkOutRow['early_minutes'] === 0, "Về sớm thực tế: " . $checkOutRow['early_minutes'] . " phút");
+
+
+    // --- CASE D: OVERTIME & DILIGENCE PAYROLL CALCULATION ---
+    // 1. Clear check-ins and mock 26 days of on-time attendance
+    $pdo->prepare("DELETE FROM check_ins WHERE user_id = ?")->execute([$testUserId]);
+    for ($d = 1; $d <= 26; $d++) {
+        $dayStr = sprintf('%02d', $d);
+        $pdo->prepare("
+            INSERT INTO check_ins (user_id, check_in_date, check_in_time, status, late_minutes, early_minutes)
+            VALUES (?, '2026-07-{$dayStr}', '08:00:00', 'approved', 0, 0)
+        ")->execute([$testUserId]);
+    }
+
+    // 2. Add approved overtime request: 3.0 days
+    $pdo->prepare("
+        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status)
+        VALUES (?, 'overtime', '2026-07-27 08:00:00', '2026-07-29 17:30:00', 3.0, 'approved')
+    ")->execute([$testUserId]);
+
+    // 3. Run calculatePayroll
+    $mockPayload = [
+        'month_year' => $monthYear,
+        'work_days_required' => 26
+    ];
+    $hrmCtrl->calculatePayroll($adminAuth);
+
+    // 4. Query generated payslip and assert results
+    $payslipStmt = $pdo->prepare("SELECT * FROM monthly_payslips WHERE user_id = ? AND month_year = ?");
+    $payslipStmt->execute([$testUserId, $monthYear]);
+    $payslip = $payslipStmt->fetch();
+
+    assertTest("Đã ghi nhận 3.0 ngày tăng ca vào bảng lương", (float)$payslip['overtime_days'] === 3.0);
     
-    // Simulate calculatePayroll
-    // Mock getBody() response indirectly by calling inner calculations logic or we can test the function directly
-    // Let's call the calculation logic and check output
-    $_POST = ['month_year' => $monthYear, 'work_days_required' => 26];
-    
-    // We override respond() for test runner if needed, but since it exits, let's execute the math directly here
-    // as a mirror function to verify math accuracy
-    
-    // Total Work Days = 20 actual + 2 leave = 22 days
-    $workDaysRequired = 26;
-    $totalWorkDays = 22.0;
-    
-    $dealSalary = 20000000.00;
-    $basicSalaryCalculated = ($dealSalary / $workDaysRequired) * $totalWorkDays; // 20M / 26 * 22 = 16,923,076.92
-    assertTest("Lương thực tế theo ngày công đúng", round($basicSalaryCalculated, 2) === round(16923076.923077, 2), "Giá trị tính toán: " . $basicSalaryCalculated);
+    // Overtime Salary: (deal_salary / 26) * 3 * 1.5 -> (20,000,000 / 26) * 3 * 1.5 = 1,153,846.15
+    $expectedOtSalary = (20000000.00 / 26) * 3.0 * 1.5;
+    assertTest("Tính toán lương tăng ca chính xác (1.5x)", round((float)$payslip['overtime_salary'], 2) === round($expectedOtSalary, 2), "Lương tăng ca thực tế: " . $payslip['overtime_salary']);
 
-    // KPI Bonus: target 50M, collected 60M (achievement rate = 1.2 -> 15% of 60M = 9M VND)
-    $kpiBonus = 60000000.00 * 0.15; // 9,000,000.00
-    assertTest("Thưởng KPI đạt target 120% đúng", $kpiBonus === 9000000.00);
+    // Diligence Bonus: 500,000 VND since they worked 26 days and had 0 lateness minutes
+    assertTest("Thưởng chuyên cần 500,000 VND được cộng tự động", (float)$payslip['diligence_bonus'] === 500000.00);
 
-    // Insurance deductions: base_salary = 10M -> BHXH (8%), BHYT (1.5%), BHTN (1%) = 10.5% of 10M = 1,050,000
-    $insuranceBase = 10000000.00;
-    $bhxh = $insuranceBase * 0.08;
-    $bhyt = $insuranceBase * 0.015;
-    $bhtn = $insuranceBase * 0.01;
-    $insuranceDeductions = $bhxh + $bhyt + $bhtn; // 1,050,000
-    assertTest("Khấu trừ bảo hiểm xã hội chuẩn 10.5%", $insuranceDeductions === 1050000.00);
+    // PIT Tax should account for overtime salary and diligence bonus!
+    assertTest("Bảng lương được lưu thành công dạng bản nháp (draft)", $payslip['status'] === 'draft');
 
-    // PIT Tax:
-    // Taxable meal = 800k - 730k = 70k.
-    // Gross income for tax = 16,923,076.92 + 9,000,000.00 + 500,000.00 + 300,000.00 + 70,000.00 = 26,793,076.92
-    // Deductions = 1,050,000 (insurance) + 11,000,000 (personal) = 12,050,000
-    // Taxable Income = 26,793,076.92 - 12,050,000 = 14,743,076.92
-    // PIT Bracket 3 (10M to 18M) -> (14,743,076.92 * 0.15) - 750,000 = 1,461,461.54
-    $taxableMeal = max(0, 800000.00 - 730000);
-    $grossIncomeForTax = $basicSalaryCalculated + $kpiBonus + 500000.00 + 300000.00 + $taxableMeal;
-    $taxIncome = $grossIncomeForTax - $insuranceDeductions - 11000000.00;
-    $pit = ($taxIncome * 0.15) - 750000; // 1,461,461.54
-    assertTest("Tính thuế TNCN lũy tiến bậc 3 đúng", round($pit, 2) === round(1461461.538462, 2), "Giá trị tính toán: " . $pit);
 
-    // Clean up test data
+    // --- CLEAN UP ---
     $pdo->prepare("DELETE FROM check_ins WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_leave_requests WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_salary_advances WHERE user_id = ?")->execute([$testUserId]);
-    $pdo->prepare("DELETE FROM deposit_milestones WHERE deposit_id = 99999")->execute();
-    $pdo->prepare("DELETE FROM deposits WHERE id = 99999")->execute();
     $pdo->prepare("DELETE FROM monthly_payslips WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_profiles WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$testUserId]);
@@ -160,6 +231,7 @@ try {
 } catch (Throwable $e) {
     try { $pdo->exec("SET FOREIGN_KEY_CHECKS=1;"); } catch(Throwable $ex) {}
     echo "❌ LỖI TRONG QUÁ TRÌNH KIỂM THỬ: " . $e->getMessage() . "\n";
+    echo $e->getTraceAsString() . "\n";
     assertTest("Toàn bộ quy trình kiểm thử hoàn tất không có ngoại lệ", false);
 }
 

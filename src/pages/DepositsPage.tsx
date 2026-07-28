@@ -49,6 +49,7 @@ interface Milestone {
   unc_file_path: string | null;
   status: 'pending' | 'paid' | 'approved' | 'failed';
   approval_date: string | null;
+  expected_pay_date?: string | null;
 }
 
 interface Contact {
@@ -77,6 +78,7 @@ export default function DepositsPage() {
   const { showConfirm, addToast } = useUIStore();
   const { t } = useLanguage();
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [activeViewTab, setActiveViewTab] = useState<'list' | 'stats'>('list');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (document.documentElement.getAttribute('data-theme') as 'light' | 'dark') || 'light';
   });
@@ -117,8 +119,8 @@ export default function DepositsPage() {
   const [unitCode, setUnitCode] = useState('');
   const [price, setPrice] = useState('');
   const [expectedCommission, setExpectedCommission] = useState('');
-  const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string }[]>([
-    { name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }
+  const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
+    { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
   ]);
 
   // Co-op and Sales Method Selection States
@@ -326,7 +328,7 @@ export default function DepositsPage() {
   }, [selectedContactId, coopSlips, usersList]);
 
   const handleAddMilestoneInput = () => {
-    setMilestonesInput(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '' }]);
+    setMilestonesInput(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '', expected_pay_date: '' }]);
   };
 
   const handleRemoveMilestoneInput = (index: number) => {
@@ -342,8 +344,8 @@ export default function DepositsPage() {
 
     // Verify milestones total sum
     const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
-    if (Math.abs(totalM - parseFloat(price)) > 1) {
-      addToast(`Tổng tiền các đợt (${totalM.toLocaleString()} VND) phải bằng đúng Giá bán (${parseFloat(price).toLocaleString()} VND)`, 'error');
+    if (totalM > parseFloat(price)) {
+      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(price).toLocaleString()} VND)`, 'error');
       return;
     }
 
@@ -388,7 +390,7 @@ export default function DepositsPage() {
         setUnitCode('');
         setPrice('');
         setExpectedCommission('');
-        setMilestonesInput([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '' }]);
+        setMilestonesInput([{ name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }]);
         setIsCooperation(false);
         setAllowedCollaborators([]);
         setCollaboratorShares({});
@@ -650,6 +652,13 @@ export default function DepositsPage() {
       return;
     }
 
+    for (let m of tempMilestones) {
+      if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {
+        addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái đã đóng/đã duyệt bắt buộc phải có file minh chứng đính kèm.`, 'error');
+        return;
+      }
+    }
+
     if (isAdmin && tempSharesData && tempSharesData.length > 0) {
       const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
       if (totalPct !== 100) {
@@ -686,6 +695,40 @@ export default function DepositsPage() {
     }
   };
 
+  const projectedReceivables = React.useMemo(() => {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const map: Record<string, { date: string; totalAmount: number; milestones: any[] }> = {};
+
+    deposits.forEach(d => {
+      if (d.milestones && d.milestones.length > 0) {
+        d.milestones.forEach(m => {
+          if (m.status !== 'approved' && m.expected_pay_date) {
+            const dateStr = m.expected_pay_date.substring(0, 10);
+            if (dateStr >= todayStr) {
+              if (!map[dateStr]) {
+                map[dateStr] = {
+                  date: dateStr,
+                  totalAmount: 0,
+                  milestones: []
+                };
+              }
+              map[dateStr].totalAmount += Number(m.expected_amount) || 0;
+              map[dateStr].milestones.push({
+                ...m,
+                customerName: `${d.last_name} ${d.first_name}`,
+                phone: d.phone,
+                unitCode: d.unit_code,
+                projectName: d.project_name
+              });
+            }
+          }
+        });
+      }
+    });
+
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }, [deposits]);
+
   return (
     <div className="page-container anim-fade-up" style={{ color: 'var(--color-text)' }}>
       {/* Notifications */}
@@ -694,7 +737,7 @@ export default function DepositsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {t("Quản Lý Đơn Đặt Hàng (Sales Orders)")}
+            {t("Quản Lý Thanh Toán (Payments)")}
             <button
               onClick={() => setShowInfoModal(true)}
               style={{
@@ -740,32 +783,71 @@ export default function DepositsPage() {
         )}
       </div>
 
-      {/* List */}
-      {loading ? (
-        <TableSkeleton rows={5} cols={5} />
-      ) : filteredDepositsList.length === 0 ? (
-        <EmptyCard
-          icon={<CreditCard />}
-          title="Chưa có phiếu cọc nào"
-          description="Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC)."
-          actionText={isViewer ? undefined : "Tạo đơn hàng mới"}
-          onAction={isViewer ? undefined : () => setIsCreateOpen(true)}
-        />
-      ) : (
-        <div className="card" style={{ padding: 0, borderRadius: '16px', border: '1px solid var(--color-border-light)', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
-          <div className="table-wrap" style={{ maxHeight: '480px', overflowY: 'auto', overflowX: 'auto' }}>
-            <table className="w-full text-left" style={{ borderCollapse: 'collapse', minWidth: 900 }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '110px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã sản phẩm / SKU</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chiến dịch & Khách hàng</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
-                  <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+      {/* Tab Switcher */}
+      {isAdmin && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem' }}>
+          <button
+            onClick={() => setActiveViewTab('list')}
+            style={{
+              padding: '8px 16px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              background: activeViewTab === 'list' ? 'var(--color-primary-light)' : 'none',
+              color: activeViewTab === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            Danh sách thanh toán
+          </button>
+          <button
+            onClick={() => setActiveViewTab('stats')}
+            style={{
+              padding: '8px 16px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              background: activeViewTab === 'stats' ? 'var(--color-primary-light)' : 'none',
+              color: activeViewTab === 'stats' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            Thống kê dự thu
+          </button>
+        </div>
+      )}
+
+      {activeViewTab === 'list' ? (
+        <>
+          {/* List */}
+          {loading ? (
+            <TableSkeleton rows={5} cols={5} />
+          ) : filteredDepositsList.length === 0 ? (
+            <EmptyCard
+              icon={<CreditCard />}
+              title="Chưa có phiếu thanh toán nào"
+              description="Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC)."
+              actionText={isViewer ? undefined : "Tạo đơn hàng mới"}
+              onAction={isViewer ? undefined : () => setIsCreateOpen(true)}
+            />
+          ) : (
+            <>
+            <div className="card" style={{ padding: 0, borderRadius: '16px', border: '1px solid var(--color-border-light)', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+              <div className="table-wrap" style={{ maxHeight: '480px', overflowY: 'auto', overflowX: 'auto' }}>
+                <table className="w-full text-left" style={{ borderCollapse: 'collapse', minWidth: 900 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '150px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã Học viên / Khách</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chương trình & Khách hàng</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
                 {paginatedDeposits.map(dep => {
                   let statusText = 'Đang giao dịch';
                   let statusBg = 'rgba(245, 158, 11, 0.08)';
@@ -970,6 +1052,7 @@ export default function DepositsPage() {
               </tbody>
             </table>
           </div>
+        </div>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
@@ -1037,6 +1120,79 @@ export default function DepositsPage() {
               </div>
             </div>
           )}
+            </>
+          )}
+        </>
+      ) : (
+        <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.01) 100%)', border: '1px solid rgba(37, 99, 235, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự thu 7 ngày tới</span>
+              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2563eb' }}>
+                {parseFloat(projectedReceivables.filter(r => {
+                  const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                  return diff <= 7;
+                }).reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.01) 100%)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự thu 30 ngày tới</span>
+              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>
+                {parseFloat(projectedReceivables.filter(r => {
+                  const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                  return diff <= 30;
+                }).reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.01) 100%)', border: '1px solid rgba(245, 158, 11, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tổng dự thu tương lai</span>
+              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#d97706' }}>
+                {parseFloat(projectedReceivables.reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND
+              </span>
+            </div>
+          </div>
+
+          {/* List by date */}
+          <div className="card" style={{ padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--color-border-light)', background: 'var(--color-surface)' }}>
+            <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--color-text)' }}>Lịch trình dự thu chi tiết theo ngày</h3>
+            {projectedReceivables.length === 0 ? (
+              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                Không có khoản dự thu nào trong tương lai.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {projectedReceivables.map(r => (
+                  <div key={r.date} style={{ borderBottom: '1px solid var(--color-border-light)', paddingBottom: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span style={{ fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Calendar size={16} style={{ color: 'var(--color-primary)' }} />
+                        {new Date(r.date).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                      <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1.1rem' }}>
+                        Tổng cộng: {parseFloat(r.totalAmount.toString()).toLocaleString('vi-VN')} VND
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', paddingLeft: '1.5rem' }}>
+                      {r.milestones.map((m: any) => (
+                        <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem' }}>
+                          <div>
+                            <strong style={{ color: 'var(--color-text)' }}>{m.customerName}</strong> (SĐT: {m.phone}) - <span style={{ color: 'var(--color-text-muted)' }}>Mã: {m.unitCode}</span>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                              Chương trình: {m.projectName} | Đợt: {m.milestone_name}
+                            </div>
+                          </div>
+                          <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
+                            {parseFloat(m.expected_amount.toString()).toLocaleString('vi-VN')} VND
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1044,7 +1200,7 @@ export default function DepositsPage() {
       <CustomModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        title="Khởi tạo phiếu đặt cọc"
+        title="Khởi tạo phiếu thanh toán"
         width="620px"
       >
         <div style={{ padding: '0.5rem 0' }}>
@@ -1066,7 +1222,7 @@ export default function DepositsPage() {
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Chiến dịch / Nhóm</label>
+                <label className="form-label">Chương trình / Chiến dịch</label>
                 <CustomSelect
                   options={projects.map(p => ({
                     value: String(p.id),
@@ -1074,7 +1230,7 @@ export default function DepositsPage() {
                   }))}
                   value={selectedProjectId}
                   onChange={val => setSelectedProjectId(val.toString())}
-                  placeholder="-- Chọn chiến dịch/nhóm --"
+                  placeholder="-- Chọn chương trình/chiến dịch --"
                   searchable
                 />
               </div>
@@ -1082,11 +1238,11 @@ export default function DepositsPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Mã sản phẩm / SKU</label>
+                <label className="form-label">Mã Học viên / Khách hàng</label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: SKU-10023"
+                  placeholder="VD: HV-10023"
                   value={unitCode}
                   onChange={e => setUnitCode(e.target.value.toUpperCase())}
                   className="form-input"
@@ -1094,7 +1250,7 @@ export default function DepositsPage() {
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Giá bán (VND)</label>
+                <label className="form-label">Tổng doanh thu dự kiến (VND)</label>
                 <CurrencyInput
                   value={price}
                   onChange={val => setPrice(String(val))}
@@ -1142,7 +1298,7 @@ export default function DepositsPage() {
                     className="form-input"
                     style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', flex: 1 }}
                   />
-                  <div style={{ width: '150px', flexShrink: 0 }}>
+                  <div style={{ width: '140px', flexShrink: 0 }}>
                     <CurrencyInput
                       value={m.amount}
                       required
@@ -1155,6 +1311,18 @@ export default function DepositsPage() {
                       showTextHelper={false}
                     />
                   </div>
+                  <input
+                    type="date"
+                    required
+                    value={m.expected_pay_date || ''}
+                    onChange={e =>
+                      setMilestonesInput(prev =>
+                        prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
+                      )
+                    }
+                    className="form-input"
+                    style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}
+                  />
                   {milestonesInput.length > 1 && (
                     <button
                       type="button"
@@ -1662,7 +1830,7 @@ export default function DepositsPage() {
                   letterSpacing: '0.5px'
                 }}>
                   <div>Tên đợt thanh toán</div>
-                  <div>Ngày tạo</div>
+                  <div>Hạn thanh toán</div>
                   <div>Số tiền (VND)</div>
                   <div style={{ textAlign: 'center' }}>Trạng thái</div>
                   <div style={{ textAlign: 'center' }}>Minh chứng</div>
@@ -1701,9 +1869,16 @@ export default function DepositsPage() {
                           />
                         </div>
 
-                        {/* Created Date */}
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', paddingLeft: '4px', fontWeight: 500 }}>
-                          {new Date(m.created_at || selectedDepForManage.created_at).toLocaleDateString('vi-VN')}
+                        {/* Expected Pay Date */}
+                        <div>
+                          <input
+                            type="date"
+                            value={m.expected_pay_date ? m.expected_pay_date.substring(0, 10) : ''}
+                            disabled={isLocked || !canEditMilestones}
+                            onChange={e => handleUpdateMilestoneField(idx, 'expected_pay_date', e.target.value)}
+                            className="form-input"
+                            style={{ width: '100%', height: '34px', fontSize: '0.725rem', padding: '0 8px', borderRadius: '6px' }}
+                          />
                         </div>
 
                         {/* Amount input */}

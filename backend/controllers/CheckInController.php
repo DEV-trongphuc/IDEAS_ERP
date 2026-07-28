@@ -266,8 +266,25 @@ class CheckInController {
             $checkOutStatus = 'on_time';
 
             if (strtotime($outTimeStr) < strtotime($workEndStr)) {
-                $earlyMinutes = (int)ceil((strtotime($workEndStr) - strtotime($outTimeStr)) / 60);
-                $checkOutStatus = 'early';
+                // Check if user has an approved afternoon leave request today
+                $afternoonLeaveStmt = $this->db->prepare("
+                    SELECT id 
+                    FROM hrm_leave_requests 
+                    WHERE user_id = ? AND status = 'approved' AND DATE(start_date) = ?
+                      AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid')
+                      AND HOUR(start_date) >= 12
+                    LIMIT 1
+                ");
+                $afternoonLeaveStmt->execute([$auth['user_id'], $today]);
+                $afternoonLeave = $afternoonLeaveStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($afternoonLeave) {
+                    $earlyMinutes = 0;
+                    $checkOutStatus = 'on_time';
+                } else {
+                    $earlyMinutes = (int)ceil((strtotime($workEndStr) - strtotime($outTimeStr)) / 60);
+                    $checkOutStatus = 'early';
+                }
             }
 
             $coLat = trim($b['latitude'] ?? $b['checkout_latitude'] ?? '');
@@ -342,11 +359,36 @@ class CheckInController {
 
         $currentHM = substr($currentTime, 0, 5);
         $workStartHM = substr($workStartTime, 0, 5);
-        $isLate = ($currentHM > $workStartHM);
-
+        $isLate = false;
         $lateMinutes = 0;
-        if ($isLate) {
-            $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);
+
+        // Check if checking in after 12:00 PM (afternoon shift)
+        if ($currentHM > '12:00') {
+            $afternoonStartHM = $settingsMap['global_afternoon_start_time'] ?? '13:30';
+            // Check if user has approved morning leave request today
+            $morningLeaveStmt = $this->db->prepare("
+                SELECT id 
+                FROM hrm_leave_requests 
+                WHERE user_id = ? AND status = 'approved' AND DATE(start_date) = ?
+                  AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid')
+                  AND HOUR(start_date) < 12
+                LIMIT 1
+            ");
+            $morningLeaveStmt->execute([$auth['user_id'], $today]);
+            $morningLeave = $morningLeaveStmt->fetch(PDO::FETCH_ASSOC);
+
+            // If there's a morning leave or they just check in after 12:00, compare with afternoon shift start
+            if ($morningLeave || $currentHM > '12:00') {
+                $isLate = ($currentHM > $afternoonStartHM);
+                if ($isLate) {
+                    $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $afternoonStartHM . ':00')) / 60);
+                }
+            }
+        } else {
+            $isLate = ($currentHM > $workStartHM);
+            if ($isLate) {
+                $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);
+            }
         }
 
         $status = 'approved';

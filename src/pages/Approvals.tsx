@@ -208,7 +208,7 @@ export default function Approvals() {
   const [paymentDetails, setPaymentDetails] = useState('');
   const [paymentDestination, setPaymentDestination] = useState('');
   const [currencyType, setCurrencyType] = useState('VND');
-  const [leaveType, setLeaveType] = useState('Nghỉ phép năm');
+  const [leaveType, setLeaveType] = useState('annual');
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveFrom, setLeaveFrom] = useState('');
   const [leaveTo, setLeaveTo] = useState('');
@@ -1658,9 +1658,11 @@ export default function Approvals() {
                                 value={leaveType}
                                 onChange={val => setLeaveType(val)}
                                 options={[
-                                  { value: 'Nghỉ phép năm', label: t('Nghỉ phép năm') },
-                                  { value: 'Nghỉ việc riêng', label: t('Nghỉ việc riêng (không lương)') },
-                                  { value: 'Nghỉ ốm / thai sản', label: t('Nghỉ ốm / thai sản') }
+                                  { value: 'annual', label: t('Nghỉ phép năm') },
+                                  { value: 'compensatory', label: t('Nghỉ bù') },
+                                  { value: 'sick', label: t('Nghỉ ốm / thai sản') },
+                                  { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') },
+                                  { value: 'overtime', label: t('Đăng ký tăng ca') }
                                 ]}
                                 width="100%"
                               />
@@ -3191,7 +3193,8 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
                     { value: 'sick', label: t('Nghỉ ốm / thai sản') },
                     { value: 'compensatory', label: t('Nghỉ bù') },
                     { value: 'late_early', label: t('Đi trễ/Về sớm') },
-                    { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') }
+                    { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') },
+                    { value: 'overtime', label: t('Đăng ký tăng ca') }
                   ]}
                   width="100%"
                 />

@@ -43,8 +43,10 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     ]
   },
   {
-    title: 'SẢN PHẨM & KHO HÀNG',
+    title: 'CHƯƠNG TRÌNH & SẢN PHẨM',
     items: [
+      { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
+      { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
       { name: 'Sản phẩm & Dịch vụ', href: '/products', icon: Package },
       { name: 'Kho hàng hóa', href: '/inventory', icon: Boxes, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
@@ -55,8 +57,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'TÀI CHÍNH',
     items: [
-      { name: 'Báo giá', href: '/quotes', icon: FileText, hideForRoles: ['viewer', 'hr', 'marketing'] },
-      { name: 'Đơn đặt hàng', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingDeposits' },
+      { name: 'Thanh toán', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingDeposits' },
       { name: 'Chi phí chi tiêu', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingExpenses' }
     ]
   },

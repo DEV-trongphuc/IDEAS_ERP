@@ -16,8 +16,9 @@ class HRMController {
         if (!$this->isAdmin($auth)) respond(403, null, 'Quyền admin là bắt buộc', false);
 
         $stmt = $this->db->prepare("
-            SELECT u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.dob, u.gender, u.citizen_id, u.address, u.bank_name, u.bank_account,
-                   p.joined_date, p.base_salary, p.deal_salary, p.has_insurance, p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.kpi_multiplier_rules, p.custom_fields_json
+            SELECT u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.dob, u.gender, u.citizen_id, u.address, u.bank_name, u.bank_account, u.team_id,
+                   p.joined_date, p.base_salary, p.deal_salary, p.has_insurance, p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.kpi_multiplier_rules, p.custom_fields_json,
+                   p.annual_leave_total, p.annual_leave_used, p.compensatory_leave_total, p.compensatory_leave_used
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
             WHERE u.tenant_id = ?
@@ -35,8 +36,9 @@ class HRMController {
         }
 
         $stmt = $this->db->prepare("
-            INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, kpi_multiplier_rules, custom_fields_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, kpi_multiplier_rules, custom_fields_json,
+                                      annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 joined_date = VALUES(joined_date),
                 base_salary = VALUES(base_salary),
@@ -47,7 +49,11 @@ class HRMController {
                 allowance_phone = VALUES(allowance_phone),
                 kpi_target = VALUES(kpi_target),
                 kpi_multiplier_rules = VALUES(kpi_multiplier_rules),
-                custom_fields_json = VALUES(custom_fields_json)
+                custom_fields_json = VALUES(custom_fields_json),
+                annual_leave_total = VALUES(annual_leave_total),
+                annual_leave_used = VALUES(annual_leave_used),
+                compensatory_leave_total = VALUES(compensatory_leave_total),
+                compensatory_leave_used = VALUES(compensatory_leave_used)
         ");
 
         $stmt->execute([
@@ -61,7 +67,11 @@ class HRMController {
             (float)($b['allowance_phone'] ?? 0),
             (float)($b['kpi_target'] ?? 0),
             isset($b['kpi_multiplier_rules']) ? (is_array($b['kpi_multiplier_rules']) ? json_encode($b['kpi_multiplier_rules']) : $b['kpi_multiplier_rules']) : null,
-            isset($b['custom_fields_json']) ? (is_array($b['custom_fields_json']) ? json_encode($b['custom_fields_json']) : $b['custom_fields_json']) : null
+            isset($b['custom_fields_json']) ? (is_array($b['custom_fields_json']) ? json_encode($b['custom_fields_json']) : $b['custom_fields_json']) : null,
+            (float)($b['annual_leave_total'] ?? 12.0),
+            (float)($b['annual_leave_used'] ?? 0.0),
+            (float)($b['compensatory_leave_total'] ?? 0.0),
+            (float)($b['compensatory_leave_used'] ?? 0.0)
         ]);
 
         respond(200, ['success' => true]);
@@ -221,8 +231,34 @@ class HRMController {
         $stmtUpdate = $this->db->prepare($updateSql);
         $stmtUpdate->execute($params);
 
+        // Deduct leave balance upon final approval
+        if ($nextStatus === 'approved') {
+            $days = (float)$leaveRow['total_days'];
+            $type = $leaveRow['leave_type'];
+            $userId = (int)$leaveRow['user_id'];
+            
+            if ($type === 'annual') {
+                $updStmt = $this->db->prepare("UPDATE hrm_profiles SET annual_leave_used = annual_leave_used + ? WHERE user_id = ?");
+                $updStmt->execute([$days, $userId]);
+            } elseif ($type === 'compensatory') {
+                $updStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ? WHERE user_id = ?");
+                $updStmt->execute([$days, $userId]);
+            }
+        }
+
+        // Fetch remaining leave balance for notifications
+        $remainingAnnual = 12.0;
+        $remainingComp = 0.0;
+        $balStmt = $this->db->prepare("SELECT annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used FROM hrm_profiles WHERE user_id = ? LIMIT 1");
+        $balStmt->execute([$leaveRow['user_id']]);
+        $balRow = $balStmt->fetch(PDO::FETCH_ASSOC);
+        if ($balRow) {
+            $remainingAnnual = (float)$balRow['annual_leave_total'] - (float)$balRow['annual_leave_used'];
+            $remainingComp = (float)$balRow['compensatory_leave_total'] - (float)$balRow['compensatory_leave_used'];
+        }
+
         try {
-            $leaveTypeText = $leaveRow['leave_type'] === 'annual' ? 'Phép năm' : ($leaveRow['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($leaveRow['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($leaveRow['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')));
+            $leaveTypeText = $leaveRow['leave_type'] === 'annual' ? 'Phép năm' : ($leaveRow['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($leaveRow['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($leaveRow['leave_type'] === 'overtime' ? 'Tăng ca' : ($leaveRow['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương'))));
             $statusText = $nextStatus === 'approved' ? 'Phê duyệt hoàn toàn' : ($nextStatus === 'rejected' ? 'Từ chối' : 'Phê duyệt cấp 1 (Chờ Giám đốc duyệt)');
 
             require_once __DIR__ . '/../NotificationService.php';
@@ -246,7 +282,9 @@ class HRMController {
                     'start_date' => $leaveRow['start_date'],
                     'end_date' => $leaveRow['end_date'],
                     'status_text' => $statusText,
-                    'reason' => $approverNote
+                    'reason' => $approverNote,
+                    'remaining_annual_leave' => $remainingAnnual,
+                    'remaining_compensatory_leave' => $remainingComp
                 ]);
             }
         } catch (\Throwable $e) {}
@@ -628,14 +666,34 @@ class HRMController {
             $advVal = $advStmt->fetch(PDO::FETCH_ASSOC);
             $advanceDeduction = (float)($advVal['adv_amt'] ?? 0);
 
+            // 6b. Overtime calculation (Sum up approved leave requests of type 'overtime' in this month)
+            $otStmt = $this->db->prepare("
+                SELECT SUM(total_days) as ot_days
+                FROM hrm_leave_requests
+                WHERE user_id = ? AND status = 'approved' AND leave_type = 'overtime'
+                  AND DATE_FORMAT(start_date, '%Y-%m') = ?
+            ");
+            $otStmt->execute([$userId, $monthYear]);
+            $otRow = $otStmt->fetch(PDO::FETCH_ASSOC);
+            $overtimeDays = (float)($otRow['ot_days'] ?? 0);
+
+            // Overtime salary: (deal_salary / work_days_required) * overtime_days * 1.5
+            $overtimeSalary = ($workDaysRequired > 0) ? (($baseSalary / $workDaysRequired) * $overtimeDays * 1.5) : 0;
+
+            // 6c. Diligence calculation
+            $diligenceBonus = 0.0;
+            if ($totalWorkDays >= $workDaysRequired && $totalLateMinutes == 0) {
+                $diligenceBonus = 500000.00; // 500k VND
+            }
+
             // 10. Net Pay calculation
-            $netSalary = $basicSalaryCalculated + $allowanceTotal + $kpiBonus - $insuranceDeductions - $latenessPenalty - $pit - $advanceDeduction;
+            $netSalary = $basicSalaryCalculated + $allowanceTotal + $kpiBonus + $overtimeSalary + $diligenceBonus - $insuranceDeductions - $latenessPenalty - $pit - $advanceDeduction;
             if ($netSalary < 0) $netSalary = 0;
 
             // Save or Update into monthly_payslips
             $saveStmt = $this->db->prepare("
-                INSERT INTO monthly_payslips (user_id, month_year, work_days_required, work_days_actual, lateness_minutes, lateness_penalty, salary_basic_calculated, allowance_total, kpi_bonus, insurance_bhxh, insurance_bhyt, insurance_bhtn, tax_pit, advance_deduction, net_salary, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+                INSERT INTO monthly_payslips (user_id, month_year, work_days_required, work_days_actual, lateness_minutes, lateness_penalty, salary_basic_calculated, allowance_total, kpi_bonus, insurance_bhxh, insurance_bhyt, insurance_bhtn, tax_pit, advance_deduction, net_salary, status, overtime_days, overtime_salary, diligence_bonus)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     work_days_required = VALUES(work_days_required),
                     work_days_actual = VALUES(work_days_actual),
@@ -649,7 +707,10 @@ class HRMController {
                     insurance_bhtn = VALUES(insurance_bhtn),
                     tax_pit = VALUES(tax_pit),
                     advance_deduction = VALUES(advance_deduction),
-                    net_salary = VALUES(net_salary)
+                    net_salary = VALUES(net_salary),
+                    overtime_days = VALUES(overtime_days),
+                    overtime_salary = VALUES(overtime_salary),
+                    diligence_bonus = VALUES(diligence_bonus)
             ");
             $saveStmt->execute([
                 $userId,
@@ -666,7 +727,10 @@ class HRMController {
                 $bhtn,
                 $pit,
                 $advanceDeduction,
-                $netSalary
+                $netSalary,
+                $overtimeDays,
+                $overtimeSalary,
+                $diligenceBonus
             ]);
 
             // Link advances to this payslip once generated
