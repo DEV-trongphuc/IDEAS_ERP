@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../store/uiStore';
 import { CustomModal } from '../components/ui/CustomModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
-import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2 } from 'lucide-react';
+import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { Avatar } from '../components/ui/Avatar';
@@ -36,6 +36,7 @@ interface Deposit {
   avatar_url?: string;
   project_name: string;
   creator_name: string;
+  creator_avatar?: string;
   milestones: Milestone[];
   created_by?: number;
   contact_owner_id?: number;
@@ -89,17 +90,34 @@ export default function DepositsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
   const filteredDepositsList = React.useMemo(() => {
+    let list = deposits;
     if (user?.role === 'sale') {
-      return deposits.filter((d: any) => 
+      list = deposits.filter((d: any) => 
         String(d.created_by) === String(user.id) || 
         String(d.owner_id) === String(user.id) || 
         (d.contact_owner_id && String(d.contact_owner_id) === String(user.id)) ||
         (d.shareholders && Array.isArray(d.shareholders) && d.shareholders.some((sh: any) => String(sh.user_id) === String(user.id)))
       );
     }
-    return deposits;
-  }, [deposits, user]);
+
+    return list.filter((d: any) => {
+      const clientName = `${d.last_name || ''} ${d.first_name || ''}`.toLowerCase();
+      const matchesSearch = !searchQuery.trim() ? true : 
+        clientName.includes(searchQuery.toLowerCase()) || 
+        (d.phone && d.phone.includes(searchQuery)) || 
+        (d.unit_code && d.unit_code.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesProject = !filterProjectId ? true : String(d.project_id) === filterProjectId;
+      const matchesStatus = !filterStatus ? true : d.status === filterStatus;
+
+      return matchesSearch && matchesProject && matchesStatus;
+    });
+  }, [deposits, user, searchQuery, filterProjectId, filterStatus]);
 
   const paginatedDeposits = React.useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -743,7 +761,7 @@ export default function DepositsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {t("Quản Lý Thanh Toán (Payments)")}
+            {t("Quản lý thanh toán")}
             <button
               onClick={() => setShowInfoModal(true)}
               style={{
@@ -827,6 +845,61 @@ export default function DepositsPage() {
 
       {activeViewTab === 'list' ? (
         <>
+          {/* Search & Filter Bar */}
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '12px', 
+            marginBottom: '1.25rem', 
+            alignItems: 'center',
+            background: 'var(--color-surface)',
+            padding: '12px',
+            borderRadius: '12px',
+            border: '1px solid var(--color-border-light)'
+          }}>
+            <div style={{ position: 'relative', flex: '1', minWidth: '240px' }}>
+              <input
+                type="text"
+                placeholder={t("Tìm kiếm theo khách hàng, số điện thoại, căn hộ...")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="form-input"
+                style={{ width: '100%', paddingLeft: '2.5rem', height: '38px', borderRadius: '10px', margin: 0 }}
+              />
+              <Search style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--color-text-muted)' }} size={16} />
+            </div>
+
+            {/* Project Filter */}
+            <div style={{ width: '200px' }}>
+              <select
+                value={filterProjectId}
+                onChange={(e) => setFilterProjectId(e.target.value)}
+                className="form-input"
+                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}
+              >
+                <option value="">{t("Tất cả chương trình")}</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div style={{ width: '180px' }}>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="form-input"
+                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}
+              >
+                <option value="">{t("Tất cả trạng thái")}</option>
+                <option value="pending_admin">{t("Đang giao dịch")}</option>
+                <option value="approved">{t("Hoàn tất cọc")}</option>
+                <option value="cancelled">{t("Bể cọc")}</option>
+              </select>
+            </div>
+          </div>
+
           {/* List */}
           {loading ? (
             <TableSkeleton rows={5} cols={5} />
@@ -847,6 +920,7 @@ export default function DepositsPage() {
                     <tr>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '150px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Mã Học viên / Khách</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Chương trình & Khách hàng</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '180px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '220px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị / Hoa hồng</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ đợt tiền</th>
@@ -897,7 +971,17 @@ export default function DepositsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                           <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
                           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            Khách: <strong style={{ color: 'var(--color-text)' }}>{dep.last_name} {dep.first_name}</strong> ({dep.phone})
+                            <strong style={{ color: 'var(--color-text)' }}>{dep.last_name} {dep.first_name}</strong> ({dep.phone})
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Sale */}
+                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Avatar src={dep.creator_avatar} name={dep.creator_name || 'Sale'} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                            {dep.creator_name || '—'}
                           </span>
                         </div>
                       </td>
@@ -937,6 +1021,7 @@ export default function DepositsPage() {
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                           {dep.milestones.map((m, idx) => {
                             let dotColor = '#6b7280';
+                            let label = dep.milestones.length === 1 ? 'Đ1' : `${idx + 1}/${dep.milestones.length}`;
                             let tooltipText = `${m.milestone_name}: Chờ nộp UNC (${formatMoney(m.expected_amount)})`;
                             if (m.status === 'approved') {
                               dotColor = '#10b981';
@@ -967,7 +1052,7 @@ export default function DepositsPage() {
                                 title={tooltipText}
                               >
                                 <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: dotColor }} />
-                                <span>Đ{idx + 1}</span>
+                                <span>{label}</span>
                               </div>
                             );
                           })}

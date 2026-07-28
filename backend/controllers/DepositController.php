@@ -12,7 +12,7 @@ class DepositController {
         $tid = $auth['tenant_id'];
 
         $sql = "
-            SELECT d.*, c.first_name, c.last_name, c.phone, c.avatar_url, p.name as project_name, u.full_name as creator_name,
+            SELECT d.*, c.first_name, c.last_name, c.phone, c.avatar_url, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
                    c.owner_id as contact_owner_id
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
