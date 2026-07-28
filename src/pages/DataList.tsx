@@ -6835,11 +6835,6 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 </>
               )}
             </div>
-
-            {/* Footer */}
-            <div style={{ padding: '1rem 1.25rem', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end', borderBottomLeftRadius: 'var(--radius-xl)', borderBottomRightRadius: 'var(--radius-xl)' }}>
-              <button type="button" className="btn primary sm" onClick={() => setStatsModalOpen(false)}>{t('Đóng')}</button>
-            </div>
           </div>
         </div>,
         document.body
@@ -6855,16 +6850,18 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
         }}
       />
 
-      <ExpenseCreateDrawer
-        isOpen={showCreateExpenseModal}
-        onClose={() => setShowCreateExpenseModal(false)}
-        initialDate={selectedExpenseDate}
-        onSaveSuccess={() => {
-          fetchCalendarStats();
-          if (selectedDate) handleDateClick(selectedDate);
-        }}
-        user={user}
-      />
+      {typeof document !== 'undefined' && createPortal(
+        <ExpenseCreateDrawer
+          isOpen={showCreateExpenseModal}
+          onClose={() => setShowCreateExpenseModal(false)}
+          initialDate={selectedExpenseDate}
+          onSaveSuccess={() => {
+            fetchCalendarStats();
+            if (selectedDate) handleDateClick(selectedDate);
+          }}
+          user={user}
+        />
+      , document.body)}
 
       <InvoiceQuickViewModal
         invoiceId={activeSOId}

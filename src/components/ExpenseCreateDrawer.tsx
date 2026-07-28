@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown } from 'lucide-react';
+import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import { useUIStore } from '../store/uiStore';
@@ -235,6 +235,39 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
             }}
           />
 
+          {/* Back Icon Button on Overlay */}
+          {!isMobile && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={onClose}
+              style={{
+                position: 'fixed',
+                top: '20px',
+                left: 'calc(var(--sidebar-width, 220px) / 2 - 20px)', // Center horizontally in the sidebar overlay area
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 2000000006,
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)')}
+            >
+              <ChevronLeft size={20} />
+            </motion.button>
+          )}
+
           {/* Drawer Sheet Panel */}
           <motion.div
             initial={{ x: '100%' }}
@@ -309,7 +342,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
             </div>
 
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 1.5rem 3.5rem 1.5rem', flex: 1, overflowY: 'auto' }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
                 <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
