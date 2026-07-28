@@ -1491,16 +1491,16 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
     return renderDashboardWrapper(
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
-        {/* Header */}
-        {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
-
         {/* Welcome Banner */}
         {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
+
+        {/* Header */}
+        {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
 
         {/* KPIs Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
           {/* Card 1: Revenue */}
-          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
+          <div className="stat-card hover-lift total-card" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', cursor: 'pointer', position: 'relative', overflow: 'hidden', padding: '1.25rem' }} onClick={() => navigate('/deposits')}>
             <div className="decor-svg" style={{ color: '#10b981', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
               <DollarSign size={70} />
             </div>
@@ -1510,14 +1510,24 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <DollarSign size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: '#10b981', margin: '4px 0 0 0' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-              <span>{t('Doanh thu thực tế tháng này')}</span>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.revenueThisMonth.toLocaleString()}đ</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
+                <span>{t('Lợi nhuận')}: {formatVND(actStats.revenueThisMonth - actStats.expensesThisMonth)}</span>
+              </span>
+            </div>
+            <div className="stat-change up" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M12 5l9 14H3z" />
+              </svg>
+              +12.5%
+              <span className="stat-desc" style={{ color: 'var(--color-text-light)', marginLeft: '4px', fontWeight: 500 }}>{getComparisonLabel(dateFilter)}</span>
             </div>
           </div>
 
           {/* Card 2: Pending Revenue */}
-          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/deposits')}>
+          <div className="stat-card hover-lift duplicates-card" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', cursor: 'pointer', position: 'relative', overflow: 'hidden', padding: '1.25rem' }} onClick={() => navigate('/deposits')}>
             <div className="decor-svg" style={{ color: '#f59e0b', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
               <FileText size={70} />
             </div>
@@ -1527,14 +1537,24 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <FileText size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: '#f59e0b', margin: '4px 0 0 0' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-              <span>{t('Đang chờ phê duyệt giao dịch')}</span>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.pendingDeposits.toLocaleString()}đ</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
+                <span>{t('Đơn chờ đối soát')}: 2</span>
+              </span>
+            </div>
+            <div className="stat-change up" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M12 5l9 14H3z" />
+              </svg>
+              +4.8%
+              <span className="stat-desc" style={{ color: 'var(--color-text-light)', marginLeft: '4px', fontWeight: 500 }}>{getComparisonLabel(dateFilter)}</span>
             </div>
           </div>
 
           {/* Card 3: Expenses */}
-          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/expenses')}>
+          <div className="stat-card hover-lift errors-card" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', cursor: 'pointer', position: 'relative', overflow: 'hidden', padding: '1.25rem' }} onClick={() => navigate('/expenses')}>
             <div className="decor-svg" style={{ color: '#ef4444', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
               <CreditCard size={70} />
             </div>
@@ -1544,14 +1564,28 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <CreditCard size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: '#ef4444', margin: '4px 0 0 0' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-              <span>{t('Tổng chi tiêu thực tế đã chi')}</span>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.expensesThisMonth.toLocaleString()}đ</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} />
+                <span>Marketing: 12M</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block', flexShrink: 0 }} />
+                <span>Lương: 45M</span>
+              </span>
+            </div>
+            <div className="stat-change down" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M12 19L3 5h18z" />
+              </svg>
+              -8.2%
+              <span className="stat-desc" style={{ color: 'var(--color-text-light)', marginLeft: '4px', fontWeight: 500 }}>{getComparisonLabel(dateFilter)}</span>
             </div>
           </div>
 
           {/* Card 4: Pending Invoices */}
-          <div className="card hover-lift" style={{ padding: '1.25rem', position: 'relative', overflow: 'hidden', minHeight: '135px', cursor: 'pointer' }} onClick={() => navigate('/expenses?status=pending')}>
+          <div className="stat-card hover-lift distributed-card" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', cursor: 'pointer', position: 'relative', overflow: 'hidden', padding: '1.25rem' }} onClick={() => navigate('/expenses?status=pending')}>
             <div className="decor-svg" style={{ color: '#3b82f6', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
               <AlertTriangle size={70} />
             </div>
@@ -1561,9 +1595,23 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 <AlertTriangle size={16} />
               </div>
             </div>
-            <div className="stat-value" style={{ color: '#3b82f6', margin: '4px 0 0 0' }}>{actStats.pendingApprovalInvoices}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px' }}>
-              <span>{t('Yêu cầu thanh toán đang chờ duyệt')}</span>
+            <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0' }}>{actStats.pendingApprovalInvoices}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block', flexShrink: 0 }} />
+                <span>Chờ duyệt: {actStats.pendingApprovalInvoices}</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
+                <span>Đã duyệt: 18</span>
+              </span>
+            </div>
+            <div className="stat-change down" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M12 19L3 5h18z" />
+              </svg>
+              -15.0%
+              <span className="stat-desc" style={{ color: 'var(--color-text-light)', marginLeft: '4px', fontWeight: 500 }}>{getComparisonLabel(dateFilter)}</span>
             </div>
           </div>
         </div>
@@ -1579,8 +1627,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} width={40} />
                   <Tooltip />
-                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="revenue" name={t('Thu nhập')} fill="#10b981" radius={[4, 4, 0, 0]} barSize={16} />
+                  <Bar dataKey="expenses" name={t('Chi phí')} fill="#ef4444" radius={[4, 4, 0, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1705,10 +1753,20 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                   ) : soList.slice(0, 5).map((so, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
                       <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{so.unit_code}</td>
-                      <td style={{ padding: '12px', fontWeight: 600 }}>{`${so.last_name || ''} ${so.first_name || ''}`}</td>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Avatar src={so.avatar} name={`${so.last_name || ''} ${so.first_name || ''}`} size={24} />
+                          <span>{`${so.last_name || ''} ${so.first_name || ''}`}</span>
+                        </div>
+                      </td>
                       <td style={{ padding: '12px' }}>{so.project_name}</td>
                       <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{formatVND(so.price)}</td>
-                      <td style={{ padding: '12px' }}>{so.creator_name || '—'}</td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Avatar src={so.creator_avatar || so.assigned_to_avatar} name={so.creator_name || '—'} size={24} />
+                          <span>{so.creator_name || '—'}</span>
+                        </div>
+                      </td>
                       <td style={{ padding: '12px' }}>
                         <span style={{ 
                           padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700,
@@ -1749,9 +1807,19 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                   ) : poList.slice(0, 5).map((po, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
                       <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{po.po_number}</td>
-                      <td style={{ padding: '12px', fontWeight: 600 }}>{po.supplier_name || `Nha cung cap ID: ${po.supplier_id}`}</td>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Avatar src={po.supplier_avatar} name={po.supplier_name || 'NCC'} size={24} />
+                          <span>{po.supplier_name || `Nha cung cap ID: ${po.supplier_id}`}</span>
+                        </div>
+                      </td>
                       <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{formatVND(po.total)}</td>
-                      <td style={{ padding: '12px' }}>{po.creator_name || '—'}</td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Avatar src={po.creator_avatar || po.avatar} name={po.creator_name || '—'} size={24} />
+                          <span>{po.creator_name || '—'}</span>
+                        </div>
+                      </td>
                       <td style={{ padding: '12px' }}>
                         <span style={{ 
                           padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700,

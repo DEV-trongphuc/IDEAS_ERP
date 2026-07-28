@@ -250,7 +250,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
     };
   }, [user]);
 
-  const visibleGroups = SIDEBAR_GROUPS.map(group => {
+  let visibleGroups = SIDEBAR_GROUPS.map(group => {
     let items = [...group.items];
     if (group.title === 'TỔNG QUAN' && user?.role === 'sale') {
       items = [
@@ -293,8 +293,56 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
       }
       return true;
     });
+
+    // Reorder items in "CHƯƠNG TRÌNH" specifically for accountant
+    if (group.title === 'CHƯƠNG TRÌNH' && user?.role === 'accountant') {
+      const order = ['Nhà cung cấp', 'Đối tác kinh doanh', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
+      filteredItems.sort((a, b) => {
+        const idxA = order.indexOf(a.name);
+        const idxB = order.indexOf(b.name);
+        return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+      });
+    }
+
     return { ...group, items: filteredItems };
   }).filter(group => group.items.length > 0);
+
+  // If accountant, move 'Ticket hỗ trợ' to the 'NHÂN SỰ' group and remove 'KHÁCH HÀNG' group
+  if (user?.role === 'accountant') {
+    let supportTicketItem: any = null;
+    
+    // Find and remove 'Ticket hỗ trợ' from its original group
+    visibleGroups = visibleGroups.map(group => {
+      if (group.title === 'KHÁCH HÀNG') {
+        const itemIdx = group.items.findIndex(item => item.name === 'Ticket hỗ trợ');
+        if (itemIdx !== -1) {
+          supportTicketItem = group.items[itemIdx];
+          const newItems = [...group.items];
+          newItems.splice(itemIdx, 1);
+          return { ...group, items: newItems };
+        }
+      }
+      return group;
+    }).filter(group => group.items.length > 0); // remove KHÁCH HÀNG group if empty
+    
+    // Add 'Ticket hỗ trợ' to the end of the 'NHÂN SỰ' group
+    if (supportTicketItem) {
+      visibleGroups = visibleGroups.map(group => {
+        if (group.title === 'NHÂN SỰ') {
+          return { ...group, items: [...group.items, supportTicketItem] };
+        }
+        return group;
+      });
+    }
+
+    // Rearrange group order for accountant
+    const groupOrder = ['TỔNG QUAN', 'TÀI CHÍNH', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'];
+    visibleGroups.sort((a, b) => {
+      const idxA = groupOrder.indexOf(a.title);
+      const idxB = groupOrder.indexOf(b.title);
+      return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+    });
+  }
 
   return (
     <>
