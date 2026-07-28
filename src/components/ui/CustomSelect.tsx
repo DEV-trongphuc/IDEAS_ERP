@@ -324,6 +324,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           backgroundColor: disabled ? 'var(--color-bg-light)' : undefined,
           maxWidth: '100%',
           overflow: 'hidden',
+          boxSizing: 'border-box',
           ...(size === 'sm' ? {
             minHeight: '38px',
             height: multiple ? 'auto' : '38px',

@@ -192,11 +192,27 @@ export default function DepositsPage() {
 
   const [tempExpectedCommission, setTempExpectedCommission] = useState<number>(0);
   const [tempSharesData, setTempSharesData] = useState<any[]>([]);
+  const [isEditingCommission, setIsEditingCommission] = useState(false);
 
   const handleTempSharePercentChange = (sIdx: number, val: string) => {
     const updated = [...tempSharesData];
     updated[sIdx].percentage = parseInt(val) || 0;
     setTempSharesData(updated);
+  };
+
+  // Load selected deposit additional info
+  const fetchCustomerEmail = async (contactId: number) => {
+    try {
+      const res = await fetchAPI(`contacts/${contactId}`);
+      if (selectedDepForManage && selectedDepForManage.contact_id === contactId) {
+        setSelectedDepForManage({
+          ...selectedDepForManage,
+          email: res.email || ''
+        });
+      }
+    } catch (err) {
+      addToast('Không thể tải thông tin khách hàng', 'error');
+    }
   };
 
   const handleOpenContactDrawer = async (contactId: number) => {
@@ -217,6 +233,7 @@ export default function DepositsPage() {
       setSharesData([]);
       setTempExpectedCommission(Number(selectedDepForManage.expected_commission) || 0);
       setTempSharesData([]);
+      setIsEditingCommission(false);
       setAutoRemindManage(selectedDepForManage.auto_remind !== 0);
       setRemindDaysBeforeManage(Number(selectedDepForManage.remind_days_before) || 3);
       setRemindAtHourManage(Number(selectedDepForManage.remind_at_hour) || 8);
@@ -2047,225 +2064,347 @@ export default function DepositsPage() {
                 {/* Left Pane (Details & Milestones) */}
                 <div style={{ flex: 1.3, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {/* Brief Info with Customer Details and Sales Team */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px',
-                    background: 'var(--color-surface)',
-                    padding: '20px',
-                    borderRadius: '16px',
-                    border: '1px solid var(--color-border-light)',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}>
-                    {/* Top Row: Customer & SKU */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
-                      {/* Left: Customer Info */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div
-                          onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
-                          style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
-                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        >
-                          <Avatar
-                            src={selectedDepForManage.avatar_url}
-                            name={`${selectedDepForManage.last_name} ${selectedDepForManage.first_name}`}
-                            size="lg"
-                            style={{ width: '52px', height: '52px', fontSize: '1.2rem' }}
-                          />
+                  {/* Brief Info with Customer Details and Sales Team */}
+                  {(() => {
+                    const totalApprovedMilestones = (selectedDepForManage.milestones || [])
+                      .filter(m => m.status === 'approved')
+                      .reduce((sum, m) => sum + (m.expected_amount || 0), 0);
+
+                    const totalCount = (selectedDepForManage.milestones || []).length;
+                    const approvedCount = (selectedDepForManage.milestones || []).filter(m => m.status === 'approved').length;
+
+                    const actualCommission = selectedDepForManage.price > 0
+                      ? Math.round((tempExpectedCommission || selectedDepForManage.expected_commission || 0) * (totalApprovedMilestones / selectedDepForManage.price))
+                      : 0;
+
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px',
+                        background: 'var(--color-surface)',
+                        padding: '20px',
+                        borderRadius: '16px',
+                        border: '1px solid var(--color-border-light)',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}>
+                        {/* Top Row: Customer & SKU */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+                          {/* Left: Customer Info */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div
+                              onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
+                              style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                              <Avatar
+                                src={selectedDepForManage.avatar_url}
+                                name={`${selectedDepForManage.last_name} ${selectedDepForManage.first_name}`}
+                                size="lg"
+                                style={{ width: '52px', height: '52px', fontSize: '1.2rem' }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              <span style={{ 
+                                fontSize: '0.675rem', 
+                                fontWeight: 700, 
+                                color: 'var(--color-primary)', 
+                                background: 'rgba(189, 29, 45, 0.06)',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                width: 'fit-content',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                Học viên / Khách hàng
+                              </span>
+                              <h4
+                                onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
+                                style={{
+                                  margin: 0,
+                                  fontSize: '1.1rem',
+                                  fontWeight: 800,
+                                  color: 'var(--color-text)',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline decoration-dotted',
+                                  transition: 'opacity 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                              >
+                                {selectedDepForManage.last_name} {selectedDepForManage.first_name}
+                              </h4>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                SĐT: <strong style={{ color: 'var(--color-text)' }}>{selectedDepForManage.phone}</strong>
+                              </span>
+                              {selectedDepForManage.email && (
+                                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                  Email: <strong style={{ color: 'var(--color-text)' }}>{selectedDepForManage.email}</strong>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right: Program & SKU */}
+                          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
+                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chương trình & SKU</span>
+                            <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
+                              {selectedDepForManage.project_name} ({selectedDepForManage.unit_code})
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span style={{ 
-                            fontSize: '0.675rem', 
-                            fontWeight: 700, 
-                            color: 'var(--color-primary)', 
-                            background: 'rgba(189, 29, 45, 0.06)',
-                            padding: '2px 8px',
-                            borderRadius: '12px',
-                            width: 'fit-content',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                          }}>
-                            Học viên / Khách hàng
-                          </span>
-                          <h4
-                            onClick={() => handleOpenContactDrawer(selectedDepForManage.contact_id)}
-                            style={{
-                              margin: 0,
-                              fontSize: '1.1rem',
-                              fontWeight: 800,
-                              color: 'var(--color-text)',
-                              cursor: 'pointer',
-                              textDecoration: 'underline decoration-dotted',
-                              transition: 'opacity 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                          >
-                            {selectedDepForManage.last_name} {selectedDepForManage.first_name}
-                          </h4>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                            SĐT: <strong style={{ color: 'var(--color-text)' }}>{selectedDepForManage.phone}</strong>
-                          </span>
-                        </div>
-                      </div>
 
-                      {/* Right: Program & SKU */}
-                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
-                        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chương trình & SKU</span>
-                        <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
-                          {selectedDepForManage.project_name} ({selectedDepForManage.unit_code})
-                        </span>
-                      </div>
-                    </div>
+                        <div style={{ height: '1px', background: 'var(--color-border-light)' }} />
 
-                    <div style={{ height: '1px', background: 'var(--color-border-light)' }} />
-
-                    {/* Bottom Row: Caretaker & Financials */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'center' }}>
-                      {/* Left: Caretaker info */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          Nhân sự chăm sóc & hoa hồng
-                        </span>
-                        {isAdmin && tempSharesData && tempSharesData.length > 0 ? (
+                        {/* Bottom Row: Caretaker & Financials */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.2fr', gap: '20px', alignItems: 'center' }}>
+                          {/* Left: Caretaker info */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {tempSharesData.map((sh, sIdx) => (
-                              <div
-                                key={sIdx}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  background: 'var(--color-bg-light)',
-                                  border: '1px solid var(--color-border-light)',
-                                  padding: '5px 10px',
-                                  borderRadius: '8px',
-                                  width: '100%'
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
-                                  <span style={{ fontSize: '0.775rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={sh.percentage}
-                                    onChange={(e) => handleTempSharePercentChange(sIdx, e.target.value)}
-                                    className="form-input"
-                                    style={{ width: '55px', height: '24px', textAlign: 'center', padding: '2px', fontSize: '0.75rem', margin: 0 }}
-                                  />
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>%</span>
-                                </div>
+                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              Nhân sự chăm sóc & hoa hồng
+                            </span>
+                            {isAdmin && tempSharesData && tempSharesData.length > 0 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {tempSharesData.map((sh, sIdx) => (
+                                  <div
+                                    key={sIdx}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      background: 'var(--color-bg-light)',
+                                      border: '1px solid var(--color-border-light)',
+                                      padding: '5px 10px',
+                                      borderRadius: '8px',
+                                      width: '100%'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
+                                      <span style={{ fontSize: '0.775rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={sh.percentage}
+                                        onChange={(e) => handleTempSharePercentChange(sIdx, e.target.value)}
+                                        className="form-input"
+                                        style={{ width: '55px', height: '24px', textAlign: 'center', padding: '2px', fontSize: '0.75rem', margin: 0 }}
+                                      />
+                                      <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>%</span>
+                                    </div>
+                                  </div>
+                                ))}
+                                {(() => {
+                                  const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
+                                  if (totalPct !== 100) {
+                                      return (
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--color-danger)', fontWeight: 600 }}>
+                                          * Tổng tỷ lệ phải bằng 100% (Hiện tại: {totalPct}%)
+                                        </span>
+                                      );
+                                  }
+                                  return null;
+                                })()}
                               </div>
-                            ))}
-                            {(() => {
-                              const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
-                              if (totalPct !== 100) {
-                                  return (
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-                                      * Tổng tỷ lệ phải bằng 100% (Hiện tại: {totalPct}%)
+                            ) : sharesData && sharesData.length > 0 ? (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {sharesData.map((sh, sIdx) => (
+                                  <div
+                                    key={sIdx}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      background: 'var(--color-bg-light)',
+                                      border: '1px solid var(--color-border-light)',
+                                      padding: '4px 10px',
+                                      borderRadius: '16px',
+                                      boxShadow: 'var(--shadow-sm)'
+                                    }}
+                                  >
+                                    <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
+                                    <span style={{
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      background: 'rgba(59, 130, 246, 0.1)',
+                                      color: '#2563eb',
+                                      padding: '1px 5px',
+                                      borderRadius: '8px'
+                                    }}>
+                                      {sh.percentage}%
                                     </span>
-                                  );
-                              }
-                              return null;
-                            })()}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              (() => {
+                                const ownerUser = usersList.find(x => String(x.id) === String(selectedDepForManage.contact_owner_id))
+                                  || usersList.find(x => String(x.id) === String(selectedDepForManage.created_by));
+                                const ownerName = ownerUser?.full_name || ownerUser?.name || selectedDepForManage.creator_name || 'Chưa xác định';
+                                const ownerAvatar = ownerUser?.avatar_url || selectedDepForManage.creator_avatar;
+
+                                return (
+                                  <div
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      background: 'var(--color-bg-light)',
+                                      border: '1px solid var(--color-border-light)',
+                                      padding: '4px 10px',
+                                      borderRadius: '16px',
+                                      boxShadow: 'var(--shadow-sm)',
+                                      width: 'fit-content'
+                                    }}
+                                  >
+                                    <Avatar src={ownerAvatar} name={ownerName} size="sm" style={{ width: '20px', height: '20px' }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{ownerName}</span>
+                                  </div>
+                                );
+                              })()
+                            )}
                           </div>
-                        ) : sharesData && sharesData.length > 0 ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            {sharesData.map((sh, sIdx) => (
-                              <div
-                                key={sIdx}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  background: 'var(--color-bg-light)',
-                                  border: '1px solid var(--color-border-light)',
-                                  padding: '4px 10px',
-                                  borderRadius: '16px',
-                                  boxShadow: 'var(--shadow-sm)'
-                                }}
-                              >
-                                <Avatar src={sh.avatar} name={sh.name} size="sm" style={{ width: '20px', height: '20px' }} />
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{sh.name}</span>
-                                <span style={{
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  background: 'rgba(59, 130, 246, 0.1)',
-                                  color: '#2563eb',
-                                  padding: '1px 5px',
-                                  borderRadius: '8px'
-                                }}>
-                                  {sh.percentage}%
+
+                          {/* Financial Stat Cards */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%' }}>
+                            {/* Card 1: Tổng giá trị */}
+                            <div className="stat-card" style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '82px',
+                              padding: '12px'
+                            }}>
+                              <span className="stat-label" style={{ fontSize: '0.675rem', fontWeight: 700 }}>
+                                Tổng giá trị
+                              </span>
+                              <span className="stat-value" style={{ fontSize: '1.05rem', margin: '4px 0 0 0' }}>
+                                {formatMoney(selectedDepForManage.price)}
+                              </span>
+                            </div>
+
+                            {/* Card 2: Thực thu */}
+                            <div className="stat-card" style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '82px',
+                              padding: '12px'
+                            }}>
+                              <span className="stat-label" style={{ fontSize: '0.675rem', fontWeight: 700 }}>
+                                Thực thu
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                                <span className="stat-value" style={{ color: '#2563eb', fontSize: '1.05rem', margin: 0 }}>
+                                  {formatMoney(totalApprovedMilestones)}
+                                </span>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
+                                  Đã đóng {approvedCount}/{totalCount} đợt
                                 </span>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          (() => {
-                            const ownerUser = usersList.find(x => String(x.id) === String(selectedDepForManage.contact_owner_id))
-                              || usersList.find(x => String(x.id) === String(selectedDepForManage.created_by));
-                            const ownerName = ownerUser?.full_name || ownerUser?.name || selectedDepForManage.creator_name || 'Chưa xác định';
-                            const ownerAvatar = ownerUser?.avatar_url || selectedDepForManage.creator_avatar;
+                            </div>
 
-                            return (
-                              <div
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  background: 'var(--color-bg-light)',
-                                  border: '1px solid var(--color-border-light)',
-                                  padding: '4px 10px',
-                                  borderRadius: '16px',
-                                  boxShadow: 'var(--shadow-sm)',
-                                  width: 'fit-content'
-                                }}
-                              >
-                                <Avatar src={ownerAvatar} name={ownerName} size="sm" style={{ width: '20px', height: '20px' }} />
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>{ownerName}</span>
-                                <span style={{
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  background: 'rgba(16, 185, 129, 0.1)',
-                                  color: '#10b981',
-                                  padding: '1px 5px',
-                                  borderRadius: '8px'
-                                }}>
-                                  100% (Bán độc lập)
+                            {/* Card 3: Hoa hồng */}
+                            <div className="stat-card" style={{
+                              background: 'rgba(16, 185, 129, 0.02)',
+                              border: '1px solid rgba(16, 185, 129, 0.12)',
+                              padding: '12px',
+                              borderRadius: '12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              minHeight: '82px'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span className="stat-label" style={{ fontSize: '0.675rem', color: '#047857', fontWeight: 700 }}>
+                                  Hoa hồng dự kiến
+                                </span>
+                                {isAdmin && !isEditingCommission && (
+                                  <button
+                                    onClick={() => setIsEditingCommission(true)}
+                                    style={{
+                                      border: 'none',
+                                      background: 'none',
+                                      padding: '2px',
+                                      cursor: 'pointer',
+                                      color: '#059669',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      borderRadius: '4px',
+                                      transition: 'background 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                                    title="Sửa hoa hồng"
+                                  >
+                                    <Edit size={12} />
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                                {isAdmin && isEditingCommission ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <CurrencyInput
+                                      value={tempExpectedCommission}
+                                      onChange={(val) => setTempExpectedCommission(val || 0)}
+                                      className="form-input"
+                                      style={{
+                                        height: '26px',
+                                        fontSize: '0.95rem',
+                                        fontWeight: 800,
+                                        color: '#059669',
+                                        flex: 1,
+                                        margin: 0,
+                                        padding: '0 4px',
+                                        borderRadius: '6px',
+                                        background: 'var(--color-surface)',
+                                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => setIsEditingCommission(false)}
+                                      style={{
+                                        border: 'none',
+                                        background: '#10b981',
+                                        color: 'white',
+                                        padding: '4px',
+                                        cursor: 'pointer',
+                                        borderRadius: '6px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '26px',
+                                        height: '26px',
+                                        boxShadow: 'var(--shadow-sm)'
+                                      }}
+                                      title="Xong"
+                                    >
+                                      <Check size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="stat-value" style={{ fontWeight: 800, color: '#059669', fontSize: '1.05rem', margin: 0 }}>
+                                    {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission)}
+                                  </span>
+                                )}
+                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                                  Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission)}</strong>
                                 </span>
                               </div>
-                            );
-                          })()
-                        )}
-                      </div>
-
-                      {/* Right: Financial Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <div style={{ background: 'rgba(189, 29, 45, 0.03)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(189, 29, 45, 0.08)' }}>
-                          <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Tổng giá trị đơn hàng</span>
-                          <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.9rem' }}>{formatMoney(selectedDepForManage.price)}</span>
-                        </div>
-                        <div style={{ background: 'rgba(16, 185, 129, 0.03)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.08)' }}>
-                          <span style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Hoa hồng dự kiến</span>
-                          {isAdmin ? (
-                            <CurrencyInput
-                              value={tempExpectedCommission}
-                              onChange={(val) => setTempExpectedCommission(val || 0)}
-                              className="form-input"
-                              style={{ height: '24px', fontSize: '0.8rem', fontWeight: 800, color: '#059669', width: '100%', margin: 0, padding: '0 4px', borderRadius: '4px', background: 'var(--color-surface)' }}
-                            />
-                          ) : (
-                            <span style={{ fontWeight: 800, color: '#059669', fontSize: '0.9rem' }}>{formatMoney(selectedDepForManage.expected_commission)}</span>
-                          )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Automated Reminders Config in Drawer */}
                   <div style={{
