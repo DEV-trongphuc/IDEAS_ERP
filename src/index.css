@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ================================================
    MOBILE RESPONSIVE OVERRIDES (SAFE)
@@ -1371,8 +1371,9 @@ select:focus {
 .overlay-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 11000;
   display: flex;
   align-items: center;
@@ -3830,7 +3831,7 @@ textarea, .form-textarea, textarea.form-input, textarea.form-control {
 .overlay-backdrop,
 .custom-modal-overlay,
 .modal-backdrop {
-  z-index: 2000000 !important; /* Ensure dialogs are always on top of drawers */
+  z-index: 2000000; /* Ensure dialogs are always on top of drawers */
 }
 
 .stats-modal-backdrop {
@@ -3841,9 +3842,10 @@ textarea, .form-textarea, textarea.form-input, textarea.form-control {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65) !important;
-  backdrop-filter: blur(4px);
-  z-index: 10500 !important;
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10500;
   cursor: pointer !important;
 }
 

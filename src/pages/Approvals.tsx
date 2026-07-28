@@ -40,7 +40,7 @@ const workflowList = [
   { id: 'stationery', name: 'Đề xuất văn phòng phẩm', description: 'Yêu cầu cung cấp giấy in, bút, tài liệu văn phòng.', category: 'admin', icon: FileText, bg: 'rgba(234, 179, 8, 0.08)', color: '#eab308' }
 ];
 
-interface ApprovalItem {
+export interface ApprovalItem {
   id: number;
   type: 'leave' | 'advance' | 'expense' | 'checkin';
   employee_name?: string;
@@ -2875,7 +2875,7 @@ export default function Approvals() {
 }
 
 // Side-Drawer Component detailing step-by-step progress
-function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, isAdmin, onDuplicate }: {
+export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, isAdmin, onDuplicate }: {
   item: ApprovalItem;
   onClose: () => void;
   users: any[];
@@ -2888,6 +2888,26 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const isMobile = window.innerWidth < 768;
+  const { user } = useAuth();
+
+  const isMyTurnToApprove = () => {
+    if (loading) return false;
+    const overallStatus = (detail?.status || item.status || 'pending').toLowerCase();
+    if (overallStatus !== 'pending') return false;
+
+    if (item.type === 'leave' || item.type === 'advance') {
+      const isLevel1Active = (detail?.status_level_1 || 'pending').toLowerCase() === 'pending';
+      const isLevel2Active = (detail?.status_level_1 || '').toLowerCase() === 'approved' && (detail?.status_level_2 || 'pending').toLowerCase() === 'pending';
+      
+      const isGlobalAdmin = ['superadmin', 'admin', 'director', 'hr'].includes((user?.role || '').toLowerCase());
+      const isLevel1Approver = Number(detail?.approver_id || (item as any).approver_id) === Number(user?.id) || (isLevel1Active && isGlobalAdmin);
+      const isLevel2Approver = Number(detail?.approver_id_2 || (item as any).approver_id_2) === Number(user?.id) || (isLevel2Active && isGlobalAdmin);
+      
+      return (isLevel1Active && isLevel1Approver) || (isLevel2Active && isLevel2Approver);
+    }
+    
+    return isAdmin;
+  };
 
   const [reminderTargetUser, setReminderTargetUser] = useState<any>(null);
   const [reminderMessage, setReminderMessage] = useState('');
@@ -3013,9 +3033,83 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
   const renderTimeline = () => {
     if (loading) {
       return (
-        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
-          <div className="spinner sm" style={{ margin: '0 auto 10px auto' }}></div>
-          {t('Đang tải tiến trình...')}
+        <div style={{ position: 'relative', paddingLeft: '2.5rem', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+          <style>{`
+            @keyframes skeleton-pulse {
+              0% { opacity: 0.6; }
+              50% { opacity: 0.35; }
+              100% { opacity: 0.6; }
+            }
+            .skeleton-box {
+              background: var(--color-border-light);
+              animation: skeleton-pulse 1.5s ease-in-out infinite;
+              border-radius: 6px;
+            }
+          `}</style>
+          
+          <div style={{
+            position: 'absolute',
+            left: '9px',
+            top: '16px',
+            bottom: '16px',
+            width: '2px',
+            background: 'var(--color-border-light)'
+          }} />
+
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div className="skeleton-box" style={{
+                position: 'absolute',
+                left: '-2.5rem',
+                top: '12px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                boxShadow: '0 0 0 4px var(--color-surface)',
+                zIndex: 10
+              }} />
+
+              <div style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border-light)',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  left: '-8px',
+                  top: '16px',
+                  width: 0,
+                  height: 0,
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderRight: '8px solid var(--color-border-light)',
+                  zIndex: 1
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  left: '-7px',
+                  top: '16px',
+                  width: 0,
+                  height: 0,
+                  borderTop: '6px solid transparent',
+                  borderBottom: '6px solid transparent',
+                  borderRight: '8px solid var(--color-surface)',
+                  zIndex: 2
+                }} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div className="skeleton-box" style={{ width: '45%', height: '14px' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="skeleton-box" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                    <div className="skeleton-box" style={{ width: '30%', height: '12px' }} />
+                  </div>
+                  <div className="skeleton-box" style={{ width: '70%', height: '12px', marginTop: '4px' }} />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       );
     }
@@ -3386,9 +3480,54 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
   const renderDetailFields = () => {
     if (loading) {
       return (
-        <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
-          <div className="spinner sm" style={{ margin: '0 auto 10px auto' }}></div>
-          {t('Đang tải chi tiết đề xuất...')}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+          <style>{`
+            @keyframes skeleton-pulse {
+              0% { opacity: 0.6; }
+              50% { opacity: 0.35; }
+              100% { opacity: 0.6; }
+            }
+            .skeleton-box {
+              background: var(--color-border-light);
+              animation: skeleton-pulse 1.5s ease-in-out infinite;
+              border-radius: 6px;
+            }
+          `}</style>
+          
+          {/* Header Title Skeleton */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.5rem 0.25rem' }}>
+            <div className="skeleton-box" style={{ width: '70%', height: '24px' }} />
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div className="skeleton-box" style={{ width: '120px', height: '14px' }} />
+              <div className="skeleton-box" style={{ width: '60px', height: '14px' }} />
+            </div>
+          </div>
+          
+          {/* Employee Card Skeleton */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '1rem', background: 'var(--color-bg)', borderRadius: '12px' }}>
+            <div className="skeleton-box" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+              <div className="skeleton-box" style={{ width: '40%', height: '14px' }} />
+              <div className="skeleton-box" style={{ width: '25%', height: '12px' }} />
+            </div>
+          </div>
+          
+          {/* Grid Fields Table Skeleton */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', border: '1px solid var(--color-border-light)', borderRadius: '12px' }}>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="skeleton-box" style={{ width: '25%', height: '14px' }} />
+                <div className="skeleton-box" style={{ width: '35%', height: '14px' }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Description Block Skeleton */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem' }}>
+            <div className="skeleton-box" style={{ width: '20%', height: '12px' }} />
+            <div className="skeleton-box" style={{ width: '100%', height: '14px' }} />
+            <div className="skeleton-box" style={{ width: '85%', height: '14px' }} />
+          </div>
         </div>
       );
     }
@@ -3799,7 +3938,7 @@ function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onReject, is
             </h3>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {isAdmin && (item.status === 'pending' || !item.status) && (
+            {isMyTurnToApprove() && (
               <>
                 <button
                   onClick={() => onReject(item)}
