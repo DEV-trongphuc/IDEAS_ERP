@@ -1,40 +1,23 @@
 # Workspace-Specific Business Rules
 
-## 1. Bể cọc (Deposit Cancellation before Revenue)
-* **Rule**: Nếu khách hàng hủy đặt cọc trước khi phát sinh bất kỳ doanh thu thực tế nào cho công ty, trạng thái của Khách hàng Tiềm năng (KHTN / Person) sẽ bị hạ ("tụt") về mức trước đó (ví dụ: `Booking` hoặc `Đã Gặp`).
-* **Consequence**: Đồng hồ bảo mật của lead/contact sẽ được kích hoạt chạy lại bình thường và Person này có thể tự động được giải phóng ra lại Kho data chung (Databank) nếu hết hạn.
-
-## 2. Bể cọc sau khi đã có doanh thu (Deposit Cancellation after Revenue)
-* **Rule**: Nếu khách hàng hủy đặt cọc nhưng đã đóng đợt 1 (công ty đã thực thu được một phần phí môi giới/doanh thu), thì Person đó **phải được giữ nguyên** trạng thái Đặt Cọc (vì đã phát sinh dòng tiền thực tế và được xác nhận là Khách hàng thật sự).
-
-## 3. Đổi căn (Unit Switching)
-* **Rule**: Khi khách hàng đổi căn hộ/dự án giao dịch:
-  1. Đóng deal cũ lại (đánh dấu thất bại hoặc đã đổi).
-  2. Tạo một deal mới hoàn toàn.
-  3. Gắn liên kết ghi rõ "đổi từ căn A" ở deal mới để giữ trọn vẹn lịch sử phí và vết kiểm toán (audit trail).
-
-## 4. Bắn Capi Forward-only (Conversion API Signals)
-* **Rule**: Đối với tín hiệu Conversion API (CAPI) gửi về Meta:
-  * Tuyệt đối **không bắn lùi tín hiệu** (không gửi sự kiện hoàn trả hoặc hạ cấp) về Meta khi deal bị bể hoặc tụt trạng thái.
-  * Tín hiệu chỉ đi một chiều (Forward-only). Một khi đã gửi tín hiệu "Purchase" (Mua hàng) đi là kết thúc giao dịch CAPI cho lead đó.
-
-## 5. Quy trình Deploy & Git Commit
+## 1. Quy trình Deploy & Git Commit
 * **Rule**: Bất cứ khi nào có yêu cầu deploy ("deploy", "deploy đi",...), hệ thống phải thực hiện **song song cả 2 nhiệm vụ**: Chạy lệnh deploy (`npm run deploy`) và tự động Commit/Push code mới nhất lên kho Git (`git add .`, `git commit`, `git push origin main`) để đồng bộ tuyệt đối giữa server và mã nguồn gốc.
 
-## 6. Khung Kiểm thử Toàn diện (Testing Harness Bootstrap)
+## 2. Khung Kiểm thử Toàn diện (Testing Harness Bootstrap)
 * **Rule**: Bất kỳ file script kiểm thử PHP nào được viết sau này chỉ cần chèn dòng khởi tạo:
   `require_once __DIR__ . '/test_bootstrap.php';` (hoặc `require_once __DIR__ . '/../test_bootstrap.php';`)
 * **Feature**: Tự động mở toàn bộ kết nối CSDL (`$conn` MySQLi & `$pdo`), nạp sẵn toàn bộ thư viện nghiệp vụ (`webhook_logic.php`, `NotificationService`, `mailer.php`, `zalo_bot.php`, `telegram_bot.php`) và cung cấp sẵn bộ hàm kiểm thử tiêu chuẩn `assertTest()`, `assertDbField()`, `printTestSummary()`.
-## 7. Quy tắc Cấm Tự Động Deploy
+
+## 3. Quy tắc Cấm Tự Động Deploy
 * **Rule**: Tác vụ Deploy (`npm run deploy`) chỉ được thực hiện khi có yêu cầu bằng chữ viết cụ thể của người dùng cho phép chạy deploy. Tuyệt đối không tự động chạy deploy dưới mọi hình thức khác.
 
-## 8. Quy tắc Bắt buộc Đối soát CSDL từ xa (Remote Database Structure Verification)
+## 4. Quy tắc Bắt buộc Đối soát CSDL từ xa (Remote Database Structure Verification)
 * **Rule**: Bất kỳ thay đổi, cập nhật hoặc phân tích nào liên quan đến Cơ sở dữ liệu Backend (truy vấn, cấu trúc bảng, thêm trường mới), Agent bắt buộc phải sử dụng cổng kết nối CSDL từ xa `exec_db_query.php` (hoặc các tập tin test_bootstrap) để chạy truy vấn đối soát cấu trúc thực tế trên Staging, đảm bảo các trường dữ liệu và kiểu dữ liệu hoàn toàn khớp nhau trước khi hoàn tất công việc.
 
-## 9. Quy tắc Tuyệt đối Cấm truy cập RICHLAND (RICHLAND Access Prohibition)
+## 5. Quy tắc Tuyệt đối Cấm truy cập RICHLAND (RICHLAND Access Prohibition)
 * **Rule**: Tác nhân AI (Agent) tuyệt đối không được phép thực hiện bất kỳ hành động đọc, viết, liệt kê tệp tin, chạy lệnh terminal, chỉnh sửa code hoặc can thiệp dưới bất kỳ hình thức nào đối với thư mục `D:\RICH_LAND_DATA_UI` hoặc bất kỳ tài nguyên nào liên quan đến Richland. Mọi hoạt động của Agent chỉ được giới hạn bên trong thư mục dự án chỉ định `IDEAS_ERP`.
 
-## 10. Quy trình Kiểm thử Nghiêm ngặt cho Các Tính năng Backend & Database (Rigorous Testing for Backend & Database Changes)
+## 6. Quy trình Kiểm thử Nghiêm ngặt cho Các Tính năng Backend & Database (Rigorous Testing for Backend & Database Changes)
 * **Rule**: Khi phát triển, sửa đổi hoặc thêm bất kỳ logic backend, API hoặc thay đổi cấu trúc Database (SQL column, table schema), Agent bắt buộc phải thiết lập một quy trình kiểm thử (test suite) cực kỳ kỹ lưỡng bao gồm:
   1. **Schema & SQL**: Kiểm tra cấu trúc các bảng SQL, kiểu dữ liệu, độ dài và các khóa ràng buộc (Foreign Keys) để đảm bảo không bị lỗi dữ liệu hay gãy mối quan hệ.
   2. **API Payload**: Kiểm thử tính toàn vẹn của dữ liệu gửi đi (payload) và dữ liệu phản hồi từ API.
