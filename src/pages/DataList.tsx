@@ -946,8 +946,36 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayDetails, setDayDetails] = useState<any>(null);
   const [dayDetailsLoading, setDayDetailsLoading] = useState(false);
-  const [activeModalTab, setActiveModalTab] = useState<'sales' | 'tickets' | 'blacklist'>('sales');
+  const [activeModalTab, setActiveModalTab] = useState<'sales' | 'tickets' | 'blacklist' | 'so' | 'po'>('sales');
   const [expandedSales, setExpandedSales] = useState<Record<string, boolean>>({});
+  const [activePO, setActivePO] = useState<any>(null);
+  const [activeSO, setActiveSO] = useState<any>(null);
+
+  const handleOpenPO = async (poId: number) => {
+    try {
+      const r = await api.get(`/expenses/${poId}`);
+      if (r.data?.success) {
+        setActivePO(r.data.data);
+      } else {
+        toast.error('Không thể lấy chi tiết PO');
+      }
+    } catch (err: any) {
+      toast.error('Lỗi: ' + (err.message || 'Không rõ nguyên nhân'));
+    }
+  };
+
+  const handleOpenSO = async (soId: number) => {
+    try {
+      const r = await api.get(`/invoices/${soId}`);
+      if (r.data?.success) {
+        setActiveSO(r.data.data);
+      } else {
+        toast.error('Không thể lấy chi tiết SO');
+      }
+    } catch (err: any) {
+      toast.error('Lỗi: ' + (err.message || 'Không rõ nguyên nhân'));
+    }
+  };
 
   const toggleExpandSale = (saleName: string) => {
     setExpandedSales(prev => ({
@@ -1556,208 +1584,185 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
       {/* Header */}
       <div className="page-header" style={{ marginBottom: '1.25rem', flexShrink: 0 }}>
         <div>
-          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Database size={24} color="var(--color-primary)" /> {t('Quản lý Data')}
-            <button
-              onClick={() => setShowInfoModal(true)}
-              style={{
-                background: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                border: '1px solid var(--color-border)',
-                padding: '4px 10px',
-                borderRadius: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                color: 'var(--color-text-muted)',
-                transition: 'all 0.2s',
-                marginLeft: '8px'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = 'var(--color-primary)';
-                e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                e.currentTarget.style.background = 'var(--color-primary-light)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = 'var(--color-text-muted)';
-                e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.background = theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)';
-              }}
-              title={t("Giải thích ý nghĩa các trạng thái data")}
-            >
-              <Info size={14} />
-              <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{t("Giải thích trạng thái")}</span>
-            </button>
-          </h1>
-          <p className="page-subtitle">{t('Xem lịch sử, theo dõi tiến trình và quản lý toàn bộ dữ liệu Khách hàng.')}</p>
-        </div>
-        <div className="data-list-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          {user?.role !== 'sale' ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '10px',
-              padding: '3px 4px',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-              height: '38px'
-            }}>
-            {/* View Mode Toggle Buttons */}
-            <div className="view-mode-toggle-container" style={{
-              display: 'flex',
-              background: 'transparent',
-              borderRadius: '8px',
-              padding: '0',
-              height: '32px',
-              alignItems: 'center'
-            }}>
-              <button
-                type="button"
-                className={`btn-toggle-view ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => {
-                  setLocalViewMode('list');
-                  navigate('/data');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: viewMode === 'list' ? 'var(--color-primary)' : 'transparent',
-                  color: viewMode === 'list' ? 'white' : 'var(--color-text-muted)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  height: '28px'
-                }}
-              >
-                <LayoutList size={13} /> <span className="hide-on-mobile">{t('Danh sách')}</span>
-              </button>
-              <button
-                type="button"
-                className={`btn-toggle-view ${viewMode === 'calendar' ? 'active' : ''}`}
-                onClick={() => {
-                  setLocalViewMode('calendar');
-                  navigate('/calendar');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: viewMode === 'calendar' ? 'var(--color-primary)' : 'transparent',
-                  color: viewMode === 'calendar' ? 'white' : 'var(--color-text-muted)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  height: '28px'
-                }}
-              >
-                <Calendar size={13} /> <span className="hide-on-mobile">{t('Lịch biểu')}</span>
-              </button>
-              {/* databank tab disabled */}
-            </div>
-
-            {/* Separator line */}
-            <div style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
-
-            {/* Compact Check Duplicate Button */}
-            <button
-              type="button"
-              onClick={() => setShowDupCheckModal(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '0 10px',
-                borderRadius: '6px',
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--color-primary)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                height: '28px'
-              }}
-              className="btn-export-csv-compact"
-            >
-              <Search size={13} /> <span>{t('Check trùng')}</span>
-            </button>
-
-            {/* Separator line */}
-            <div style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
-
-            {/* Compact Export CSV Button */}
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '0 10px',
-                borderRadius: '6px',
-                border: 'none',
-                background: 'transparent',
-                color: 'var(--color-primary)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                height: '28px'
-              }}
-              className="btn-export-csv-compact"
-            >
-              <Download size={13} /> <span>{t('Xuất')}<span className="hide-on-mobile"> CSV</span></span>
-            </button>
-
-            {/* Separator line for mobile filter toggle */}
-            <div className="mobile-only" style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
-
-            {/* Compact Filter Toggle Button (Mobile only) */}
-            <button
-              type="button"
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 8px',
-                borderRadius: '6px',
-                border: 'none',
-                background: showMobileFilters ? 'var(--color-primary-light)' : 'transparent',
-                color: showMobileFilters ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                height: '28px',
-                width: '32px'
-              }}
-              title={showMobileFilters ? t('Ẩn bộ lọc') : t('Hiện bộ lọc')}
-              className="mobile-only"
-            >
-              <Filter size={13} style={{ color: showMobileFilters ? 'var(--color-primary)' : 'var(--color-text-muted)' }} />
-            </button>
-          </div>
+          {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) ? (
+            <>
+              <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Calendar size={24} color="var(--color-primary)" /> {t('Lịch trình Tài chính')}
+              </h1>
+              <p className="page-subtitle">{t('Xem lịch trình, theo dõi tiến trình phát sinh Sales Order & Purchase Order.')}</p>
+            </>
           ) : (
-            /* For Sale, only show Filter button on mobile */
-            <div className="mobile-only" style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '10px',
-              padding: '3px 4px',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-              height: '38px'
-            }}>
+            <>
+              <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Database size={24} color="var(--color-primary)" /> {t('Quản lý Data')}
+                <button
+                  onClick={() => setShowInfoModal(true)}
+                  style={{
+                    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                    border: '1px solid var(--color-border)',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-muted)',
+                    transition: 'all 0.2s',
+                    marginLeft: '8px'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.color = 'var(--color-primary)';
+                    e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                    e.currentTarget.style.background = 'var(--color-primary-light)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.color = 'var(--color-text-muted)';
+                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                    e.currentTarget.style.background = theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)';
+                  }}
+                  title={t("Giải thích ý nghĩa các trạng thái data")}
+                >
+                  <Info size={14} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{t("Giải thích trạng thái")}</span>
+                </button>
+              </h1>
+              <p className="page-subtitle">{t('Xem lịch sử, theo dõi tiến trình và quản lý toàn bộ dữ liệu Khách hàng.')}</p>
+            </>
+          )}
+        </div>
+        {user?.role !== 'accountant' && (
+          <div className="data-list-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {user?.role !== 'sale' ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '10px',
+                padding: '3px 4px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+                height: '38px'
+              }}>
+              {/* View Mode Toggle Buttons */}
+              <div className="view-mode-toggle-container" style={{
+                display: 'flex',
+                background: 'transparent',
+                borderRadius: '8px',
+                padding: '0',
+                height: '32px',
+                alignItems: 'center'
+              }}>
+                <button
+                  type="button"
+                  className={`btn-toggle-view ${viewMode === 'list' ? 'active' : ''}`}
+                  onClick={() => {
+                    setLocalViewMode('list');
+                    navigate('/data');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: viewMode === 'list' ? 'var(--color-primary)' : 'transparent',
+                    color: viewMode === 'list' ? 'white' : 'var(--color-text-muted)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    height: '28px'
+                  }}
+                >
+                  <LayoutList size={13} /> <span className="hide-on-mobile">{t('Danh sách')}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`btn-toggle-view ${viewMode === 'calendar' ? 'active' : ''}`}
+                  onClick={() => {
+                    setLocalViewMode('calendar');
+                    navigate('/calendar');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: viewMode === 'calendar' ? 'var(--color-primary)' : 'transparent',
+                    color: viewMode === 'calendar' ? 'white' : 'var(--color-text-muted)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    height: '28px'
+                  }}
+                >
+                  <Calendar size={13} /> <span className="hide-on-mobile">{t('Lịch biểu')}</span>
+                </button>
+                {/* databank tab disabled */}
+              </div>
+
+              {/* Separator line */}
+              <div style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
+
+              {/* Compact Check Duplicate Button */}
+              <button
+                type="button"
+                onClick={() => setShowDupCheckModal(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '0 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--color-primary)',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  height: '28px'
+                }}
+                className="btn-export-csv-compact"
+              >
+                <Search size={13} /> <span>{t('Check trùng')}</span>
+              </button>
+
+              {/* Separator line */}
+              <div style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
+
+              {/* Compact Export CSV Button */}
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '0 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--color-primary)',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  height: '28px'
+                }}
+                className="btn-export-csv-compact"
+              >
+                <Download size={13} /> <span>{t('Xuất')}<span className="hide-on-mobile"> CSV</span></span>
+              </button>
+
+              {/* Separator line for mobile filter toggle */}
+              <div className="mobile-only" style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
+
+              {/* Compact Filter Toggle Button (Mobile only) */}
               <button
                 type="button"
                 onClick={() => setShowMobileFilters(!showMobileFilters)}
@@ -1775,12 +1780,48 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                   height: '28px',
                   width: '32px'
                 }}
+                title={showMobileFilters ? t('Ẩn bộ lọc') : t('Hiện bộ lọc')}
+                className="mobile-only"
               >
                 <Filter size={13} style={{ color: showMobileFilters ? 'var(--color-primary)' : 'var(--color-text-muted)' }} />
               </button>
             </div>
-          )}
-        </div>
+            ) : (
+              /* For Sale, only show Filter button on mobile */
+              <div className="mobile-only" style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '10px',
+                padding: '3px 4px',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+                height: '38px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 8px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: showMobileFilters ? 'var(--color-primary-light)' : 'transparent',
+                    color: showMobileFilters ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    height: '28px',
+                    width: '32px'
+                  }}
+                >
+                  <Filter size={13} style={{ color: showMobileFilters ? 'var(--color-primary)' : 'var(--color-text-muted)' }} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -1973,26 +2014,41 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
             {/* Calendar Legend */}
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.75rem', fontWeight: 600 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }}></span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('Đã chia')}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-danger)' }}></span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('Blacklist')}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a31422' }}></span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('Ticket lỗi')}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#db2777' }}></span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('Nhắc lại')}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-warning)' }}></span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{t('Ticket')}</span>
-              </div>
+              {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Sales Order (SO)')}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Purchase Order (PO)')}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-success)' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Đã chia')}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-danger)' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Blacklist')}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a31422' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Ticket lỗi')}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#db2777' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Nhắc lại')}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-warning)' }}></span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t('Ticket khác')}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -4585,7 +4641,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
         onClose={() => {
           setSelectedDate(null);
           setDayDetails(null);
-          setActiveModalTab('sales');
+          setActiveModalTab(['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) ? 'so' : 'sales');
         }}
         title={`${t('Chi tiết hoạt động ngày')} ${selectedDate ? new Date(selectedDate).toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}`}
         width="900px"
@@ -4611,113 +4667,117 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                   height: '38px',
                   alignItems: 'center'
                 }}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveModalTab('sales')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: activeModalTab === 'sales' ? 'var(--color-primary)' : 'transparent',
-                      color: activeModalTab === 'sales' ? 'white' : 'var(--color-text-muted)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      height: '32px',
-                      flex: 1
-                    }}
-                    className="modal-tab-button"
-                  >
-                    <span>{t('Phân bổ cho Sale')}</span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      background: activeModalTab === 'sales' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
-                      color: activeModalTab === 'sales' ? 'white' : 'var(--color-text-muted)',
-                      padding: '1px 6px',
-                      borderRadius: '5px',
-                      transition: 'all 0.2s'
-                    }}>
-                      {dayDetails.sales?.length || 0}
-                    </span>
-                  </button>
+                  {user?.role !== 'accountant' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab('sales')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: activeModalTab === 'sales' ? 'var(--color-primary)' : 'transparent',
+                          color: activeModalTab === 'sales' ? 'white' : 'var(--color-text-muted)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          height: '32px',
+                          flex: 1
+                        }}
+                        className="modal-tab-button"
+                      >
+                        <span>{t('Phân bổ cho Sale')}</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: activeModalTab === 'sales' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
+                          color: activeModalTab === 'sales' ? 'white' : 'var(--color-text-muted)',
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          transition: 'all 0.2s'
+                        }}>
+                          {dayDetails.sales?.length || 0}
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveModalTab('tickets')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: activeModalTab === 'tickets' ? 'var(--color-primary)' : 'transparent',
-                      color: activeModalTab === 'tickets' ? 'white' : 'var(--color-text-muted)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      height: '32px',
-                      flex: 1
-                    }}
-                    className="modal-tab-button"
-                  >
-                    <span>{t('Ticket Lỗi')}</span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      background: activeModalTab === 'tickets' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
-                      color: activeModalTab === 'tickets' ? 'white' : 'var(--color-text-muted)',
-                      padding: '1px 6px',
-                      borderRadius: '5px',
-                      transition: 'all 0.2s'
-                    }}>
-                      {dayDetails.tickets?.length || 0}
-                    </span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab('tickets')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: activeModalTab === 'tickets' ? 'var(--color-primary)' : 'transparent',
+                          color: activeModalTab === 'tickets' ? 'white' : 'var(--color-text-muted)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          height: '32px',
+                          flex: 1
+                        }}
+                        className="modal-tab-button"
+                      >
+                        <span>{t('Ticket Lỗi')}</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: activeModalTab === 'tickets' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
+                          color: activeModalTab === 'tickets' ? 'white' : 'var(--color-text-muted)',
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          transition: 'all 0.2s'
+                        }}>
+                          {dayDetails.tickets?.length || 0}
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveModalTab('blacklist')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: activeModalTab === 'blacklist' ? 'var(--color-primary)' : 'transparent',
-                      color: activeModalTab === 'blacklist' ? 'white' : 'var(--color-text-muted)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      height: '32px',
-                      flex: 1
-                    }}
-                    className="modal-tab-button"
-                  >
-                    <span>{t('Blacklist & Lỗi Hệ Thống')}</span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      background: activeModalTab === 'blacklist' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
-                      color: activeModalTab === 'blacklist' ? 'white' : 'var(--color-text-muted)',
-                      padding: '1px 6px',
-                      borderRadius: '5px',
-                      transition: 'all 0.2s'
-                    }}>
-                      {dayDetails.blacklist_logs?.length || 0}
-                    </span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalTab('blacklist')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: activeModalTab === 'blacklist' ? 'var(--color-primary)' : 'transparent',
+                          color: activeModalTab === 'blacklist' ? 'white' : 'var(--color-text-muted)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          height: '32px',
+                          flex: 1
+                        }}
+                        className="modal-tab-button"
+                      >
+                        <span>{t('Blacklist & Lỗi Hệ Thống')}</span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: activeModalTab === 'blacklist' ? 'rgba(255, 255, 255, 0.25)' : 'var(--color-border-light)',
+                          color: activeModalTab === 'blacklist' ? 'white' : 'var(--color-text-muted)',
+                          padding: '1px 6px',
+                          borderRadius: '5px',
+                          transition: 'all 0.2s'
+                        }}>
+                          {dayDetails.blacklist_logs?.length || 0}
+                        </span>
+                      </button>
+                    </>
+                  )}
                   {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && (
                     <>
                       <button
@@ -5117,10 +5177,10 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                               </tr>
                             </thead>
                             <tbody>
-                              {dayDetails.invoices.map((item: any, idx: number) => (
-                                <tr key={item.id || idx}>
+                               {dayDetails.invoices.map((item: any, idx: number) => (
+                                <tr key={item.id || idx} onClick={() => handleOpenSO(item.id)} style={{ cursor: 'pointer' }}>
                                   <td>
-                                    <strong style={{ color: 'var(--color-primary)' }}>{item.invoice_number || `#${item.id}`}</strong>
+                                    <strong style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.invoice_number || `#${item.id}`}</strong>
                                   </td>
                                   <td>{item.customer_name || 'N/A'}</td>
                                   <td>
@@ -5164,9 +5224,9 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                             </thead>
                             <tbody>
                               {dayDetails.expenses.map((item: any, idx: number) => (
-                                <tr key={item.id || idx}>
+                                <tr key={item.id || idx} onClick={() => handleOpenPO(item.id)} style={{ cursor: 'pointer' }}>
                                   <td>
-                                    <strong style={{ color: 'var(--color-primary)' }}>#EXP-{item.id}</strong>
+                                    <strong style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>#EXP-{item.id}</strong>
                                   </td>
                                   <td>{item.title}</td>
                                   <td>
@@ -6647,6 +6707,224 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
             {/* Footer */}
             <div style={{ padding: '1rem 1.25rem', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end', borderBottomLeftRadius: 'var(--radius-xl)', borderBottomRightRadius: 'var(--radius-xl)' }}>
               <button type="button" className="btn primary sm" onClick={() => setStatsModalOpen(false)}>{t('Đóng')}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {typeof document !== 'undefined' && activePO && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100000, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Backdrop */}
+          <div
+            onClick={() => setActivePO(null)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 1100005
+            }}
+          />
+          {/* Drawer Sheet */}
+          <div
+            style={{
+              width: '460px',
+              height: '100%',
+              background: 'var(--color-surface)',
+              boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
+              zIndex: 1100010,
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '1.5rem',
+              color: 'var(--color-text)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Chi tiết Purchase Order (PO)</h2>
+              <button
+                onClick={() => setActivePO(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>MÃ PHIẾU CHI</label>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, marginTop: '4px', color: 'var(--color-primary)' }}>#EXP-{activePO.id}</div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>TIÊU ĐỀ CHI PHÍ</label>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '4px' }}>{activePO.title}</div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>SỐ TIỀN</label>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginTop: '4px' }}>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(activePO.amount)}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>TRẠNG THÁI</label>
+                  <div style={{ marginTop: '4px' }}>
+                    <span className={`badge ${activePO.status === 'approved' ? 'success' : activePO.status === 'rejected' ? 'danger' : 'warning'}`}>
+                      {activePO.status === 'approved' ? 'Đã duyệt' : activePO.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGÀY LẬP</label>
+                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>
+                    {activePO.date ? new Date(activePO.date).toLocaleDateString('vi-VN') : 'N/A'}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGƯỜI ĐỀ XUẤT</label>
+                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>{activePO.creator_name || 'N/A'}</div>
+                </div>
+
+                {activePO.approver_name && (
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGƯỜI PHÊ DUYỆT</label>
+                    <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>{activePO.approver_name}</div>
+                  </div>
+                )}
+
+                {activePO.description && (
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>MÔ TẢ CHI PHÍ / GHI CHÚ</label>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      marginTop: '4px',
+                      background: 'var(--color-bg)',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.5
+                    }}>{activePO.description}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {typeof document !== 'undefined' && activeSO && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100000, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Backdrop */}
+          <div
+            onClick={() => setActiveSO(null)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 1100005
+            }}
+          />
+          {/* Drawer Sheet */}
+          <div
+            style={{
+              width: '460px',
+              height: '100%',
+              background: 'var(--color-surface)',
+              boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
+              zIndex: 1100010,
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '1.5rem',
+              color: 'var(--color-text)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Chi tiết Sales Order (SO)</h2>
+              <button
+                onClick={() => setActiveSO(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>MÃ ĐƠN HÀNG</label>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, marginTop: '4px', color: 'var(--color-primary)' }}>
+                    {activeSO.invoice_number || `#${activeSO.id}`}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>KHÁCH HÀNG</label>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '4px' }}>
+                    {activeSO.contact_name || 'Khách lẻ'}
+                  </div>
+                  {activeSO.contact_phone && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      SĐT: {activeSO.contact_phone}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>GIÁ TRỊ ĐƠN HÀNG</label>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginTop: '4px' }}>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(activeSO.total)}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>TRẠNG THÁI</label>
+                  <div style={{ marginTop: '4px' }}>
+                    <span className={`badge ${activeSO.status === 'paid' ? 'success' : activeSO.status === 'overdue' ? 'danger' : 'warning'}`}>
+                      {activeSO.status === 'paid' ? 'Đã thanh toán' : activeSO.status === 'overdue' ? 'Quá hạn' : 'Chờ thanh toán'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGÀY TẠO</label>
+                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>
+                    {activeSO.issue_date ? new Date(activeSO.issue_date).toLocaleDateString('vi-VN') : 'N/A'}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>NGƯỜI TẠO ĐƠN</label>
+                  <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>{activeSO.creator_name || 'N/A'}</div>
+                </div>
+
+                {activeSO.items && activeSO.items.length > 0 && (
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>DANH SÁCH SẢN PHẨM</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {activeSO.items.map((item: any, idx: number) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'var(--color-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                          <div>
+                            <span style={{ fontWeight: 600 }}>{item.product_name || 'Sản phẩm'}</span>
+                            <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px' }}>x{item.quantity || 1}</span>
+                          </div>
+                          <span style={{ fontWeight: 600 }}>
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price || 0)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>,
