@@ -1985,7 +1985,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
               {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && (
                 <button
                   type="button"
-                  className={`btn ${pendingOnly ? 'warning' : 'outline'}`}
+                  className="btn"
                   onClick={() => setPendingOnly(!pendingOnly)}
                   style={{
                     height: 36,
@@ -1995,6 +1995,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
+                    background: pendingOnly ? 'var(--color-warning)' : 'transparent',
                     borderColor: pendingOnly ? 'var(--color-warning)' : 'var(--color-border)',
                     color: pendingOnly ? 'white' : 'var(--color-text)'
                   }}
