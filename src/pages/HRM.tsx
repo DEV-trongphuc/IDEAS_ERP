@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import { 
   Users, Calendar, CreditCard, DollarSign, Check, X, ShieldAlert,
@@ -1459,9 +1460,9 @@ export default function HRM() {
         )}
 
             {/* Calculate New Period Modal / Drawer */}
-            {isNewPeriodModalOpen && (
-              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
-                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '2rem', width: 450, maxWidth: '90%' }}>
+            {isNewPeriodModalOpen && createPortal(
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999999 }}>
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '2rem', width: 450, maxWidth: '90%', zIndex: 10000000 }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.25rem' }}>
                     {t('Khởi tạo kỳ tính lương mới')}
                   </h3>
@@ -1543,14 +1544,15 @@ export default function HRM() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
       </div>
 
       {/* Edit Profile Dialog */}
-      {selectedUser && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
-          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '2rem', width: 500, maxWidth: '90%' }}>
+      {selectedUser && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 99999999 }}>
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '2rem', width: 500, maxWidth: '90%', zIndex: 100000000 }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>
               {t('Thiết lập Hồ sơ Nhân sự')}: <span style={{ color: 'var(--color-primary)' }}>{selectedUser.full_name}</span>
             </h3>
@@ -1694,28 +1696,29 @@ export default function HRM() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Payroll Detail Drawer Overlay */}
-      {viewMode === 'detail' && (
+      {viewMode === 'detail' && createPortal(
         <>
           {/* Drawer Backdrop Overlay */}
           <div 
             className="drawer-backdrop" 
             onClick={() => setViewMode('archive')}
-            style={{ zIndex: 10500 }}
+            style={{ zIndex: 99999999 }}
           />
 
           {/* Full Drawer Sheet Container */}
           <div style={{
             position: 'fixed',
             top: 0,
-            left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+            left: 0,
             right: 0,
             bottom: 0,
             background: 'var(--color-bg)',
-            zIndex: 10501,
+            zIndex: 100000000,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -2088,7 +2091,8 @@ export default function HRM() {
               )}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* Approval Detail Drawer */}
