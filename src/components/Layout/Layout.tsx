@@ -911,7 +911,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           isOpen={!!showPOS}
           onClose={() => setShowPOS(false)} 
           defaultContact={typeof showPOS === 'object' ? showPOS : null}
-          zIndex={2000100}
+          zIndex={2147483640}
         />
       )}
 

@@ -6894,7 +6894,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
             fetchCalendarStats();
             if (selectedDate) handleDateClick(selectedDate);
           }}
-          zIndex={2000000}
+          zIndex={2147483640}
         />
       )}
 

@@ -318,7 +318,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
     }
   };
 
-  const baseZIndex = zIndex || 2000100;
+  const baseZIndex = zIndex || 2147483640;
 
   const content = (
     <AnimatePresence>
