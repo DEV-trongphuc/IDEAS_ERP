@@ -3307,7 +3307,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       )}
 
       {/* Create Bulk Request Drawer */}
-      {showBulkCreateModal && (
+      {showBulkCreateModal && createPortal(
         <>
           <div 
             className="drawer-backdrop" 
@@ -3683,11 +3683,12 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* View & Approve Bulk Request Detail Drawer */}
-      {selectedBulkRequest && (
+      {selectedBulkRequest && createPortal(
         <>
           <div 
             className="drawer-backdrop" 
@@ -4051,7 +4052,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
