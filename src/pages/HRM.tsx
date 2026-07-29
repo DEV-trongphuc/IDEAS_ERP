@@ -3,7 +3,7 @@ import { fetchAPI } from '../utils/api';
 import { 
   Users, Calendar, CreditCard, DollarSign, Check, X, ShieldAlert,
   Send, Lock, Award, FileText, ChevronLeft, ChevronRight, Play, CheckCircle,
-  LayoutDashboard, Clock, User, Building2, MapPin, ClipboardList, PenTool, MessageSquare, Info, Save, Plus
+  LayoutDashboard, Clock, User, Building2, MapPin, ClipboardList, PenTool, MessageSquare, Info, Save, Plus, HelpCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1571,11 +1571,16 @@ export default function HRM() {
                   />
                 ) : (
                   <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: '#2563eb' }}>
+                      <HelpCircle size={15} style={{ flexShrink: 0 }} />
+                      <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
+                    </div>
+
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                           <th style={{ padding: '12px 8px' }}>{t('Nhân viên')}</th>
-                          <th style={{ padding: '12px 8px' }}>{t('Công thực tế')}</th>
+                          <th style={{ padding: '12px 8px' }}>{t('Công thực tế / Chuẩn')}</th>
                           <th style={{ padding: '12px 8px' }}>{t('Đi trễ (phút)')}</th>
                           <th style={{ padding: '12px 8px' }}>{t('Tăng ca (ngày)')}</th>
                           <th style={{ padding: '12px 8px' }}>{t('Lương ngày công')}</th>
@@ -1596,30 +1601,59 @@ export default function HRM() {
                           return (
                             <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
                               <td style={{ padding: '14px 8px', fontWeight: 600 }}>{ps.employee_name}</td>
-                              <td style={{ padding: '14px 8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <td style={{ padding: '12px 8px' }}>
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  background: isLocked ? 'transparent' : 'var(--color-bg-light)',
+                                  border: isLocked ? 'none' : '1px solid var(--color-border-light)'
+                                }}>
                                   {isLocked ? (
-                                    <span style={{ fontWeight: 700 }}>{ps.work_days_actual}</span>
+                                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{ps.work_days_actual}</span>
                                   ) : (
                                     <input
                                       type="number"
                                       step="any"
                                       value={ps.work_days_actual}
                                       onChange={e => handleCellChange(ps.id, 'work_days_actual', Number(e.target.value))}
-                                      style={{ width: '48px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                      title={t('Số ngày công làm thực tế')}
+                                      style={{
+                                        width: '42px',
+                                        padding: '2px 2px',
+                                        textAlign: 'center',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: '4px',
+                                        background: 'var(--color-surface)',
+                                        color: 'var(--color-text)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700
+                                      }}
                                     />
                                   )}
-                                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 600, margin: '0 2px' }}>/</span>
+                                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 700, padding: '0 1px' }}>/</span>
                                   {isLocked ? (
-                                    <span style={{ fontWeight: 700, color: 'var(--color-text-muted)' }}>{ps.work_days_required}</span>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{ps.work_days_required}</span>
                                   ) : (
                                     <input
                                       type="number"
                                       step="any"
                                       value={ps.work_days_required}
                                       onChange={e => handleCellChange(ps.id, 'work_days_required', Number(e.target.value))}
-                                      title={t('Số ngày công tiêu chuẩn (Có thể sửa cho từng nhân sự deal riêng)')}
-                                      style={{ width: '48px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 600 }}
+                                      title={t('Số ngày công tiêu chuẩn tháng (Có thể sửa cho nhân sự deal riêng)')}
+                                      style={{
+                                        width: '42px',
+                                        padding: '2px 2px',
+                                        textAlign: 'center',
+                                        border: '1px dashed var(--color-primary, #3b82f6)',
+                                        borderRadius: '4px',
+                                        background: 'rgba(59, 130, 246, 0.04)',
+                                        color: 'var(--color-primary)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700
+                                      }}
                                     />
                                   )}
                                 </div>

@@ -743,12 +743,22 @@ switch ($resource) {
         elseif ($resourceId === 'advances' && $method === 'POST') $ctrl->createAdvance($auth);
         elseif ($resourceId === 'advances' && $method === 'PUT') $ctrl->approveAdvance($auth);
         elseif ($resourceId === 'advances' && $method === 'DELETE' && $subResource) $ctrl->deleteAdvance($auth, (int)$subResource);
-        elseif ($resourceId === 'payroll' && $method === 'GET') $ctrl->indexPayslips($auth);
-        elseif ($resourceId === 'payroll' && $method === 'POST') $ctrl->calculatePayroll($auth);
-        elseif ($resourceId === 'payroll' && $method === 'PUT') $ctrl->lockPayroll($auth);
-        elseif ($resourceId === 'payroll' && $subResource === 'send' && $method === 'POST') $ctrl->sendPayslips($auth);
-        elseif ($resourceId === 'payroll' && $subResource === 'confirm' && $method === 'POST') $ctrl->confirmPayslip($auth);
-        elseif ($resourceId === 'payroll' && $subResource === 'save' && $method === 'POST') $ctrl->savePayroll($auth);
+        elseif ($resourceId === 'payroll') {
+            if (!$subResource) {
+                if ($method === 'GET') $ctrl->indexPayslips($auth);
+                elseif ($method === 'POST') $ctrl->calculatePayroll($auth);
+                elseif ($method === 'PUT') $ctrl->lockPayroll($auth);
+                else respond(404, null, 'Route không tồn tại', false);
+            } elseif ($subResource === 'save' && $method === 'POST') {
+                $ctrl->savePayroll($auth);
+            } elseif ($subResource === 'send' && $method === 'POST') {
+                $ctrl->sendPayslips($auth);
+            } elseif ($subResource === 'confirm' && $method === 'POST') {
+                $ctrl->confirmPayslip($auth);
+            } else {
+                respond(404, null, 'Route không tồn tại', false);
+            }
+        }
         elseif ($resourceId === 'approvals' && $subResource === 'pending' && $method === 'GET') $ctrl->getPendingApprovals($auth);
         elseif ($resourceId === 'approvals' && $subResource === 'my-requests' && $method === 'GET') $ctrl->getMyRequests($auth);
         else respond(404, null, 'Route không tồn tại', false);
