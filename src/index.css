@@ -5767,5 +5767,12 @@ div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar-thumb:hover {
   background: #64748b !important;
 }
 
+/* Fix Toast Notification Container z-index over Modal Portals */
+.react-hot-toast-container,
+div:has(> [role="status"]),
+div:has(> div[data-react-hot-toast]) {
+  z-index: 999999999 !important;
+}
+
 
 
