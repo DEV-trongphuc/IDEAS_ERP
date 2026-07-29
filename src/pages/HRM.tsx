@@ -1766,14 +1766,14 @@ export default function HRM() {
               </div>
 
               {/* Main Month Action Controls & Close Button */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', paddingBottom: '2px' }} className="custom-scrollbar">
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', overflowX: 'auto', paddingBottom: '2px' }} className="custom-scrollbar">
                 {payslips.some(ps => ps.status === 'locked') ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px', borderRadius: 10, whiteSpace: 'nowrap' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600 }}>🔒 {t('Bảng lương kỳ này đã được Chốt và Khóa.')}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.875rem', color: '#ef4444', fontWeight: 600 }}>🔒 {t('Bảng lương kỳ này đã được Chốt và Khóa.')}</span>
                     <button
                       onClick={handleUnlockPayroll}
                       className="btn text"
-                      style={{ color: 'var(--color-primary)', fontWeight: 700, padding: 0, background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.8rem' }}
+                      style={{ color: 'var(--color-primary)', fontWeight: 700, padding: 0, background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.875rem' }}
                     >
                       {t('Mở khóa để sửa')}
                     </button>
@@ -1784,19 +1784,19 @@ export default function HRM() {
                     <button
                       onClick={handleRunPayroll}
                       disabled={calculating}
-                      className="btn outline sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                      className="btn outline"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 18px', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', height: '38px' }}
                     >
-                      <Play size={14} />
+                      <Play size={16} />
                       {calculating ? t('Đang tính...') : t('Tính lại lương')}
                     </button>
                     <button
                       onClick={handlePublishPayroll}
                       disabled={publishing || payslips.length === 0}
-                      className="btn outline sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)', whiteSpace: 'nowrap' }}
+                      className="btn outline"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 18px', fontSize: '0.875rem', fontWeight: 600, color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.5)', whiteSpace: 'nowrap', height: '38px' }}
                     >
-                      <Send size={14} />
+                      <Send size={16} />
                       {publishing ? t('Đang gửi...') : t('Gửi yêu cầu xác nhận')}
                     </button>
 
@@ -1804,19 +1804,19 @@ export default function HRM() {
                     <button
                       onClick={handleSavePayroll}
                       disabled={saving || payslips.length === 0}
-                      className="btn primary sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#4f46e5', borderColor: '#4f46e5', color: '#fff', padding: '6px 16px', fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#4f46e5', borderColor: '#4f46e5', color: '#fff', padding: '8px 20px', fontSize: '0.875rem', fontWeight: 700, whiteSpace: 'nowrap', height: '38px' }}
                     >
-                      <Save size={14} />
+                      <Save size={16} />
                       {saving ? t('Đang lưu...') : t('Lưu thay đổi')}
                     </button>
                     <button
                       onClick={handleLockPayroll}
                       disabled={locking || payslips.length === 0}
-                      className="btn primary sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', borderColor: '#ef4444', color: '#fff', padding: '6px 16px', fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#ef4444', borderColor: '#ef4444', color: '#fff', padding: '8px 20px', fontSize: '0.875rem', fontWeight: 700, whiteSpace: 'nowrap', height: '38px' }}
                     >
-                      <Lock size={14} />
+                      <Lock size={16} />
                       {locking ? t('Đang khóa...') : t('Chốt & Khóa sổ lương')}
                     </button>
                   </>
@@ -1827,20 +1827,20 @@ export default function HRM() {
                   style={{
                     background: 'var(--color-bg)',
                     border: '1px solid var(--color-border)',
-                    padding: '6px',
+                    padding: '8px',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     color: 'var(--color-text-muted)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    height: '34px',
-                    width: '34px',
+                    height: '38px',
+                    width: '38px',
                     marginLeft: '4px',
                     flexShrink: 0
                   }}
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -1885,26 +1885,31 @@ export default function HRM() {
                   description={t('Không tải được phiếu lương nào trong kỳ này. Bấm quay lại và tính lại lương.')}
                 />
               ) : (
-                <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: '#2563eb' }}>
-                    <HelpCircle size={15} style={{ flexShrink: 0 }} />
-                    <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+                  <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#2563eb' }}>
+                      <HelpCircle size={15} style={{ flexShrink: 0 }} />
+                      <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
+                    </div>
                   </div>
 
-                  <table style={{ width: '100%', minWidth: '1350px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                        <th style={{
-                          padding: '12px 14px',
-                          position: 'sticky',
-                          left: 0,
-                          background: 'var(--color-surface)',
-                          zIndex: 10,
-                          boxShadow: '2px 0 5px -2px rgba(0, 0, 0, 0.12)',
-                          minWidth: '170px'
-                        }}>
-                          {t('Nhân viên')}
-                        </th>
+                  {/* Horizontal Scroll Table Container */}
+                  <div style={{ overflowX: 'auto', position: 'relative' }} className="custom-scrollbar">
+                    <table style={{ width: '100%', minWidth: '1350px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                          <th style={{
+                            padding: '14px 16px',
+                            position: 'sticky',
+                            left: 0,
+                            background: 'var(--color-surface)',
+                            zIndex: 20,
+                            boxShadow: '3px 0 8px -2px rgba(0, 0, 0, 0.15)',
+                            borderRight: '1px solid var(--color-border-light)',
+                            minWidth: '180px'
+                          }}>
+                            {t('Nhân viên')}
+                          </th>
                         <th style={{ padding: '12px 8px' }}>{t('Công thực tế / Chuẩn')}</th>
                         <th style={{ padding: '12px 8px' }}>{t('Đi trễ (phút)')}</th>
                         <th style={{ padding: '12px 8px' }}>{t('Tăng ca (ngày)')}</th>
@@ -1926,13 +1931,14 @@ export default function HRM() {
                         return (
                           <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
                             <td style={{
-                              padding: '14px 14px',
+                              padding: '14px 16px',
                               fontWeight: 600,
                               position: 'sticky',
                               left: 0,
                               background: 'var(--color-surface)',
-                              zIndex: 5,
-                              boxShadow: '2px 0 5px -2px rgba(0, 0, 0, 0.12)',
+                              zIndex: 15,
+                              boxShadow: '3px 0 8px -2px rgba(0, 0, 0, 0.15)',
+                              borderRight: '1px solid var(--color-border-light)',
                               whiteSpace: 'nowrap'
                             }}>
                               {ps.employee_name}
@@ -2113,7 +2119,8 @@ export default function HRM() {
                     </tbody>
                   </table>
                 </div>
-              )}
+              </div>
+            )}
             </div>
           </div>
         </>,
