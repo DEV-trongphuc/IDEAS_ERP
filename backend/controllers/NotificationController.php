@@ -88,6 +88,61 @@ class NotificationController {
         respond(200, null, 'Đã xóa tất cả thông báo');
     }
 
+    public function sendReminder(array $auth): void {
+        $b = getBody();
+        $targetUserId = (int)($b['target_user_id'] ?? $b['user_id'] ?? 0);
+        $message = trim((string)($b['message'] ?? $b['reminder_message'] ?? 'Có đề xuất đang chờ bạn phê duyệt!'));
+        $itemTitle = trim((string)($b['item_title'] ?? $b['title'] ?? 'đề xuất'));
+        $itemType = trim((string)($b['item_type'] ?? ''));
+        $itemId = (int)($b['item_id'] ?? 0);
+
+        if ($targetUserId <= 0) {
+            respond(400, null, 'Người nhận không hợp lệ', false);
+        }
+
+        $senderName = $auth['full_name'] ?? $auth['name'] ?? 'Đồng nghiệp';
+        $title = "Nhắc nhở phê duyệt: " . $itemTitle;
+        $body = "{$senderName} gửi lời nhắc nhở: \"{$message}\"";
+        $tenantId = (int)($auth['tenant_id'] ?? 1);
+
+        // Fetch target user info
+        $stmtUser = $this->db->prepare("SELECT id, email, zalo_chat_id, telegram_chat_id, full_name FROM users WHERE id = ? LIMIT 1");
+        $stmtUser->execute([$targetUserId]);
+        $targetUserRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+        // Always insert notification for target user into notifications table for In-App Bell
+        $stmt = $this->db->prepare("
+            INSERT INTO notifications (user_id, tenant_id, title, body, type, link)
+            VALUES (?, ?, ?, ?, 'approval', ?)
+        ");
+        $stmt->execute([
+            $targetUserId,
+            $tenantId,
+            $title,
+            $body,
+            "/approvals?open_id={$itemId}&open_type={$itemType}"
+        ]);
+
+        if ($targetUserRow) {
+            try {
+                require_once __DIR__ . '/../NotificationService.php';
+                NotificationService::send($this->db, $tenantId, 'APPROVAL_REMINDER', [
+                    'sender_name' => $senderName,
+                    'target_user_id' => $targetUserId,
+                    'message' => $message,
+                    'item_title' => $itemTitle,
+                    'item_type' => $itemType,
+                    'item_id' => $itemId,
+                    'recipients' => [$targetUserRow]
+                ]);
+            } catch (\Throwable $e) {
+                error_log("Reminder NotificationService error: " . $e->getMessage());
+            }
+        }
+
+        respond(200, null, 'Gửi nhắc nhở thành công');
+    }
+
     public function getSettings(array $auth): void {
         // Ensure matrix_config column exists in user_notification_settings table
         try {

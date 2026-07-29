@@ -275,6 +275,25 @@ class NotificationService {
                                     "Nhân viên <strong>$userName</strong> vừa gửi Yêu cầu cập nhật công bổ sung ngày $today lúc " . substr($time, 0, 5) . ".<br/>" .
                                     "Lý do: <em>\"$reason\"</em>.<br/>" .
                                     "Vui lòng truy cập hệ thống CRM để phê duyệt."
+            case 'APPROVAL_REMINDER':
+                $recipients = $payload['recipients'] ?? [];
+                $msg = $payload['message'] ?? 'Có đề xuất đang chờ bạn phê duyệt!';
+                $senderName = $payload['sender_name'] ?? 'Đồng nghiệp';
+                $itemTitle = $payload['item_title'] ?? 'đề xuất';
+                $itemId = $payload['item_id'] ?? 0;
+                $itemType = $payload['item_type'] ?? '';
+
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Nhắc nhở phê duyệt: " . $itemTitle,
+                    'body' => "Nhân sự {$senderName} vừa gửi lời nhắc nhở: \"{$msg}\"",
+                    'type' => "approval",
+                    'link' => "/approvals?open_id={$itemId}&open_type={$itemType}",
+                    'zalo_msg' => "🔔 [ NHẮC NHỞ PHÊ DUYỆT ĐƠN ]\n\nNhân sự $senderName gửi lời nhắc phê duyệt đơn: \"$itemTitle\"\nNội dung: \"$msg\"",
+                    'tg_msg' => "🔔 <b>[ NHẮC NHỞ PHÊ DUYỆT ĐƠN ]</b>\n\nNhân sự <b>$senderName</b> gửi lời nhắc phê duyệt đơn: <i>\"$itemTitle\"</i>\nNội dung: <i>\"$msg\"</i>",
+                    'email_subject' => "[IDEAS] Nhắc nhở phê duyệt đơn - $itemTitle",
+                    'email_title' => "NHẮC NHỞ PHÊ DUYỆT ĐƠN",
+                    'email_content' => "Nhân sự <strong>$senderName</strong> vừa gửi lời nhắc nhở phê duyệt đơn: <strong>$itemTitle</strong>.<br/><br/>Nội dung: <em>\"$msg\"</em>"
                 ];
 
             case 'ATTENDANCE_APPROVAL_RESULT':

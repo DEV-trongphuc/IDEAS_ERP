@@ -4069,11 +4069,23 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => {
+                onClick={async () => {
                   const targetName = reminderTargetUser.full_name || reminderTargetUser.name || '';
-                  toast.success(`${t('Đã gửi nhắc nhở thành công đến')} ${targetName}!`);
-                  setReminderTargetUser(null);
-                  setReminderMessage('');
+                  try {
+                    await api.post('/notifications/reminder', {
+                      target_user_id: reminderTargetUser.id,
+                      message: reminderMessage,
+                      item_title: detail?.title || item?.title || t('Đơn đề xuất'),
+                      item_type: item?.type || 'expense',
+                      item_id: item?.id || 0
+                    });
+                    toast.success(`${t('Đã gửi nhắc nhở thành công đến')} ${targetName}!`);
+                  } catch (err: any) {
+                    toast.error(err?.message || t('Lỗi gửi nhắc nhở'));
+                  } finally {
+                    setReminderTargetUser(null);
+                    setReminderMessage('');
+                  }
                 }}
                 style={{ padding: '6px 16px', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981', color: 'white' }}
               >

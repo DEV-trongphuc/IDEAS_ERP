@@ -783,6 +783,12 @@ switch ($resource) {
             } else {
                 respond(405, null, 'Phương thức không hỗ trợ cho settings', false);
             }
+        } elseif ($resourceId === 'reminder') {
+            if ($method === 'POST') {
+                $ctrl->sendReminder($auth);
+            } else {
+                respond(405, null, 'Phương thức không hỗ trợ cho reminder', false);
+            }
         } else {
             if ($method === 'GET') {
                 $ctrl->index($auth);
