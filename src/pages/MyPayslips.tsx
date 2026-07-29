@@ -850,7 +850,7 @@ export default function MyPayslips() {
         title={t("Chi tiết Phiếu lương")}
         width="860px"
       >
-        <div style={{ maxHeight: '80vh', overflowY: 'auto', padding: '10px' }} className="no-scrollbar">
+        <div style={{ padding: '4px' }}>
           {payslip ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{

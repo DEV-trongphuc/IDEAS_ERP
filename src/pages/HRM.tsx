@@ -631,8 +631,31 @@ export default function HRM() {
                   Number(updated.advance_deduction || 0);
                   
       updated.net_salary = Math.max(0, net);
+
+      // 5. If status was 'sent', 'confirmed', or 'disputed', reset to 'draft' since data changed!
+      if (['sent', 'confirmed', 'disputed'].includes(ps.status)) {
+        updated.status = 'draft';
+        updated.signature_url = null;
+        updated.confirmed_at = null;
+        updated.note = null;
+      }
+
       return updated;
     }));
+  };
+
+  const handleSendSinglePayslip = async (ps: any) => {
+    try {
+      await fetchAPI('hrm/payroll/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: ps.id, month_year: payrollMonth })
+      });
+      toast.success(t(`Đã gửi yêu cầu ký xác nhận lương cho ${ps.employee_name}!`));
+      setPayslips(prev => prev.map(item => item.id === ps.id ? { ...item, status: 'sent', signature_url: null, confirmed_at: null, note: null } : item));
+    } catch (err: any) {
+      toast.error(err?.message || t('Lỗi gửi yêu cầu xác nhận'));
+    }
   };
 
   const handleSavePayroll = async () => {
@@ -2132,6 +2155,7 @@ export default function HRM() {
                         <th style={{ padding: '12px 8px' }}>{t('Tạm ứng')}</th>
                         <th style={{ padding: '12px 8px' }}>{t('Thực lĩnh (Net)')}</th>
                         <th style={{ padding: '12px 8px', textAlign: 'center' }}>{t('Trạng thái')}</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'center' }}>{t('Thao tác')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2289,6 +2313,32 @@ export default function HRM() {
                               }}>
                                 {ps.status === 'locked' ? t('Đã khóa') : ps.status === 'confirmed' ? t('Đã ký') : ps.status === 'disputed' ? t('Yêu cầu thay đổi') : ps.status === 'sent' ? t('Đang chờ') : t('Nháp')}
                               </span>
+                            </td>
+                            <td style={{ padding: '14px 8px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              {!isLocked && (
+                                <button
+                                  onClick={() => handleSendSinglePayslip(ps)}
+                                  disabled={ps.status === 'sent'}
+                                  className="btn outline sm hover-lift"
+                                  style={{
+                                    padding: '3px 10px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    color: ps.status === 'sent' ? '#3b82f6' : '#10b981',
+                                    borderColor: ps.status === 'sent' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(16, 185, 129, 0.4)',
+                                    background: ps.status === 'sent' ? 'rgba(59, 130, 246, 0.04)' : 'rgba(16, 185, 129, 0.04)',
+                                    borderRadius: '6px',
+                                    cursor: ps.status === 'sent' ? 'default' : 'pointer'
+                                  }}
+                                  title={ps.status === 'sent' ? t('Đã gửi yêu cầu xác nhận') : t('Gửi yêu cầu ký xác nhận cho nhân sự này')}
+                                >
+                                  <Send size={12} />
+                                  {ps.status === 'sent' ? t('Đã gửi') : t('Gửi ký')}
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );

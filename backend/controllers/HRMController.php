@@ -877,15 +877,39 @@ class HRMController {
     public function sendPayslips(array $auth): void {
         if (!$this->isAdmin($auth)) respond(403, null, 'Quyền admin là bắt buộc', false);
         $b = getBody();
+        $id = (int)($b['id'] ?? 0);
         $monthYear = $b['month_year'] ?? '';
+
+        if ($id > 0) {
+            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'sent', signature_url = NULL, confirmed_at = NULL, note = NULL WHERE id = ?");
+            $stmt->execute([$id]);
+
+            $stmtP = $this->db->prepare("SELECT p.*, u.full_name FROM monthly_payslips p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
+            $stmtP->execute([$id]);
+            $psRow = $stmtP->fetch(PDO::FETCH_ASSOC);
+
+            if ($psRow) {
+                try {
+                    require_once __DIR__ . '/../NotificationService.php';
+                    NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_PUBLISHED', [
+                        'user_id' => $psRow['user_id'],
+                        'user_name' => $psRow['full_name'],
+                        'month_year' => $psRow['month_year']
+                    ]);
+                } catch (\Throwable $e) {}
+            }
+            respond(200, ['success' => true]);
+            return;
+        }
+
         if (empty($monthYear)) respond(400, null, 'Thiếu tháng gửi phiếu lương', false);
 
-        // Fetch users who have draft payslips in this month to notify them
-        $stmtUsers = $this->db->prepare("SELECT DISTINCT user_id FROM monthly_payslips WHERE month_year = ? AND status = 'draft'");
+        // Fetch users who have draft/disputed payslips in this month to notify them
+        $stmtUsers = $this->db->prepare("SELECT DISTINCT user_id FROM monthly_payslips WHERE month_year = ? AND status IN ('draft', 'disputed')");
         $stmtUsers->execute([$monthYear]);
         $userIds = $stmtUsers->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
-        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'sent' WHERE month_year = ? AND status = 'draft'");
+        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'sent' WHERE month_year = ? AND status IN ('draft', 'disputed')");
         $stmt->execute([$monthYear]);
 
         // Dispatch Notifications
