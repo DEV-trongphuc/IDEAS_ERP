@@ -53,7 +53,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [sysSettings, setSysSettings] = useState<any>(null);
   const managerBehaviorMode = user?.manager_behavior_mode || 'combined';
-  const isSales = user?.role && !['admin', 'superadmin', 'super_admin', 'director'].includes(user.role.toLowerCase());
+  const isSales = user?.role && ['sale', 'sales', 'marketing', 'employee'].includes(user.role.toLowerCase());
   const canSelectUser = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr', 'accountant'].includes(user?.role || '');
   const canApprove = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'hr', 'accountant'].includes(user?.role || '') || (user?.role === 'manager' && managerBehaviorMode === 'pure');
   useEffect(() => {

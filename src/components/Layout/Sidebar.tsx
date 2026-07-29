@@ -72,7 +72,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Phòng ban', href: '/consultants?tab=teams', icon: Users },
       { name: 'Nhân sự công ty', href: '/consultants', icon: Users },
       { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing', 'accountant'] },
-      { name: 'Lịch trình', href: '/calendar', icon: Calendar },
+      { name: 'Lịch trình', href: '/calendar', icon: Calendar, hideForRoles: ['hr'] },
       { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr'] },
       { name: 'Nhân sự & Lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
       { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
@@ -145,7 +145,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Nhân sự', href: '/hrm', icon: ShieldCheck },
     { name: 'Duyệt công', href: '/attendance', icon: Clock },
     { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
-    { name: 'Lịch trình', href: '/calendar', icon: Calendar }
+    { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
   ],
   marketing: [
     { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers },
