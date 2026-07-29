@@ -599,4 +599,361 @@ class CheckInController {
 
         respond(200, null, 'Đã xóa bản ghi check-in thành công');
     }
+
+    public function suggestBulkDates(array $auth): void {
+        $userId = (int)$auth['user_id'];
+        $month = $_GET['month_period'] ?? date('Y-m'); // format 'YYYY-MM'
+        
+        $startDate = $month . '-01';
+        $today = date('Y-m-d');
+        $endDate = date('Y-m-t', strtotime($startDate));
+        if ($endDate > $today) {
+            $endDate = $today;
+        }
+
+        // Fetch leaves
+        $stmtLeaves = $this->db->prepare("
+            SELECT start_date, end_date FROM consultant_leaves 
+            WHERE consultant_id = ? AND start_date <= ? AND end_date >= ?
+        ");
+        $stmtLeaves->execute([$userId, $endDate, $startDate]);
+        $leaves = $stmtLeaves->fetchAll();
+
+        $isOnLeave = function($dateStr) use ($leaves) {
+            foreach ($leaves as $l) {
+                if ($dateStr >= $l['start_date'] && $dateStr <= $l['end_date']) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Fetch existing checkins
+        $stmtCheckins = $this->db->prepare("
+            SELECT check_in_date, check_in_time, check_out_time FROM check_ins 
+            WHERE user_id = ? AND check_in_date BETWEEN ? AND ?
+        ");
+        $stmtCheckins->execute([$userId, $startDate, $endDate]);
+        $checkins = [];
+        foreach ($stmtCheckins->fetchAll() as $c) {
+            $checkins[$c['check_in_date']] = $c;
+        }
+
+        $suggestions = [];
+        $current = strtotime($startDate);
+        $last = strtotime($endDate);
+
+        while ($current <= $last) {
+            $dateStr = date('Y-m-d', $current);
+            $dayOfWeek = (int)date('w', $current); // 0 = Sunday, 6 = Saturday
+
+            $current += 86400;
+
+            // Skip weekends by default
+            if ($dayOfWeek === 0 || $dayOfWeek === 6) {
+                continue;
+            }
+
+            // Skip if user is on approved leave
+            if ($isOnLeave($dateStr)) {
+                continue;
+            }
+
+            if (!isset($checkins[$dateStr])) {
+                $suggestions[] = [
+                    'date' => $dateStr,
+                    'has_check_in' => false,
+                    'has_check_out' => false,
+                    'check_in_time' => null,
+                    'check_out_time' => null
+                ];
+            } else {
+                $c = $checkins[$dateStr];
+                $hasCheckIn = !empty($c['check_in_time']);
+                $hasCheckOut = !empty($c['check_out_time']);
+
+                if (!$hasCheckIn || !$hasCheckOut) {
+                    $suggestions[] = [
+                        'date' => $dateStr,
+                        'has_check_in' => $hasCheckIn,
+                        'has_check_out' => $hasCheckOut,
+                        'check_in_time' => $c['check_in_time'],
+                        'check_out_time' => $c['check_out_time'] ? substr($c['check_out_time'], 11, 8) : null
+                    ];
+                }
+            }
+        }
+
+        respond(200, $suggestions, 'Gợi ý ngày thiếu công thành công');
+    }
+
+    public function createBulkRequest(array $auth): void {
+        $userId = (int)$auth['user_id'];
+        $b = getBody();
+        $month = trim($b['month_period'] ?? date('Y-m'));
+        $details = $b['details'] ?? [];
+
+        if (empty($details)) {
+            respond(400, null, 'Danh sách ngày đề xuất bổ sung không được trống', false);
+        }
+
+        $this->db->beginTransaction();
+        try {
+            // Check if there is already a pending bulk request for this month
+            $stmtCheck = $this->db->prepare("
+                SELECT id FROM attendance_bulk_requests 
+                WHERE user_id = ? AND month_period = ? AND status IN ('pending_manager', 'pending_hr')
+                LIMIT 1
+            ");
+            $stmtCheck->execute([$userId, $month]);
+            if ($stmtCheck->fetch()) {
+                respond(400, null, "Bạn đã có phiếu đề xuất bổ sung công đang chờ duyệt trong tháng $month.", false);
+            }
+
+            // Create bulk request
+            $stmt = $this->db->prepare("
+                INSERT INTO attendance_bulk_requests (user_id, month_period, status)
+                VALUES (?, ?, 'pending_manager')
+            ");
+            $stmt->execute([$userId, $month]);
+            $requestId = (int)$this->db->lastInsertId();
+
+            // Insert details
+            $stmtDetail = $this->db->prepare("
+                INSERT INTO attendance_bulk_request_details (request_id, check_in_date, suggested_check_in, suggested_check_out, reason, approved)
+                VALUES (?, ?, ?, ?, ?, 1)
+            ");
+
+            foreach ($details as $d) {
+                $date = $d['date'];
+                $in = !empty($d['check_in']) ? $d['check_in'] : null;
+                $out = !empty($d['check_out']) ? $d['check_out'] : null;
+                $reason = $d['reason'] ?? 'Bổ sung công';
+
+                $stmtDetail->execute([$requestId, $date, $in, $out, $reason]);
+            }
+
+            $this->db->commit();
+
+            // Send notification to managers/admins (ATTENDANCE_UPDATE event type)
+            try {
+                $userName = $auth['full_name'] ?? 'Nhân viên';
+                NotificationService::send($this->db, 1, 'ATTENDANCE_UPDATE', [
+                    'user_id' => $userId,
+                    'user_name' => $userName,
+                    'reason' => "Đề xuất bổ sung công tổng hợp tháng $month (" . count($details) . " ngày)"
+                ]);
+            } catch (\Throwable $ne) {
+                error_log("Failed to send bulk request notification: " . $ne->getMessage());
+            }
+
+            respond(201, ['request_id' => $requestId], 'Tạo phiếu đề xuất bổ sung công tổng hợp thành công');
+        } catch (\Throwable $ex) {
+            $this->db->rollBack();
+            respond(500, null, 'Lỗi hệ thống: ' . $ex->getMessage(), false);
+        }
+    }
+
+    public function listBulkRequests(array $auth): void {
+        $role = $auth['role'];
+        $userId = (int)$auth['user_id'];
+
+        $sql = "
+            SELECT r.*, u.full_name, u.role as user_role
+            FROM attendance_bulk_requests r
+            JOIN users u ON r.user_id = u.id
+            WHERE 1=1
+        ";
+        $params = [];
+
+        if ($role === 'manager') {
+            // Find team members
+            $stmtTeam = $this->db->prepare("
+                SELECT id FROM teams 
+                WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
+            ");
+            $stmtTeam->execute([$userId]);
+            $teamIds = $stmtTeam->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
+            if (!empty($teamIds)) {
+                $placeholders = implode(',', array_fill(0, count($teamIds), '?'));
+                $sql .= " AND (r.user_id = ? OR u.team_id IN ($placeholders))";
+                $params = array_merge([$userId], $teamIds);
+            } else {
+                $sql .= " AND r.user_id = ?";
+                $params[] = $userId;
+            }
+        } elseif ($role === 'sales' || $role === 'viewer') {
+            $sql .= " AND r.user_id = ?";
+            $params[] = $userId;
+        }
+
+        $sql .= " ORDER BY r.id DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Fetch details for each request
+        foreach ($requests as &$req) {
+            $stmtDetails = $this->db->prepare("
+                SELECT * FROM attendance_bulk_request_details WHERE request_id = ?
+            ");
+            $stmtDetails->execute([$req['id']]);
+            $req['details'] = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        respond(200, $requests, 'Lấy danh sách phiếu đề xuất thành công');
+    }
+
+    public function approveBulkRequest(array $auth, int $id): void {
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr']);
+        $b = getBody();
+        $status = trim($b['status'] ?? ''); // 'approved' or 'rejected'
+        $adminNote = trim($b['admin_note'] ?? '');
+        $approvedDetailIds = $b['approved_detail_ids'] ?? []; // Optional list of approved detail ids. If empty, approve all.
+
+        if (!in_array($status, ['approved', 'rejected'], true)) {
+            respond(400, null, 'Trạng thái phê duyệt không hợp lệ', false);
+        }
+
+        // Fetch request
+        $stmtReq = $this->db->prepare("
+            SELECT r.*, u.full_name, u.tenant_id
+            FROM attendance_bulk_requests r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.id = ?
+        ");
+        $stmtReq->execute([$id]);
+        $req = $stmtReq->fetch(PDO::FETCH_ASSOC);
+
+        if (!$req) {
+            respond(404, null, 'Không tìm thấy phiếu đề xuất', false);
+        }
+
+        // Manager checks: only approve their own team members
+        if ($auth['role'] === 'manager') {
+            $stmtUserTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
+            $stmtUserTeam->execute([$req['user_id']]);
+            $targetUserTeamId = $stmtUserTeam->fetchColumn();
+
+            $isTeamMember = false;
+            if ($targetUserTeamId !== null) {
+                $stmtCheckManager = $this->db->prepare("
+                    SELECT 1 FROM teams WHERE id = ? AND FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
+                ");
+                $stmtCheckManager->execute([$targetUserTeamId, $auth['user_id']]);
+                $isTeamMember = (bool)$stmtCheckManager->fetch();
+            }
+
+            if ((int)$req['user_id'] !== (int)$auth['user_id'] && !$isTeamMember) {
+                respond(403, null, 'Bạn chỉ có quyền phê duyệt chấm công cho nhân viên thuộc nhóm của mình', false);
+            }
+        }
+
+        $this->db->beginTransaction();
+        try {
+            if ($status === 'rejected') {
+                $stmtUpdate = $this->db->prepare("
+                    UPDATE attendance_bulk_requests 
+                    SET status = 'rejected', admin_note = ? 
+                    WHERE id = ?
+                ");
+                $stmtUpdate->execute([$adminNote, $id]);
+            } else {
+                // If role is manager, status goes to 'pending_hr' (unless they are also admin/hr)
+                $nextStatus = 'approved';
+                if ($auth['role'] === 'manager') {
+                    $nextStatus = 'pending_hr';
+                    $stmtUpdate = $this->db->prepare("
+                        UPDATE attendance_bulk_requests 
+                        SET status = ?, manager_id = ?, admin_note = ? 
+                        WHERE id = ?
+                    ");
+                    $stmtUpdate->execute([$nextStatus, $auth['user_id'], $adminNote, $id]);
+                } else {
+                    $stmtUpdate = $this->db->prepare("
+                        UPDATE attendance_bulk_requests 
+                        SET status = 'approved', hr_id = ?, admin_note = ? 
+                        WHERE id = ?
+                    ");
+                    $stmtUpdate->execute([$auth['user_id'], $adminNote, $id]);
+                }
+
+                // If approved/pending_hr, update approved flag in details
+                if (!empty($approvedDetailIds)) {
+                    // Reset all to unapproved
+                    $this->db->prepare("UPDATE attendance_bulk_request_details SET approved = 0 WHERE request_id = ?")->execute([$id]);
+                    // Approve specific ones
+                    $placeholders = implode(',', array_fill(0, count($approvedDetailIds), '?'));
+                    $stmtApproveDetails = $this->db->prepare("
+                        UPDATE attendance_bulk_request_details SET approved = 1 
+                        WHERE request_id = ? AND id IN ($placeholders)
+                    ");
+                    $stmtApproveDetails->execute(array_merge([$id], $approvedDetailIds));
+                }
+
+                // If the nextStatus is 'approved' (meaning final HR/Admin approved), update the check_ins table!
+                if ($nextStatus === 'approved') {
+                    // Fetch all approved details
+                    $stmtDetails = $this->db->prepare("
+                        SELECT * FROM attendance_bulk_request_details 
+                        WHERE request_id = ? AND approved = 1
+                    ");
+                    $stmtDetails->execute([$id]);
+                    $details = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
+
+                    $stmtUpsert = $this->db->prepare("
+                        INSERT INTO check_ins (user_id, check_in_date, check_in_time, check_out_time, status, reason, admin_note)
+                        VALUES (?, ?, ?, ?, 'approved', ?, ?)
+                        ON DUPLICATE KEY UPDATE 
+                          check_in_time = VALUES(check_in_time),
+                          check_out_time = VALUES(check_out_time),
+                          status = 'approved',
+                          reason = VALUES(reason),
+                          admin_note = VALUES(admin_note)
+                    ");
+
+                    foreach ($details as $d) {
+                        $date = $d['check_in_date'];
+                        $inTime = $d['suggested_check_in'] ?: '08:30:00';
+                        $outTime = $d['suggested_check_out'] ? "$date " . $d['suggested_check_out'] : null;
+
+                        $stmtUpsert->execute([
+                            $req['user_id'],
+                            $date,
+                            $inTime,
+                            $outTime,
+                            $d['reason'],
+                            $adminNote ?: 'Duyệt bổ sung công tổng hợp'
+                        ]);
+                    }
+                }
+            }
+
+            $this->db->commit();
+
+            // Send notification to employee
+            try {
+                $statusText = $status === 'approved' ? 'chấp thuận' : 'từ chối';
+                if ($status === 'approved' && $auth['role'] === 'manager') {
+                    $statusText = 'chấp thuận bởi Quản lý (chờ HR duyệt)';
+                }
+                NotificationService::send($this->db, 1, 'ATTENDANCE_APPROVAL_RESULT', [
+                    'user_id' => $req['user_id'],
+                    'user_name' => $req['full_name'],
+                    'date' => $req['month_period'],
+                    'status' => $status,
+                    'is_supplementary' => true,
+                    'reason' => "Đề xuất bổ sung công tháng " . $req['month_period'] . " đã được " . $statusText
+                ]);
+            } catch (\Throwable $ne) {
+                error_log("Failed to send bulk approve notification: " . $ne->getMessage());
+            }
+
+            respond(200, null, 'Phê duyệt phiếu đề xuất bổ sung công thành công');
+        } catch (\Throwable $ex) {
+            $this->db->rollBack();
+            respond(500, null, 'Lỗi hệ thống: ' . $ex->getMessage(), false);
+        }
+    }
 }

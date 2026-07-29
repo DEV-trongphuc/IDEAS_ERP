@@ -1123,11 +1123,27 @@ switch ($resource) {
     case 'check-ins':
         $auth = requireAuth();
         $ctrl = new CheckInController($db);
-        if     (!$resourceId && $method === 'GET')    $ctrl->index($auth);
-        elseif (!$resourceId && $method === 'POST')   $ctrl->store($auth);
-        elseif ($resourceId  && $method === 'PUT')    $ctrl->update($auth, (int)$resourceId);
-        elseif ($resourceId  && $method === 'DELETE') $ctrl->destroy($auth, (int)$resourceId);
-        else respond(404, null, 'Route không tồn tại', false);
+        if ($resourceId === 'bulk-request') {
+            if ($method === 'POST') {
+                $ctrl->createBulkRequest($auth);
+            } elseif ($method === 'GET') {
+                if ($subResource === 'suggest') {
+                    $ctrl->suggestBulkDates($auth);
+                } else {
+                    $ctrl->listBulkRequests($auth);
+                }
+            } else {
+                respond(404, null, 'Route không tồn tại', false);
+            }
+        } elseif ($resourceId && $subResource === 'bulk-approve' && $method === 'POST') {
+            $ctrl->approveBulkRequest($auth, (int)$resourceId);
+        } else {
+            if     (!$resourceId && $method === 'GET')    $ctrl->index($auth);
+            elseif (!$resourceId && $method === 'POST')   $ctrl->store($auth);
+            elseif ($resourceId  && $method === 'PUT')    $ctrl->update($auth, (int)$resourceId);
+            elseif ($resourceId  && $method === 'DELETE') $ctrl->destroy($auth, (int)$resourceId);
+            else respond(404, null, 'Route không tồn tại', false);
+        }
         break;
 
     default:

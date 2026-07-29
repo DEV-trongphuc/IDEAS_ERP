@@ -169,6 +169,136 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   // Action submitting state
   const [actionSubmittingId, setActionSubmittingId] = useState<number | null>(null);
 
+  // Bulk attendance requests states
+  const [bulkRequests, setBulkRequests] = useState<any[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
+  const [selectedBulkRequest, setSelectedBulkRequest] = useState<any | null>(null);
+  const [bulkMonth, setBulkMonth] = useState(() => {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}`;
+  });
+  const [suggestedDays, setSuggestedDays] = useState<any[]>([]);
+  const [suggestedLoading, setSuggestedLoading] = useState(false);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkApprovingId, setBulkApprovingId] = useState<number | null>(null);
+  const [bulkAdminNote, setBulkAdminNote] = useState('');
+  const [selectedDetailIds, setSelectedDetailIds] = useState<number[]>([]);
+
+  const fetchBulkRequests = async () => {
+    setBulkLoading(true);
+    try {
+      const res = await fetchAPI('check-ins/bulk-request');
+      if (res && res.success) {
+        setBulkRequests(res.data || []);
+      } else {
+        toast.error(res?.message || t('Lỗi tải danh sách đề xuất'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(t('Lỗi tải dữ liệu đề xuất'));
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleScanMissingDays = async (monthPeriod: string) => {
+    setSuggestedLoading(true);
+    try {
+      const res = await fetchAPI(`check-ins/bulk-request/suggest?month_period=${monthPeriod}`);
+      if (res && res.success) {
+        const days = (res.data || []).map((day: any) => ({
+          date: day.date,
+          check_in: day.has_check_in ? (day.check_in_time ? day.check_in_time.substring(0, 5) : '08:30') : '08:30',
+          check_out: day.has_check_out ? (day.check_out_time ? day.check_out_time.substring(0, 5) : '17:30') : '17:30',
+          reason: '',
+          has_check_in: day.has_check_in,
+          has_check_out: day.has_check_out
+        }));
+        setSuggestedDays(days);
+        if (days.length === 0) {
+          toast.success(t('Không phát hiện ngày thiếu công nào trong tháng này!'));
+        }
+      } else {
+        toast.error(res?.message || t('Lỗi quét ngày thiếu công'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(t('Lỗi kết nối máy chủ khi quét'));
+    } finally {
+      setSuggestedLoading(false);
+    }
+  };
+
+  const handleSubmitBulkRequest = async () => {
+    if (suggestedDays.length === 0) {
+      toast.error(t('Vui lòng quét và chọn ít nhất một ngày đề xuất bổ sung'));
+      return;
+    }
+    const emptyReason = suggestedDays.some(d => !d.reason.trim());
+    if (emptyReason) {
+      toast.error(t('Vui lòng điền lý do bổ sung cho tất cả các ngày'));
+      return;
+    }
+    setBulkSubmitting(true);
+    try {
+      const res = await fetchAPI('check-ins/bulk-request', {
+        method: 'POST',
+        body: JSON.stringify({
+          month_period: bulkMonth,
+          details: suggestedDays.map(d => ({
+            date: d.date,
+            check_in: d.check_in,
+            check_out: d.check_out,
+            reason: d.reason
+          }))
+        }) as any
+      });
+      if (res && res.success) {
+        toast.success(t('Đã gửi phiếu đề xuất bổ sung công thành công!'));
+        setShowBulkCreateModal(false);
+        setSuggestedDays([]);
+        fetchBulkRequests();
+      } else {
+        toast.error(res?.message || t('Lỗi gửi phiếu đề xuất'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(t('Lỗi kết nối máy chủ'));
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
+  const handleApproveBulk = async (reqId: number, status: 'approved' | 'rejected') => {
+    setBulkApprovingId(reqId);
+    try {
+      const res = await fetchAPI(`check-ins/${reqId}/bulk-approve`, {
+        method: 'POST',
+        body: JSON.stringify({
+          status,
+          admin_note: bulkAdminNote,
+          approved_detail_ids: status === 'approved' ? selectedDetailIds : []
+        }) as any
+      });
+      if (res && res.success) {
+        toast.success(status === 'approved' ? t('Đã phê duyệt phiếu thành công!') : t('Đã từ chối phiếu đề xuất!'));
+        setSelectedBulkRequest(null);
+        setBulkAdminNote('');
+        setSelectedDetailIds([]);
+        fetchBulkRequests();
+      } else {
+        toast.error(res?.message || t('Lỗi xử lý phê duyệt'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(t('Lỗi kết nối máy chủ'));
+    } finally {
+      setBulkApprovingId(null);
+    }
+  };
+
   const downloadDayExcel = (date: string) => {
     const dayCheckIns = calendarCheckIns.filter(c => c.check_in_date === date);
     const headers = 'STT,Nhân viên,Email,Giờ quy định,Giờ check-in,Trạng thái,Lý do trễ\n';
@@ -273,6 +403,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       fetchCalendarCheckIns();
     } else if ((viewMode as string) === 'registrations') {
       fetchRegistrations();
+    } else if ((viewMode as string) === 'bulk_requests') {
+      fetchBulkRequests();
     }
   }, [viewMode, currentMonth, currentYear, filterUser, filterStatus]);
 
@@ -283,6 +415,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         fetchCalendarCheckIns();
       } else if ((viewMode as string) === 'registrations') {
         fetchRegistrations();
+      } else if ((viewMode as string) === 'bulk_requests') {
+        fetchBulkRequests();
       }
     };
     window.addEventListener('contact-updated', handleContactUpdated);
@@ -994,6 +1128,134 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     );
   };
 
+  const renderBulkRequestsView = () => {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Actions header */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem',
+          background: 'var(--color-surface)', padding: '1rem 1.25rem', borderRadius: '14px',
+          border: '1px solid var(--color-border)', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)'
+        }}>
+          <div>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text)' }}>
+              📋 {t('Danh sách Đề xuất Bổ sung công')}
+            </h3>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+              {t('Xem và phê duyệt các phiếu giải trình bổ sung chấm công gộp theo tháng.')}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              onClick={fetchBulkRequests}
+              className="btn outline icon-only"
+              disabled={bulkLoading}
+              style={{ height: '36px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}
+              title={t('Tải lại')}
+            >
+              <RefreshCw size={14} className={bulkLoading ? 'spin' : ''} />
+            </button>
+            
+            <button
+              onClick={() => {
+                setShowBulkCreateModal(true);
+                setSuggestedDays([]);
+              }}
+              className="btn primary"
+              style={{
+                height: '36px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '8px',
+                fontSize: '0.8125rem', fontWeight: 700, padding: '0 16px'
+              }}
+            >
+              <Zap size={14} />
+              {t('Tạo phiếu bổ sung công')}
+            </button>
+          </div>
+        </div>
+
+        {/* Requests List */}
+        <div className="card" style={{ padding: 0, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+          <div className="table-wrap" style={{ border: 'none', borderRadius: 0 }}>
+            <table className="mobile-table-compact" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', background: 'var(--color-bg-light)' }}>
+                  <th style={{ padding: '12px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('MÃ PHIẾU')}</th>
+                  <th style={{ padding: '12px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('NHÂN VIÊN')}</th>
+                  <th style={{ padding: '12px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('THÁNG CHU KỲ')}</th>
+                  <th style={{ padding: '12px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textAlign: 'center' }}>{t('SỐ NGÀY BỔ SUNG')}</th>
+                  <th style={{ padding: '12px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('TRẠNG THÁI')}</th>
+                  <th style={{ padding: '12px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textAlign: 'right' }}>{t('HÀNH ĐỘNG')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bulkLoading ? (
+                  [...Array(3)].map((_, i) => <TableRowSkeleton key={i} cols={6} />)
+                ) : bulkRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '3rem 2rem', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                      <Info size={28} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.5 }} />
+                      {t('Không tìm thấy phiếu đề xuất bổ sung công nào.')}
+                    </td>
+                  </tr>
+                ) : (
+                  bulkRequests.map((req) => {
+                    const statusConfig: Record<string, { label: string, color: string, bg: string }> = {
+                      pending_manager: { label: t('Chờ Quản lý duyệt'), color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+                      pending_hr: { label: t('Chờ HR duyệt'), color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+                      approved: { label: t('Đã duyệt cấp công'), color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+                      rejected: { label: t('Bị từ chối'), color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+                    };
+                    const st = statusConfig[req.status] || { label: req.status, color: 'var(--color-text-muted)', bg: 'var(--color-border-light)' };
+                    const dayCount = req.details ? req.details.length : 0;
+                    return (
+                      <tr key={req.id} style={{ borderBottom: '1px solid var(--color-border)', fontSize: '0.8125rem' }} className="table-row-hover">
+                        <td style={{ padding: '12px 16px', fontWeight: 700 }}>
+                          #{req.id}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{req.full_name}</span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {req.month_period}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 650 }}>
+                          {dayCount} {t('ngày')}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{
+                            padding: '3px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700,
+                            color: st.color, backgroundColor: st.bg, display: 'inline-block'
+                          }}>
+                            {st.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <button
+                            onClick={() => {
+                              setSelectedBulkRequest(req);
+                              setBulkAdminNote(req.admin_note || '');
+                              setSelectedDetailIds(req.details ? req.details.filter((d: any) => d.approved).map((d: any) => d.id) : []);
+                            }}
+                            className="btn sm outline"
+                            style={{ borderRadius: '6px', fontSize: '0.75rem', padding: '4px 10px' }}
+                          >
+                            <Eye size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                            {canApprove && (req.status === 'pending_manager' || req.status === 'pending_hr') ? t('Duyệt phiếu') : t('Xem chi tiết')}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderRegistrationsView = () => {
     // Filter registrations
     const filteredRegs = registrations.filter(r => {
@@ -1330,6 +1592,29 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 {t('Duyệt đăng ký ca')}
               </button>
             )}
+            <button
+              onClick={() => setViewMode('bulk_requests' as any)}
+              style={{
+                height: '30px',
+                padding: '0 16px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: (viewMode as string) === 'bulk_requests' ? 'var(--color-surface)' : 'transparent',
+                color: (viewMode as string) === 'bulk_requests' ? 'var(--color-text)' : 'var(--color-text-light)',
+                boxShadow: (viewMode as string) === 'bulk_requests' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+            >
+              <CheckSquare size={14} />
+              {t('Bổ sung công gộp')}
+            </button>
           </div>
         </div>
       )}
@@ -1921,6 +2206,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         );
       })() : (viewMode as string) === 'registrations' ? (
         renderRegistrationsView()
+      ) : (viewMode as string) === 'bulk_requests' ? (
+        renderBulkRequestsView()
       ) : (
         renderCalendarView()
       )}
@@ -2979,6 +3266,332 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         document.body
       )}
 
+      {/* Create Bulk Request Modal */}
+      {showBulkCreateModal && (
+        <CustomModal
+          isOpen={showBulkCreateModal}
+          onClose={() => setShowBulkCreateModal(false)}
+          title={t('Tạo phiếu đề xuất bổ sung công tổng hợp')}
+          width="760px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chọn tháng cần bổ sung')}</label>
+                <input
+                  type="month"
+                  value={bulkMonth}
+                  onChange={(e) => setBulkMonth(e.target.value)}
+                  style={{
+                    padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)',
+                    background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8125rem'
+                  }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleScanMissingDays(bulkMonth)}
+                disabled={suggestedLoading}
+                className="btn outline"
+                style={{ height: '38px', borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 650 }}
+              >
+                {suggestedLoading ? t('Đang quét...') : t('🔍 Quét các ngày thiếu công')}
+              </button>
+            </div>
+
+            {suggestedDays.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                    🎯 {t('Phát hiện')} {suggestedDays.length} {t('ngày chưa chấm công hợp lệ:')}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                    ({t('Nhập đầy đủ lý do bổ sung cho các ngày dưới đây')})
+                  </span>
+                </div>
+
+                <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                        <th style={{ padding: '10px 12px', width: '110px' }}>{t('Ngày')}</th>
+                        <th style={{ padding: '10px 12px', width: '110px' }}>{t('Check-in')}</th>
+                        <th style={{ padding: '10px 12px', width: '110px' }}>{t('Check-out')}</th>
+                        <th style={{ padding: '10px 12px' }}>{t('Lý do bổ sung')}</th>
+                        <th style={{ padding: '10px 12px', width: '60px', textAlign: 'center' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {suggestedDays.map((day, idx) => (
+                        <tr key={day.date} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>{day.date}</td>
+                          <td style={{ padding: '6px 12px' }}>
+                            <input
+                              type="time"
+                              value={day.check_in}
+                              onChange={(e) => {
+                                const newDays = [...suggestedDays];
+                                newDays[idx].check_in = e.target.value;
+                                setSuggestedDays(newDays);
+                              }}
+                              style={{ width: '100%', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', background: 'var(--color-surface)', color: 'var(--color-text)' }}
+                            />
+                          </td>
+                          <td style={{ padding: '6px 12px' }}>
+                            <input
+                              type="time"
+                              value={day.check_out}
+                              onChange={(e) => {
+                                const newDays = [...suggestedDays];
+                                newDays[idx].check_out = e.target.value;
+                                setSuggestedDays(newDays);
+                              }}
+                              style={{ width: '100%', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', background: 'var(--color-surface)', color: 'var(--color-text)' }}
+                            />
+                          </td>
+                          <td style={{ padding: '6px 12px' }}>
+                            <input
+                              type="text"
+                              value={day.reason}
+                              placeholder={t('Lý do bổ sung công...')}
+                              onChange={(e) => {
+                                const newDays = [...suggestedDays];
+                                newDays[idx].reason = e.target.value;
+                                setSuggestedDays(newDays);
+                              }}
+                              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', background: 'var(--color-surface)', color: 'var(--color-text)' }}
+                            />
+                          </td>
+                          <td style={{ padding: '6px 12px', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSuggestedDays(suggestedDays.filter(d => d.date !== day.date));
+                              }}
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)' }}
+                              title={t('Xóa khỏi đề xuất')}
+                            >
+                              <X size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkCreateModal(false)}
+                    className="btn outline"
+                    style={{ borderRadius: '8px', fontSize: '0.8125rem' }}
+                  >
+                    {t('Hủy bỏ')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmitBulkRequest}
+                    disabled={bulkSubmitting}
+                    className="btn primary"
+                    style={{ borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 700 }}
+                  >
+                    {bulkSubmitting ? t('Đang gửi...') : t('Gửi phiếu đề xuất bổ sung')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              !suggestedLoading && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                  {t('Vui lòng click nút Quét để quét các ngày thiếu công trong tháng.')}
+                </div>
+              )
+            )}
+          </div>
+        </CustomModal>
+      )}
+
+      {/* View & Approve Bulk Request Detail Modal */}
+      {selectedBulkRequest && (
+        <CustomModal
+          isOpen={!!selectedBulkRequest}
+          onClose={() => {
+            setSelectedBulkRequest(null);
+            setSelectedDetailIds([]);
+          }}
+          title={`${t('Chi tiết Phiếu Bổ sung công')} #${selectedBulkRequest.id}`}
+          width="760px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Header info */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', background: 'var(--color-bg-light)', padding: '12px 16px', borderRadius: '10px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Nhân viên đề xuất:')}</span>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{selectedBulkRequest.full_name}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Tháng chu kỳ:')}</span>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{selectedBulkRequest.month_period}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Trạng thái hiện tại:')}</span>
+                <div>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700,
+                    color: selectedBulkRequest.status === 'approved' ? '#10b981' : (selectedBulkRequest.status === 'rejected' ? '#ef4444' : '#f59e0b'),
+                    backgroundColor: selectedBulkRequest.status === 'approved' ? 'rgba(16,185,129,0.1)' : (selectedBulkRequest.status === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'),
+                    display: 'inline-block', marginTop: '2px'
+                  }}>
+                    {selectedBulkRequest.status === 'approved' ? t('Đã duyệt cấp công') : (selectedBulkRequest.status === 'rejected' ? t('Bị từ chối') : (selectedBulkRequest.status === 'pending_hr' ? t('Chờ HR duyệt') : t('Chờ Quản lý duyệt')))}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* List of days */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontWeight: 650, fontSize: '0.8125rem', color: 'var(--color-text)', display: 'flex', justifyContent: 'space-between' }}>
+                <span>🎯 {t('Danh sách các ngày bổ sung:')}</span>
+                {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-light)' }}>
+                    ({t('Tick chọn để duyệt từng ngày cụ thể, hoặc giữ mặc định để duyệt tất cả')})
+                  </span>
+                )}
+              </div>
+
+              <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                      {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                        <th style={{ padding: '10px 12px', width: '40px', textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedDetailIds.length === (selectedBulkRequest.details ? selectedBulkRequest.details.length : 0)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDetailIds(selectedBulkRequest.details ? selectedBulkRequest.details.map((d: any) => d.id) : []);
+                              } else {
+                                setSelectedDetailIds([]);
+                              }
+                            }}
+                          />
+                        </th>
+                      )}
+                      <th style={{ padding: '10px 12px', width: '120px' }}>{t('Ngày')}</th>
+                      <th style={{ padding: '10px 12px', width: '110px' }}>{t('Giờ Check-in')}</th>
+                      <th style={{ padding: '10px 12px', width: '110px' }}>{t('Giờ Check-out')}</th>
+                      <th style={{ padding: '10px 12px' }}>{t('Lý do bổ sung')}</th>
+                      <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center' }}>{t('Trạng thái')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedBulkRequest.details || []).map((detail: any) => (
+                      <tr key={detail.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDetailIds.includes(detail.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedDetailIds([...selectedDetailIds, detail.id]);
+                                } else {
+                                  setSelectedDetailIds(selectedDetailIds.filter(id => id !== detail.id));
+                                }
+                              }}
+                            />
+                          </td>
+                        )}
+                        <td style={{ padding: '10px 12px', fontWeight: 650 }}>{detail.check_in_date}</td>
+                        <td style={{ padding: '10px 12px' }}>{detail.suggested_check_in ? detail.suggested_check_in.substring(0, 5) : '--:--'}</td>
+                        <td style={{ padding: '10px 12px' }}>{detail.suggested_check_out ? detail.suggested_check_out.substring(0, 5) : '--:--'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--color-text-muted)' }}>{detail.reason}</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700,
+                            color: detail.approved ? '#10b981' : '#ef4444',
+                            backgroundColor: detail.approved ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'
+                          }}>
+                            {detail.approved ? t('Đồng ý') : t('Không duyệt')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Note & Approvals inputs */}
+            {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '12px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                  ✍️ {t('Ghi chú/Phản hồi phê duyệt')}
+                </label>
+                <textarea
+                  className="input"
+                  value={bulkAdminNote}
+                  onChange={(e) => setBulkAdminNote(e.target.value)}
+                  placeholder={t('Nhập ghi chú phản hồi cho nhân sự...')}
+                  rows={2}
+                  style={{
+                    width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)',
+                    background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8125rem'
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBulkRequest(null);
+                      setSelectedDetailIds([]);
+                    }}
+                    className="btn outline"
+                    style={{ borderRadius: '8px', fontSize: '0.8125rem' }}
+                  >
+                    {t('Quay lại')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveBulk(selectedBulkRequest.id, 'rejected')}
+                    disabled={!!bulkApprovingId}
+                    className="btn danger"
+                    style={{ borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 650 }}
+                  >
+                    {bulkApprovingId === selectedBulkRequest.id ? t('Đang xử lý...') : t('Từ chối')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveBulk(selectedBulkRequest.id, 'approved')}
+                    disabled={!!bulkApprovingId}
+                    className="btn success"
+                    style={{ borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 700 }}
+                  >
+                    {bulkApprovingId === selectedBulkRequest.id ? t('Đang xử lý...') : t('Phê duyệt')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBulkRequest(null);
+                    setSelectedDetailIds([]);
+                  }}
+                  className="btn outline"
+                  style={{ borderRadius: '8px', fontSize: '0.8125rem' }}
+                >
+                  {t('Đóng')}
+                </button>
+              </div>
+            )}
+          </div>
+        </CustomModal>
+      )}
     </div>
   );
 };
