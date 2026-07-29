@@ -1670,7 +1670,7 @@ export const Header = ({
             'Báo giá': 'Tạo và phê duyệt báo giá dịch vụ',
             'Sales Order': 'Theo dõi tiến độ đơn đặt cọc và các đợt thanh toán',
             'Purchase Order': 'Phê duyệt và báo cáo các khoản chi phí chi tiêu nội bộ',
-            'Quy trình phê duyệt': 'Quản lý phê duyệt nghỉ phép, tạm ứng, chi phí và chấm công',
+            'Quy trình': 'Quản lý phê duyệt nghỉ phép, tạm ứng, chi phí và chấm công',
             'Tài khoản cá nhân': 'Thông tin hồ sơ và đổi mật khẩu',
             'Chi nhánh': 'Quản lý các văn phòng và chi nhánh',
             'Team': 'Danh sách các đội nhóm kinh doanh',
@@ -1678,7 +1678,7 @@ export const Header = ({
             'Quản lý chấm công': 'Báo cáo check-in và xin nghỉ phép',
             'Chấm công': 'Ghi nhận check-in và xin nghỉ phép của tôi',
             'Nhân sự & Lương': 'Hồ sơ nhân sự, bảng lương và hợp đồng lao động',
-            'Phiếu lương cá nhân': 'Xem phiếu lương chi tiết từng tháng và xác nhận nhận lương',
+            'Phiếu lương': 'Xem phiếu lương chi tiết từng tháng và xác nhận nhận lương',
             'Cài đặt hệ thống': 'Các thông số và cấu hình chung toàn hệ thống',
             'Huấn luyện AI': 'Huấn luyện AI chatbot tư vấn và tự động hóa hỗ trợ',
             'Quản lý tài khoản': 'Phân quyền tài khoản quản trị viên',
@@ -1736,15 +1736,15 @@ export const Header = ({
             }
           }
 
-          // Dynamic Group Re-ordering based on role
+          // Dynamic Group Re-ordering based on role - Put QUY TRÌNH & PHÊ DUYỆT at the beginning
           const GROUP_ORDER_BY_ROLE: Record<string, string[]> = {
-            admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-            superadmin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-            super_admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-            director: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-            accountant: ['TỔNG QUAN', 'TÀI CHÍNH', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
-            hr: ['TỔNG QUAN', 'NHÂN SỰ', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH'],
-            marketing: ['TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
+            admin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            superadmin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            super_admin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            director: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+            accountant: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
+            hr: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'NHÂN SỰ', 'CHƯƠNG TRÌNH'],
+            marketing: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
           };
           const activeRole = role.toLowerCase();
           const groupOrder = GROUP_ORDER_BY_ROLE[activeRole];
@@ -1762,25 +1762,25 @@ export const Header = ({
 
           const filteredItems = launcherSearch.trim()
             ? allVisibleItems.filter(item => 
-                item.name.toLowerCase().includes(launcherSearch.toLowerCase()) ||
-                (ITEM_DESC[item.name] && ITEM_DESC[item.name].toLowerCase().includes(launcherSearch.toLowerCase())) ||
-                item.groupTitle.toLowerCase().includes(launcherSearch.toLowerCase())
-              )
+                 item.name.toLowerCase().includes(launcherSearch.toLowerCase()) ||
+                 (ITEM_DESC[item.name] && ITEM_DESC[item.name].toLowerCase().includes(launcherSearch.toLowerCase())) ||
+                 item.groupTitle.toLowerCase().includes(launcherSearch.toLowerCase())
+               )
             : [];
 
           const RECENT_TARGETS_BY_ROLE: Record<string, string[]> = {
-            admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            superadmin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            super_admin: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            director: ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Quy trình', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            sale: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
-            sales: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
-            accountant: ['Sales Order', 'Purchase Order', 'Quy trình', 'Phiếu lương cá nhân', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc'],
-            hr: ['Nhân sự & Lương', 'Quản lý chấm công', 'Quy trình', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu'],
-            marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data']
+            admin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            superadmin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            super_admin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            director: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
+            sale: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Ticket hỗ trợ', 'Lịch trình'],
+            sales: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Ticket hỗ trợ', 'Lịch trình'],
+            accountant: ['Quy trình', 'Sales Order', 'Purchase Order', 'Phiếu lương', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc', 'Tài liệu', 'Lịch trình'],
+            hr: ['Quy trình', 'Nhân sự & Lương', 'Quản lý chấm công', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu', 'Phiếu lương', 'Tài khoản cá nhân'],
+            marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Tài liệu', 'Bàn làm việc']
           };
 
-          const recentTargets = RECENT_TARGETS_BY_ROLE[role.toLowerCase()] || ['Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Kho Databank', 'Lịch trình'];
+          const recentTargets = RECENT_TARGETS_BY_ROLE[role.toLowerCase()] || ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Lịch trình', 'Tài liệu'];
           const recentItems = recentTargets
             .map(name => allVisibleItems.find(item => item.name === name))
             .filter(Boolean)
