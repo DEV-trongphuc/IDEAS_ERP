@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { 
   FileText, Calendar, CheckCircle, ShieldCheck, PenTool,
   Clock, DollarSign, Award, Percent, HelpCircle, Plus, Send,
-  ChevronLeft, ChevronRight, XCircle, CheckCircle2, Download
+  ChevronLeft, ChevronRight, XCircle, CheckCircle2, Download, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -17,6 +17,10 @@ import { CustomModal } from '../components/ui/CustomModal';
 export default function MyPayslips() {
   const { t } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState<'payslip' | 'leaves' | 'advances'>('payslip');
+
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeNote, setDisputeNote] = useState('');
+  const [sendingDispute, setSendingDispute] = useState(false);
 
   const getPeriodLabel = (periodStr: string) => {
     const parts = periodStr.split('-');
@@ -300,6 +304,20 @@ export default function MyPayslips() {
   };
 
   // --- SIGNATURE DRAWING PAD ---
+  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e && e.touches.length > 0 ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e && e.touches.length > 0 ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    const scaleX = canvas.width / (rect.width || 1);
+    const scaleY = canvas.height / (rect.height || 1);
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -310,16 +328,7 @@ export default function MyPayslips() {
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     
-    let x, y;
-    if ('touches' in e) {
-      const rect = canvas.getBoundingClientRect();
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.nativeEvent.offsetX;
-      y = e.nativeEvent.offsetY;
-    }
-
+    const { x, y } = getCanvasCoordinates(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -332,16 +341,7 @@ export default function MyPayslips() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let x, y;
-    if ('touches' in e) {
-      const rect = canvas.getBoundingClientRect();
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.nativeEvent.offsetX;
-      y = e.nativeEvent.offsetY;
-    }
-
+    const { x, y } = getCanvasCoordinates(e);
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -389,6 +389,37 @@ export default function MyPayslips() {
       toast.error(err?.message || t('Lỗi xác nhận phiếu lương'));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSendDispute = async () => {
+    if (!disputeNote.trim()) {
+      toast.error(t('Vui lòng nhập nội dung ghi chú yêu cầu thay đổi!'));
+      return;
+    }
+    if (!payslip) return;
+
+    setSendingDispute(true);
+    try {
+      await fetchAPI('hrm/payroll/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: payslip.id,
+          action: 'dispute',
+          note: disputeNote
+        })
+      });
+      toast.success(t('Đã gửi yêu cầu thay đổi phiếu lương thành công!'));
+      setDisputeModalOpen(false);
+      setDisputeNote('');
+      setIsModalOpen(false);
+      loadAllPayslips();
+      loadPayslip();
+    } catch (err: any) {
+      toast.error(err?.message || t('Lỗi khi gửi yêu cầu'));
+    } finally {
+      setSendingDispute(false);
     }
   };
 
@@ -1028,6 +1059,11 @@ export default function MyPayslips() {
                     <strong style={{ fontSize: '0.85rem', marginTop: 4 }}>{payslip.employee_name}</strong>
                   </div>
                 )}
+                {payslip.status === 'disputed' && payslip.note && (
+                  <div style={{ marginTop: '1.5rem', padding: '12px 16px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', fontSize: '0.85rem' }}>
+                    <strong>⚠️ {t('Đã gửi yêu cầu thay đổi:')}</strong> {payslip.note}
+                  </div>
+                )}
               </div>
               {payslip.status === 'sent' && (
                 <div className="card" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
@@ -1040,6 +1076,15 @@ export default function MyPayslips() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: '1rem' }}>
                     <button onClick={clearCanvas} className="btn secondary" style={{ padding: '6px 14px', fontSize: '0.825rem' }}>{t('Vẽ lại')}</button>
+                    <button
+                      onClick={() => setDisputeModalOpen(true)}
+                      disabled={submitting}
+                      className="btn outline"
+                      style={{ padding: '6px 16px', fontSize: '0.825rem', color: '#ef4444' }}
+                    >
+                      <AlertCircle size={14} />
+                      {t('Yêu cầu thay đổi')}
+                    </button>
                     <button onClick={handleConfirmPayslip} disabled={submitting} className="btn primary" style={{ padding: '6px 20px', fontSize: '0.825rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <CheckCircle size={14} />
                       {submitting ? t('Đang ký...') : t('Ký xác nhận lương')}
@@ -1049,6 +1094,30 @@ export default function MyPayslips() {
               )}
             </div>
           ) : null}
+        </div>
+      </CustomModal>
+
+      {/* Dispute Modal */}
+      <CustomModal
+        isOpen={disputeModalOpen}
+        onClose={() => setDisputeModalOpen(false)}
+        title={t("Yêu cầu thay đổi / Khiếu nại")}
+        width="500px"
+      >
+        <div style={{ padding: '10px' }}>
+          <textarea
+            value={disputeNote}
+            onChange={(e) => setDisputeNote(e.target.value)}
+            placeholder={t('Vui lòng nhập lý do yêu cầu thay đổi...')}
+            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
+            rows={4}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '1rem' }}>
+            <button onClick={() => setDisputeModalOpen(false)} className="btn secondary">{t('Hủy')}</button>
+            <button onClick={handleSendDispute} disabled={sendingDispute} className="btn primary">
+              {sendingDispute ? t('Đang gửi...') : t('Gửi yêu cầu')}
+            </button>
+          </div>
         </div>
       </CustomModal>
 

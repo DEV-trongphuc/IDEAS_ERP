@@ -911,10 +911,37 @@ class HRMController {
         $b = getBody();
         $id = (int)($b['id'] ?? 0);
         $signatureUrl = $b['signature_url'] ?? '';
+        $action = $b['action'] ?? 'confirm';
+        $note = trim($b['note'] ?? '');
+
+        if ($action === 'dispute') {
+            if (empty($note)) respond(400, null, 'Vui lòng nhập lý do/ghi chú yêu cầu thay đổi', false);
+
+            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'disputed', note = ? WHERE id = ? AND user_id = ? AND status IN ('sent', 'draft')");
+            $stmt->execute([$note, $id, $auth['user_id']]);
+
+            // Dispatch Notification
+            try {
+                $stmtP = $this->db->prepare("SELECT p.*, u.full_name FROM monthly_payslips p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
+                $stmtP->execute([$id]);
+                $psRow = $stmtP->fetch(PDO::FETCH_ASSOC);
+                if ($psRow) {
+                    require_once __DIR__ . '/../NotificationService.php';
+                    NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_DISPUTED', [
+                        'user_name' => $psRow['full_name'],
+                        'month_year' => $psRow['month_year'],
+                        'note' => $note
+                    ]);
+                }
+            } catch (\Throwable $e) {}
+
+            respond(200, ['success' => true, 'message' => 'Đã gửi yêu cầu thay đổi thành công']);
+            return;
+        }
 
         if (empty($signatureUrl)) respond(400, null, 'Chữ ký là bắt buộc để xác nhận phiếu lương', false);
 
-        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'confirmed', signature_url = ?, confirmed_at = NOW() WHERE id = ? AND user_id = ? AND status = 'sent'");
+        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'confirmed', signature_url = ?, confirmed_at = NOW() WHERE id = ? AND user_id = ? AND status IN ('sent', 'draft')");
         $stmt->execute([$signatureUrl, $id, $auth['user_id']]);
 
         // Dispatch Notification
