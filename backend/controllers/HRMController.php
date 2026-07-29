@@ -1074,6 +1074,36 @@ class HRMController {
             }
         }
 
+        // 5. Pending Bulk Attendance Requests
+        $stmtBulks = $this->db->prepare("
+            SELECT r.id, u.full_name as employee_name, r.month_period, r.status, r.created_at
+            FROM attendance_bulk_requests r
+            JOIN users u ON r.user_id = u.id
+            WHERE u.tenant_id = ? AND r.status IN ('pending_manager', 'pending_hr')
+        ");
+        $stmtBulks->execute([$auth['tenant_id']]);
+        $bulks = $stmtBulks->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($bulks as $b) {
+            $shouldShow = false;
+            if ($b['status'] === 'pending_hr' && in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr'])) {
+                $shouldShow = true;
+            } else if ($b['status'] === 'pending_manager') {
+                $shouldShow = true;
+            }
+
+            if ($shouldShow) {
+                $pending[] = [
+                    'id' => (int)$b['id'],
+                    'type' => 'attendance_bulk',
+                    'employee_name' => $b['employee_name'],
+                    'title' => 'Phiếu bổ sung công gộp tháng ' . $b['month_period'],
+                    'description' => 'Giải trình công hàng loạt chu kỳ tháng ' . $b['month_period'],
+                    'status' => $b['status'],
+                    'created_at' => $b['created_at']
+                ];
+            }
+        }
+
         // Sort by created_at DESC
         usort($pending, function($a, $b) {
             return strcmp($b['created_at'], $a['created_at']);
@@ -1168,6 +1198,25 @@ class HRMController {
                 'description' => 'Đi trễ ' . $c['late_minutes'] . ' phút (Check-in lúc ' . $c['check_in_time'] . '). Lý do: "' . $c['reason'] . '"',
                 'status' => $c['status'],
                 'created_at' => $c['created_at']
+            ];
+        }
+
+        // 5. My Bulk Attendance Requests
+        $stmtBulks = $this->db->prepare("
+            SELECT r.id, r.month_period, r.status, r.created_at
+            FROM attendance_bulk_requests r
+            WHERE r.user_id = ?
+        ");
+        $stmtBulks->execute([$auth['user_id']]);
+        $bulks = $stmtBulks->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($bulks as $b) {
+            $pending[] = [
+                'id' => (int)$b['id'],
+                'type' => 'attendance_bulk',
+                'title' => 'Phiếu bổ sung công gộp tháng ' . $b['month_period'],
+                'description' => 'Giải trình công hàng loạt chu kỳ tháng ' . $b['month_period'],
+                'status' => $b['status'],
+                'created_at' => $b['created_at']
             ];
         }
 

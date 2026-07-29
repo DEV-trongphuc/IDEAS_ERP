@@ -32,6 +32,21 @@ const resolveAttachmentUrl = (path: string | null | undefined): string => {
 
 export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean }) => {
   const { t } = useLanguage();
+  const getDayOfWeek = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    const days = [
+      t('Chủ Nhật'),
+      t('Thứ Hai'),
+      t('Thứ Ba'),
+      t('Thứ Tư'),
+      t('Thứ Năm'),
+      t('Thứ Sáu'),
+      t('Thứ Bảy')
+    ];
+    return days[day];
+  };
   const { user } = useAuth();
   const { showConfirm } = useUIStore();
   const location = useLocation();
@@ -176,6 +191,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const [selectedBulkRequest, setSelectedBulkRequest] = useState<any | null>(null);
   const [bulkMonth, setBulkMonth] = useState(() => {
     const d = new Date();
+    d.setMonth(d.getMonth() - 1); // Mặc định lấy tháng trước
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     return `${d.getFullYear()}-${mm}`;
   });
@@ -729,6 +745,30 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               }}
             >
               {t('Hôm nay')}
+            </button>
+
+            {/* Button Bổ sung công gộp next to Hôm nay */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowBulkCreateModal(true);
+                // Trigger scanning automatically using the default previous month when opening
+                handleScanMissingDays(bulkMonth);
+              }}
+              className="btn primary hover-lift"
+              style={{
+                borderRadius: 'var(--radius-md)',
+                height: '38px',
+                padding: '0 16px',
+                fontWeight: 700,
+                fontSize: '0.8125rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <CheckSquare size={14} />
+              {t('Bổ sung công gộp')}
             </button>
           </div>
           
@@ -3266,331 +3306,752 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         document.body
       )}
 
-      {/* Create Bulk Request Modal */}
+      {/* Create Bulk Request Drawer */}
       {showBulkCreateModal && (
-        <CustomModal
-          isOpen={showBulkCreateModal}
-          onClose={() => setShowBulkCreateModal(false)}
-          title={t('Tạo phiếu đề xuất bổ sung công tổng hợp')}
-          width="760px"
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Chọn tháng cần bổ sung')}</label>
-                <input
-                  type="month"
-                  value={bulkMonth}
-                  onChange={(e) => setBulkMonth(e.target.value)}
-                  style={{
-                    padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8125rem'
-                  }}
+        <>
+          <div 
+            className="drawer-backdrop" 
+            onClick={() => setShowBulkCreateModal(false)}
+            style={{ zIndex: 10500 }}
+          />
+
+          <div className="drawer-sheet" style={{
+            position: 'fixed',
+            top: 0,
+            left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
+            boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box',
+            zIndex: 10600,
+            overflow: 'hidden'
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Drawer Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid var(--color-border-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--color-surface)',
+              zIndex: 100,
+              position: 'sticky',
+              top: 0,
+              flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img 
+                  src="/LOGO.jpg" 
+                  alt="IDEAS LOGO" 
+                  style={{ 
+                    height: '32px', 
+                    width: '32px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border-light)',
+                    objectFit: 'cover'
+                  }} 
                 />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)' }}>
+                  IDEAS - {t('Quy trình')} ({t('Tạo mới')})
+                </h3>
               </div>
-
-              <button
-                type="button"
-                onClick={() => handleScanMissingDays(bulkMonth)}
-                disabled={suggestedLoading}
-                className="btn outline"
-                style={{ height: '38px', borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 650 }}
-              >
-                {suggestedLoading ? t('Đang quét...') : t('🔍 Quét các ngày thiếu công')}
-              </button>
-            </div>
-
-            {suggestedDays.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)' }}>
-                    🎯 {t('Phát hiện')} {suggestedDays.length} {t('ngày chưa chấm công hợp lệ:')}
-                  </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                    ({t('Nhập đầy đủ lý do bổ sung cho các ngày dưới đây')})
-                  </span>
-                </div>
-
-                <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-                    <thead>
-                      <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
-                        <th style={{ padding: '10px 12px', width: '110px' }}>{t('Ngày')}</th>
-                        <th style={{ padding: '10px 12px', width: '110px' }}>{t('Check-in')}</th>
-                        <th style={{ padding: '10px 12px', width: '110px' }}>{t('Check-out')}</th>
-                        <th style={{ padding: '10px 12px' }}>{t('Lý do bổ sung')}</th>
-                        <th style={{ padding: '10px 12px', width: '60px', textAlign: 'center' }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {suggestedDays.map((day, idx) => (
-                        <tr key={day.date} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>{day.date}</td>
-                          <td style={{ padding: '6px 12px' }}>
-                            <input
-                              type="time"
-                              value={day.check_in}
-                              onChange={(e) => {
-                                const newDays = [...suggestedDays];
-                                newDays[idx].check_in = e.target.value;
-                                setSuggestedDays(newDays);
-                              }}
-                              style={{ width: '100%', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', background: 'var(--color-surface)', color: 'var(--color-text)' }}
-                            />
-                          </td>
-                          <td style={{ padding: '6px 12px' }}>
-                            <input
-                              type="time"
-                              value={day.check_out}
-                              onChange={(e) => {
-                                const newDays = [...suggestedDays];
-                                newDays[idx].check_out = e.target.value;
-                                setSuggestedDays(newDays);
-                              }}
-                              style={{ width: '100%', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', background: 'var(--color-surface)', color: 'var(--color-text)' }}
-                            />
-                          </td>
-                          <td style={{ padding: '6px 12px' }}>
-                            <input
-                              type="text"
-                              value={day.reason}
-                              placeholder={t('Lý do bổ sung công...')}
-                              onChange={(e) => {
-                                const newDays = [...suggestedDays];
-                                newDays[idx].reason = e.target.value;
-                                setSuggestedDays(newDays);
-                              }}
-                              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '0.75rem', background: 'var(--color-surface)', color: 'var(--color-text)' }}
-                            />
-                          </td>
-                          <td style={{ padding: '6px 12px', textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSuggestedDays(suggestedDays.filter(d => d.date !== day.date));
-                              }}
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)' }}
-                              title={t('Xóa khỏi đề xuất')}
-                            >
-                              <X size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => setShowBulkCreateModal(false)}
+                  className="btn outline"
+                  style={{
+                    height: '36px',
+                    padding: '0 12px',
+                    fontSize: '0.8rem',
+                    borderRadius: '8px'
+                  }}
+                >
+                  {t('Hủy bỏ')}
+                </button>
+                {suggestedDays.length > 0 && (
                   <button
-                    type="button"
-                    onClick={() => setShowBulkCreateModal(false)}
-                    className="btn outline"
-                    style={{ borderRadius: '8px', fontSize: '0.8125rem' }}
-                  >
-                    {t('Hủy bỏ')}
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleSubmitBulkRequest}
                     disabled={bulkSubmitting}
-                    className="btn primary"
-                    style={{ borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 700 }}
+                    className="btn primary success"
+                    style={{
+                      height: '36px',
+                      padding: '0 12px',
+                      fontSize: '0.8rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderRadius: '8px',
+                      color: '#ffffff'
+                    }}
                   >
-                    {bulkSubmitting ? t('Đang gửi...') : t('Gửi phiếu đề xuất bổ sung')}
+                    <Check size={14} />
+                    {bulkSubmitting ? t('Đang gửi...') : t('Gửi quy trình')}
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowBulkCreateModal(false)} 
+                  className="hover-lift"
+                  style={{
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '36px',
+                    width: '36px'
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Drawer Body (Split layout) */}
+            <div className="custom-scrollbar" style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1.5rem',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1.1fr 0.9fr',
+              gap: '1.5rem',
+              background: 'var(--color-bg-light, #f8fafc)'
+            }}>
+              {/* Left Column: Form & Scan Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {/* Configuration Card */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  gap: '16px',
+                  alignItems: 'flex-end',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px', flex: '1' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {t('Tháng cần bổ sung')}
+                    </label>
+                    <input
+                      type="month"
+                      value={bulkMonth}
+                      onChange={(e) => setBulkMonth(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-bg-light)',
+                        color: 'var(--color-text)',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleScanMissingDays(bulkMonth)}
+                    disabled={suggestedLoading}
+                    className="btn outline hover-lift"
+                    style={{
+                      height: '38px',
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      borderColor: 'var(--color-primary)',
+                      color: 'var(--color-primary)'
+                    }}
+                  >
+                    <RefreshCw size={14} className={suggestedLoading ? 'spin' : ''} />
+                    {suggestedLoading ? t('Đang quét...') : t('Quét các ngày thiếu công')}
                   </button>
                 </div>
-              </div>
-            ) : (
-              !suggestedLoading && (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
-                  {t('Vui lòng click nút Quét để quét các ngày thiếu công trong tháng.')}
+
+                {/* List of scanned days */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                      {t('NGÀY ĐỀ XUẤT PHÁT HIỆN')} ({suggestedDays.length} {t('ngày')})
+                    </h3>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)' }}>
+                      {t('Vui lòng giải trình đầy đủ lý do bổ sung')}
+                    </span>
+                  </div>
+
+                  {suggestedDays.length > 0 ? (
+                    <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                        <thead>
+                          <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                            <th style={{ padding: '10px 12px', width: '100px' }}>{t('Ngày')}</th>
+                            <th style={{ padding: '10px 12px', width: '100px' }}>{t('Thứ')}</th>
+                            <th style={{ padding: '10px 12px', width: '90px' }}>{t('Vào')}</th>
+                            <th style={{ padding: '10px 12px', width: '90px' }}>{t('Ra')}</th>
+                            <th style={{ padding: '10px 12px' }}>{t('Lý do giải trình')}</th>
+                            <th style={{ padding: '10px 12px', width: '50px', textAlign: 'center' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {suggestedDays.map((day, idx) => (
+                            <tr key={day.date} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <td style={{ padding: '10px 12px', fontWeight: 650 }}>{day.date}</td>
+                              <td style={{ padding: '10px 12px', color: 'var(--color-text-muted)' }}>{getDayOfWeek(day.date)}</td>
+                              <td style={{ padding: '6px 12px' }}>
+                                <input
+                                  type="time"
+                                  value={day.check_in}
+                                  onChange={(e) => {
+                                    const newDays = [...suggestedDays];
+                                    newDays[idx].check_in = e.target.value;
+                                    setSuggestedDays(newDays);
+                                  }}
+                                  disabled={day.has_check_in}
+                                  style={{
+                                    width: '100%',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--color-border)',
+                                    fontSize: '0.75rem',
+                                    background: day.has_check_in ? 'var(--color-bg-light, #f1f5f9)' : 'var(--color-surface)',
+                                    color: day.has_check_in ? 'var(--color-text-muted, #94a3b8)' : 'var(--color-text)',
+                                    cursor: day.has_check_in ? 'not-allowed' : 'auto'
+                                  }}
+                                />
+                              </td>
+                              <td style={{ padding: '6px 12px' }}>
+                                <input
+                                  type="time"
+                                  value={day.check_out}
+                                  onChange={(e) => {
+                                    const newDays = [...suggestedDays];
+                                    newDays[idx].check_out = e.target.value;
+                                    setSuggestedDays(newDays);
+                                  }}
+                                  disabled={day.has_check_out}
+                                  style={{
+                                    width: '100%',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--color-border)',
+                                    fontSize: '0.75rem',
+                                    background: day.has_check_out ? 'var(--color-bg-light, #f1f5f9)' : 'var(--color-surface)',
+                                    color: day.has_check_out ? 'var(--color-text-muted, #94a3b8)' : 'var(--color-text)',
+                                    cursor: day.has_check_out ? 'not-allowed' : 'auto'
+                                  }}
+                                />
+                              </td>
+                              <td style={{ padding: '6px 12px' }}>
+                                <input
+                                  type="text"
+                                  value={day.reason}
+                                  placeholder={t('Lý do giải trình công...')}
+                                  onChange={(e) => {
+                                    const newDays = [...suggestedDays];
+                                    newDays[idx].reason = e.target.value;
+                                    setSuggestedDays(newDays);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--color-border)',
+                                    fontSize: '0.75rem',
+                                    background: 'var(--color-surface)',
+                                    color: 'var(--color-text)'
+                                  }}
+                                />
+                              </td>
+                              <td style={{ padding: '6px 12px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setSuggestedDays(suggestedDays.filter(d => d.date !== day.date))}
+                                  style={{
+                                    border: 'none',
+                                    background: 'none',
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                >
+                                  <X size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div style={{
+                      padding: '2rem 1.5rem',
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                      border: '1px dashed var(--color-border)',
+                      borderRadius: '12px',
+                      background: 'var(--color-bg-light)'
+                    }}>
+                      <Info size={28} style={{ marginBottom: '8px', color: 'var(--color-primary)', opacity: 0.7 }} />
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>
+                        {t('Không có ngày nào thiếu công cần bổ sung cho tháng này. Hãy bấm Quét các ngày thiếu công để bắt đầu!')}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )
-            )}
+              </div>
+
+              {/* Right Column: Steps Preview */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.5rem',
+                background: 'var(--color-surface)',
+                padding: '1.25rem',
+                borderRadius: '16px',
+                border: '1px solid var(--color-border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                    {t('CÁC BƯỚC THỰC HIỆN DỰ KIẾN')}
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '10px' }}>
+                    {[
+                      { title: t('Trưởng bộ phận phê duyệt'), desc: t('Tự động định tuyến khi quy trình được gửi') },
+                      { title: t('Nhân sự (HR) phê duyệt'), desc: t('Được chuyển giao sau khi Manager thông qua') },
+                      { title: t('Hoàn tất cấp công'), desc: t('Bảng công được cập nhật tự động lên hệ thống') }
+                    ].map((step, idx, arr) => (
+                      <div key={idx} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+                        {idx < arr.length - 1 && (
+                          <div style={{
+                            position: 'absolute', left: '15px', top: '32px', bottom: '-20px', width: '2px',
+                            background: 'var(--color-border-light)'
+                          }} />
+                        )}
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          backgroundColor: 'var(--color-border-light)', color: 'var(--color-text-muted)', flexShrink: 0
+                        }}>
+                          {idx === 0 ? <RefreshCw size={12} /> : <Clock size={12} />}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>{step.title}</span>
+                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-light)' }}>{step.desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '12px', marginTop: '10px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('Thông tin người khởi tạo')}
+                  </label>
+                  <div style={{
+                    padding: '10px 12px', borderRadius: '8px', background: 'var(--color-bg-light)',
+                    border: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-text-light)'
+                  }}>
+                    {user?.name || user?.username} ({user?.role})
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </CustomModal>
+        </>
       )}
 
-      {/* View & Approve Bulk Request Detail Modal */}
+      {/* View & Approve Bulk Request Detail Drawer */}
       {selectedBulkRequest && (
-        <CustomModal
-          isOpen={!!selectedBulkRequest}
-          onClose={() => {
-            setSelectedBulkRequest(null);
-            setSelectedDetailIds([]);
-          }}
-          title={`${t('Chi tiết Phiếu Bổ sung công')} #${selectedBulkRequest.id}`}
-          width="760px"
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Header info */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', background: 'var(--color-bg-light)', padding: '12px 16px', borderRadius: '10px' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Nhân viên đề xuất:')}</span>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{selectedBulkRequest.full_name}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Tháng chu kỳ:')}</span>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{selectedBulkRequest.month_period}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('Trạng thái hiện tại:')}</span>
-                <div>
-                  <span style={{
-                    padding: '2px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700,
-                    color: selectedBulkRequest.status === 'approved' ? '#10b981' : (selectedBulkRequest.status === 'rejected' ? '#ef4444' : '#f59e0b'),
-                    backgroundColor: selectedBulkRequest.status === 'approved' ? 'rgba(16,185,129,0.1)' : (selectedBulkRequest.status === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'),
-                    display: 'inline-block', marginTop: '2px'
-                  }}>
-                    {selectedBulkRequest.status === 'approved' ? t('Đã duyệt cấp công') : (selectedBulkRequest.status === 'rejected' ? t('Bị từ chối') : (selectedBulkRequest.status === 'pending_hr' ? t('Chờ HR duyệt') : t('Chờ Quản lý duyệt')))}
-                  </span>
-                </div>
-              </div>
-            </div>
+        <>
+          <div 
+            className="drawer-backdrop" 
+            onClick={() => {
+              setSelectedBulkRequest(null);
+              setSelectedDetailIds([]);
+            }}
+            style={{ zIndex: 10500 }}
+          />
 
-            {/* List of days */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontWeight: 650, fontSize: '0.8125rem', color: 'var(--color-text)', display: 'flex', justifyContent: 'space-between' }}>
-                <span>🎯 {t('Danh sách các ngày bổ sung:')}</span>
-                {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
-                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-light)' }}>
-                    ({t('Tick chọn để duyệt từng ngày cụ thể, hoặc giữ mặc định để duyệt tất cả')})
-                  </span>
-                )}
-              </div>
-
-              <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
-                      {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
-                        <th style={{ padding: '10px 12px', width: '40px', textAlign: 'center' }}>
-                          <input
-                            type="checkbox"
-                            checked={selectedDetailIds.length === (selectedBulkRequest.details ? selectedBulkRequest.details.length : 0)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedDetailIds(selectedBulkRequest.details ? selectedBulkRequest.details.map((d: any) => d.id) : []);
-                              } else {
-                                setSelectedDetailIds([]);
-                              }
-                            }}
-                          />
-                        </th>
-                      )}
-                      <th style={{ padding: '10px 12px', width: '120px' }}>{t('Ngày')}</th>
-                      <th style={{ padding: '10px 12px', width: '110px' }}>{t('Giờ Check-in')}</th>
-                      <th style={{ padding: '10px 12px', width: '110px' }}>{t('Giờ Check-out')}</th>
-                      <th style={{ padding: '10px 12px' }}>{t('Lý do bổ sung')}</th>
-                      <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center' }}>{t('Trạng thái')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(selectedBulkRequest.details || []).map((detail: any) => (
-                      <tr key={detail.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
-                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedDetailIds.includes(detail.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedDetailIds([...selectedDetailIds, detail.id]);
-                                } else {
-                                  setSelectedDetailIds(selectedDetailIds.filter(id => id !== detail.id));
-                                }
-                              }}
-                            />
-                          </td>
-                        )}
-                        <td style={{ padding: '10px 12px', fontWeight: 650 }}>{detail.check_in_date}</td>
-                        <td style={{ padding: '10px 12px' }}>{detail.suggested_check_in ? detail.suggested_check_in.substring(0, 5) : '--:--'}</td>
-                        <td style={{ padding: '10px 12px' }}>{detail.suggested_check_out ? detail.suggested_check_out.substring(0, 5) : '--:--'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--color-text-muted)' }}>{detail.reason}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <span style={{
-                            padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700,
-                            color: detail.approved ? '#10b981' : '#ef4444',
-                            backgroundColor: detail.approved ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'
-                          }}>
-                            {detail.approved ? t('Đồng ý') : t('Không duyệt')}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Note & Approvals inputs */}
-            {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '12px' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                  ✍️ {t('Ghi chú/Phản hồi phê duyệt')}
-                </label>
-                <textarea
-                  className="input"
-                  value={bulkAdminNote}
-                  onChange={(e) => setBulkAdminNote(e.target.value)}
-                  placeholder={t('Nhập ghi chú phản hồi cho nhân sự...')}
-                  rows={2}
-                  style={{
-                    width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8125rem'
-                  }}
+          <div className="drawer-sheet" style={{
+            position: 'fixed',
+            top: 0,
+            left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
+            boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box',
+            zIndex: 10600,
+            overflow: 'hidden'
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Drawer Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid var(--color-border-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--color-surface)',
+              zIndex: 100,
+              position: 'sticky',
+              top: 0,
+              flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img 
+                  src="/LOGO.jpg" 
+                  alt="IDEAS LOGO" 
+                  style={{ 
+                    height: '32px', 
+                    width: '32px', 
+                    borderRadius: '8px', 
+                    border: '1px solid var(--color-border-light)',
+                    objectFit: 'cover'
+                  }} 
                 />
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedBulkRequest(null);
-                      setSelectedDetailIds([]);
-                    }}
-                    className="btn outline"
-                    style={{ borderRadius: '8px', fontSize: '0.8125rem' }}
-                  >
-                    {t('Quay lại')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApproveBulk(selectedBulkRequest.id, 'rejected')}
-                    disabled={!!bulkApprovingId}
-                    className="btn danger"
-                    style={{ borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 650 }}
-                  >
-                    {bulkApprovingId === selectedBulkRequest.id ? t('Đang xử lý...') : t('Từ chối')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApproveBulk(selectedBulkRequest.id, 'approved')}
-                    disabled={!!bulkApprovingId}
-                    className="btn success"
-                    style={{ borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 700 }}
-                  >
-                    {bulkApprovingId === selectedBulkRequest.id ? t('Đang xử lý...') : t('Phê duyệt')}
-                  </button>
-                </div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)' }}>
+                  IDEAS - {t('Quy trình')} #{selectedBulkRequest.id}
+                </h3>
               </div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                <button
-                  type="button"
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                  <>
+                    <button
+                      onClick={() => handleApproveBulk(selectedBulkRequest.id, 'rejected')}
+                      disabled={!!bulkApprovingId}
+                      className="btn outline danger"
+                      style={{
+                        height: '36px',
+                        padding: '0 12px',
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <X size={14} />
+                      {t('Từ chối')}
+                    </button>
+                    <button
+                      onClick={() => handleApproveBulk(selectedBulkRequest.id, 'approved')}
+                      disabled={!!bulkApprovingId}
+                      className="btn primary success"
+                      style={{
+                        height: '36px',
+                        padding: '0 12px',
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        borderRadius: '8px',
+                        color: '#ffffff'
+                      }}
+                    >
+                      <Check size={14} />
+                      {t('Phê duyệt')}
+                    </button>
+                  </>
+                )}
+                <button 
                   onClick={() => {
                     setSelectedBulkRequest(null);
                     setSelectedDetailIds([]);
+                  }} 
+                  className="hover-lift"
+                  style={{
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '36px',
+                    width: '36px'
                   }}
-                  className="btn outline"
-                  style={{ borderRadius: '8px', fontSize: '0.8125rem' }}
                 >
-                  {t('Đóng')}
+                  <X size={18} />
                 </button>
               </div>
-            )}
+            </div>
+
+            {/* Drawer Body (Split layout) */}
+            <div className="custom-scrollbar" style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1.5rem',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1.1fr 0.9fr',
+              gap: '1.5rem',
+              background: 'var(--color-bg-light, #f8fafc)'
+            }}>
+              {/* Left Column: Detailed Proposal Fields */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {/* Employee Card */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)',
+                    fontWeight: 800, fontSize: '1.2rem'
+                  }}>
+                    {selectedBulkRequest.full_name ? selectedBulkRequest.full_name.charAt(0) : 'U'}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                      {selectedBulkRequest.full_name}
+                    </h4>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'var(--color-text-light)' }}>
+                      {t('Phiếu bổ sung công tháng')} <strong style={{ color: 'var(--color-primary)' }}>{selectedBulkRequest.month_period}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                {/* List of days */}
+                <div style={{
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                      {t('CHI TIẾT NGÀY ĐỀ XUẤT')} ({(selectedBulkRequest.details || []).length} {t('ngày')})
+                    </h3>
+                    {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)' }}>
+                        {t('Chọn để duyệt từng ngày cụ thể')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                      <thead>
+                        <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                          {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                            <th style={{ padding: '10px 12px', width: '40px', textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedDetailIds.length === (selectedBulkRequest.details ? selectedBulkRequest.details.length : 0)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedDetailIds(selectedBulkRequest.details ? selectedBulkRequest.details.map((d: any) => d.id) : []);
+                                  } else {
+                                    setSelectedDetailIds([]);
+                                  }
+                                }}
+                              />
+                            </th>
+                          )}
+                          <th style={{ padding: '10px 12px', width: '120px' }}>{t('Ngày')}</th>
+                          <th style={{ padding: '10px 12px', width: '100px' }}>{t('Thứ')}</th>
+                          <th style={{ padding: '10px 12px', width: '100px' }}>{t('Vào')}</th>
+                          <th style={{ padding: '10px 12px', width: '100px' }}>{t('Ra')}</th>
+                          <th style={{ padding: '10px 12px' }}>{t('Lý do giải trình')}</th>
+                          <th style={{ padding: '10px 12px', width: '110px', textAlign: 'center' }}>{t('Trạng thái')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(selectedBulkRequest.details || []).map((detail: any) => (
+                          <tr key={detail.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') && (
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDetailIds.includes(detail.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedDetailIds([...selectedDetailIds, detail.id]);
+                                    } else {
+                                      setSelectedDetailIds(selectedDetailIds.filter(id => id !== detail.id));
+                                    }
+                                  }}
+                                />
+                              </td>
+                            )}
+                            <td style={{ padding: '10px 12px', fontWeight: 650 }}>{detail.check_in_date}</td>
+                            <td style={{ padding: '10px 12px', color: 'var(--color-text-muted)' }}>{getDayOfWeek(detail.check_in_date)}</td>
+                            <td style={{ padding: '10px 12px' }}>{detail.suggested_check_in ? detail.suggested_check_in.substring(0, 5) : '--:--'}</td>
+                            <td style={{ padding: '10px 12px' }}>{detail.suggested_check_out ? detail.suggested_check_out.substring(0, 5) : '--:--'}</td>
+                            <td style={{ padding: '10px 12px', color: 'var(--color-text-muted)' }}>{detail.reason}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                              <span style={{
+                                padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700,
+                                color: detail.approved ? '#10b981' : '#ef4444',
+                                backgroundColor: detail.approved ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'
+                              }}>
+                                {detail.approved ? t('Đồng ý') : t('Không duyệt')}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Timeline & Comments */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.5rem',
+                background: 'var(--color-surface)',
+                padding: '1.25rem',
+                borderRadius: '16px',
+                border: '1px solid var(--color-border-light)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                    {t('CÁC BƯỚC THỰC HIỆN')}
+                  </h3>
+                  
+                  {/* Workflow Steps */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '10px' }}>
+                    {[
+                      {
+                        title: t('Trưởng bộ phận phê duyệt'),
+                        desc: selectedBulkRequest.status === 'pending_manager' ? t('Đang chờ Quản lý duyệt') : t('Đã duyệt thông qua'),
+                        isActive: selectedBulkRequest.status === 'pending_manager',
+                        isCompleted: ['pending_hr', 'approved'].includes(selectedBulkRequest.status) || (selectedBulkRequest.status === 'rejected' && selectedBulkRequest.manager_id),
+                        isRejected: selectedBulkRequest.status === 'rejected' && !selectedBulkRequest.hr_id
+                      },
+                      {
+                        title: t('Nhân sự (HR) phê duyệt'),
+                        desc: selectedBulkRequest.status === 'pending_manager' ? t('Chờ bước trước') : (selectedBulkRequest.status === 'pending_hr' ? t('Đang chờ HR duyệt') : (selectedBulkRequest.status === 'approved' ? t('Đã phê duyệt hoàn tất') : t('Đã từ chối'))),
+                        isActive: selectedBulkRequest.status === 'pending_hr',
+                        isCompleted: selectedBulkRequest.status === 'approved',
+                        isRejected: selectedBulkRequest.status === 'rejected' && selectedBulkRequest.hr_id
+                      },
+                      {
+                        title: t('Hoàn tất cấp công'),
+                        desc: selectedBulkRequest.status === 'approved' ? t('Bảng công đã cập nhật tự động') : t('Chờ phê duyệt hoàn tất'),
+                        isActive: false,
+                        isCompleted: selectedBulkRequest.status === 'approved',
+                        isRejected: selectedBulkRequest.status === 'rejected'
+                      }
+                    ].map((step, idx, arr) => {
+                      let iconBg = 'var(--color-border)';
+                      let iconColor = 'var(--color-text-light)';
+                      let icon = <Clock size={14} />;
+
+                      if (step.isCompleted) {
+                        iconBg = 'rgba(16,185,129,0.1)';
+                        iconColor = '#10b981';
+                        icon = <Check size={14} />;
+                      } else if (step.isActive) {
+                        iconBg = 'rgba(245,158,11,0.1)';
+                        iconColor = '#f59e0b';
+                        icon = <Clock size={14} />;
+                      } else if (step.isRejected) {
+                        iconBg = 'rgba(239,68,68,0.1)';
+                        iconColor = '#ef4444';
+                        icon = <X size={14} />;
+                      }
+
+                      return (
+                        <div key={idx} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+                          {idx < arr.length - 1 && (
+                            <div style={{
+                              position: 'absolute', left: '15px', top: '32px', bottom: '-20px', width: '2px',
+                              background: step.isCompleted ? '#10b981' : 'var(--color-border-light)'
+                            }} />
+                          )}
+                          
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: iconBg, color: iconColor, flexShrink: 0, border: '1px solid var(--color-border-light)'
+                          }}>
+                            {icon}
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>{step.title}</span>
+                            <span style={{ fontSize: '0.725rem', color: 'var(--color-text-light)' }}>{step.desc}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Feedback note */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '12px', marginTop: '10px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('Ghi chú phê duyệt')}
+                  </label>
+                  {canApprove && (selectedBulkRequest.status === 'pending_manager' || selectedBulkRequest.status === 'pending_hr') ? (
+                    <textarea
+                      className="input"
+                      value={bulkAdminNote}
+                      onChange={(e) => setBulkAdminNote(e.target.value)}
+                      placeholder={t('Nhập phản hồi phê duyệt công...')}
+                      rows={3}
+                      style={{
+                        width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border)',
+                        background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8125rem'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      padding: '10px 12px', borderRadius: '8px', background: 'var(--color-bg-light)',
+                      border: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-text-light)'
+                    }}>
+                      {selectedBulkRequest.admin_note || t('Không có ghi chú phản hồi')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </CustomModal>
+        </>
       )}
     </div>
   );

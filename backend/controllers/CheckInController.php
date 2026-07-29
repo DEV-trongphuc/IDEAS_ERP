@@ -628,6 +628,22 @@ class CheckInController {
             return false;
         };
 
+        // Fetch holiday schedules
+        $holidays = [];
+        $stmtHol = $this->db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'holiday_schedules' LIMIT 1");
+        $stmtHol->execute();
+        $holRow = $stmtHol->fetch();
+        if ($holRow && !empty($holRow['setting_value'])) {
+            $decoded = json_decode($holRow['setting_value'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $h) {
+                    if (!empty($h['date'])) {
+                        $holidays[$h['date']] = true;
+                    }
+                }
+            }
+        }
+
         // Fetch existing checkins
         $stmtCheckins = $this->db->prepare("
             SELECT check_in_date, check_in_time, check_out_time FROM check_ins 
@@ -651,6 +667,11 @@ class CheckInController {
 
             // Skip weekends by default
             if ($dayOfWeek === 0 || $dayOfWeek === 6) {
+                continue;
+            }
+
+            // Skip holidays
+            if (isset($holidays[$dateStr])) {
                 continue;
             }
 
