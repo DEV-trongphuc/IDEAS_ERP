@@ -27,7 +27,7 @@ import { detectCountryFromPhone } from '../utils/phoneHelper';
 import { NotificationPreviewModal } from '../components/ui/NotificationPreviewModal';
 import { RuleSettings } from './RuleSettings';
 import { ExpenseQuickViewDrawer } from '../components/ExpenseQuickViewDrawer';
-import { InvoiceQuickViewModal } from '../components/InvoiceQuickViewModal';
+
 
 
 type Lead = {
@@ -953,7 +953,6 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [activeModalTab, setActiveModalTab] = useState<'sales' | 'tickets' | 'blacklist' | 'so' | 'po'>('sales');
   const [expandedSales, setExpandedSales] = useState<Record<string, boolean>>({});
   const [activePOId, setActivePOId] = useState<number | null>(null);
-  const [activeSOId, setActiveSOId] = useState<number | null>(null);
   const [selectedDepForManage, setSelectedDepForManage] = useState<any | null>(null);
   const [showManageModal, setShowManageModal] = useState(false);
   const [financeSummary, setFinanceSummary] = useState<any>(null);
@@ -970,30 +969,27 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     const isObject = typeof itemOrId === 'object' && itemOrId !== null;
     const dealId = isObject ? itemOrId.deal_id : null;
     const invoiceId = isObject ? itemOrId.id : itemOrId;
+    const targetId = dealId || invoiceId;
 
-    if (dealId) {
-      try {
-        const res = await fetchAPI(`deposits?id=${dealId}`);
-        if (res.success && res.data && res.data.length > 0) {
-          setSelectedDepForManage(res.data[0]);
-          setShowManageModal(true);
-          return;
-        }
-      } catch (err) {
-        console.error("Error fetching deposit details:", err);
-      }
-    } else if (!isObject) {
-      try {
-        const res = await fetchAPI(`deposits?id=${invoiceId}`);
-        if (res.success && res.data && res.data.length > 0) {
-          setSelectedDepForManage(res.data[0]);
-          setShowManageModal(true);
-          return;
-        }
-      } catch (err) {}
+    if (!targetId) {
+      toast.error("Không tìm thấy thông tin phiếu cọc (SO) tương ứng.");
+      return;
     }
 
-    setActiveSOId(invoiceId);
+    const loadToastId = toast.loading("Đang tải chi tiết phiếu cọc...");
+    try {
+      const res = await fetchAPI(`deposits?id=${targetId}`);
+      if (res.success && res.data && res.data.length > 0) {
+        setSelectedDepForManage(res.data[0]);
+        setShowManageModal(true);
+        toast.dismiss(loadToastId);
+        return;
+      }
+    } catch (err) {
+      console.error("Error fetching deposit details:", err);
+    }
+    toast.dismiss(loadToastId);
+    toast.error("Không tìm thấy thông tin phiếu cọc (SO) tương ứng.");
   };
 
   const toggleExpandSale = (saleName: string) => {
@@ -6874,10 +6870,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
         />
       , document.body)}
 
-      <InvoiceQuickViewModal
-        invoiceId={activeSOId}
-        onClose={() => setActiveSOId(null)}
-      />
+
 
       {showManageModal && selectedDepForManage && (
         <DepositDetailDrawer
