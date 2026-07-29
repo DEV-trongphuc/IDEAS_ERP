@@ -5299,6 +5299,19 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
 
                   {(activeModalTab as string) === 'so' && (
                     <div>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        <button
+                          type="button"
+                          className="btn primary"
+                          onClick={() => {
+                            useUIStore.getState().setShowPOS(true);
+                          }}
+                          style={{ height: '32px', padding: '0 0.85rem', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Plus size={14} />
+                          {t('Tạo SO mới')}
+                        </button>
+                      </div>
                       {dayDetails.invoices && dayDetails.invoices.length > 0 ? (
                         <div className="premium-table-container">
                           <table className="premium-table">
