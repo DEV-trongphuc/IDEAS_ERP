@@ -602,7 +602,7 @@ class CheckInController {
 
     public function suggestBulkDates(array $auth): void {
         $userId = (int)$auth['user_id'];
-        $month = $_GET['month_period'] ?? date('Y-m'); // format 'YYYY-MM'
+        $month = $_GET['month'] ?? $_GET['month_period'] ?? date('Y-m'); // format 'YYYY-MM'
         
         $startDate = $month . '-01';
         $today = date('Y-m-d');

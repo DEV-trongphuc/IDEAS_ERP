@@ -766,7 +766,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               }}
             >
               <CheckSquare size={14} />
-              {t('Bổ sung công gộp')}
+              {t('Cập nhật công gộp')}
             </button>
           </div>
           

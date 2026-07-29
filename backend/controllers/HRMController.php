@@ -1096,7 +1096,7 @@ class HRMController {
                     'id' => (int)$b['id'],
                     'type' => 'attendance_bulk',
                     'employee_name' => $b['employee_name'],
-                    'title' => 'Phiếu bổ sung công gộp tháng ' . $b['month_period'],
+                    'title' => 'Phiếu cập nhật công gộp tháng ' . $b['month_period'],
                     'description' => 'Giải trình công hàng loạt chu kỳ tháng ' . $b['month_period'],
                     'status' => $b['status'],
                     'created_at' => $b['created_at']
@@ -1213,7 +1213,7 @@ class HRMController {
             $pending[] = [
                 'id' => (int)$b['id'],
                 'type' => 'attendance_bulk',
-                'title' => 'Phiếu bổ sung công gộp tháng ' . $b['month_period'],
+                'title' => 'Phiếu cập nhật công gộp tháng ' . $b['month_period'],
                 'description' => 'Giải trình công hàng loạt chu kỳ tháng ' . $b['month_period'],
                 'status' => $b['status'],
                 'created_at' => $b['created_at']

@@ -29,7 +29,7 @@ const workflowList = [
   { id: 'recurring_payment', name: 'Thanh toán định kỳ', description: 'Đề xuất thanh toán định kỳ hàng tháng/quý (tiền nhà, internet, phí dịch vụ).', category: 'finance', icon: Clock3, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
 
   { id: 'leave_late', name: 'Đề nghị nghỉ phép', description: 'Yêu cầu nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản.', category: 'hr', icon: Calendar, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
-  { id: 'attendance_bulk', name: 'Bổ sung công gộp', description: 'Đề xuất bổ sung công hàng loạt cho nhiều ngày trong tháng.', category: 'hr', icon: CheckSquare, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
+  { id: 'attendance_bulk', name: 'Cập nhật công gộp', description: 'Đề xuất cập nhật công hàng loạt cho nhiều ngày trong tháng.', category: 'hr', icon: CheckSquare, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
   { id: 'checkin_explain', name: 'Giải trình chấm công', description: 'Giải trình đi trễ, về sớm hoặc quên chấm công.', category: 'hr', icon: Clock, bg: 'rgba(236, 72, 153, 0.08)', color: '#ec4899' },
   { id: 'recruitment', name: 'Đề xuất tuyển dụng', description: 'Yêu cầu bổ sung nhân sự cho phòng ban.', category: 'hr', icon: Users, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
   { id: 'salary_raise', name: 'Đề xuất tăng lương', description: 'Đề xuất điều chỉnh thu nhập cho nhân sự xuất sắc.', category: 'hr', icon: DollarSign, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },

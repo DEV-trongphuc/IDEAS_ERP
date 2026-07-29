@@ -1123,7 +1123,7 @@ switch ($resource) {
     case 'check-ins':
         $auth = requireAuth();
         $ctrl = new CheckInController($db);
-        if ($resourceId === 'bulk-request') {
+        if ($resourceId === 'bulk-request' || $resourceId === 'create-bulk-request') {
             if ($method === 'POST') {
                 $ctrl->createBulkRequest($auth);
             } elseif ($method === 'GET') {
@@ -1134,6 +1134,14 @@ switch ($resource) {
                 }
             } else {
                 respond(404, null, 'Route không tồn tại', false);
+            }
+        } elseif ($resourceId === 'suggest-bulk-dates') {
+            $ctrl->suggestBulkDates($auth);
+        } elseif ($resourceId === 'bulk-requests') {
+            if ($subResource && is_numeric($subResource)) {
+                $ctrl->getBulkRequestDetail($auth, (int)$subResource);
+            } else {
+                $ctrl->listBulkRequests($auth);
             }
         } elseif ($resourceId && $subResource === 'bulk-approve' && $method === 'POST') {
             $ctrl->approveBulkRequest($auth, (int)$resourceId);
