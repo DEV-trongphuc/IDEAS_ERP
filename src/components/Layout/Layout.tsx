@@ -14,7 +14,7 @@ import { AIChatbot } from '../ui/AIChatbot';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchAPI } from '../../utils/api';
 import { useUIStore } from '../../store/uiStore';
-import { POSModal } from '../ui/POSModal';
+import { DepositCreateDrawer } from '../DepositCreateDrawer';
 import { AlertToast } from '../ui/AlertToast';
 import { StatRowSkeleton } from '../ui/Skeleton';
 import { 
@@ -907,7 +907,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <AlertToast />
       <QuickAddLeadModal />
       {showPOS && (
-        <POSModal 
+        <DepositCreateDrawer 
+          isOpen={!!showPOS}
           onClose={() => setShowPOS(false)} 
           defaultContact={typeof showPOS === 'object' ? showPOS : null}
         />

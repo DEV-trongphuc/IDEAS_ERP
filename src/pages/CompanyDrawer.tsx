@@ -29,9 +29,11 @@ const TABS = [
   { id: 'info', label: 'Thông tin', icon: <Building2 size={16} /> },
   { id: 'activities', label: 'Hoạt động', icon: <History size={16} /> },
   { id: 'contacts', label: 'Liên hệ', icon: <Users size={16} /> },
+  { id: 'sales_orders', label: 'Đơn bán hàng (SO)', icon: <FileText size={16} /> },
+  { id: 'purchase_orders', label: 'Đơn mua hàng (PO / Phí)', icon: <FileBadge size={16} /> },
   { id: 'deals', label: 'Giao dịch Bán', icon: <Briefcase size={16} /> },
-  { id: 'invoices', label: 'Phí hoa hồng', icon: <FileText size={16} /> },
-  { id: 'expenses', label: 'Chi trả thù lao', icon: <Plus size={16} /> },
+  { id: 'invoices', label: 'Phiếu thanh toán & Hóa đơn', icon: <FileText size={16} /> },
+  { id: 'expenses', label: 'Chi trả thù lao / Phí', icon: <Plus size={16} /> },
   { id: 'docs', label: 'Tài liệu', icon: <FileBadge size={16} /> },
   { id: 'settings', label: 'Thiết lập', icon: <Settings size={16} /> },
 ];
@@ -76,11 +78,10 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const visibleTabs = useMemo(() => {
-    const list = TABS.filter(t => t.id !== 'deals' && t.id !== 'invoices');
     if (isSale) {
-      return list.filter(t => ['info', 'contacts', 'docs', 'activities'].includes(t.id));
+      return TABS.filter(t => ['info', 'contacts', 'docs', 'activities', 'sales_orders'].includes(t.id));
     }
-    return disableEdit ? list.filter(t => t.id !== 'settings') : list;
+    return disableEdit ? TABS.filter(t => t.id !== 'settings') : TABS;
   }, [disableEdit, isSale]);
 
   const [users, setUsers] = useState<any[]>([]);

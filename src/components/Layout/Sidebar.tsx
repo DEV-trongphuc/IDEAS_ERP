@@ -48,15 +48,15 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
-      { name: 'Giảng viên & Chuyên gia', href: '/companies', icon: Building2, hideForRoles: ['hr'] },
-      { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck, hideForRoles: ['hr'] }
+      { name: 'Giảng viên & Chuyên gia', href: '/companies', icon: Building2 },
+      { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
     ]
   },
   {
     title: 'TÀI CHÍNH',
     items: [
-      { name: 'Sales Order', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingDeposits' },
-      { name: 'Purchase Order', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'hr', 'marketing'], badgeKey: 'pendingExpenses' }
+      { name: 'Sales Order', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingDeposits' },
+      { name: 'Purchase Order', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingExpenses' }
     ]
   },
   {
@@ -143,6 +143,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   ],
   hr: [
     { name: 'Nhân sự', href: '/hrm', icon: ShieldCheck },
+    { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
     { name: 'Duyệt công', href: '/attendance', icon: Clock },
     { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
     { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }

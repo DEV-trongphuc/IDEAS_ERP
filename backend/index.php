@@ -424,6 +424,7 @@ require_once __DIR__ . '/controllers/TagController.php';
 require_once __DIR__ . '/controllers/SupplierController.php';
 require_once __DIR__ . '/controllers/InventoryController.php';
 require_once __DIR__ . '/controllers/PurchaseOrderController.php';
+require_once __DIR__ . '/controllers/SalesOrderController.php';
 require_once __DIR__ . '/controllers/CloudFileController.php';
 require_once __DIR__ . '/controllers/CustomFieldController.php';
 require_once __DIR__ . '/controllers/ExportController.php';
@@ -960,6 +961,17 @@ switch ($resource) {
         else respond(404, null, 'Route không tồn tại', false);
         break;
 
+    case 'sales-orders':
+        $auth = requireAuth();
+        $ctrl = new SalesOrderController();
+        if     (!$resourceId && $method === 'GET')    $ctrl->index($auth);
+        elseif (!$resourceId && $method === 'POST')   $ctrl->store($auth);
+        elseif ($resourceId  && $method === 'GET')    $ctrl->show($auth, (int)$resourceId);
+        elseif ($subResource === 'approve' && $method === 'POST') $ctrl->approve($auth, (int)$resourceId);
+        elseif ($subResource === 'convert-to-invoice' && $method === 'POST') $ctrl->convertToInvoice($auth, (int)$resourceId);
+        else respond(404, null, 'Route không tồn tại', false);
+        break;
+
     // FILE CATEGORIES
     case 'file-categories':
         $auth = requireAuth();
@@ -986,6 +998,10 @@ switch ($resource) {
             ob_start();
             if ($testFile === 'performance_benchmark') {
                 require_once __DIR__ . '/test_performance_benchmark.php';
+            } elseif ($testFile === 'so_po_finance_audit') {
+                require_once __DIR__ . '/test_so_po_finance_audit.php';
+            } elseif ($testFile === 'partner_so_po_hr') {
+                require_once __DIR__ . '/test_partner_so_po_hr.php';
             } else {
                 require_once __DIR__ . '/test_coop_slips_performance.php';
             }

@@ -844,8 +844,90 @@ try {
         $logMsg("Nâng cấp lên phiên bản 201 hoàn tất.", "success");
     }
 
+    // 9.11. Version 202: Add sales_orders, sales_order_items tables and performance composite indexes
+    if ($currentVersion < 202 || $isForce) {
+        $logMsg("Đang nâng cấp CSDL lên phiên bản 202 (Chuẩn hóa SO, PO, Invoice & Indexing)...", "info");
+
+        try {
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `sales_orders` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `tenant_id` int(11) NOT NULL,
+                  `contact_id` int(11) DEFAULT NULL,
+                  `company_id` int(11) DEFAULT NULL,
+                  `deal_id` int(11) DEFAULT NULL,
+                  `quote_id` int(11) DEFAULT NULL,
+                  `created_by` int(11) NOT NULL,
+                  `so_number` varchar(50) NOT NULL,
+                  `order_date` date NOT NULL,
+                  `delivery_date` date DEFAULT NULL,
+                  `status` enum('draft','pending_approval','approved','processing','completed','cancelled') NOT NULL DEFAULT 'draft',
+                  `payment_status` enum('unpaid','partial','paid') NOT NULL DEFAULT 'unpaid',
+                  `paid_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `discount` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `tax` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `total` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `notes` text DEFAULT NULL,
+                  `terms` text DEFAULT NULL,
+                  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+                  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                  PRIMARY KEY (`id`),
+                  KEY `tenant_id` (`tenant_id`),
+                  KEY `contact_id` (`contact_id`),
+                  KEY `company_id` (`company_id`),
+                  KEY `deal_id` (`deal_id`),
+                  KEY `quote_id` (`quote_id`),
+                  KEY `created_by` (`created_by`),
+                  KEY `idx_so_tenant_status_date` (`tenant_id`, `status`, `order_date`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `sales_order_items` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `so_id` int(11) NOT NULL,
+                  `product_id` int(11) DEFAULT NULL,
+                  `name` varchar(255) NOT NULL,
+                  `description` text DEFAULT NULL,
+                  `quantity` decimal(10,2) NOT NULL DEFAULT 1.00,
+                  `unit_price` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `discount` decimal(5,2) NOT NULL DEFAULT 0.00,
+                  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,
+                  `sort_order` smallint(6) NOT NULL DEFAULT 0,
+                  PRIMARY KEY (`id`),
+                  KEY `so_id` (`so_id`),
+                  KEY `product_id` (`product_id`),
+                  CONSTRAINT `sales_order_items_ibfk_1` FOREIGN KEY (`so_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $logMsg("Đã tạo thành công bảng sales_orders và sales_order_items.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Bảng sales_orders đã tồn tại hoặc thông báo: " . $e->getMessage(), "info");
+        }
+
+        // Composite Indexes
+        $indexes = [
+            "ALTER TABLE purchase_orders ADD INDEX idx_po_tenant_status_date (tenant_id, status, order_date)",
+            "ALTER TABLE purchase_orders ADD INDEX idx_po_tenant_supplier (tenant_id, supplier_id)",
+            "ALTER TABLE invoices ADD INDEX idx_inv_tenant_status_due (tenant_id, status, due_date)",
+            "ALTER TABLE expenses ADD INDEX idx_exp_tenant_status_date (tenant_id, status, expense_date)",
+            "ALTER TABLE cooperation_slips ADD INDEX idx_slip_status_created (status, created_at)"
+        ];
+
+        foreach ($indexes as $sqlIdx) {
+            try {
+                $conn->query($sqlIdx);
+            } catch (Throwable $e) {
+                // Index already exists
+            }
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 202 hoàn tất.", "success");
+    }
+
     // 10. Update DB version in system_settings
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '201') ON DUPLICATE KEY UPDATE setting_value = '201'");
+    $targetVersion = 202;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '202') ON DUPLICATE KEY UPDATE setting_value = '202'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

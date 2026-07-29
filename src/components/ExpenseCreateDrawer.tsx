@@ -245,6 +245,28 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           cleanNotes = editItem.notes.replace(bankRegex, '').trim();
         }
 
+        let initialEntities: any[] = [];
+        if (Array.isArray(editItem.entities) && editItem.entities.length > 0) {
+          initialEntities = editItem.entities;
+        } else if (editItem.contact_id || (editItem.entity_type === 'contact' && editItem.entity_id)) {
+          const cId = Number(editItem.contact_id || editItem.entity_id);
+          const matchedContact = contacts.find((c: any) => Number(c.id) === cId);
+          initialEntities = [{
+            entity_type: 'contact',
+            entity_id: cId,
+            name: editItem.contact_name || (matchedContact ? `${matchedContact.last_name || ''} ${matchedContact.first_name || ''}`.trim() : `Khách hàng #${cId}`),
+            avatar_url: matchedContact?.avatar_url || matchedContact?.avatar
+          }];
+        } else if (editItem.company_id || (editItem.entity_type === 'company' && editItem.entity_id)) {
+          const compId = Number(editItem.company_id || editItem.entity_id);
+          const matchedComp = companies.find((c: any) => Number(c.id) === compId);
+          initialEntities = [{
+            entity_type: 'company',
+            entity_id: compId,
+            name: editItem.company_name || matchedComp?.name || `Đối tác #${compId}`
+          }];
+        }
+
         setForm({
           title: editItem.title || '',
           category: editItem.category || 'Khác',
@@ -260,7 +282,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           vendor_name: editItem.vendor_name || '',
           has_vat_invoice: !!editItem.has_vat_invoice,
           is_vat_inclusive: !!editItem.is_vat_inclusive,
-          entities: Array.isArray(editItem.entities) ? editItem.entities : [],
+          entities: initialEntities,
           image_url: editItem.image_url || '',
           request_bank_transfer,
           bank_name,
@@ -280,7 +302,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
         isInitializedRef.current = true;
       }, 50);
     }
-  }, [isOpen, editItem, initialDate, users]);
+  }, [isOpen, editItem, initialDate, users, contacts, companies]);
 
   // Close vendor dropdown on click outside
   useEffect(() => {

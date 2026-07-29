@@ -14,14 +14,43 @@ class PurchaseOrderController {
             ORDER BY po.created_at DESC
         ");
         $stmt->execute([$tid]);
-        respond(200, $stmt->fetchAll());
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!empty($orders)) {
+            $poIds = array_column($orders, 'id');
+            $inClause = implode(',', array_map('intval', $poIds));
+            $itemStmt = $this->db->query("SELECT * FROM purchase_order_items WHERE po_id IN ({$inClause})");
+            $allItems = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $itemsByPo = [];
+            foreach ($allItems as $item) {
+                $itemsByPo[$item['po_id']][] = $item;
+            }
+
+            foreach ($orders as &$order) {
+                $order['items'] = $itemsByPo[$order['id']] ?? [];
+            }
+        }
+
+        respond(200, $orders);
     }
 
     public function store(array $auth): void {
-        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director'], true)) respond(403, null, 'Bạn không có quyền tạo đơn nhập hàng', false);
+        $allowedRoles = ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'accountant', 'hr', 'human_resources', 'staff'];
+        if (!in_array($auth['role'], $allowedRoles, true)) {
+            respond(403, null, 'Bạn không có quyền tạo đơn mua hàng / PO cho đối tác', false);
+        }
+
         $b = getBody();
-        if (empty($b['supplier_id']) || empty($b['items'])) respond(422, null, 'Thiếu thông tin nhà cung cấp hoặc danh sách sản phẩm', false);
+        if (empty($b['supplier_id']) || empty($b['items'])) {
+            respond(422, null, 'Thiếu thông tin đối tác / nhà cung cấp hoặc danh sách sản phẩm', false);
+        }
         if (($b['total'] ?? 0) < 0) respond(422, null, 'Tổng tiền đơn hàng không được âm', false);
+
+        // Đảm bảo Role Nhân sự (HR) chỉ lên PO cho Đối tác / Nhà cung cấp (như phí giảng viên)
+        if (in_array($auth['role'], ['hr', 'human_resources'], true) && empty($b['supplier_id'])) {
+            respond(403, null, 'Bộ phận Nhân sự chỉ có quyền tạo PO trả phí cho Đối tác / Nhà cung cấp', false);
+        }
 
         $checkSup = $this->db->prepare("SELECT id FROM suppliers WHERE id=? AND tenant_id=?");
         $checkSup->execute([(int)$b['supplier_id'], $auth['tenant_id']]);

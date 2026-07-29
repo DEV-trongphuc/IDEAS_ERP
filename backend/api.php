@@ -46,7 +46,7 @@ if (in_array($baseAction, [
     'auth', 'projects', 'deposits', 'cooperation-slips', 'capi', 'check-ins', 
     'cloud-files', 'file-categories', 'tickets', 'suppliers', 'purchase-orders', 
     'pos', 'custom-fields', 'inventory', 'tags', 'pipeline-stages', 
-    'users', 'reports', 'quotes', 'invoices', 'expenses', 'products',
+    'users', 'reports', 'quotes', 'invoices', 'sales-orders', 'expenses', 'products',
     'contacts', 'companies', 'deals', 'activities', 'notes', 'campaigns', 'marketing-campaigns', 'upload', 'teams', 'dashboard',
     'notifications', 'workflow-task-templates', 'search', 'export', 'import', 'system', 'test-benchmark', 'hrm'
 ], true)) {

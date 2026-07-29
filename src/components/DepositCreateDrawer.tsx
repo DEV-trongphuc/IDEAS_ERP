@@ -1,0 +1,870 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Building2, ChevronLeft, Plus, Trash2, Upload, X, AlertCircle, Loader2 } from 'lucide-react';
+import { fetchAPI } from '../utils/api';
+import { compressToWebP } from '../utils/imageCompress';
+import { useAuth } from '../contexts/AuthContext';
+import { useUIStore } from '../store/uiStore';
+import { CustomSelect } from './ui/CustomSelect';
+import { CurrencyInput } from './ui/CurrencyInput';
+import { PasteDropzoneArea } from './ui/PasteDropzoneArea';
+import { Avatar } from './ui/Avatar';
+import api from '../api/axios';
+
+interface DepositCreateDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  defaultContact?: any;
+  onSaveSuccess?: () => void;
+}
+
+export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
+  isOpen,
+  onClose,
+  defaultContact,
+  onSaveSuccess
+}) => {
+  const { user } = useAuth();
+  const { addToast } = useUIStore();
+  const isMobile = window.innerWidth <= 768;
+
+  // Form State
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [coopSlips, setCoopSlips] = useState<any[]>([]);
+  const [loadingLists, setLoadingLists] = useState(false);
+
+  const [entitySubtab, setEntitySubtab] = useState<'contact' | 'partner'>('contact');
+  const [selectedContactId, setSelectedContactId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [unitCode, setUnitCode] = useState('');
+  const [price, setPrice] = useState('');
+  const [expectedCommission, setExpectedCommission] = useState('');
+  const [notes, setNotes] = useState('');
+  const [currency, setCurrency] = useState('VND');
+  const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
+    { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
+  ]);
+
+  const [depositAccountantId, setDepositAccountantId] = useState('');
+  const [depositUncFile, setDepositUncFile] = useState<File | null>(null);
+  const [depositProofImgUrl, setDepositProofImgUrl] = useState('');
+  const [uploadingDepositProof, setUploadingDepositProof] = useState(false);
+
+  const [autoRemind, setAutoRemind] = useState(true);
+  const [remindDaysBefore, setRemindDaysBefore] = useState(3);
+  const [remindAtHour, setRemindAtHour] = useState(8);
+  const [remindTarget, setRemindTarget] = useState(1);
+
+  const [isCooperation, setIsCooperation] = useState(false);
+  const [allowedCollaborators, setAllowedCollaborators] = useState<{ id: string; name: string; isOwner: boolean }[]>([]);
+  const [collaboratorShares, setCollaboratorShares] = useState<Record<string, number>>({});
+  const [hasExistingCoop, setHasExistingCoop] = useState(false);
+  const [existingCoopShares, setExistingCoopShares] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const isAdmin = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);
+
+  // Load lists
+  useEffect(() => {
+    if (isOpen) {
+      setLoadingLists(true);
+      Promise.all([
+        fetchAPI('contacts?limit=1000'),
+        fetchAPI('projects?bypass_roster=1'),
+        fetchAPI('users?all=1').catch(() => ({ success: false, data: [] })),
+        fetchAPI('companies?limit=1000').catch(() => ({ success: false, data: [] })),
+        fetchAPI('suppliers').catch(() => ({ success: false, data: [] })),
+        fetchAPI('cooperation-slips').catch(() => ({ success: false, data: [] }))
+      ])
+        .then(([resCont, resProj, resUsr, resComp, resSup, resCoop]) => {
+          if (resCont.success) {
+            const allContacts = resCont.data?.items || resCont.data || [];
+            const filteredContacts = (user?.role === 'sale')
+              ? allContacts.filter((c: any) => String(c.owner_id) === String(user.id))
+              : allContacts;
+            setContacts(filteredContacts);
+          }
+          if (resProj.success) setProjects(resProj.data || []);
+          if (resUsr.success) setUsersList(resUsr.data || []);
+          if (resComp.success) setCompanies(resComp.data?.items || resComp.data || []);
+          if (resSup.success) setSuppliers(resSup.data?.items || resSup.data || []);
+          if (resCoop.success) setCoopSlips(resCoop.data || []);
+        })
+        .catch(() => {})
+        .finally(() => setLoadingLists(false));
+    }
+  }, [isOpen, user]);
+
+  // Set default contact
+  useEffect(() => {
+    if (isOpen && defaultContact) {
+      if (defaultContact.id) {
+        setEntitySubtab('contact');
+        setSelectedContactId(String(defaultContact.id));
+      } else if (defaultContact.entity_type === 'company' || defaultContact.company_id) {
+        setEntitySubtab('partner');
+        setSelectedContactId(`comp_${defaultContact.company_id || defaultContact.entity_id}`);
+      } else if (defaultContact.entity_type === 'supplier' || defaultContact.supplier_id) {
+        setEntitySubtab('partner');
+        setSelectedContactId(`sup_${defaultContact.supplier_id || defaultContact.entity_id}`);
+      }
+    }
+  }, [isOpen, defaultContact]);
+
+  // Handle selected contact change
+  useEffect(() => {
+    if (!selectedContactId) {
+      setHasExistingCoop(false);
+      setExistingCoopShares([]);
+      setAllowedCollaborators([]);
+      setCollaboratorShares({});
+      setIsCooperation(false);
+      return;
+    }
+
+    if (selectedContactId.startsWith('comp_') || selectedContactId.startsWith('sup_')) {
+      setHasExistingCoop(false);
+      setExistingCoopShares([]);
+      setAllowedCollaborators([]);
+      setCollaboratorShares({});
+      setIsCooperation(false);
+      return;
+    }
+
+    const cid = Number(selectedContactId);
+    const matchedContact = contacts.find((c: any) => Number(c.id) === cid);
+    if (matchedContact) {
+      const defaultRevenue = matchedContact.expected_revenue || '';
+      setPrice(String(defaultRevenue));
+    }
+
+    // Load collaborators
+    fetchAPI(`contacts/${cid}/collaborators`)
+      .then((res: any) => {
+        if (res.success && res.data) {
+          const owner = res.data.owner;
+          const helpers = res.data.helpers || [];
+          const colList: any[] = [];
+          if (owner) {
+            colList.push({
+              id: String(owner.id),
+              name: `${owner.full_name || owner.name || owner.username} (Chủ sở hữu)`,
+              isOwner: true
+            });
+          }
+          helpers.forEach((h: any) => {
+            colList.push({
+              id: String(h.user_id),
+              name: h.full_name || h.name || h.username || `TVV ID: ${h.user_id}`,
+              isOwner: false
+            });
+          });
+          setAllowedCollaborators(colList);
+          const initialShares: Record<string, number> = {};
+          colList.forEach(c => {
+            initialShares[c.id] = c.isOwner ? 100 : 0;
+          });
+          setCollaboratorShares(initialShares);
+          setIsCooperation(false);
+        }
+      })
+      .catch(() => {
+        setAllowedCollaborators([]);
+        setCollaboratorShares({});
+      });
+
+    // Check pre-existing cooperation slip
+    const existing = coopSlips.find((s: any) => Number(s.contact_id) === cid);
+    if (existing) {
+      setHasExistingCoop(true);
+      let parsedShares: Record<string, number> = {};
+      try {
+        parsedShares = typeof existing.shares_json === 'string'
+          ? JSON.parse(existing.shares_json)
+          : (existing.shares_json || {});
+      } catch {
+        parsedShares = {};
+      }
+      const sharesList = Object.entries(parsedShares).map(([uid, pct]) => {
+        const u = usersList.find((x: any) => String(x.id) === String(uid));
+        return {
+          user_id: uid,
+          name: u?.full_name || u?.name || u?.username || `ID: ${uid}`,
+          percentage: pct
+        };
+      });
+      setExistingCoopShares(sharesList);
+    } else {
+      setHasExistingCoop(false);
+      setExistingCoopShares([]);
+    }
+  }, [selectedContactId, contacts, coopSlips, usersList]);
+
+  const handleAddMilestoneInput = () => {
+    setMilestonesInput(prev => [...prev, { name: `Đợt ${prev.length + 1}`, amount: '', expected_pay_date: '' }]);
+  };
+
+  const handleRemoveMilestoneInput = (index: number) => {
+    setMilestonesInput(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedContactId || !selectedProjectId || !price) {
+      addToast('Vui lòng điền đầy đủ thông tin khách hàng, chương trình, giá bán', 'error');
+      return;
+    }
+
+    if (!depositAccountantId) {
+      addToast('Vui lòng chọn người duyệt', 'error');
+      return;
+    }
+
+    if (!depositUncFile && !depositProofImgUrl) {
+      addToast('Vui lòng tải lên minh chứng chuyển khoản (UNC) Đợt 1 để tạo đơn hàng.', 'error');
+      return;
+    }
+
+    const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
+    if (totalM > parseFloat(price)) {
+      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(price).toLocaleString()} VND)`, 'error');
+      return;
+    }
+
+    if (!hasExistingCoop && isCooperation) {
+      const sum = Object.values(collaboratorShares).reduce((acc, c) => acc + (c || 0), 0);
+      if (sum !== 100) {
+        addToast(`Tổng tỷ lệ chia sẻ hoa hồng phải bằng đúng 100% (Hiện tại là ${sum}%)`, 'error');
+        return;
+      }
+    }
+
+    if (isSaving) return;
+
+    try {
+      setIsSaving(true);
+      const res = await fetchAPI('deposits', {
+        method: 'POST',
+        body: JSON.stringify({
+          contact_id: selectedContactId.startsWith('comp_') || selectedContactId.startsWith('sup_') ? null : Number(selectedContactId),
+          company_id: selectedContactId.startsWith('comp_') ? Number(selectedContactId.replace('comp_', '')) : null,
+          supplier_id: selectedContactId.startsWith('sup_') ? Number(selectedContactId.replace('sup_', '')) : null,
+          project_id: selectedProjectId,
+          unit_code: unitCode || '—',
+          price: parseFloat(price),
+          expected_commission: parseFloat(expectedCommission) || 0,
+          currency: currency,
+          milestones: milestonesInput,
+          is_cooperation: isCooperation,
+          collaborators: isCooperation
+            ? Object.entries(collaboratorShares).map(([uid, pct]) => ({
+                user_id: uid,
+                percentage: pct
+              }))
+            : [],
+          auto_remind: autoRemind ? 1 : 0,
+          remind_days_before: remindDaysBefore,
+          remind_at_hour: remindAtHour,
+          remind_target: remindTarget,
+          notes: notes,
+          accountant_id: Number(depositAccountantId),
+          unc_file_path: depositProofImgUrl || null
+        })
+      });
+
+      if (res.success) {
+        const responseData = res.data || {};
+        const createdDepositId = responseData.id;
+        const createdMilestones = responseData.milestones || [];
+        
+        if (createdDepositId && createdMilestones.length > 0 && depositUncFile) {
+          try {
+            const compressedFile = await compressToWebP(depositUncFile);
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', compressedFile);
+            const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
+            const uploadUrl = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=deposits/${createdDepositId}/milestones/${createdMilestones[0].id}/unc&token=${token}`;
+            
+            await fetch(uploadUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-Auth-Token': token
+              },
+              body: formDataUpload
+            });
+          } catch (uploadErr) {
+            console.error('Error uploading UNC:', uploadErr);
+          }
+        }
+
+        addToast('Tạo đơn đặt hàng và lịch thanh toán thành công!', 'success');
+        onClose();
+        if (onSaveSuccess) onSaveSuccess();
+      } else {
+        addToast(res.message || 'Lỗi tạo đơn đặt hàng', 'error');
+      }
+    } catch (e: any) {
+      addToast(e.message || 'Lỗi kết nối', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000090, display: 'flex', justifyContent: 'flex-end' }}>
+          {/* Backdrop */}
+          <motion.div
+            className="drawer-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 1000095
+            }}
+          />
+
+          {/* Drawer Sheet */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              bottom: 0,
+              left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+              right: 0,
+              backgroundColor: 'var(--color-surface)',
+              boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              zIndex: 1000100,
+              overflow: 'hidden'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid var(--color-border)',
+              background: 'linear-gradient(to right, var(--color-bg), var(--color-surface))',
+              flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    padding: '8px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--color-text)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                  className="hover-bg-muted"
+                  title="Quay lại"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0, color: 'var(--color-text)' }}>
+                    Tạo phiếu thanh toán mới
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4, marginBottom: 0 }}>
+                    Thiết lập lộ trình thanh toán chương trình
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  type="button"
+                  className="btn outline"
+                  onClick={onClose}
+                  disabled={isSaving}
+                  style={{ height: '38px', minWidth: '90px', fontSize: '0.85rem', fontWeight: 700 }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  form="create-deposit-form-drawer"
+                  className="btn primary"
+                  disabled={isSaving}
+                  style={{ height: '38px', minWidth: '180px', fontSize: '0.85rem', fontWeight: 700 }}
+                >
+                  {isSaving ? 'Đang tạo...' : 'Tạo phiếu Thanh toán'}
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+              <form id="create-deposit-form-drawer" onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'stretch' }}>
+                  
+                  {/* Left Pane */}
+                  <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    
+                    {/* General Info */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Thông tin chung</h4>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'space-between', marginBottom: '6px', gap: '8px', flexWrap: 'wrap' }}>
+                            <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
+                              {entitySubtab === 'contact' ? 'Khách hàng cá nhân *' : 'Đối tác / Công ty / Giảng viên *'}
+                            </label>
+                            <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                              <button
+                                type="button"
+                                onClick={() => { setEntitySubtab('contact'); setSelectedContactId(''); }}
+                                style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  border: 'none',
+                                  background: entitySubtab === 'contact' ? 'var(--color-surface)' : 'transparent',
+                                  color: entitySubtab === 'contact' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <User size={13} /> Khách hàng
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setEntitySubtab('partner'); setSelectedContactId(''); }}
+                                style={{
+                                  padding: '3px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  border: 'none',
+                                  background: entitySubtab === 'partner' ? 'var(--color-surface)' : 'transparent',
+                                  color: entitySubtab === 'partner' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Building2 size={13} /> Đối tác / Công ty
+                              </button>
+                            </div>
+                          </div>
+
+                          <CustomSelect
+                            options={entitySubtab === 'contact' ? contacts.map(c => ({
+                              value: String(c.id),
+                              label: `${c.last_name || ''} ${c.first_name || ''} (${c.phone || c.email || 'KH'})`,
+                              avatar: c.avatar_url || c.avatar
+                            })) : [
+                              ...companies.map((comp: any) => ({
+                                value: `comp_${comp.id}`,
+                                label: `[Công ty / Đối tác] ${comp.name} (${comp.phone || comp.email || 'Công ty'})`
+                              })),
+                              ...suppliers.map((sup: any) => ({
+                                value: `sup_${sup.id}`,
+                                label: `[Đối tác / NCC / Giảng viên] ${sup.name} (${sup.phone || sup.contact_person || 'NCC'})`
+                              }))
+                            ]}
+                            value={selectedContactId}
+                            onChange={val => setSelectedContactId(val.toString())}
+                            placeholder={entitySubtab === 'contact' ? "-- Chọn khách hàng cá nhân --" : "-- Chọn đối tác / công ty / giảng viên --"}
+                            showAvatars={entitySubtab === 'contact'}
+                            searchable
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label">Chương trình / Chiến dịch *</label>
+                          <CustomSelect
+                            options={projects.map(p => ({
+                              value: String(p.id),
+                              label: p.name
+                            }))}
+                            value={selectedProjectId}
+                            onChange={val => setSelectedProjectId(val.toString())}
+                            placeholder="-- Chọn chương trình/chiến dịch --"
+                            searchable
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label">Loại tiền tệ *</label>
+                          <CustomSelect
+                            options={[
+                              { value: 'VND', label: 'VND' },
+                              { value: 'USD', label: 'USD' },
+                              { value: 'EURO', label: 'EURO' },
+                              { value: 'CHF', label: 'CHF' }
+                            ]}
+                            value={currency}
+                            onChange={val => setCurrency(val)}
+                            width="100%"
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label">Tổng doanh thu ({currency}) *</label>
+                          <CurrencyInput
+                            value={price}
+                            onChange={val => setPrice(String(val))}
+                            placeholder="0"
+                            showTextHelper={false}
+                            currency={currency}
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label">Hoa hồng ({currency})</label>
+                          <CurrencyInput
+                            value={expectedCommission}
+                            onChange={val => setExpectedCommission(String(val))}
+                            placeholder="0"
+                            showTextHelper={false}
+                            currency={currency}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label">Mã học viên / Mã căn</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Nhập mã học viên, mã phòng, mã căn..."
+                          value={unitCode}
+                          onChange={e => setUnitCode(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Milestones */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Lịch trình thanh toán</h4>
+                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>(Tổng các đợt không vượt quá Tổng doanh thu)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddMilestoneInput}
+                          className="btn text sm"
+                          style={{ color: 'var(--color-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Plus size={14} /> Thêm đợt
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {milestonesInput.map((m, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              value={m.name}
+                              onChange={e =>
+                                setMilestonesInput(prev =>
+                                  prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))
+                                )
+                              }
+                              placeholder="Tên đợt..."
+                              className="form-input"
+                              style={{ flex: 1 }}
+                            />
+                            <div style={{ width: '220px', flexShrink: 0 }}>
+                              <CurrencyInput
+                                value={m.amount}
+                                required
+                                onChange={val =>
+                                  setMilestonesInput(prev =>
+                                    prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
+                                  )
+                                }
+                                placeholder={`Số tiền (${currency})`}
+                                showTextHelper={false}
+                                currency={currency}
+                              />
+                            </div>
+                            <input
+                              type="date"
+                              required
+                              value={m.expected_pay_date}
+                              onChange={e =>
+                                setMilestonesInput(prev =>
+                                  prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
+                                )
+                              }
+                              className="form-input"
+                              style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}
+                            />
+                            {milestonesInput.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMilestoneInput(idx)}
+                                style={{ padding: '8px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', borderRadius: '50%' }}
+                                className="btn-icon sm"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Ghi chú đơn hàng</h4>
+                      <textarea
+                        className="form-input"
+                        rows={3}
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        placeholder="Mô tả hoặc yêu cầu gì thêm..."
+                        style={{ resize: 'vertical' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Pane */}
+                  <div style={{ flex: isMobile ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    
+                    {/* Approver & Creator */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                        Phê duyệt & Vận hành
+                      </h4>
+                      
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người tạo</label>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border-light)',
+                          borderRadius: '8px',
+                          height: '38px'
+                        }}>
+                          <Avatar src={user?.avatar || (user as any)?.avatar_url} name={user?.name || (user as any)?.full_name || (user as any)?.username} size="sm" />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user?.name || (user as any)?.full_name || (user as any)?.username}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'center', margin: '-4px 0' }}>
+                        <div style={{ width: '2px', height: '16px', borderLeft: '2px dashed var(--color-border)' }}></div>
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người duyệt <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                        <CustomSelect
+                          options={usersList
+                            .filter(u => ['admin', 'superadmin', 'super_admin', 'accountant'].includes(u.role))
+                            .map(u => ({
+                              value: String(u.id),
+                              label: `${u.full_name || u.name} (${u.role})`,
+                              avatar: u.avatar_url || u.avatar
+                            }))}
+                          value={depositAccountantId}
+                          onChange={val => setDepositAccountantId(val.toString())}
+                          placeholder="-- Chọn kế toán phê duyệt --"
+                          showAvatars
+                          searchable
+                        />
+                      </div>
+                    </div>
+
+                    {/* UNC Proof */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                        Minh chứng thanh toán
+                      </h4>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 600, fontSize: '0.8rem' }}>
+                          Minh chứng Đợt 1 (UNC) *
+                        </label>
+                        
+                        <PasteDropzoneArea
+                          compact={true}
+                          placeholder="Chọn/kéo thả hoặc Ctrl+V để dán ảnh UNC"
+                          subtext="Nén WEBP tự động (Max 5MB)"
+                          onConfirmUpload={async (item) => {
+                            if (item.file) {
+                              setUploadingDepositProof(true);
+                              try {
+                                const webpBlob = await compressToWebP(item.file);
+                                const compFile = new File([webpBlob], 'unc_proof.webp', { type: 'image/webp' });
+                                const fd = new FormData();
+                                fd.append('file', compFile);
+                                const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
+                                const url = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=upload&token=${token}`;
+                                
+                                const response = await fetch(url, {
+                                  method: 'POST',
+                                  headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'X-Auth-Token': token
+                                  },
+                                  body: fd
+                                });
+                                const res = await response.json();
+                                if (res.success && res.data?.url) {
+                                  setDepositProofImgUrl(res.data.url);
+                                  addToast('Tải ảnh UNC thành công!', 'success');
+                                } else {
+                                  addToast(res.message || 'Lỗi nạp ảnh UNC', 'error');
+                                }
+                              } catch (e: any) {
+                                addToast('Lỗi nạp ảnh UNC: ' + e.message, 'error');
+                              } finally {
+                                setUploadingDepositProof(false);
+                              }
+                            }
+                          }}
+                        />
+
+                        {depositProofImgUrl && (
+                          <div style={{ marginTop: '8px', position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                            <img
+                              src={depositProofImgUrl.startsWith('http') ? depositProofImgUrl : `${import.meta.env.VITE_API_URL || '/backend'}/uploads/${depositProofImgUrl}`}
+                              alt="UNC"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setDepositProofImgUrl('')}
+                              style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Auto Reminders */}
+                    {milestonesInput.length > 1 && (
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch tự động</span>
+                          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
+                            <input
+                              type="checkbox"
+                              checked={autoRemind}
+                              onChange={e => setAutoRemind(e.target.checked)}
+                              style={{ opacity: 0, width: 0, height: 0 }}
+                            />
+                            <span style={{
+                              position: 'absolute',
+                              cursor: 'pointer',
+                              inset: 0,
+                              backgroundColor: autoRemind ? 'var(--color-primary)' : '#ccc',
+                              borderRadius: '20px',
+                              transition: '0.3s'
+                            }}>
+                              <span style={{
+                                position: 'absolute',
+                                content: '""',
+                                height: '14px',
+                                width: '14px',
+                                left: autoRemind ? '17px' : '3px',
+                                bottom: '3px',
+                                backgroundColor: 'white',
+                                borderRadius: '50%',
+                                transition: '0.3s'
+                              }} />
+                            </span>
+                          </label>
+                        </div>
+
+                        {autoRemind && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
+                              <CustomSelect
+                                options={[
+                                  { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
+                                  { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                                ]}
+                                value={String(remindTarget)}
+                                onChange={val => setRemindTarget(Number(val))}
+                                placeholder="Chọn đối tượng"
+                              />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
+                                <CustomSelect
+                                  options={[
+                                    { value: '1', label: 'Trước 1 ngày' },
+                                    { value: '2', label: 'Trước 2 ngày' },
+                                    { value: '3', label: 'Trước 3 ngày' },
+                                    { value: '5', label: 'Trước 5 ngày' },
+                                    { value: '7', label: 'Trước 7 ngày' }
+                                  ]}
+                                  value={String(remindDaysBefore)}
+                                  onChange={val => setRemindDaysBefore(Number(val))}
+                                  placeholder="Chọn số ngày"
+                                />
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi nhắc</label>
+                                <CustomSelect
+                                  options={Array.from({ length: 24 }).map((_, h) => ({
+                                    value: String(h),
+                                    label: `${h}:00`
+                                  }))}
+                                  value={String(remindAtHour)}
+                                  onChange={val => setRemindAtHour(Number(val))}
+                                  placeholder="Giờ gửi"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
