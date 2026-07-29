@@ -5767,11 +5767,29 @@ div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar-thumb:hover {
   background: #64748b !important;
 }
 
-/* Fix Toast Notification Container z-index over Modal Portals */
+/* GLOBAL TOAST OVERRIDE - ABSOLUTE HIGHEST Z-INDEX IN THE ENTIRE APP (2147483647) */
+#react-hot-toast,
 .react-hot-toast-container,
+div[data-react-hot-toast],
+div:has(> [data-react-hot-toast]),
 div:has(> [role="status"]),
-div:has(> div[data-react-hot-toast]) {
-  z-index: 999999999 !important;
+div:has(> .custom-toast),
+.custom-toast,
+[role="status"] {
+  z-index: 2147483647 !important;
+}
+
+body > div:has([role="status"]),
+body > div:has([data-react-hot-toast]),
+body > div:has(.custom-toast) {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+}
+
+div[data-react-hot-toast] > div,
+.custom-toast {
+  z-index: 2147483647 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15) !important;
 }
 
 

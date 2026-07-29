@@ -516,7 +516,7 @@ export default function App() {
         <AuthProvider>
           <UploadProgressProvider>
             {typeof document !== 'undefined' ? createPortal(
-              <Toaster position="top-right" containerStyle={{ zIndex: 999999999, top: 76 }} toastOptions={{ className: 'custom-toast' }} />,
+              <Toaster position="top-right" containerStyle={{ zIndex: 2147483647, top: 20 }} toastOptions={{ className: 'custom-toast' }} />,
               document.body
             ) : null}
             <Router>

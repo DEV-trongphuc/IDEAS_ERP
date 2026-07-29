@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Server, Database, GitBranch, Users, Pause, Cpu, ShieldAlert, Terminal, Tv, Eye, Calendar } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
@@ -5325,7 +5325,7 @@ export const WarRoomFlightDeck: React.FC<WarRoomProps> = ({
       )}
 
       {/* local bottom-left toaster */}
-      <Toaster position="bottom-left" containerStyle={{ bottom: 180, left: 24, zIndex: 999999999 }} toastOptions={{ className: 'custom-toast' }} />
+      <Toaster position="bottom-left" containerStyle={{ bottom: 180, left: 24, zIndex: 2147483647 }} toastOptions={{ className: 'custom-toast' }} />
 
       {/* CSS Styles */}
       <style>{`
