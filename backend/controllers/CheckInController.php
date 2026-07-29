@@ -680,13 +680,32 @@ class CheckInController {
                 continue;
             }
 
-            if (!isset($checkins[$dateStr])) {
+        // Fetch user standard work hours
+        $stmtUser = $this->db->prepare("SELECT work_start_time, work_end_time FROM users WHERE id = ?");
+        $stmtUser->execute([$userId]);
+        $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        $defaultStart = !empty($userRow['work_start_time']) ? substr($userRow['work_start_time'], 0, 5) : '08:30';
+        $defaultEnd = !empty($userRow['work_end_time']) ? substr($userRow['work_end_time'], 0, 5) : '17:30';
+
+        $formatTimeHHmm = function($str, $default) {
+            if (empty($str)) return $default;
+            $s = trim((string)$str);
+            if (strpos($s, ' ') !== false) {
+                $parts = explode(' ', $s);
+                $s = $parts[1];
+            }
+            return strlen($s) >= 5 ? substr($s, 0, 5) : $default;
+        };
+
+        if (!isset($checkins[$dateStr])) {
                 $suggestions[] = [
                     'date' => $dateStr,
                     'has_check_in' => false,
                     'has_check_out' => false,
-                    'check_in_time' => null,
-                    'check_out_time' => null
+                    'check_in' => $defaultStart,
+                    'check_out' => $defaultEnd,
+                    'check_in_time' => $defaultStart,
+                    'check_out_time' => $defaultEnd
                 ];
             } else {
                 $c = $checkins[$dateStr];
@@ -694,12 +713,17 @@ class CheckInController {
                 $hasCheckOut = !empty($c['check_out_time']);
 
                 if (!$hasCheckIn || !$hasCheckOut) {
+                    $inTime = $hasCheckIn ? $formatTimeHHmm($c['check_in_time'], $defaultStart) : $defaultStart;
+                    $outTime = $hasCheckOut ? $formatTimeHHmm($c['check_out_time'], $defaultEnd) : $defaultEnd;
+
                     $suggestions[] = [
                         'date' => $dateStr,
                         'has_check_in' => $hasCheckIn,
                         'has_check_out' => $hasCheckOut,
-                        'check_in_time' => $c['check_in_time'],
-                        'check_out_time' => $c['check_out_time'] ? substr($c['check_out_time'], 11, 8) : null
+                        'check_in' => $inTime,
+                        'check_out' => $outTime,
+                        'check_in_time' => $inTime,
+                        'check_out_time' => $outTime
                     ];
                 }
             }

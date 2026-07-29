@@ -270,13 +270,31 @@ export default function Approvals() {
   const [suggestedDays, setSuggestedDays] = useState<any[]>([]);
   const [suggestedLoading, setSuggestedLoading] = useState<boolean>(false);
 
+  const formatTimeHHmm = (tStr: any, defaultVal = '08:30') => {
+    if (!tStr) return defaultVal;
+    const s = String(tStr).trim();
+    if (s.includes(' ')) {
+      const timePart = s.split(' ')[1] || '';
+      return timePart.length >= 5 ? timePart.substring(0, 5) : defaultVal;
+    }
+    return s.length >= 5 ? s.substring(0, 5) : defaultVal;
+  };
+
   const handleScanMissingDays = async (monthStr: string) => {
     setSuggestedLoading(true);
     try {
       const res = await api.get(`/check-ins/suggest-bulk-dates?month=${monthStr}`);
       if (res.data?.success) {
-        setSuggestedDays(res.data.data || []);
-        if ((res.data.data || []).length === 0) {
+        const list = (res.data.data || []).map((item: any) => ({
+          ...item,
+          check_in: formatTimeHHmm(item.check_in || item.check_in_time, '08:30'),
+          check_out: formatTimeHHmm(item.check_out || item.check_out_time, '17:30'),
+          has_check_in: Boolean(item.has_check_in),
+          has_check_out: Boolean(item.has_check_out),
+          reason: item.reason || ''
+        }));
+        setSuggestedDays(list);
+        if (list.length === 0) {
           toast.success(t('Không có ngày thiếu công nào trong tháng chọn.'));
         }
       }
