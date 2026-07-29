@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../store/uiStore';
 import { CustomModal } from '../components/ui/CustomModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
-import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell, DollarSign, TrendingUp, Award } from 'lucide-react';
+import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell, DollarSign, TrendingUp, Award, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
@@ -1147,6 +1147,49 @@ export default function DepositsPage() {
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
   }, [projectedReceivables, projectedExpenditures]);
 
+  const listStats = React.useMemo(() => {
+    let totalSOAmount = 0;
+    let approvedMilestoneAmount = 0;
+    let pendingMilestoneAmount = 0;
+    let maxSOAmount = 0;
+    let maxSOTitle = '';
+    
+    let approvedCount = 0;
+    let pendingCount = 0;
+
+    filteredDepositsList.forEach(d => {
+      const priceVal = Number(d.price) || 0;
+      totalSOAmount += priceVal;
+      if (priceVal > maxSOAmount) {
+        maxSOAmount = priceVal;
+        maxSOTitle = `${d.last_name} ${d.first_name} - ${d.project_name || 'Dự án'}`;
+      }
+
+      if (d.milestones && d.milestones.length > 0) {
+        d.milestones.forEach(m => {
+          const amt = Number(m.expected_amount) || 0;
+          if (m.status === 'approved') {
+            approvedMilestoneAmount += amt;
+            approvedCount++;
+          } else {
+            pendingMilestoneAmount += amt;
+            pendingCount++;
+          }
+        });
+      }
+    });
+
+    return {
+      totalSOAmount,
+      approvedMilestoneAmount,
+      pendingMilestoneAmount,
+      maxSOAmount,
+      maxSOTitle,
+      approvedCount,
+      pendingCount
+    };
+  }, [filteredDepositsList]);
+
   return (
     <div className="anim-fade-up" style={{ color: 'var(--color-text)', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Notifications */}
@@ -1187,7 +1230,7 @@ export default function DepositsPage() {
               <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>
             </button>
           </h1>
-          <p className="page-subtitle">{t("Theo dõi đơn hàng, tiến độ thanh toán và duyệt UNC")}</p>
+          <p className="page-subtitle">{t("Theo dõi đơn hàng, tiến độ thanh toán và duyệt Sales Order")}</p>
         </div>
         {!isViewer && (
           <button
@@ -1263,6 +1306,120 @@ export default function DepositsPage() {
 
       {activeViewTab === 'list' ? (
         <>
+          {/* SO KPI Cards */}
+          <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            {[
+              {
+                label: 'Tổng doanh thu kỳ này',
+                value: listStats.totalSOAmount.toLocaleString('vi-VN') + ' đ',
+                icon: DollarSign,
+                color: '#2563eb',
+                bg: 'rgba(37, 99, 235, 0.08)',
+                sub: `${filteredDepositsList.length} đơn hàng`,
+                decor: (
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                    <path d="M10 80 L30 50 L50 60 L90 20" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
+                    <path d="M70 20 L90 20 L90 40" stroke="currentColor" strokeWidth="2" />
+                    <circle cx="10" cy="80" r="4" fill="currentColor" />
+                    <circle cx="30" cy="50" r="4" fill="currentColor" />
+                    <circle cx="50" cy="60" r="4" fill="currentColor" />
+                    <circle cx="90" cy="20" r="6" fill="currentColor" />
+                  </svg>
+                )
+              },
+              {
+                label: 'Đã đối soát (Đã thu)',
+                value: listStats.approvedMilestoneAmount.toLocaleString('vi-VN') + ' đ',
+                icon: CheckCircle2,
+                color: '#10b981',
+                bg: 'rgba(16, 185, 129, 0.08)',
+                sub: `${listStats.approvedCount} đợt đã thu`,
+                decor: (
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                    <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                    <path d="M35 50 L45 60 L65 40" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )
+              },
+              {
+                label: 'Chờ đối soát (Chờ thu)',
+                value: listStats.pendingMilestoneAmount.toLocaleString('vi-VN') + ' đ',
+                icon: Clock,
+                color: '#f59e0b',
+                bg: 'rgba(245, 158, 11, 0.08)',
+                sub: `${listStats.pendingCount} đợt đang chờ`,
+                decor: (
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                    <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                    <path d="M50 20 L50 50 L70 50" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )
+              },
+              {
+                label: 'Đơn hàng lớn nhất',
+                value: listStats.maxSOAmount > 0 ? listStats.maxSOAmount.toLocaleString('vi-VN') + ' đ' : '—',
+                icon: Award,
+                color: '#a31422',
+                bg: 'rgba(163, 20, 34, 0.08)',
+                sub: listStats.maxSOTitle || 'Chưa có dữ liệu',
+                decor: (
+                  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                    <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                    <text x="35" y="68" fill="currentColor" fontSize="50" fontWeight="bold">★</text>
+                  </svg>
+                )
+              }
+            ].map((k, i) => {
+              const Icon = k.icon;
+              return (
+                <div 
+                  key={i} 
+                  className="stat-card hover-lift" 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    minHeight: '135px',
+                    padding: '1.25rem',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '16px'
+                  }}
+                >
+                  {/* Decorative Background SVG */}
+                  <div className="decor-svg" style={{ color: k.color, opacity: 0.05, position: 'absolute', right: -10, bottom: -10, width: 70, height: 70, pointerEvents: 'none' }}>
+                    {k.decor}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
+                    <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{k.label}</span>
+                    <div className="stat-icon" style={{
+                      background: k.bg,
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: k.color,
+                    }}>
+                      <Icon size={16} />
+                    </div>
+                  </div>
+
+                  <div className="stat-value" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: '4px 0', position: 'relative', zIndex: 2 }}>
+                    {k.value}
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 'auto', zIndex: 2, fontWeight: 600 }}>
+                    {k.sub}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Search & Filter Bar */}
           <div style={{ 
             display: 'flex', 
@@ -1325,7 +1482,7 @@ export default function DepositsPage() {
             <EmptyCard
               icon={<CreditCard />}
               title="Chưa có phiếu thanh toán nào"
-              description="Theo dõi đơn hàng, tiến độ thanh toán và duyệt Ủy nhiệm chi (UNC)."
+              description="Theo dõi đơn hàng, tiến độ thanh toán và duyệt Sales Order."
               actionText={isViewer ? undefined : "Tạo đơn hàng mới"}
               onAction={isViewer ? undefined : () => setIsCreateOpen(true)}
             />

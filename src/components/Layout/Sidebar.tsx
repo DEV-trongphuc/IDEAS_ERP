@@ -48,7 +48,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
-      { name: 'Đối tác kinh doanh', href: '/companies', icon: Building2, hideForRoles: ['hr'] },
+      { name: 'Giảng viên & Chuyên gia', href: '/companies', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck, hideForRoles: ['hr'] }
     ]
   },
@@ -156,13 +156,13 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
 };
 
 const GROUP_ORDER_BY_ROLE: Record<string, string[]> = {
-  admin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-  superadmin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-  super_admin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-  director: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-  accountant: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
-  hr: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'NHÂN SỰ', 'CHƯƠNG TRÌNH'],
-  marketing: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
+  admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  superadmin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  super_admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  director: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
+  accountant: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
+  hr: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'NHÂN SỰ', 'CHƯƠNG TRÌNH'],
+  marketing: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
 };
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileClose }: { isCollapsed: boolean; onToggleCollapse: () => void; isMobileOpen?: boolean; onMobileClose?: () => void }) => {
@@ -369,7 +369,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
 
     // Reorder items in "CHƯƠNG TRÌNH" specifically for accountant
     if (group.title === 'CHƯƠNG TRÌNH' && user?.role === 'accountant') {
-      const order = ['Nhà cung cấp', 'Đối tác kinh doanh', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
+      const order = ['Nhà cung cấp', 'Giảng viên & Chuyên gia', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
       filteredItems.sort((a, b) => {
         const idxA = order.indexOf(a.name);
         const idxB = order.indexOf(b.name);

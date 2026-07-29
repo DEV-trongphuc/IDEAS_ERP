@@ -1877,7 +1877,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     }
     actIssues.push({
       icon: <Receipt size={14} style={{ color: '#fbbf24' }} />,
-      text: `2 ${t('đơn đặt cọc/UNC đang chờ đối soát.')}`,
+      text: `2 ${t('thanh toán SO cần đối soát.')}`,
       action: () => navigate('/deposits')
     });
 

@@ -1665,7 +1665,7 @@ export const Header = ({
             'Kho hàng hóa': 'Quản lý tồn kho hàng hóa, nhập xuất kho',
             'Chiến dịch': 'Chiến dịch marketing và nguồn phân bổ',
             'Tài liệu': 'Kho tài liệu mật và biểu mẫu của công ty',
-            'Đối tác kinh doanh': 'Danh mục đối tác doanh nghiệp và đối tác liên kết',
+            'Giảng viên & Chuyên gia': 'Danh mục giảng viên và chuyên gia giảng dạy',
             'Nhà cung cấp': 'Quản lý thông tin nhà cung cấp và chuỗi cung ứng',
             'Báo giá': 'Tạo và phê duyệt báo giá dịch vụ',
             'Sales Order': 'Theo dõi tiến độ đơn đặt cọc và các đợt thanh toán',
@@ -1696,7 +1696,7 @@ export const Header = ({
 
             // Reorder items in "CHƯƠNG TRÌNH" specifically for accountant
             if (group.title === 'CHƯƠNG TRÌNH' && role === 'accountant') {
-              const order = ['Nhà cung cấp', 'Đối tác kinh doanh', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
+              const order = ['Nhà cung cấp', 'Giảng viên & Chuyên gia', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
               filteredItems.sort((a, b) => {
                 const idxA = order.indexOf(a.name);
                 const idxB = order.indexOf(b.name);
@@ -1775,7 +1775,7 @@ export const Header = ({
             director: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
             sale: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Ticket hỗ trợ', 'Lịch trình'],
             sales: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Ticket hỗ trợ', 'Lịch trình'],
-            accountant: ['Quy trình', 'Sales Order', 'Purchase Order', 'Phiếu lương', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc', 'Tài liệu', 'Lịch trình'],
+            accountant: ['Quy trình', 'Sales Order', 'Purchase Order', 'Phiếu lương', 'Nhà cung cấp', 'Giảng viên & Chuyên gia', 'Bàn làm việc', 'Tài liệu', 'Lịch trình'],
             hr: ['Quy trình', 'Nhân sự & Lương', 'Quản lý chấm công', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu', 'Phiếu lương', 'Tài khoản cá nhân'],
             marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Tài liệu', 'Bàn làm việc']
           };

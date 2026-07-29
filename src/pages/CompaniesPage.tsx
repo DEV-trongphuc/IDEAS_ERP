@@ -159,14 +159,14 @@ export const CompaniesPage: React.FC = () => {
     <div className="page-container anim-fade-up">
       <div className="page-header" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px', marginBottom: '1.5rem' }}>
         <div>
-          <h1 className="page-title" style={{ fontSize: isMobile ? '1.45rem' : '1.75rem' }}>Đại lý & Đối tác</h1>
-          <p className="page-subtitle" style={{ fontSize: '0.8rem' }}>{loading ? '...' : `${total} đại lý, CTV liên kết`}</p>
+          <h1 className="page-title" style={{ fontSize: isMobile ? '1.45rem' : '1.75rem' }}>Giảng viên & Chuyên gia</h1>
+          <p className="page-subtitle" style={{ fontSize: '0.8rem' }}>{loading ? '...' : `${total} giảng viên, chuyên gia`}</p>
         </div>
         {!isSale && (
           <button 
             className="btn primary" 
             onClick={openCreate} 
-            title="Thêm Đối tác" 
+            title="Thêm giảng viên/chuyên gia" 
             style={{ 
               padding: isMobile ? '8px' : '8px 16px', 
               display: 'flex', 
@@ -179,7 +179,7 @@ export const CompaniesPage: React.FC = () => {
             }}
           >
             <Plus size={16} />
-            {!isMobile && <span>Thêm Đối tác</span>}
+            {!isMobile && <span>Thêm giảng viên/chuyên gia</span>}
           </button>
         )}
       </div>
@@ -192,7 +192,7 @@ export const CompaniesPage: React.FC = () => {
           <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <input
               type="text"
-              placeholder="Tìm tên đại lý, khu vực thế mạnh..."
+              placeholder="Tìm tên giảng viên, chuyên môn thế mạnh..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="form-input"
