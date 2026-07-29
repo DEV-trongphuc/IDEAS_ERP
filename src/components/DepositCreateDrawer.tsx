@@ -16,13 +16,15 @@ interface DepositCreateDrawerProps {
   onClose: () => void;
   defaultContact?: any;
   onSaveSuccess?: () => void;
+  zIndex?: number;
 }
 
 export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
   isOpen,
   onClose,
   defaultContact,
-  onSaveSuccess
+  onSaveSuccess,
+  zIndex
 }) => {
   const { user } = useAuth();
   const { addToast } = useUIStore();
@@ -315,10 +317,12 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
     }
   };
 
+  const baseZIndex = zIndex || 2000100;
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000090, display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: baseZIndex, display: 'flex', justifyContent: 'flex-end' }}>
           {/* Backdrop */}
           <motion.div
             className="drawer-backdrop"
@@ -331,7 +335,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
               inset: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.4)',
               backdropFilter: 'blur(4px)',
-              zIndex: 1000095
+              zIndex: baseZIndex + 5
             }}
           />
 
@@ -351,7 +355,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
               boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
               display: 'flex',
               flexDirection: 'column',
-              zIndex: 1000100,
+              zIndex: baseZIndex + 10,
               overflow: 'hidden'
             }}
             onClick={e => e.stopPropagation()}
