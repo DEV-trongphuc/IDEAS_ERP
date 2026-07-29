@@ -62,8 +62,8 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('history');
   
   // States copied from DepositsPage.tsx
-  const [selectedDepForManage, setSelectedDepForManage] = useState<Deposit | null>(null);
-  const [tempMilestones, setTempMilestones] = useState<any[]>([]);
+  const [selectedDepForManage, setSelectedDepForManage] = useState<any>(deposit);
+  const [tempMilestones, setTempMilestones] = useState<any[]>(deposit?.milestones || []);
   const [isSavingMilestones, setIsSavingMilestones] = useState(false);
   const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);
   const [actioningType, setActioningType] = useState<'approve' | 'reject' | null>(null);
@@ -78,14 +78,14 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   const commentEndRef = useRef<HTMLDivElement>(null);
 
   const [sharesData, setSharesData] = useState<any[]>([]);
-  const [tempExpectedCommission, setTempExpectedCommission] = useState<number>(0);
+  const [tempExpectedCommission, setTempExpectedCommission] = useState<number>(deposit?.expected_commission || 0);
   const [tempSharesData, setTempSharesData] = useState<any[]>([]);
   const [isEditingCommission, setIsEditingCommission] = useState(false);
   
-  const [autoRemindManage, setAutoRemindManage] = useState(true);
-  const [remindDaysBeforeManage, setRemindDaysBeforeManage] = useState(3);
-  const [remindAtHourManage, setRemindAtHourManage] = useState(8);
-  const [remindTargetManage, setRemindTargetManage] = useState(1);
+  const [autoRemindManage, setAutoRemindManage] = useState(deposit ? deposit.auto_remind !== 0 : true);
+  const [remindDaysBeforeManage, setRemindDaysBeforeManage] = useState(deposit ? Number(deposit.remind_days_before) || 3 : 3);
+  const [remindAtHourManage, setRemindAtHourManage] = useState(deposit ? Number(deposit.remind_at_hour) || 8 : 8);
+  const [remindTargetManage, setRemindTargetManage] = useState(deposit ? Number(deposit.remind_target) || 1 : 1);
 
   // Cancel transaction states
   const [isCancelOpen, setIsCancelOpen] = useState(false);

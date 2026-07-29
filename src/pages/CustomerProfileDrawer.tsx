@@ -2179,10 +2179,35 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         id: d.id,
         title: `${d.project_name} - Căn ${d.unit_code}`,
         value: d.price,
+        stage: (() => {
+          if (d.status === 'pending_admin') {
+            const hasPaidMilestone = d.milestones && Array.isArray(d.milestones) && d.milestones.some((m: any) => m.status === 'paid');
+            return hasPaidMilestone ? 'Chờ duyệt cọc' : 'Đang giao dịch';
+          }
+          if (d.status === 'approved') return 'Hoàn tất cọc';
+          if (d.status === 'cancelled') return 'Đã bể cọc';
+          return d.status;
+        })(),
+        stage_id: d.status,
+        prob: 100,
+        close: d.created_at,
+        description: d.cancelled_reason || '',
+        priority: 'high',
+        stage_color: d.status === 'approved' ? '#10b981' : d.status === 'cancelled' ? '#ef4444' : '#f59e0b',
         unit_code: d.unit_code,
         price: d.price,
+        expected_commission: d.expected_commission,
+        project_name: d.project_name,
+        project_id: d.project_id,
         milestones: d.milestones || [],
-        contact_id: d.contact_id
+        contact_id: d.contact_id,
+        first_name: d.first_name,
+        last_name: d.last_name,
+        phone: d.phone,
+        avatar_url: d.avatar_url,
+        created_at: d.created_at,
+        created_by: d.created_by,
+        contact_owner_id: d.contact_owner_id
       }));
 
       // Merge deposit milestone payment proofs (UNC) into docs
