@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Building2, ChevronLeft, Plus, Trash2, Upload, X, AlertCircle, Loader2 } from 'lucide-react';
 import { fetchAPI } from '../utils/api';
@@ -319,7 +320,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
 
   const baseZIndex = zIndex || 2000100;
 
-  return (
+  const content = (
     <AnimatePresence>
       {isOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: baseZIndex, display: 'flex', justifyContent: 'flex-end' }}>
@@ -871,4 +872,6 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
       )}
     </AnimatePresence>
   );
+
+  return typeof document !== 'undefined' ? createPortal(content, document.body) : null;
 };
