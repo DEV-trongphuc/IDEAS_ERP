@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -29,6 +29,7 @@ const workflowList = [
   { id: 'recurring_payment', name: 'Thanh toán định kỳ', description: 'Đề xuất thanh toán định kỳ hàng tháng/quý (tiền nhà, internet, phí dịch vụ).', category: 'finance', icon: Clock3, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
 
   { id: 'leave_late', name: 'Đề nghị nghỉ phép', description: 'Yêu cầu nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản.', category: 'hr', icon: Calendar, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
+  { id: 'attendance_bulk', name: 'Bổ sung công gộp', description: 'Đề xuất bổ sung công hàng loạt cho nhiều ngày trong tháng.', category: 'hr', icon: CheckSquare, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
   { id: 'checkin_explain', name: 'Giải trình chấm công', description: 'Giải trình đi trễ, về sớm hoặc quên chấm công.', category: 'hr', icon: Clock, bg: 'rgba(236, 72, 153, 0.08)', color: '#ec4899' },
   { id: 'recruitment', name: 'Đề xuất tuyển dụng', description: 'Yêu cầu bổ sung nhân sự cho phòng ban.', category: 'hr', icon: Users, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
   { id: 'salary_raise', name: 'Đề xuất tăng lương', description: 'Đề xuất điều chỉnh thu nhập cho nhân sự xuất sắc.', category: 'hr', icon: DollarSign, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
@@ -42,7 +43,7 @@ const workflowList = [
 
 export interface ApprovalItem {
   id: number;
-  type: 'leave' | 'advance' | 'expense' | 'checkin';
+  type: 'leave' | 'advance' | 'expense' | 'checkin' | 'attendance_bulk';
   employee_name?: string;
   title: string;
   description: string;
@@ -51,6 +52,7 @@ export interface ApprovalItem {
   updated_at?: string;
   currency?: string;
 }
+
 
 const GreenToggle = ({ checked, onChange, disabled, label, id }: { checked: boolean, onChange?: (val: boolean) => void, disabled?: boolean, label: string, id: string }) => {
   return (
@@ -203,7 +205,7 @@ export default function Approvals() {
 
   // Form field states
   const [proposerUser, setProposerUser] = useState<any>(null);
-  const [formType, setFormType] = useState<'leave' | 'advance' | 'expense' | 'general'>('expense');
+  const [formType, setFormType] = useState<'leave' | 'advance' | 'expense' | 'general' | 'attendance_bulk'>('expense');
   const [expenseTitle, setExpenseTitle] = useState('');
   const [jobPosition, setJobPosition] = useState('');
   const [departmentName, setDepartmentName] = useState('');
@@ -249,6 +251,41 @@ export default function Approvals() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState('monthly');
   const [recurringEndDate, setRecurringEndDate] = useState('');
+
+  // Attendance bulk states & helpers
+  const getPreviousMonthStr = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().substring(0, 7);
+  };
+
+  const getDayOfWeek = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    return days[date.getDay()];
+  };
+
+  const [bulkMonth, setBulkMonth] = useState<string>(getPreviousMonthStr());
+  const [suggestedDays, setSuggestedDays] = useState<any[]>([]);
+  const [suggestedLoading, setSuggestedLoading] = useState<boolean>(false);
+
+  const handleScanMissingDays = async (monthStr: string) => {
+    setSuggestedLoading(true);
+    try {
+      const res = await api.get(`/check-ins/suggest-bulk-dates?month=${monthStr}`);
+      if (res.data?.success) {
+        setSuggestedDays(res.data.data || []);
+        if ((res.data.data || []).length === 0) {
+          toast.success(t('Không có ngày thiếu công nào trong tháng chọn.'));
+        }
+      }
+    } catch (err: any) {
+      toast.error(err?.message || t('Lỗi quét ngày thiếu công'));
+    } finally {
+      setSuggestedLoading(false);
+    }
+  };
 
   // Main list filters
   const [listSearchText, setListSearchText] = useState('');
@@ -328,7 +365,18 @@ export default function Approvals() {
     const openId = params.get('open_id');
     const openType = params.get('open_type');
     const openStatus = params.get('open_status');
-    if (openId && openType) {
+    const createType = params.get('create');
+    if (createType === 'attendance_bulk') {
+      const def = workflowList.find(w => w.id === 'attendance_bulk');
+      if (def) {
+        setSelectedWorkflowDef(def);
+        setFormType('attendance_bulk');
+        setExpenseTitle(def.name);
+        setShowCreateModal(true);
+        handleScanMissingDays(getPreviousMonthStr());
+      }
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (openId && openType) {
       setSelectedTimelineItem({
         id: Number(openId),
         type: openType as any,
@@ -1642,7 +1690,18 @@ export default function Approvals() {
                               finalApproverId = proposerUser?.id || 1003;
                             }
 
-                            if (formType === 'leave') {
+                            if (formType === 'attendance_bulk') {
+                              if (suggestedDays.length === 0) {
+                                toast.error(t('Vui lòng quét và chọn ít nhất 1 ngày đề xuất bổ sung công.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              await api.post('/check-ins/bulk-request', {
+                                month_period: bulkMonth,
+                                details: suggestedDays,
+                                approver_id: finalApproverId
+                              });
+                            } else if (formType === 'leave') {
                               let leaveReasonStr = leaveReason;
                               if (isRecurring) {
                                 leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
@@ -1818,7 +1877,133 @@ export default function Approvals() {
                           {t('Thông tin chi tiết đề xuất')}
                         </div>
                         
-                        {formType === 'leave' ? (
+                        {formType === 'attendance_bulk' ? (
+                          /* BULK ATTENDANCE FORM FIELDS */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                                  {t('Tháng cần bổ sung')}
+                                </label>
+                                <input
+                                  type="month"
+                                  value={bulkMonth}
+                                  onChange={(e) => {
+                                    setBulkMonth(e.target.value);
+                                    handleScanMissingDays(e.target.value);
+                                  }}
+                                  className="form-input"
+                                  style={{ height: '36px', fontSize: '0.8rem', fontWeight: 600 }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleScanMissingDays(bulkMonth)}
+                                disabled={suggestedLoading}
+                                className="btn outline"
+                                style={{ height: '36px', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                              >
+                                <RefreshCw size={14} className={suggestedLoading ? 'spin' : ''} />
+                                {suggestedLoading ? t('Đang quét...') : t('Quét công')}
+                              </button>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                                {t('DANH SÁCH NGÀY THIẾU CÔNG')} ({suggestedDays.length} {t('ngày')})
+                              </span>
+                            </div>
+
+                            {suggestedDays.length > 0 ? (
+                              <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                                  <thead>
+                                    <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+                                      <th style={{ padding: '8px 10px', width: '90px' }}>{t('Ngày')}</th>
+                                      <th style={{ padding: '8px 10px', width: '80px' }}>{t('Thứ')}</th>
+                                      <th style={{ padding: '8px 10px', width: '85px' }}>{t('Vào')}</th>
+                                      <th style={{ padding: '8px 10px', width: '85px' }}>{t('Ra')}</th>
+                                      <th style={{ padding: '8px 10px' }}>{t('Lý do giải trình')}</th>
+                                      <th style={{ padding: '8px 10px', width: '40px', textAlign: 'center' }}></th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {suggestedDays.map((day, idx) => (
+                                      <tr key={day.date} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                        <td style={{ padding: '8px 10px', fontWeight: 650 }}>{day.date}</td>
+                                        <td style={{ padding: '8px 10px', color: 'var(--color-text-muted)' }}>{getDayOfWeek(day.date)}</td>
+                                        <td style={{ padding: '4px 8px' }}>
+                                          <input
+                                            type="time"
+                                            value={day.check_in}
+                                            onChange={(e) => {
+                                              const newDays = [...suggestedDays];
+                                              newDays[idx].check_in = e.target.value;
+                                              setSuggestedDays(newDays);
+                                            }}
+                                            disabled={day.has_check_in}
+                                            style={{
+                                              width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '0.75rem',
+                                              background: day.has_check_in ? 'var(--color-bg-light)' : 'var(--color-surface)',
+                                              color: day.has_check_in ? 'var(--color-text-muted)' : 'var(--color-text)',
+                                              cursor: day.has_check_in ? 'not-allowed' : 'auto'
+                                            }}
+                                          />
+                                        </td>
+                                        <td style={{ padding: '4px 8px' }}>
+                                          <input
+                                            type="time"
+                                            value={day.check_out}
+                                            onChange={(e) => {
+                                              const newDays = [...suggestedDays];
+                                              newDays[idx].check_out = e.target.value;
+                                              setSuggestedDays(newDays);
+                                            }}
+                                            disabled={day.has_check_out}
+                                            style={{
+                                              width: '100%', padding: '4px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '0.75rem',
+                                              background: day.has_check_out ? 'var(--color-bg-light)' : 'var(--color-surface)',
+                                              color: day.has_check_out ? 'var(--color-text-muted)' : 'var(--color-text)',
+                                              cursor: day.has_check_out ? 'not-allowed' : 'auto'
+                                            }}
+                                          />
+                                        </td>
+                                        <td style={{ padding: '4px 8px' }}>
+                                          <input
+                                            type="text"
+                                            value={day.reason}
+                                            placeholder={t('Lý do giải trình...')}
+                                            onChange={(e) => {
+                                              const newDays = [...suggestedDays];
+                                              newDays[idx].reason = e.target.value;
+                                              setSuggestedDays(newDays);
+                                            }}
+                                            style={{
+                                              width: '100%', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '0.75rem'
+                                            }}
+                                          />
+                                        </td>
+                                        <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => setSuggestedDays(suggestedDays.filter(d => d.date !== day.date))}
+                                            style={{ border: 'none', background: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                          >
+                                            <X size={14} />
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', border: '1px dashed var(--color-border)', borderRadius: '8px' }}>
+                                {t('Không tìm thấy ngày thiếu công. Bấm Quét công để kiểm tra!')}
+                              </div>
+                            )}
+                          </div>
+                        ) : formType === 'leave' ? (
                           /* LEAVE FORM FIELDS */
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

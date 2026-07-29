@@ -751,9 +751,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             <button
               type="button"
               onClick={() => {
-                setShowBulkCreateModal(true);
-                // Trigger scanning automatically using the default previous month when opening
-                handleScanMissingDays(bulkMonth);
+                window.location.href = '/approvals?create=attendance_bulk';
               }}
               className="btn primary hover-lift"
               style={{
