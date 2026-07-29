@@ -1766,9 +1766,9 @@ export default function HRM() {
               </div>
 
               {/* Main Month Action Controls & Close Button */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', paddingBottom: '2px' }} className="custom-scrollbar">
                 {payslips.some(ps => ps.status === 'locked') ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px', borderRadius: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px', borderRadius: 10, whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600 }}>🔒 {t('Bảng lương kỳ này đã được Chốt và Khóa.')}</span>
                     <button
                       onClick={handleUnlockPayroll}
@@ -1780,38 +1780,41 @@ export default function HRM() {
                   </div>
                 ) : (
                   <>
+                    {/* Secondary Actions */}
                     <button
                       onClick={handleRunPayroll}
                       disabled={calculating}
-                      className="btn primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem' }}
+                      className="btn outline sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                     >
                       <Play size={14} />
                       {calculating ? t('Đang tính...') : t('Tính lại lương')}
                     </button>
                     <button
+                      onClick={handlePublishPayroll}
+                      disabled={publishing || payslips.length === 0}
+                      className="btn outline sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)', whiteSpace: 'nowrap' }}
+                    >
+                      <Send size={14} />
+                      {publishing ? t('Đang gửi...') : t('Gửi yêu cầu xác nhận')}
+                    </button>
+
+                    {/* Primary Actions */}
+                    <button
                       onClick={handleSavePayroll}
                       disabled={saving || payslips.length === 0}
-                      className="btn primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#6366f1', padding: '6px 14px', fontSize: '0.8rem' }}
+                      className="btn primary sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#4f46e5', borderColor: '#4f46e5', color: '#fff', padding: '6px 16px', fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap' }}
                     >
                       <Save size={14} />
                       {saving ? t('Đang lưu...') : t('Lưu thay đổi')}
                     </button>
                     <button
-                      onClick={handlePublishPayroll}
-                      disabled={publishing || payslips.length === 0}
-                      className="btn primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', padding: '6px 14px', fontSize: '0.8rem' }}
-                    >
-                      <Send size={14} />
-                      {publishing ? t('Đang gửi...') : t('Gửi yêu cầu xác nhận')}
-                    </button>
-                    <button
                       onClick={handleLockPayroll}
                       disabled={locking || payslips.length === 0}
-                      className="btn primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', padding: '6px 14px', fontSize: '0.8rem' }}
+                      className="btn primary sm"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', borderColor: '#ef4444', color: '#fff', padding: '6px 16px', fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap' }}
                     >
                       <Lock size={14} />
                       {locking ? t('Đang khóa...') : t('Chốt & Khóa sổ lương')}
@@ -1833,7 +1836,8 @@ export default function HRM() {
                     justifyContent: 'center',
                     height: '34px',
                     width: '34px',
-                    marginLeft: '4px'
+                    marginLeft: '4px',
+                    flexShrink: 0
                   }}
                 >
                   <X size={16} />
@@ -1887,10 +1891,20 @@ export default function HRM() {
                     <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
                   </div>
 
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <table style={{ width: '100%', minWidth: '1350px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                        <th style={{ padding: '12px 8px' }}>{t('Nhân viên')}</th>
+                        <th style={{
+                          padding: '12px 14px',
+                          position: 'sticky',
+                          left: 0,
+                          background: 'var(--color-surface)',
+                          zIndex: 10,
+                          boxShadow: '2px 0 5px -2px rgba(0, 0, 0, 0.12)',
+                          minWidth: '170px'
+                        }}>
+                          {t('Nhân viên')}
+                        </th>
                         <th style={{ padding: '12px 8px' }}>{t('Công thực tế / Chuẩn')}</th>
                         <th style={{ padding: '12px 8px' }}>{t('Đi trễ (phút)')}</th>
                         <th style={{ padding: '12px 8px' }}>{t('Tăng ca (ngày)')}</th>
@@ -1911,7 +1925,18 @@ export default function HRM() {
                         const isLocked = ps.status === 'locked' || payslips.some(p => p.status === 'locked');
                         return (
                           <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
-                            <td style={{ padding: '14px 8px', fontWeight: 600 }}>{ps.employee_name}</td>
+                            <td style={{
+                              padding: '14px 14px',
+                              fontWeight: 600,
+                              position: 'sticky',
+                              left: 0,
+                              background: 'var(--color-surface)',
+                              zIndex: 5,
+                              boxShadow: '2px 0 5px -2px rgba(0, 0, 0, 0.12)',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {ps.employee_name}
+                            </td>
                             <td style={{ padding: '12px 8px' }}>
                               <div style={{
                                 display: 'inline-flex',
