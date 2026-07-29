@@ -5716,5 +5716,56 @@ a,
   }
 }
 
+/* Custom Neutral Gray Scrollbar for Payroll Table */
+.payroll-scroll-red,
+div.payroll-scroll-red,
+div.payroll-scroll-red.custom-scrollbar,
+div.payroll-scroll-red.table-wrap,
+div.payroll-scroll-red.responsive-table-wrap {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 280px) !important;
+  scrollbar-color: #94a3b8 #f1f5f9 !important;
+  scrollbar-width: auto !important;
+  padding-bottom: 6px !important;
+}
+
+.payroll-scroll-red::-webkit-scrollbar,
+div.payroll-scroll-red::-webkit-scrollbar,
+div.payroll-scroll-red.custom-scrollbar::-webkit-scrollbar,
+div.payroll-scroll-red.table-wrap::-webkit-scrollbar,
+div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar {
+  height: 14px !important;
+  width: 10px !important;
+  display: block !important;
+}
+
+.payroll-scroll-red::-webkit-scrollbar-track,
+div.payroll-scroll-red::-webkit-scrollbar-track,
+div.payroll-scroll-red.custom-scrollbar::-webkit-scrollbar-track,
+div.payroll-scroll-red.table-wrap::-webkit-scrollbar-track,
+div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 8px !important;
+}
+
+.payroll-scroll-red::-webkit-scrollbar-thumb,
+div.payroll-scroll-red::-webkit-scrollbar-thumb,
+div.payroll-scroll-red.custom-scrollbar::-webkit-scrollbar-thumb,
+div.payroll-scroll-red.table-wrap::-webkit-scrollbar-thumb,
+div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important;
+  border-radius: 8px !important;
+  border: 2px solid #ffffff !important;
+}
+
+.payroll-scroll-red::-webkit-scrollbar-thumb:hover,
+div.payroll-scroll-red::-webkit-scrollbar-thumb:hover,
+div.payroll-scroll-red.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+div.payroll-scroll-red.table-wrap::-webkit-scrollbar-thumb:hover,
+div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important;
+}
+
 
 

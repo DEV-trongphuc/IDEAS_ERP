@@ -1978,24 +1978,33 @@ export default function HRM() {
                     }
                     .payroll-scroll-red {
                       overflow-x: scroll !important;
-                      overflow-y: hidden !important;
-                      padding-bottom: 6px;
+                      overflow-y: auto !important;
+                      max-height: calc(100vh - 290px) !important;
+                      padding-bottom: 4px;
                     }
                     .payroll-scroll-red::-webkit-scrollbar {
                       height: 14px !important;
+                      width: 10px !important;
                       display: block !important;
                     }
                     .payroll-scroll-red::-webkit-scrollbar-track {
-                      background: rgba(239, 68, 68, 0.15) !important;
+                      background: #f1f5f9 !important;
                       border-radius: 8px !important;
                     }
                     .payroll-scroll-red::-webkit-scrollbar-thumb {
-                      background: #ef4444 !important;
+                      background: #94a3b8 !important;
                       border-radius: 8px !important;
                       border: 2px solid var(--color-surface) !important;
                     }
                     .payroll-scroll-red::-webkit-scrollbar-thumb:hover {
-                      background: #dc2626 !important;
+                      background: #64748b !important;
+                    }
+                    .payroll-table th {
+                      position: sticky !important;
+                      top: 0 !important;
+                      background-color: var(--color-surface, #ffffff);
+                      z-index: 50 !important;
+                      border-bottom: 2px solid var(--color-border-light) !important;
                     }
                     .payroll-table th:first-child,
                     .payroll-table td:first-child {
@@ -2007,7 +2016,9 @@ export default function HRM() {
                       border-right: 1px solid var(--color-border-light) !important;
                     }
                     .payroll-table th:first-child {
-                      z-index: 101 !important;
+                      top: 0 !important;
+                      left: 0 !important;
+                      z-index: 120 !important;
                     }
                     .payroll-table tr:hover td {
                       background-color: var(--color-bg-light, #f8fafc) !important;
@@ -2018,8 +2029,8 @@ export default function HRM() {
                     }
                   `}</style>
 
-                  {/* Horizontal Scroll Table Container */}
-                  <div style={{ overflowX: 'scroll', position: 'relative' }} className="payroll-scroll-red">
+                  {/* Horizontal & Vertical Scroll Table Container */}
+                  <div style={{ overflowX: 'scroll', overflowY: 'auto', maxHeight: 'calc(100vh - 290px)', position: 'relative' }} className="payroll-scroll-red custom-scrollbar table-wrap responsive-table-wrap">
                     <table className="payroll-table" style={{ width: '100%', minWidth: '1350px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
