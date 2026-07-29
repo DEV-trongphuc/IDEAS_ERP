@@ -1922,30 +1922,101 @@ export default function HRM() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }} className="custom-scrollbar">
               {/* Stats Summary Cards */}
               {payslips.length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Nhân sự tính lương')}</span>
-                    <strong style={{ fontSize: '1.25rem', color: 'var(--color-text)' }}>{stats.empCount}</strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  {/* Card 1: Nhân sự tính lương */}
+                  <div className="stat-card hover-lift" style={{ minHeight: '110px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+                    <div className="decor-svg" style={{ color: '#3b82f6', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                      <Users size={65} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('Nhân sự tính lương')}</span>
+                      <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={16} />
+                      </div>
+                    </div>
+                    <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.4rem', fontWeight: 800 }}>
+                      {stats.empCount}
+                    </div>
                   </div>
-                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng Lương ngày công')}</span>
-                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-text)' }}>{formatCurrency(stats.totalBasic)}</strong>
+
+                  {/* Card 2: Tổng lương ngày công */}
+                  <div className="stat-card hover-lift" style={{ minHeight: '110px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+                    <div className="decor-svg" style={{ color: '#6366f1', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                      <Calendar size={65} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('Lương ngày công')}</span>
+                      <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(99, 102, 241, 0.08)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Calendar size={16} />
+                      </div>
+                    </div>
+                    <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.25rem', fontWeight: 800 }}>
+                      {formatCurrency(stats.totalBasic)}
+                    </div>
                   </div>
-                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng phụ cấp')}</span>
-                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-text)' }}>{formatCurrency(stats.totalAllowances)}</strong>
+
+                  {/* Card 3: Tổng phụ cấp */}
+                  <div className="stat-card hover-lift" style={{ minHeight: '110px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+                    <div className="decor-svg" style={{ color: '#0d9488', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                      <CreditCard size={65} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('Tổng phụ cấp')}</span>
+                      <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(13, 148, 136, 0.08)', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CreditCard size={16} />
+                      </div>
+                    </div>
+                    <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.25rem', fontWeight: 800 }}>
+                      {formatCurrency(stats.totalAllowances)}
+                    </div>
                   </div>
-                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng các khoản thưởng')}</span>
-                    <strong style={{ fontSize: '1.1rem', color: '#10b981' }}>{formatCurrency(stats.totalBonuses)}</strong>
+
+                  {/* Card 4: Tổng thưởng */}
+                  <div className="stat-card hover-lift" style={{ minHeight: '110px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+                    <div className="decor-svg" style={{ color: '#10b981', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                      <Award size={65} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('Các khoản thưởng')}</span>
+                      <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Award size={16} />
+                      </div>
+                    </div>
+                    <div className="stat-value" style={{ color: '#10b981', margin: '4px 0', fontSize: '1.25rem', fontWeight: 800 }}>
+                      {formatCurrency(stats.totalBonuses)}
+                    </div>
                   </div>
-                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng các khoản trừ')}</span>
-                    <strong style={{ fontSize: '1.1rem', color: '#ef4444' }}>-{formatCurrency(stats.totalDeductions)}</strong>
+
+                  {/* Card 5: Các khoản khấu trừ */}
+                  <div className="stat-card hover-lift" style={{ minHeight: '110px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+                    <div className="decor-svg" style={{ color: '#ef4444', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                      <ShieldAlert size={65} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('Các khoản trừ')}</span>
+                      <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ShieldAlert size={16} />
+                      </div>
+                    </div>
+                    <div className="stat-value" style={{ color: '#ef4444', margin: '4px 0', fontSize: '1.25rem', fontWeight: 800 }}>
+                      -{formatCurrency(stats.totalDeductions)}
+                    </div>
                   </div>
-                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 10 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG THỰC LĨNH (NET)')}</span>
-                    <strong style={{ fontSize: '1.3rem', color: 'var(--color-primary)' }}>{formatCurrency(stats.totalNet)}</strong>
+
+                  {/* Card 6: TỔNG THỰC LĨNH (NET) */}
+                  <div className="stat-card hover-lift" style={{ minHeight: '110px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+                    <div className="decor-svg" style={{ color: '#2563eb', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                      <DollarSign size={65} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{t('Thực lĩnh (NET)')}</span>
+                      <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <DollarSign size={16} />
+                      </div>
+                    </div>
+                    <div className="stat-value" style={{ color: '#2563eb', margin: '4px 0', fontSize: '1.35rem', fontWeight: 900 }}>
+                      {formatCurrency(stats.totalNet)}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1958,13 +2029,7 @@ export default function HRM() {
                   description={t('Không tải được phiếu lương nào trong kỳ này. Bấm quay lại và tính lại lương.')}
                 />
               ) : (
-                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', paddingBottom: '8px' }}>
-                  <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#2563eb' }}>
-                      <HelpCircle size={15} style={{ flexShrink: 0 }} />
-                      <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
-                    </div>
-                  </div>
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '16px', paddingTop: '0.5rem', paddingBottom: '8px' }}>
 
                   <style>{`
                     /* Hide browser default number input spinners */
@@ -2058,10 +2123,18 @@ export default function HRM() {
                     <tbody>
                       {payslips.map(ps => {
                         const isLocked = ps.status === 'locked' || payslips.some(p => p.status === 'locked');
+                        const profile = profiles.find(p => Number(p.id) === Number(ps.user_id));
                         return (
                           <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
-                            <td style={{ padding: '14px 16px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                              {ps.employee_name}
+                            <td style={{ padding: '10px 16px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Avatar
+                                  src={profile?.avatar_url || ps?.avatar_url}
+                                  name={ps.employee_name}
+                                  size={28}
+                                />
+                                <span>{ps.employee_name}</span>
+                              </div>
                             </td>
                             <td style={{ padding: '12px 8px' }}>
                               <div style={{
