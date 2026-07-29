@@ -193,7 +193,7 @@ const ConsultantsInner = () => {
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const showAllTabs = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'sale', 'sales', 'hr'].includes(userRole || '');
+  const showAllTabs = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'sale', 'sales', 'hr', 'accountant'].includes(userRole || '');
   const activeTabRaw = queryParams.get('tab') || 'consultants';
   const activeTab = showAllTabs ? activeTabRaw : 'consultants';
 
@@ -1846,22 +1846,6 @@ const ConsultantsInner = () => {
                       </div>
                     </div>
 
-                    {/* Slogan / Description */}
-                    {team.description && (
-                      <div style={{ 
-                        fontSize: '0.8125rem', 
-                        color: 'var(--color-text-light)', 
-                        fontStyle: 'italic', 
-                        background: 'var(--color-bg)',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        borderLeft: '3px solid var(--color-primary)',
-                        lineHeight: 1.4
-                      }}>
-                        "{team.description}"
-                      </div>
-                    )}
-
                     {/* Details Panel */}
                     <div style={{ 
                       background: 'rgba(0, 0, 0, 0.01)', 
@@ -1916,17 +1900,6 @@ const ConsultantsInner = () => {
                         </div>
                       </div>
 
-                      {/* Chi nhánh */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
-                          <Building2 size={14} />
-                          <span>{t('Chi nhánh')}:</span>
-                        </div>
-                        <span style={{ color: 'var(--color-text)', fontWeight: team.branch ? 600 : 400 }}>
-                          {team.branch || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{t('Chưa gán')}</span>}
-                        </span>
-                      </div>
-
                       {/* Thành viên (Avatars) */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
@@ -1963,57 +1936,6 @@ const ConsultantsInner = () => {
                             );
                           })()}
                         </div>
-                      </div>
-
-                      {/* Dự án */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
-                          <CheckCircle size={14} />
-                          <span>{t('Dự án trọng điểm')}:</span>
-                        </div>
-                        {team.focus_project ? (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-end', maxWidth: '70%' }}>
-                            {team.focus_project.split(',').map((p: string) => p.trim()).filter(Boolean).map((projName: string) => {
-                              const projObj = projects.find((p: any) => p.name === projName);
-                              return (
-                                <span 
-                                  key={projName} 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (projObj) {
-                                      navigate(`/projects?project_id=${projObj.id}`);
-                                    } else {
-                                      navigate('/projects');
-                                    }
-                                  }}
-                                  className="badge sm" 
-                                  style={{ 
-                                    fontWeight: 700, 
-                                    fontSize: '0.7rem',
-                                    background: 'var(--color-bg-alt)',
-                                    color: 'var(--color-text-muted)',
-                                    border: '1px solid var(--color-border-light)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    userSelect: 'none'
-                                  }}
-                                  onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'var(--color-border-light)';
-                                    e.currentTarget.style.color = 'var(--color-text)';
-                                  }}
-                                  onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'var(--color-bg-alt)';
-                                    e.currentTarget.style.color = 'var(--color-text-muted)';
-                                  }}
-                                >
-                                  {projName}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{t('Chưa gán')}</span>
-                        )}
                       </div>
                     </div>
 

@@ -748,9 +748,9 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     return (
       <div className="page-header" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms', marginBottom: '1.25rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <h1 className="page-title" style={{ margin: 0 }}>{title}</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
             {renderSubTabs()}
+            <h1 className="page-title" style={{ margin: 0 }}>{title}</h1>
           </div>
           <p className="page-subtitle" style={{ marginTop: '4px' }}>{subtitle}</p>
         </div>
@@ -1015,9 +1015,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         gap: `${gap}px`,
         width: 'fit-content',
         position: 'relative',
-        marginLeft: isMobile ? '0' : '0.75rem',
-        marginTop: isMobile ? '0.5rem' : '0',
-        verticalAlign: 'middle'
+        marginLeft: '0',
+        marginBottom: '0.35rem'
       }}>
         {/* Sliding Pill Background Indicator */}
         <div style={{
@@ -1632,7 +1631,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           : renderWelcomeBannerForRole(t('Chào mừng trở lại! Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
 
         {/* Header (Title & Global Filter) below it */}
-        {renderHeaderForRole(t("Hệ thống Quản lý Nhân sự & Bảng Lương (HRMS)"), t("Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.")) }
+        {renderHeaderForRole(t("Quản lý nhân sự"), t("Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.")) }
 
         {/* KPIs - 4 cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
@@ -2726,9 +2725,9 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       {/* Header */}
       <div className="page-header" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <h1 className="page-title" style={{ margin: 0 }}>{t("Tổng quan Phân bổ Data")}</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
             {renderSubTabs()}
+            <h1 className="page-title" style={{ margin: 0 }}>{t("Tổng quan Phân bổ Data")}</h1>
           </div>
           <p className="page-subtitle" style={{ marginTop: '4px' }}>{t("Phân tích hiệu suất giao data theo thời gian thực — Hệ thống đang hoạt động trơn tru.")}</p>
         </div>
@@ -4486,8 +4485,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                     </div>
                   </div>
 
-                  {/* KPI Cards Row (4 Columns) */}
-                  <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                  {/* KPI Cards Row (3 Columns) */}
+                  <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '0.75rem' }}>
                     {/* Card 1: Tổng khách hàng */}
                     <div className="stat-card hover-lift total-card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minHeight: '120px', borderRadius: '12px', border: '1px solid var(--color-border-light)', position: 'relative', overflow: 'hidden' }}>
                       <div className="decor-svg" style={{ color: '#a31422' }}>
@@ -4540,32 +4539,6 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fbbf24', display: 'inline-block' }} />
                             {t('Hợp tác (co.op)')}: {statsData.summary.coop_count || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 3: Từ Databank */}
-                    <div className="stat-card hover-lift fair_share_equity-card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minHeight: '120px', borderRadius: '12px', border: '1px solid var(--color-border-light)', position: 'relative', overflow: 'hidden' }}>
-                      <div className="decor-svg" style={{ color: '#34c759' }}>
-                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                          <path d="M20 30 C 20 20, 80 20, 80 30 C 80 40, 20 40, 20 30 Z" stroke="currentColor" strokeWidth="2" />
-                          <path d="M20 30 V 50 C 20 60, 80 60, 80 50 V 30" stroke="currentColor" strokeWidth="2" />
-                          <path d="M20 50 V 70 C 20 80, 80 80, 80 70 V 50" stroke="currentColor" strokeWidth="2" />
-                        </svg>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
-                        <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Từ Databank')}</span>
-                        <div className="stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(52, 199, 89, 0.08)', color: '#34c759', flexShrink: 0 }}><Database size={16} /></div>
-                      </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-                        <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
-                          {statsData.summary.databank_count || 0}
-                        </div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34c759', display: 'inline-block' }} />
-                            {t('Claim từ Kho Databank')}: {statsData.summary.databank_count || 0}
                           </span>
                         </div>
                       </div>

@@ -308,7 +308,6 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
   return createPortal(
     <AnimatePresence>
       <div style={{ position: 'fixed', inset: 0, zIndex: 2000000000, display: 'flex', justifyContent: 'flex-end' }}>
-        {/* Backdrop Overlay */}
         <motion.div
           className="drawer-backdrop"
           initial={{ opacity: 0 }}
@@ -319,8 +318,9 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
             position: 'absolute',
             inset: 0,
             zIndex: 2000000005,
-            background: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(4px)'
+            background: 'rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)'
           }}
         />
 

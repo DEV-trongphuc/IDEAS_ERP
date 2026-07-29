@@ -15,6 +15,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Line, AreaChart, Area 
 } from 'recharts';
+import { motion } from 'framer-motion';
 import { ApprovalDetailDrawer } from './Approvals';
 import type { ApprovalItem } from './Approvals';
 
@@ -638,7 +639,7 @@ export default function HRM() {
       <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="page-title">
-            {t('Hệ thống Quản lý Nhân sự & Bảng Lương (HRMS)')}
+            {t('Quản lý nhân sự')}
           </h1>
           <p className="page-subtitle">
             {t('Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.')}
@@ -657,7 +658,18 @@ export default function HRM() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: 'var(--color-bg)', padding: '0.375rem', borderRadius: 'var(--radius-lg)', width: 'fit-content', flexWrap: 'wrap' }}>
+      <div style={{ 
+        display: 'flex',
+        background: 'var(--color-border-light)',
+        border: '1px solid var(--color-border)',
+        padding: '2px',
+        borderRadius: '8px',
+        gap: '2px',
+        width: 'fit-content',
+        position: 'relative',
+        marginBottom: '1.5rem',
+        flexWrap: isMobile ? 'wrap' : 'nowrap'
+      }}>
         {[
           { id: 'dashboard', label: t('Tổng quan HR'), icon: LayoutDashboard },
           { id: 'profiles', label: t('Hồ sơ lương nhân viên'), icon: Users },
@@ -672,38 +684,61 @@ export default function HRM() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               style={{
+                padding: '6px 16px',
+                height: '34px',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: 'transparent',
+                color: isActive ? 'var(--color-text)' : 'var(--color-text-light)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 1.125rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.875rem',
-                background: isActive ? 'var(--color-surface)' : 'transparent',
-                color: isActive ? 'var(--color-text)' : 'var(--color-text-light)',
-                boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                position: 'relative'
+                justifyContent: 'center',
+                gap: '6px',
+                position: 'relative',
+                outline: 'none',
+                boxShadow: 'none',
+                flexShrink: 0,
+                zIndex: 2,
+                transition: 'color 0.2s ease'
               }}
             >
-              <Icon size={16} />
-              {tab.label}
+              {isActive && (
+                <motion.div 
+                  layoutId="activeHrmSubTabIndicator"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'var(--color-surface)',
+                    borderRadius: '6px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                    zIndex: 1
+                  }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+              
+              <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Icon size={14} />
+                <span>{tab.label}</span>
+              </span>
+              
               {!!tab.badge && tab.badge > 0 && (
                 <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ef4444',
-                  color: '#ffffff',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  padding: '0 4px',
-                  marginLeft: '4px'
+                  position: 'relative',
+                  zIndex: 2,
+                  fontSize: '0.75rem',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  background: isActive ? '#ef4444' : 'rgba(239, 68, 68, 0.1)',
+                  color: isActive ? '#ffffff' : '#ef4444',
+                  fontWeight: 800,
+                  transition: 'background 0.2s ease, color 0.2s ease'
                 }}>
                   {tab.badge}
                 </span>

@@ -73,8 +73,8 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Nhân sự công ty', href: '/consultants', icon: Users },
       { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing', 'accountant'] },
       { name: 'Lịch trình', href: '/calendar', icon: Calendar },
-      { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director'] },
-      { name: 'Quản trị nhân sự & lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
+      { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr'] },
+      { name: 'Nhân sự & Lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
       { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
     ]
   },
@@ -347,8 +347,8 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
       const isAdmin = role === 'admin' || role === 'superadmin' || role === 'super_admin';
       const isManagerOrAdmin = isAdmin || role === 'manager' || role === 'director';
 
-      // For Admin and Director, hide personal 'Chấm công' item (they only need 'Quản lý chấm công')
-      if (item.name === 'Chấm công' && ['admin', 'superadmin', 'super_admin', 'director'].includes(role)) {
+      // For Admin, Director, Manager and HR, hide personal 'Chấm công' item (they only need 'Quản lý chấm công')
+      if (item.name === 'Chấm công' && ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr'].includes(role)) {
         return false;
       }
 
@@ -485,7 +485,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
           {!isCollapsed && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
               <span style={{ fontSize: '1.2rem', fontWeight: 900, whiteSpace: 'nowrap', color: 'white', letterSpacing: '-0.03em', lineHeight: 1.05 }}>
-                IDEAS
+                IDEAS ERP
               </span>
               <span style={{
                 fontSize: '0.55rem',
@@ -498,7 +498,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
                 marginTop: '3px',
                 whiteSpace: 'nowrap'
               }}>
-                / DATA AUTOMATION
+                / AI AUTOMATION
               </span>
             </div>
           )}

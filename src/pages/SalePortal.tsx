@@ -7449,15 +7449,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
         key: 'data', 
         status: 'personal', 
         label: t('DATA CÁ NHÂN'), 
-        value: (data.stats.self_count || 0) + (data.stats.databank_count || 0), 
+        value: data.stats.self_count || 0, 
         color: '#34c759', 
         bg: 'rgba(52, 199, 89, 0.08)', 
         icon: User,
         change: '+100%', 
         up: true,
         bullets: [
-          { text: t('Tự tạo hoặc giới thiệu') + ': ' + (data.stats.self_count || 0), color: '#f59e0b' },
-          { text: t('Claim từ Kho Databank') + ': ' + (data.stats.databank_count || 0), color: '#34c759' }
+          { text: t('Tự tạo hoặc giới thiệu') + ': ' + (data.stats.self_count || 0), color: '#f59e0b' }
         ],
         decor: (
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>

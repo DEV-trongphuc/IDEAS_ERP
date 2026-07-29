@@ -145,6 +145,9 @@ const resolveAttachmentUrl = (path: string) => {
 
 export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account, onSaveSuccess, readOnly = false }) => {
   const { t } = useLanguage();
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+  };
   const { user: currentUser, updateUser } = useAuth();
   const isSuperAdmin = currentUser?.role === 'superadmin' || (currentUser?.role as string) === 'super_admin';
   const isAdmin = currentUser?.role === 'admin' || isSuperAdmin;
@@ -200,6 +203,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   const [allowancePhone, setAllowancePhone] = useState(0);
   const [kpiTarget, setKpiTarget] = useState(0);
   const [customAllowances, setCustomAllowances] = useState<{ name: string, value: number }[]>([]);
+  const [insuranceRateBhxh, setInsuranceRateBhxh] = useState(8.00);
+  const [insuranceRateBhyt, setInsuranceRateBhyt] = useState(1.50);
+  const [insuranceRateBhtn, setInsuranceRateBhtn] = useState(1.00);
 
   // Collapsible sections
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -555,6 +561,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                 setAllowanceTravel(Number(found.allowance_travel || 0));
                 setAllowancePhone(Number(found.allowance_phone || 0));
                 setKpiTarget(Number(found.kpi_target || 0));
+                setInsuranceRateBhxh(Number(found.insurance_rate_bhxh ?? 8.00));
+                setInsuranceRateBhyt(Number(found.insurance_rate_bhyt ?? 1.50));
+                setInsuranceRateBhtn(Number(found.insurance_rate_bhtn ?? 1.00));
                 try {
                   const customList = found.custom_fields_json 
                     ? (typeof found.custom_fields_json === 'string' ? JSON.parse(found.custom_fields_json) : found.custom_fields_json) 
@@ -1060,7 +1069,10 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
             allowance_travel: allowanceTravel,
             allowance_phone: allowancePhone,
             kpi_target: kpiTarget,
-            custom_fields_json: JSON.stringify(customAllowances)
+            custom_fields_json: JSON.stringify(customAllowances),
+            insurance_rate_bhxh: insuranceRateBhxh,
+            insurance_rate_bhyt: insuranceRateBhyt,
+            insurance_rate_bhtn: insuranceRateBhtn
           })
         });
       }
@@ -1326,17 +1338,18 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                 type="submit"
                 form="account-detail-form"
                 disabled={isSaving}
-                className="btn primary sm"
+                className="btn primary"
                 style={{
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  height: '36px',
-                  padding: '0 14px',
-                  fontSize: '0.8125rem',
-                  fontWeight: 600,
-                  gap: '6px'
+                  height: '38px',
+                  padding: '0 18px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  gap: '8px',
+                  boxShadow: 'var(--shadow-sm)'
                 }}
                 title={t('Lưu Hồ sơ Nhân sự')}
               >
@@ -4141,89 +4154,201 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                   </div>
 
                   <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div className="form-group">
-                        <label className="form-label">{t('Lương Net thực tế')}</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={dealSalary}
-                          onChange={e => setDealSalary(Number(e.target.value))}
-                          disabled={!canEditSalary}
-                        />
+                    {/* Section 1: LƯƠNG CHÍNH & CHỈ TIÊU */}
+                    <div style={{
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      background: 'rgba(0, 0, 0, 0.01)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>
+                        {t('Lương Chính & Chỉ Tiêu')}
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">{t('Lương đóng BHXH')}</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={baseSalary}
-                          onChange={e => setBaseSalary(Number(e.target.value))}
-                          disabled={!canEditSalary}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                      <div className="form-group">
-                        <label className="form-label">{t('Phụ cấp ăn trưa')}</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={allowanceMeal}
-                          onChange={e => setAllowanceMeal(Number(e.target.value))}
-                          disabled={!canEditSalary}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">{t('Phụ cấp xăng xe')}</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={allowanceTravel}
-                          onChange={e => setAllowanceTravel(Number(e.target.value))}
-                          disabled={!canEditSalary}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">{t('Phụ cấp điện thoại')}</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={allowancePhone}
-                          onChange={e => setAllowancePhone(Number(e.target.value))}
-                          disabled={!canEditSalary}
-                        />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 600 }}>{t('Lương Net thực tế')}</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={dealSalary}
+                            onChange={e => setDealSalary(Number(e.target.value))}
+                            disabled={!canEditSalary}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 600 }}>{t('Chỉ tiêu doanh số KPI tối thiểu')}</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={kpiTarget}
+                            onChange={e => setKpiTarget(Number(e.target.value))}
+                            disabled={!canEditSalary}
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">{t('Chỉ tiêu doanh số KPI tối thiểu')}</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={kpiTarget}
-                        onChange={e => setKpiTarget(Number(e.target.value))}
-                        disabled={!canEditSalary}
-                      />
+                    {/* Section 2: PHỤ CẤP CỐ ĐỊNH */}
+                    <div style={{
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      background: 'rgba(0, 0, 0, 0.01)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>
+                        {t('Phụ Cấp Cố Định')}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 600 }}>{t('Phụ cấp ăn trưa')}</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={allowanceMeal}
+                            onChange={e => setAllowanceMeal(Number(e.target.value))}
+                            disabled={!canEditSalary}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 600 }}>{t('Phụ cấp xăng xe')}</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={allowanceTravel}
+                            onChange={e => setAllowanceTravel(Number(e.target.value))}
+                            disabled={!canEditSalary}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label" style={{ fontWeight: 600 }}>{t('Phụ cấp điện thoại')}</label>
+                          <input
+                            type="number"
+                            className="form-input"
+                            value={allowancePhone}
+                            onChange={e => setAllowancePhone(Number(e.target.value))}
+                            disabled={!canEditSalary}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0' }}>
-                      <input
-                        type="checkbox"
-                        id="drawer_has_insurance"
-                        checked={hasInsurance}
-                        onChange={e => setHasInsurance(e.target.checked)}
-                        disabled={!canEditSalary}
-                        style={{ width: '16px', height: '16px', cursor: canEditSalary ? 'pointer' : 'default' }}
-                      />
-                      <label htmlFor="drawer_has_insurance" style={{ fontWeight: 600, fontSize: '0.85rem', cursor: canEditSalary ? 'pointer' : 'default', color: 'var(--color-text)' }}>
-                        {t('Đóng bảo hiểm xã hội bắt buộc')}
-                      </label>
+                    {/* Section 3: BẢO HIỂM XÃ HỘI */}
+                    <div style={{
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      background: 'rgba(0, 0, 0, 0.01)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {t('Bảo Hiểm Xã Hội')}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="checkbox"
+                            id="drawer_has_insurance"
+                            checked={hasInsurance}
+                            onChange={e => setHasInsurance(e.target.checked)}
+                            disabled={!canEditSalary}
+                            style={{ width: '15px', height: '15px', cursor: canEditSalary ? 'pointer' : 'default' }}
+                          />
+                          <label htmlFor="drawer_has_insurance" style={{ fontWeight: 700, fontSize: '0.8rem', cursor: canEditSalary ? 'pointer' : 'default', color: 'var(--color-text)' }}>
+                            {t('Đóng bảo hiểm xã hội bắt buộc')}
+                          </label>
+                        </div>
+                      </div>
+
+                      {hasInsurance ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '0.75rem' }}>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>{t('Mức lương đóng BHXH')}</label>
+                              <input
+                                type="number"
+                                className="form-input"
+                                value={baseSalary}
+                                onChange={e => setBaseSalary(Number(e.target.value))}
+                                disabled={!canEditSalary}
+                                placeholder={t('Nhập mức lương đóng bảo hiểm')}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>{t('Tỷ lệ BHXH (%)')}</label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                className="form-input"
+                                value={insuranceRateBhxh}
+                                onChange={e => setInsuranceRateBhxh(Number(e.target.value))}
+                                disabled={!canEditSalary}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>{t('Tỷ lệ BHYT (%)')}</label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                className="form-input"
+                                value={insuranceRateBhyt}
+                                onChange={e => setInsuranceRateBhyt(Number(e.target.value))}
+                                disabled={!canEditSalary}
+                              />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label" style={{ fontWeight: 600 }}>{t('Tỷ lệ BHTN (%)')}</label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                className="form-input"
+                                value={insuranceRateBhtn}
+                                onChange={e => setInsuranceRateBhtn(Number(e.target.value))}
+                                disabled={!canEditSalary}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Live breakdown of deductions */}
+                          {baseSalary > 0 && (
+                            <div style={{
+                              background: 'var(--color-bg)',
+                              borderRadius: '8px',
+                              padding: '10px 12px',
+                              border: '1px solid var(--color-border)',
+                              fontSize: '0.78rem'
+                            }}>
+                              <div style={{ fontWeight: 700, color: 'var(--color-text)', marginBottom: '6px', fontSize: '0.8rem' }}>
+                                📋 {t('Khấu trừ người lao động hàng tháng (tỷ lệ tùy chỉnh)')}:
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', color: 'var(--color-text-light)' }}>
+                                <div style={{ background: 'var(--color-surface)', padding: '6px 8px', borderRadius: '4px', borderLeft: '3px solid #3b82f6', boxShadow: 'var(--shadow-sm)' }}>
+                                  <div style={{ fontWeight: 600 }}>BHXH ({insuranceRateBhxh.toFixed(1)}%)</div>
+                                  <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.85rem', marginTop: '2px' }}>{formatCurrency(baseSalary * (insuranceRateBhxh / 100))}</div>
+                                </div>
+                                <div style={{ background: 'var(--color-surface)', padding: '6px 8px', borderRadius: '4px', borderLeft: '3px solid #10b981', boxShadow: 'var(--shadow-sm)' }}>
+                                  <div style={{ fontWeight: 600 }}>BHYT ({insuranceRateBhyt.toFixed(1)}%)</div>
+                                  <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.85rem', marginTop: '2px' }}>{formatCurrency(baseSalary * (insuranceRateBhyt / 100))}</div>
+                                </div>
+                                <div style={{ background: 'var(--color-surface)', padding: '6px 8px', borderRadius: '4px', borderLeft: '3px solid #fbbf24', boxShadow: 'var(--shadow-sm)' }}>
+                                  <div style={{ fontWeight: 600 }}>BHTN ({insuranceRateBhtn.toFixed(1)}%)</div>
+                                  <div style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.85rem', marginTop: '2px' }}>{formatCurrency(baseSalary * (insuranceRateBhtn / 100))}</div>
+                                </div>
+                              </div>
+                              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--color-danger)' }}>
+                                <span>{t('Tổng tiền khấu trừ đóng bảo hiểm')}:</span>
+                                <span>{formatCurrency(baseSalary * ((insuranceRateBhxh + insuranceRateBhyt + insuranceRateBhtn) / 100))}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', fontStyle: 'italic', marginTop: '0.25rem' }}>
+                          ⚠️ {t('Nhân sự này không tham gia đóng bảo hiểm xã hội bắt buộc.')}
+                        </div>
+                      )}
                     </div>
 
                     {/* Divider line */}
-                    <div style={{ height: '1px', backgroundColor: 'var(--color-border-light)', margin: '15px 0' }} />
+                    <div style={{ height: '1px', backgroundColor: 'var(--color-border-light)', margin: '5px 0' }} />
 
                     {/* Custom Allowances Section */}
                     <div>

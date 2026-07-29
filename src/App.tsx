@@ -99,7 +99,7 @@ const AppTabs = () => {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/consultants') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr', 'accountant'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/attendance') {

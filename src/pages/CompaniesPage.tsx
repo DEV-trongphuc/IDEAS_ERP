@@ -11,6 +11,7 @@ import api from '../api/axios';
 import { PhoneLink } from '../components/ui/PhoneLink';
 import { useDebounce } from '../hooks/useDebounce';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { EmptyCard } from '../components/ui/EmptyCard';
 
 const STATUSES = ['active', 'inactive', 'prospect'];
 const ST_LABEL: Record<string, string> = { active: 'Hoạt động', inactive: 'Ngừng', prospect: 'Tiềm năng' };
@@ -196,7 +197,7 @@ export const CompaniesPage: React.FC = () => {
               onChange={e => setSearch(e.target.value)}
               className="form-input"
               style={{
-                paddingLeft: '36px',
+                paddingRight: '36px',
                 borderRadius: '10px',
                 fontSize: '0.875rem',
                 width: '100%',
@@ -204,9 +205,11 @@ export const CompaniesPage: React.FC = () => {
                 border: '1px solid var(--color-border)'
               }}
             />
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
-            {search && (
+            {!search ? (
+              <Search size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+            ) : (
               <button
+                type="button"
                 onClick={() => setSearch('')}
                 style={{
                   position: 'absolute',
@@ -459,11 +462,14 @@ export const CompaniesPage: React.FC = () => {
             })}
           </AnimatePresence>
           {total === 0 && (
-            <div className="empty-state" style={{ gridColumn: '1/-1' }}>
-              <Building2 size={40} />
-              <h3>Chưa có đối tác nào</h3>
-              <p>Thêm đại lý F1/F2, CTV liên kết, Giảng viên hoặc Chuyên gia đầu tiên.</p>
-              {!isSale && <button className="btn primary mt-4" onClick={openCreate}><Plus size={16} /> Thêm Đối tác</button>}
+            <div className="card mobile-flat-container" style={{ gridColumn: '1/-1', padding: '2rem 1rem', overflow: 'hidden' }}>
+              <EmptyCard 
+                icon={<Building2 size={48} />}
+                title="Chưa có đối tác nào"
+                description="Thêm đại lý F1/F2, CTV liên kết, Giảng viên hoặc Chuyên gia đầu tiên."
+                actionText={isSale ? undefined : "Thêm Đối tác"}
+                onAction={isSale ? undefined : openCreate}
+              />
             </div>
           )}
         </div>
@@ -555,7 +561,17 @@ export const CompaniesPage: React.FC = () => {
                   ))}
                 </AnimatePresence>
                 {total === 0 && (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Không tìm thấy đối tác nào.</td></tr>
+                  <tr>
+                    <td colSpan={7} style={{ padding: '2rem 1rem' }}>
+                      <EmptyCard 
+                        icon={<Building2 size={48} />}
+                        title="Chưa có đối tác nào"
+                        description="Thêm đại lý F1/F2, CTV liên kết, Giảng viên hoặc Chuyên gia đầu tiên."
+                        actionText={isSale ? undefined : "Thêm Đối tác"}
+                        onAction={isSale ? undefined : openCreate}
+                      />
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>

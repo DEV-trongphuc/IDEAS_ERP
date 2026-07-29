@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../store/uiStore';
 import { CustomModal } from '../components/ui/CustomModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
-import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell, DollarSign } from 'lucide-react';
+import { CreditCard, Plus, Check, X, Upload, AlertCircle, Trash2, Calendar, FileText, Ban, ChevronLeft, ChevronRight, Info, Eye, Edit, Loader2, Search, MessageSquare, Clock, Send, Bell, DollarSign, TrendingUp, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
@@ -15,6 +15,11 @@ import { TableSkeleton } from '../components/ui/Skeleton';
 const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(module => ({ default: module.CustomerProfileDrawer })));
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { MentionInput } from '../components/ui/MentionInput';
+import {
+  XAxis, YAxis, CartesianGrid,
+  Tooltip as RechartsTooltip, ResponsiveContainer, ComposedChart,
+  PieChart, Pie, Cell, BarChart, Bar, Line, Legend, Area
+} from 'recharts';
 
 const formatNumberWithCommas = (val: any) => {
   if (val === undefined || val === null || val === '') return '';
@@ -110,6 +115,8 @@ export default function DepositsPage() {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
@@ -175,6 +182,9 @@ export default function DepositsPage() {
   const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
     { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
   ]);
+
+  const [depositAccountantId, setDepositAccountantId] = useState('');
+  const [depositUncFile, setDepositUncFile] = useState<File | null>(null);
 
   // Co-op and Sales Method Selection States
   const [coopSlips, setCoopSlips] = useState<any[]>([]);
@@ -286,12 +296,14 @@ export default function DepositsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resDep, resCont, resProj, resCoop, resUsr] = await Promise.all([
+      const [resDep, resCont, resProj, resCoop, resUsr, resPO, resExp] = await Promise.all([
         fetchAPI('deposits'),
         fetchAPI('contacts?limit=1000'),
         fetchAPI('projects?bypass_roster=1'),
         fetchAPI('cooperation-slips').catch(() => ({ success: false, data: [] })),
-        fetchAPI('users?all=1').catch(() => ({ success: false, data: [] }))
+        fetchAPI('users?all=1').catch(() => ({ success: false, data: [] })),
+        fetchAPI('purchase-orders').catch(() => ({ success: false, data: [] })),
+        fetchAPI('expenses?limit=5000').catch(() => ({ success: false, data: [] }))
       ]);
 
       if (resDep.success) setDeposits(resDep.data || []);
@@ -310,6 +322,14 @@ export default function DepositsPage() {
       }
       if (resUsr.success) {
         setUsersList(resUsr.data || []);
+      }
+      if (resPO) {
+        const poData = resPO.data?.items || resPO.data || resPO;
+        setPurchaseOrders(Array.isArray(poData) ? poData : []);
+      }
+      if (resExp) {
+        const expData = resExp.data?.items || resExp.data || resExp;
+        setExpenses(Array.isArray(expData) ? expData : []);
       }
     } catch (e: any) {
       addToast(e.message || 'Lỗi kết nối', 'error');
@@ -489,6 +509,16 @@ export default function DepositsPage() {
       return;
     }
 
+    if (!depositAccountantId) {
+      addToast('Vui lòng chọn người duyệt', 'error');
+      return;
+    }
+
+    if (!depositUncFile) {
+      addToast('Vui lòng tải lên minh chứng chuyển khoản (UNC) Đợt 1 để tạo đơn hàng.', 'error');
+      return;
+    }
+
     // Verify milestones total sum
     const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
     if (totalM > parseFloat(price)) {
@@ -530,11 +560,42 @@ export default function DepositsPage() {
           remind_days_before: remindDaysBefore,
           remind_at_hour: remindAtHour,
           remind_target: remindTarget,
-          notes: notes
+          notes: notes,
+          accountant_id: Number(depositAccountantId)
         })
       });
 
       if (res.success) {
+        const responseData = res.data || {};
+        const createdDepositId = responseData.id;
+        const createdMilestones = responseData.milestones || [];
+        
+        if (createdDepositId && createdMilestones.length > 0 && depositUncFile) {
+          try {
+            const compressedFile = await compressToWebP(depositUncFile);
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', compressedFile);
+            const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
+            const uploadUrl = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=deposits/${createdDepositId}/milestones/${createdMilestones[0].id}/unc&token=${token}`;
+            
+            const uploadRes = await fetch(uploadUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-Auth-Token': token
+              },
+              body: formDataUpload
+            });
+            
+            const uploadJson = await uploadRes.json();
+            if (!uploadJson.success) {
+              addToast('Tạo đơn hàng thành công nhưng tải UNC thất bại: ' + uploadJson.message, 'warning');
+            }
+          } catch (uploadErr: any) {
+            console.error('Error uploading UNC:', uploadErr);
+          }
+        }
+
         addToast('Tạo đơn đặt hàng và lịch thanh toán thành công!', 'success');
         setIsCreateOpen(false);
         // Reset Form
@@ -553,6 +614,8 @@ export default function DepositsPage() {
         setRemindDaysBefore(3);
         setRemindAtHour(8);
         setRemindTarget(1);
+        setDepositAccountantId('');
+        setDepositUncFile(null);
         loadData();
       } else {
         addToast(res.message || 'Lỗi tạo đơn đặt hàng', 'error');
@@ -930,6 +993,160 @@ export default function DepositsPage() {
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
   }, [deposits]);
 
+  const projectedExpenditures = React.useMemo(() => {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const map: Record<string, { date: string; totalAmount: number; items: any[] }> = {};
+
+    const expList = Array.isArray(expenses) ? expenses : [];
+    const poList = Array.isArray(purchaseOrders) ? purchaseOrders : [];
+
+    // 1. Add pending expenses
+    expList.forEach(e => {
+      if (e.status === 'pending' && e.date) {
+        const dateStr = e.date.substring(0, 10);
+        if (dateStr >= todayStr) {
+          if (!map[dateStr]) {
+            map[dateStr] = { date: dateStr, totalAmount: 0, items: [] };
+          }
+          map[dateStr].totalAmount += Number(e.amount) || 0;
+          map[dateStr].items.push({
+            type: 'Expense',
+            title: e.title,
+            category: e.category,
+            amount: Number(e.amount) || 0,
+            vendor: e.vendor_name || 'Khác'
+          });
+        }
+      }
+    });
+
+    // 2. Add unpaid/partial POs
+    poList.forEach(po => {
+      if (po.payment_status !== 'paid' && po.order_date) {
+        const dateStr = po.order_date.substring(0, 10);
+        if (dateStr >= todayStr) {
+          const unpaid = (Number(po.total) || 0) - (Number(po.paid_amount) || 0);
+          if (unpaid > 0) {
+            if (!map[dateStr]) {
+              map[dateStr] = { date: dateStr, totalAmount: 0, items: [] };
+            }
+            map[dateStr].totalAmount += unpaid;
+            map[dateStr].items.push({
+              type: 'PO',
+              title: `Đơn mua hàng: ${po.po_number}`,
+              category: 'Mua hàng',
+              amount: unpaid,
+              vendor: po.supplier_name || 'Nhà cung cấp'
+            });
+          }
+        }
+      }
+    });
+
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }, [expenses, purchaseOrders]);
+
+  const projectedRec7Days = React.useMemo(() => {
+    return projectedReceivables.filter(r => {
+      const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+      return diff <= 7;
+    }).reduce((sum, r) => sum + r.totalAmount, 0);
+  }, [projectedReceivables]);
+
+  const projectedRec30Days = React.useMemo(() => {
+    return projectedReceivables.filter(r => {
+      const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+      return diff <= 30;
+    }).reduce((sum, r) => sum + r.totalAmount, 0);
+  }, [projectedReceivables]);
+
+  const projectedExp7Days = React.useMemo(() => {
+    return projectedExpenditures.filter(r => {
+      const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+      return diff <= 7;
+    }).reduce((sum, r) => sum + r.totalAmount, 0);
+  }, [projectedExpenditures]);
+
+  const projectedExp30Days = React.useMemo(() => {
+    return projectedExpenditures.filter(r => {
+      const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+      return diff <= 30;
+    }).reduce((sum, r) => sum + r.totalAmount, 0);
+  }, [projectedExpenditures]);
+
+  const forecastChartData = React.useMemo(() => {
+    const data: any[] = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toISOString().substring(0, 10);
+      
+      const rec = projectedReceivables.find(r => r.date === dateStr);
+      const recAmount = rec ? rec.totalAmount : 0;
+      
+      const exp = projectedExpenditures.find(e => e.date === dateStr);
+      const expAmount = exp ? exp.totalAmount : 0;
+      
+      const label = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      
+      data.push({
+        date: dateStr,
+        label,
+        'Dự thu': recAmount,
+        'Dự chi': expAmount,
+        'Dòng tiền ròng': recAmount - expAmount
+      });
+    }
+    
+    return data;
+  }, [projectedReceivables, projectedExpenditures]);
+
+  const cumulativeChartData = React.useMemo(() => {
+    let acc = 0;
+    return forecastChartData.map(d => {
+      acc += d['Dòng tiền ròng'];
+      return { ...d, 'Tích lũy': acc };
+    });
+  }, [forecastChartData]);
+
+  const unifiedTimeline = React.useMemo(() => {
+    const map: Record<string, { date: string; receiptTotal: number; expenditureTotal: number; items: any[] }> = {};
+
+    projectedReceivables.forEach(r => {
+      if (!map[r.date]) {
+        map[r.date] = { date: r.date, receiptTotal: 0, expenditureTotal: 0, items: [] };
+      }
+      map[r.date].receiptTotal += r.totalAmount;
+      r.milestones.forEach((m: any) => {
+        map[r.date].items.push({
+          type: 'receipt',
+          title: `Dự thu: ${m.customerName} (${m.unitCode || 'Không có mã căn'})`,
+          desc: `${m.projectName || 'Dự án'} - Đợt thanh toán: ${m.milestone_name}`,
+          amount: Number(m.expected_amount) || 0
+        });
+      });
+    });
+
+    projectedExpenditures.forEach(e => {
+      if (!map[e.date]) {
+        map[e.date] = { date: e.date, receiptTotal: 0, expenditureTotal: 0, items: [] };
+      }
+      map[e.date].expenditureTotal += e.totalAmount;
+      e.items.forEach((item: any) => {
+        map[e.date].items.push({
+          type: 'expenditure',
+          title: item.title,
+          desc: `${item.category} - ${item.vendor}`,
+          amount: Number(item.amount) || 0
+        });
+      });
+    });
+
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }, [projectedReceivables, projectedExpenditures]);
+
   return (
     <div className="anim-fade-up" style={{ color: 'var(--color-text)', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Notifications */}
@@ -986,18 +1203,35 @@ export default function DepositsPage() {
 
       {/* Tab Switcher */}
       {isAdmin && (
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.5rem' }}>
+        <div style={{ 
+          display: 'flex',
+          background: 'var(--color-border-light)',
+          border: '1px solid var(--color-border)',
+          padding: '2px',
+          borderRadius: '8px',
+          gap: '2px',
+          width: 'fit-content',
+          position: 'relative',
+          marginBottom: '1.5rem'
+        }}>
           <button
             onClick={() => setActiveViewTab('list')}
             style={{
-              padding: '8px 16px',
+              padding: '6px 16px',
+              height: '34px',
+              borderRadius: '6px',
+              border: 'none',
               fontSize: '0.85rem',
               fontWeight: 700,
-              background: activeViewTab === 'list' ? 'var(--color-primary-light)' : 'none',
-              color: activeViewTab === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              background: activeViewTab === 'list' ? 'var(--color-surface)' : 'transparent',
+              color: activeViewTab === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
+              boxShadow: activeViewTab === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
             }}
           >
             Danh sách thanh toán
@@ -1005,17 +1239,24 @@ export default function DepositsPage() {
           <button
             onClick={() => setActiveViewTab('stats')}
             style={{
-              padding: '8px 16px',
+              padding: '6px 16px',
+              height: '34px',
+              borderRadius: '6px',
+              border: 'none',
               fontSize: '0.85rem',
               fontWeight: 700,
-              background: activeViewTab === 'stats' ? 'var(--color-primary-light)' : 'none',
-              color: activeViewTab === 'stats' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              background: activeViewTab === 'stats' ? 'var(--color-surface)' : 'transparent',
+              color: activeViewTab === 'stats' ? 'var(--color-text)' : 'var(--color-text-light)',
+              boxShadow: activeViewTab === 'stats' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
             }}
           >
-            Thống kê dự thu
+            Dự báo dòng tiền
           </button>
         </div>
       )}
@@ -1098,7 +1339,7 @@ export default function DepositsPage() {
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Khách hàng / Chương trình</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '240px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Sale / Ngày tạo</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '160px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Giá trị</th>
-                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '200px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thanh toán gần nhất</th>
+                      <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '140px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thanh toán gần nhất</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '130px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '100px', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Tiến độ</th>
                       <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.5px', width: '100px', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>Thao tác</th>
@@ -1387,64 +1628,209 @@ export default function DepositsPage() {
       ) : (
         <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.01) 100%)', border: '1px solid rgba(37, 99, 235, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự thu 7 ngày tới</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2563eb' }}>
-                {parseFloat(projectedReceivables.filter(r => {
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+            {/* Card 1: Dự thu 7 ngày tới */}
+            <div className="stat-card hover-lift" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+              <div className="decor-svg" style={{ color: '#2563eb', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                <DollarSign size={70} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Dự thu 7 ngày tới</span>
+                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <TrendingUp size={16} />
+                </div>
+              </div>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+                {projectedRec7Days.toLocaleString('vi-VN')} đ
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
+                Có {projectedReceivables.filter(r => {
                   const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
                   return diff <= 7;
-                }).reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND
-              </span>
+                }).reduce((sum, r) => sum + r.milestones.length, 0)} đợt dự kiến thu
+              </div>
+              <div className="stat-change up" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-success)', fontWeight: 700 }}>
+                <span>Dòng tiền dự kiến tăng</span>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.01) 100%)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Dự thu 30 ngày tới</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981' }}>
-                {parseFloat(projectedReceivables.filter(r => {
+
+            {/* Card 2: Dự thu 30 ngày tới */}
+            <div className="stat-card hover-lift" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+              <div className="decor-svg" style={{ color: '#10b981', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                <Calendar size={70} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Dự thu 30 ngày tới</span>
+                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar size={16} />
+                </div>
+              </div>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+                {projectedRec30Days.toLocaleString('vi-VN')} đ
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
+                Có {projectedReceivables.filter(r => {
                   const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
                   return diff <= 30;
-                }).reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND
-              </span>
+                }).reduce((sum, r) => sum + r.milestones.length, 0)} đợt dự kiến thu
+              </div>
+              <div className="stat-change up" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-success)', fontWeight: 700 }}>
+                <span>Chu kỳ thanh toán 30 ngày</span>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.01) 100%)', border: '1px solid rgba(245, 158, 11, 0.15)', borderRadius: '16px', padding: '1.25rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Tổng dự thu tương lai</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#d97706' }}>
-                {parseFloat(projectedReceivables.reduce((sum, r) => sum + r.totalAmount, 0).toString()).toLocaleString('vi-VN')} VND
-              </span>
+
+            {/* Card 3: Dự chi 7 ngày tới */}
+            <div className="stat-card hover-lift" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+              <div className="decor-svg" style={{ color: '#d97706', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                <CreditCard size={70} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Dự chi 7 ngày tới</span>
+                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(245, 158, 11, 0.08)', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CreditCard size={16} />
+                </div>
+              </div>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+                {projectedExp7Days.toLocaleString('vi-VN')} đ
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
+                Có {projectedExpenditures.filter(r => {
+                  const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                  return diff <= 7;
+                }).reduce((sum, r) => sum + r.items.length, 0)} khoản PO/chi phí
+              </div>
+              <div className="stat-change down" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-warning)', fontWeight: 700 }}>
+                <span>Dòng tiền dự kiến chi</span>
+              </div>
+            </div>
+
+            {/* Card 4: Dự chi 30 ngày tới */}
+            <div className="stat-card hover-lift" style={{ minHeight: '140px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px' }}>
+              <div className="decor-svg" style={{ color: '#ef4444', opacity: 0.05, position: 'absolute', right: -10, bottom: -10, pointerEvents: 'none' }}>
+                <AlertCircle size={70} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Dự chi 30 ngày tới</span>
+                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertCircle size={16} />
+                </div>
+              </div>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+                {projectedExp30Days.toLocaleString('vi-VN')} đ
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
+                Có {projectedExpenditures.filter(r => {
+                  const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                  return diff <= 30;
+                }).reduce((sum, r) => sum + r.items.length, 0)} khoản PO/chi phí
+              </div>
+              <div className="stat-change down" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-danger)', fontWeight: 700 }}>
+                <span>Cam kết chi tiêu 30 ngày</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.25rem' }}>
+            {/* Chart 1: Xu hướng dự thu và dự chi */}
+            <div className="card" style={{ padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--color-border-light)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1.05rem', margin: 0, color: 'var(--color-text)' }}>Xu hướng Dự thu & Dự chi (30 ngày tới)</h3>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-light)' }}>Đơn vị: VND</span>
+              </div>
+              <div style={{ width: '100%', height: 280 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={forecastChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-light)" />
+                    <XAxis dataKey="label" fontSize={10} tickLine={false} axisLine={false} stroke="var(--color-text-muted)" />
+                    <YAxis 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      stroke="var(--color-text-muted)" 
+                      tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(0)}M` : val.toLocaleString()} 
+                    />
+                    <RechartsTooltip 
+                      formatter={(value: any) => [Number(value).toLocaleString() + ' đ']} 
+                      contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '11px', color: 'var(--color-text)' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 600 }} />
+                    <Bar dataKey="Dự thu" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={15} />
+                    <Bar dataKey="Dự chi" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={15} />
+                    <Line type="monotone" dataKey="Dòng tiền ròng" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Chart 2: Dòng tiền ròng tích lũy */}
+            <div className="card" style={{ padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--color-border-light)', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1.05rem', margin: 0, color: 'var(--color-text)' }}>Dự báo Dòng tiền ròng Tích lũy</h3>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-light)' }}>Đơn vị: VND</span>
+              </div>
+              <div style={{ width: '100%', height: 280 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart 
+                    data={cumulativeChartData} 
+                    margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-light)" />
+                    <XAxis dataKey="label" fontSize={10} tickLine={false} axisLine={false} stroke="var(--color-text-muted)" />
+                    <YAxis 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      stroke="var(--color-text-muted)" 
+                      tickFormatter={(val) => val >= 1000000 || val <= -1000000 ? `${(val / 1000000).toFixed(0)}M` : val.toLocaleString()} 
+                    />
+                    <RechartsTooltip 
+                      formatter={(value: any) => [Number(value).toLocaleString() + ' đ']} 
+                      contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '11px', color: 'var(--color-text)' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 600 }} />
+                    <Area type="monotone" dataKey="Tích lũy" fill="rgba(59, 130, 246, 0.05)" stroke="#3b82f6" strokeWidth={2} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
           {/* List by date */}
           <div className="card" style={{ padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--color-border-light)', background: 'var(--color-surface)' }}>
-            <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--color-text)' }}>Lịch trình dự thu chi tiết theo ngày</h3>
-            {projectedReceivables.length === 0 ? (
+            <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '1.25rem', color: 'var(--color-text)' }}>Dự báo Dòng tiền chi tiết theo ngày</h3>
+            {unifiedTimeline.length === 0 ? (
               <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                Không có khoản dự thu nào trong tương lai.
+                Không có khoản dự thu hay dự chi nào trong tương lai.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {projectedReceivables.map(r => (
-                  <div key={r.date} style={{ borderBottom: '1px solid var(--color-border-light)', paddingBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <span style={{ fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {unifiedTimeline.map(r => (
+                  <div key={r.date} style={{ borderBottom: '1px solid var(--color-border-light)', paddingBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', gap: '8px' }}>
+                      <span style={{ fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }}>
                         <Calendar size={16} style={{ color: 'var(--color-primary)' }} />
                         {new Date(r.date).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </span>
-                      <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1.1rem' }}>
-                        Tổng cộng: {parseFloat(r.totalAmount.toString()).toLocaleString('vi-VN')} VND
-                      </span>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                        {r.receiptTotal > 0 && <span style={{ color: 'var(--color-success)' }}>Thu: +{r.receiptTotal.toLocaleString('vi-VN')} đ</span>}
+                        {r.expenditureTotal > 0 && <span style={{ color: 'var(--color-warning)' }}>Chi: -{r.expenditureTotal.toLocaleString('vi-VN')} đ</span>}
+                        <span style={{ color: 'var(--color-primary)' }}>Ròng: {(r.receiptTotal - r.expenditureTotal).toLocaleString('vi-VN')} đ</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', paddingLeft: '1.5rem' }}>
-                      {r.milestones.map((m: any) => (
-                        <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-surface-hover)', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem' }}>
-                          <div>
-                            <strong style={{ color: 'var(--color-text)' }}>{m.customerName}</strong> (SĐT: {m.phone}) - <span style={{ color: 'var(--color-text-muted)' }}>Mã: {m.unitCode}</span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                              Chương trình: {m.projectName} | Đợt: {m.milestone_name}
-                            </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', paddingLeft: '1.5rem' }}>
+                      {r.items.map((item, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{item.title}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{item.desc}</span>
                           </div>
-                          <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
-                            {parseFloat(m.expected_amount.toString()).toLocaleString('vi-VN')} VND
+                          <span style={{ 
+                            fontWeight: 800, 
+                            fontSize: '0.9rem',
+                            color: item.type === 'receipt' ? 'var(--color-success)' : 'var(--color-danger)'
+                          }}>
+                            {item.type === 'receipt' ? '+' : '-'}{item.amount.toLocaleString('vi-VN')} đ
                           </span>
                         </div>
                       ))}
@@ -1457,9 +1843,10 @@ export default function DepositsPage() {
         </div>
       )}
 
-      <AnimatePresence>
-        {isCreateOpen && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000000, display: 'flex', justifyContent: 'flex-end' }}>
+      {createPortal(
+        <AnimatePresence>
+          {isCreateOpen && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 1000090, display: 'flex', justifyContent: 'flex-end' }}>
             {/* Backdrop Overlay */}
             <motion.div
               className="drawer-backdrop"
@@ -1472,7 +1859,7 @@ export default function DepositsPage() {
                 inset: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.4)',
                 backdropFilter: 'blur(4px)',
-                zIndex: 1000005
+                zIndex: 1000095
               }}
             />
 
@@ -1492,7 +1879,7 @@ export default function DepositsPage() {
                 boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
                 display: 'flex',
                 flexDirection: 'column',
-                zIndex: 1000010,
+                zIndex: 1000100,
                 overflow: 'hidden'
               }}
             >
@@ -1538,11 +1925,33 @@ export default function DepositsPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Header Action Buttons on Top Right */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button
+                    type="button"
+                    className="btn outline"
+                    onClick={() => setIsCreateOpen(false)}
+                    disabled={isSaving}
+                    style={{ height: '38px', minWidth: '90px', fontSize: '0.85rem', fontWeight: 700 }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    form="create-deposit-form"
+                    className="btn primary"
+                    disabled={isSaving}
+                    style={{ height: '38px', minWidth: '180px', fontSize: '0.85rem', fontWeight: 700 }}
+                  >
+                    {isSaving ? 'Đang tạo...' : 'Tạo phiếu Thanh toán'}
+                  </button>
+                </div>
               </div>
 
               {/* Body */}
               <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-                <form onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <form id="create-deposit-form" onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'stretch' }}>
                     
                     {/* Left Pane: Transaction & Installments */}
@@ -1709,125 +2118,92 @@ export default function DepositsPage() {
                     </div>
 
                     {/* Right Pane: Cooperation & Reminders */}
-                    <div style={{ flex: isMobile ? 'none' : 5, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div style={{ flex: isMobile ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                       
-                      {/* Card 3: Phương thức bán hàng & Hoa hồng */}
+                      {/* Phê duyệt & Vận hành */}
                       <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Bán hàng & Hợp tác</h4>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                          Phê duyệt & Vận hành
+                        </h4>
                         
-                        {hasExistingCoop ? (
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người tạo</label>
                           <div style={{
-                            padding: '10px 12px',
-                            background: 'rgba(16, 185, 129, 0.08)',
-                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 12px',
+                            background: 'var(--color-bg)',
+                            border: '1px solid var(--color-border-light)',
                             borderRadius: '8px',
-                            fontSize: '0.8rem'
+                            height: '38px'
                           }}>
-                            <p style={{ color: '#10b981', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px', margin: 0 }}>
-                              <Check size={14} /> Có Phiếu hợp tác đã lập sẵn
-                            </p>
-                            <p style={{ color: 'var(--color-text-muted)', marginBottom: '8px', marginTop: '4px', fontSize: '0.75rem', lineHeight: 1.4 }}>
-                              Phiếu cọc này tự động kế thừa phân chia tỷ lệ hoa hồng:
-                            </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                              {existingCoopShares.map((sh: any) => (
-                                <span key={sh.user_id} style={{
-                                  background: 'var(--color-surface)',
-                                  padding: '2px 8px',
-                                  borderRadius: '4px',
-                                  border: '1px solid var(--color-border-light)',
-                                  fontWeight: 600,
-                                  fontSize: '0.75rem'
-                                }}>
-                                  {sh.name}: {sh.percentage}%
-                                </span>
-                              ))}
-                            </div>
+                            <Avatar src={(user as any)?.avatar_url || (user as any)?.avatar} name={(user as any)?.full_name || (user as any)?.username} size="sm" />
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{(user as any)?.full_name || (user as any)?.username}</span>
                           </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {allowedCollaborators.length <= 1 ? (
-                              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic', lineHeight: 1.4 }}>
-                                Giao dịch này mặc định là Bán độc lập (Chủ sở hữu hưởng 100% hoa hồng).
-                              </p>
+                        </div>
+
+                        {/* Arrow/flow link indicator */}
+                        <div style={{ display: 'flex', justifyContent: 'center', margin: '-4px 0' }}>
+                          <div style={{ width: '2px', height: '16px', background: 'dashed var(--color-primary)', borderLeft: '2px dashed var(--color-border)' }}></div>
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người duyệt <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                          <CustomSelect
+                            options={usersList
+                              .filter(u => String(u.role).toLowerCase() === 'accountant')
+                              .map(u => ({
+                                value: String(u.id),
+                                label: u.full_name || u.name || u.username,
+                                avatar: u.avatar_url || u.avatar
+                              }))}
+                            value={depositAccountantId}
+                            onChange={val => setDepositAccountantId(val.toString())}
+                            placeholder="-- Chọn người duyệt --"
+                            showAvatars
+                            searchable
+                          />
+                        </div>
+                      </div>
+
+                      {/* Minh chứng thanh toán (UNC) */}
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                          Minh chứng thanh toán
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '10px' }}>
+                          <label className="form-label" style={{ fontWeight: 700, margin: 0, fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            Minh chứng Đợt 1 (UNC) <span style={{ color: 'var(--color-danger)' }}>*</span>
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                            <label
+                              className="btn outline sm"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', height: '32px', fontSize: '0.75rem', borderRadius: '8px' }}
+                            >
+                              <Upload size={13} /> {depositUncFile ? 'Chọn lại tệp' : 'Chọn ảnh UNC'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={e => {
+                                  if (e.target.files && e.target.files.length > 0) {
+                                    setDepositUncFile(e.target.files[0]);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {depositUncFile ? (
+                              <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }} title={depositUncFile.name}>
+                                ✓ {depositUncFile.name}
+                              </span>
                             ) : (
-                              <>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, margin: 0 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isCooperation}
-                                    onChange={e => setIsCooperation(e.target.checked)}
-                                    style={{ cursor: 'pointer' }}
-                                  />
-                                  <span>Hợp tác chia sẻ hoa hồng (Co-op)</span>
-                                </label>
-
-                                {isCooperation && (
-                                  <div style={{
-                                    padding: '12px',
-                                    background: 'var(--color-bg-light)',
-                                    borderRadius: '8px',
-                                    border: '1px solid var(--color-border-light)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '8px'
-                                  }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 2 }}>
-                                      Tỷ lệ chia sẻ hoa hồng (%):
-                                    </span>
-
-                                    {allowedCollaborators.map((col) => (
-                                      <div key={col.id} style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: '0.8rem', fontWeight: col.isOwner ? 700 : 500, color: col.isOwner ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                                          {col.name}
-                                        </span>
-                                        
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                          <input
-                                            type="number"
-                                            placeholder="%"
-                                            required
-                                            min={0}
-                                            max={100}
-                                            value={collaboratorShares[col.id] !== undefined ? collaboratorShares[col.id] : ''}
-                                            onChange={e => {
-                                              const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                                              setCollaboratorShares(prev => ({
-                                                ...prev,
-                                                [col.id]: val
-                                              }));
-                                            }}
-                                            className="form-input"
-                                            style={{ width: '70px', height: '32px', fontSize: '0.75rem', padding: '0 8px', textAlign: 'center', borderRadius: '6px' }}
-                                          />
-                                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>%</span>
-                                        </div>
-                                      </div>
-                                    ))}
-
-                                    <div style={{
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      borderTop: '1px solid var(--color-border-light)',
-                                      paddingTop: '6px',
-                                      marginTop: '4px',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 700
-                                    }}>
-                                      <span>Tổng tỷ lệ:</span>
-                                      <span style={{
-                                        color: Object.values(collaboratorShares).reduce((acc, curr) => acc + Number(curr), 0) === 100 ? '#10b981' : '#ef4444'
-                                      }}>
-                                        {Object.values(collaboratorShares).reduce((acc, curr) => acc + Number(curr), 0)}% / 100%
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-                              </>
+                              <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                                Yêu cầu bắt buộc 1 UNC
+                              </span>
                             )}
                           </div>
-                        )}
+                        </div>
                       </div>
 
                       {/* Card 4: Nhắc lịch tự động */}
@@ -1943,41 +2319,14 @@ export default function DepositsPage() {
 
                     </div>
                   </div>
-
-                  {/* Form Footer Action Buttons */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: '0.75rem',
-                    borderTop: '1px solid var(--color-border)',
-                    paddingTop: '1.25rem',
-                    marginTop: '1rem',
-                    flexShrink: 0
-                  }}>
-                    <button
-                      type="button"
-                      className="btn outline"
-                      onClick={() => setIsCreateOpen(false)}
-                      disabled={isSaving}
-                      style={{ height: '38px', minWidth: '100px', fontSize: '0.85rem', fontWeight: 600 }}
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn primary"
-                      disabled={isSaving}
-                      style={{ height: '38px', minWidth: '180px', fontSize: '0.85rem', fontWeight: 600 }}
-                    >
-                      {isSaving ? 'Đang khởi tạo...' : 'Khởi tạo phiếu cọc'}
-                    </button>
-                  </div>
                 </form>
               </div>
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
 
       {/* Cancel Modal */}
       <CustomModal
@@ -3084,7 +3433,7 @@ export default function DepositsPage() {
 
                               {/* Actions (Approve/Reject or Delete) */}
                               <div style={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                {isAdmin && m.status === 'paid' && (
+                                {isAdmin && m.status === 'paid' && m.unc_file_path && m.unc_file_path.trim() !== '' && (
                                   <>
                                     <button
                                       onClick={() => handleApproveFromModal(idx)}

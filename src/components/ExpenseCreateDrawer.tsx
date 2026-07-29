@@ -354,8 +354,8 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 2000000000, display: 'flex', justifyContent: 'flex-end' }}>
-          {/* Backdrop Overlay */}
           <motion.div
+            className="drawer-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -364,54 +364,12 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               position: 'fixed',
               inset: 0,
               zIndex: 2000000005,
-              background: 'rgba(15, 23, 42, 0.3)',
-              backdropFilter: 'blur(4px)',
+              background: 'rgba(0, 0, 0, 0.45)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
               cursor: 'pointer'
             }}
-          >
-            {!isMobile && (
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 'var(--sidebar-width, 220px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.15 }}
-                  style={{
-                    width: '42px',
-                    height: '42px',
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    transition: 'all 0.22s ease-in-out'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-                    e.currentTarget.style.transform = 'scale(1.1)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  <ChevronLeft size={22} />
-                </motion.div>
-              </div>
-            )}
-          </motion.div>
+          />
 
           {/* Drawer Sheet Panel */}
           <motion.div
@@ -485,7 +443,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   className="btn outline"
                   onClick={onClose}
                   disabled={saving}
-                  style={{ height: '36px', minWidth: '80px', fontSize: '0.85rem', fontWeight: 600 }}
+                  style={{ height: '38px', minWidth: '90px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '10px' }}
                 >
                   Hủy
                 </button>
@@ -495,14 +453,16 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   onClick={handleSave}
                   disabled={saving}
                   style={{
-                    height: '36px',
-                    minWidth: '140px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
+                    height: '38px',
+                    minWidth: '150px',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px'
+                    gap: '8px',
+                    borderRadius: '10px',
+                    boxShadow: 'var(--shadow-sm)'
                   }}
                 >
                   {saving ? <Loader2 size={16} className="spin" /> : <CheckCircle2 size={16} />}
@@ -511,306 +471,602 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
             </div>
 
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 1.5rem 3.5rem 1.5rem', flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
-                <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 600 }}>Đơn vị thụ hưởng <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>(Thanh toán cho ai?)</span></label>
-                <div style={{ position: 'relative' }} ref={vendorRef}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 1rem', height: '44px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-surface)' }}>
-                    <input
-                      style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '0.875rem', color: 'var(--color-text)' }}
-                      placeholder="Tìm NCC hoặc nhập tự do..."
-                      value={vendorSearch}
-                      onChange={e => { setVendorSearch(e.target.value); setForm({ ...form, vendor_name: e.target.value }); setShowVendorDropdown(true); }}
-                      onFocus={() => setShowVendorDropdown(true)}
-                    />
-                    {vendorSearch && <button type="button" onClick={() => { setVendorSearch(''); setForm({ ...form, vendor_name: '' }); }} style={{ color: 'var(--color-text-muted)', display: 'flex' }}><X size={14} /></button>}
-                    <Building2 size={15} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
-                    <ChevronDown size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
-                  </div>
-
-                  {showVendorDropdown && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: 'var(--color-surface)', borderRadius: '14px', border: '1px solid var(--color-border-light)', boxShadow: '0 16px 32px -8px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden' }}>
-                      {filteredVendors.map(v => (
-                        <div
-                          key={v.id}
-                          onMouseDown={() => handleSelectVendor(v)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', cursor: 'pointer', transition: 'background 0.15s' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <div style={{ 
-                            width: 30, 
-                            height: 30, 
-                            borderRadius: '8px', 
-                            background: v.type === 'company' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-primary-light)', 
-                            color: v.type === 'company' ? '#3b82f6' : 'var(--color-primary)', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            fontWeight: 800, 
-                            fontSize: '0.8rem', 
-                            flexShrink: 0 
-                          }}>
-                            {v.name[0] || '?'}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</p>
-                            <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                              {v.type === 'company' ? 'Đối tác' : 'Nhà cung cấp'} {v.phone ? `· ${v.phone}` : ''}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                      {vendorSearch && !filteredVendors.find(v => v.name === vendorSearch) && (
-                        <div
-                          onMouseDown={() => { setForm({ ...form, vendor_name: vendorSearch }); setShowVendorDropdown(false); }}
-                          style={{ padding: '9px 14px', cursor: 'pointer', borderTop: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 700 }}
-                        >
-                          + Dùng "{vendorSearch}" (nhập tự do)
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.7fr 0.8fr', gap: '1rem' }}>
+            <div className="modal-body custom-scrollbar" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', padding: '1.5rem', flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
+              {/* Left Column: Main form details */}
+              <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 600 }}>Số tiền ({form.currency || 'VND'}) *</label>
-                  <div style={{ position: 'relative' }}>
-                    <input className="form-input" type="number" min="0" style={{ paddingRight: '2.5rem', fontWeight: 800, color: 'var(--color-danger)', fontSize: '1.1rem' }} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
-                    <Wallet size={16} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                  <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
+                  <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Đơn vị thụ hưởng <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>(Thanh toán cho ai?)</span></label>
+                  <div style={{ position: 'relative' }} ref={vendorRef}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 1rem', height: '44px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', background: 'var(--color-surface)' }}>
+                      <input
+                        style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '0.875rem', color: 'var(--color-text)' }}
+                        placeholder="Tìm NCC hoặc nhập tự do..."
+                        value={vendorSearch}
+                        onChange={e => { setVendorSearch(e.target.value); setForm({ ...form, vendor_name: e.target.value }); setShowVendorDropdown(true); }}
+                        onFocus={() => setShowVendorDropdown(true)}
+                      />
+                      {vendorSearch && <button type="button" onClick={() => { setVendorSearch(''); setForm({ ...form, vendor_name: '' }); }} style={{ color: 'var(--color-text-muted)', display: 'flex' }}><X size={14} /></button>}
+                      <Building2 size={15} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                      <ChevronDown size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                    </div>
+
+                    {showVendorDropdown && (
+                      <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: 'var(--color-surface)', borderRadius: '14px', border: '1px solid var(--color-border-light)', boxShadow: '0 16px 32px -8px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden' }}>
+                        {filteredVendors.map(v => (
+                          <div
+                            key={v.id}
+                            onMouseDown={() => handleSelectVendor(v)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', cursor: 'pointer', transition: 'background 0.15s' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <div style={{ 
+                              width: 30, 
+                              height: 30, 
+                              borderRadius: '8px', 
+                              background: v.type === 'company' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-primary-light)', 
+                              color: v.type === 'company' ? '#3b82f6' : 'var(--color-primary)', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              fontWeight: 800, 
+                              fontSize: '0.8rem', 
+                              flexShrink: 0 
+                            }}>
+                              {v.name[0] || '?'}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontWeight: 700, fontSize: '0.875rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</p>
+                              <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                                {v.type === 'company' ? 'Đối tác' : 'Nhà cung cấp'} {v.phone ? `· ${v.phone}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {vendorSearch && !filteredVendors.find(v => v.name === vendorSearch) && (
+                          <div
+                            onMouseDown={() => { setForm({ ...form, vendor_name: vendorSearch }); setShowVendorDropdown(false); }}
+                            style={{ padding: '9px 14px', cursor: 'pointer', borderTop: '1px solid var(--color-border-light)', fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 700 }}
+                          >
+                            + Dùng "{vendorSearch}" (nhập tự do)
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {form.amount && Number(form.amount) > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-                      style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, marginTop: '6px', fontStyle: 'italic', paddingLeft: '4px' }}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Số tiền ({form.currency || 'VND'}) *</label>
+                    <div style={{ position: 'relative' }}>
+                      <input className="form-input" type="number" min="0" style={{ paddingRight: '2.5rem', fontWeight: 800, color: 'var(--color-danger)', fontSize: '1.1rem' }} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
+                      <Wallet size={16} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                    </div>
+                    {form.amount && Number(form.amount) > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+                        style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, marginTop: '6px', fontStyle: 'italic', paddingLeft: '4px' }}
+                      >
+                        Bằng chữ: {numberToVietnameseText(form.amount, form.currency || 'VND')}
+                      </motion.div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Loại tiền tệ</label>
+                    <CustomSelect
+                      options={[
+                        { value: 'VND', label: 'VND' },
+                        { value: 'USD', label: 'USD' },
+                        { value: 'EURO', label: 'EURO' },
+                        { value: 'CHF', label: 'CHF' }
+                      ]}
+                      value={form.currency || 'VND'}
+                      onChange={val => setForm({ ...form, currency: val })}
+                      width="100%"
+                    />
+                  </div>
+                </div>
+
+                {/* VAT Settings Panel */}
+                <div style={{ 
+                  background: 'var(--color-surface)', 
+                  padding: '1.25rem', 
+                  borderRadius: '16px', 
+                  border: '1px solid var(--color-border-light)', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  marginBottom: '1.25rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(189, 29, 45, 0.08)', color: 'var(--color-primary)', display: 'grid', placeItems: 'center' }}>
+                      <FileText size={16} />
+                    </div>
+                    <span style={{ fontWeight: 750, fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--color-text)' }}>Hóa đơn & Thuế VAT</span>
+                  </div>
+
+                  <div style={{ background: 'var(--color-bg-light)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <CustomCheckbox
+                        checked={form.has_vat_invoice}
+                        onChange={() => {
+                          const nextHasVat = !form.has_vat_invoice;
+                          setForm({
+                            ...form,
+                            has_vat_invoice: nextHasVat,
+                            is_vat_inclusive: nextHasVat ? form.is_vat_inclusive : false
+                          });
+                        }}
+                        label="Có hóa đơn VAT"
+                      />
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '26px' }}>Chứng từ thuế</span>
+                    </div>
+                  </div>
+
+                  {form.has_vat_invoice && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -8 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        gap: '1.25rem',
+                        padding: '1.25rem',
+                        background: 'rgba(59, 130, 246, 0.02)',
+                        border: '1px dashed rgba(59, 130, 246, 0.2)',
+                        borderRadius: '12px'
+                      }}
                     >
-                      Bằng chữ: {numberToVietnameseText(form.amount, form.currency || 'VND')}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px dashed var(--color-border-light)', paddingBottom: '12px' }}>
+                        <CustomCheckbox
+                          checked={form.is_vat_inclusive}
+                          onChange={() => setForm({ ...form, is_vat_inclusive: !form.is_vat_inclusive })}
+                          label="Bao gồm VAT (Giá sau thuế)"
+                        />
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '26px' }}>Đơn giá nhập phía trên đã bao gồm thuế VAT</span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Thuế %</label>
+                          <CustomSelect
+                            options={[
+                              { value: '0', label: '0%' },
+                              { value: '5', label: '5%' },
+                              { value: '8', label: '8%' },
+                              { value: '10', label: '10%' }
+                            ]}
+                            value={vatPercent}
+                            onChange={val => setVatPercent(val.toString())}
+                            placeholder="Thuế %"
+                          />
+                        </div>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Tiền thuế VAT ({form.currency || 'VND'})</label>
+                          <input
+                            className="form-input"
+                            type="number"
+                            value={form.vat_amount || ''}
+                            onChange={e => setForm({ ...form, vat_amount: e.target.value })}
+                            placeholder="Nhập số tiền thuế..."
+                            style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </div>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 600 }}>Loại tiền tệ</label>
-                  <CustomSelect
-                    options={[
-                      { value: 'VND', label: 'VND' },
-                      { value: 'USD', label: 'USD' },
-                      { value: 'EURO', label: 'EURO' },
-                      { value: 'CHF', label: 'CHF' }
-                    ]}
-                    value={form.currency || 'VND'}
-                    onChange={val => setForm({ ...form, currency: val })}
-                    width="100%"
-                  />
+
+                {/* Bank Transfer Details Panel */}
+                <div style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                        Yêu cầu thanh toán chuyển khoản
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        Nhập thông tin số tài khoản và ngân hàng thụ hưởng nếu cần chuyển khoản
+                      </span>
+                    </div>
+                    <ToggleSwitch
+                      checked={form.request_bank_transfer}
+                      onChange={(checked) => setForm({ ...form, request_bank_transfer: checked })}
+                    />
+                  </div>
+
+                  {form.request_bank_transfer && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '12px' }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Tên ngân hàng *</label>
+                          <input
+                            className="form-input"
+                            type="text"
+                            value={form.bank_name || ''}
+                            onChange={e => setForm({ ...form, bank_name: e.target.value })}
+                            placeholder="Ví dụ: MB Bank, VCB..."
+                            required
+                          />
+                        </div>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Số tài khoản (STK) *</label>
+                          <input
+                            className="form-input"
+                            type="text"
+                            value={form.bank_account_number || ''}
+                            onChange={e => setForm({ ...form, bank_account_number: e.target.value })}
+                            placeholder="Nhập số tài khoản..."
+                            required
+                          />
+                        </div>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Chủ tài khoản *</label>
+                          <input
+                            className="form-input"
+                            type="text"
+                            value={form.bank_account_name || ''}
+                            onChange={e => setForm({ ...form, bank_account_name: e.target.value.toUpperCase() })}
+                            placeholder="TÊN CHỦ TÀI KHOẢN..."
+                            required
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
+
+                {/* Danh mục chi phí */}
                 <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 600 }}>Ngày chi</label>
-                  <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                  <label className="form-label" style={{ fontWeight: 600 }}>Danh mục chi phí</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {CATEGORIES.map(c => {
+                      const Icon = c.icon;
+                      return (
+                        <button key={c.label} type="button" onClick={() => setForm({ ...form, category: c.label })}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `2px solid ${form.category === c.label ? c.color : 'var(--color-border)'}`, background: form.category === c.label ? `${c.color}15` : 'transparent', color: form.category === c.label ? c.color : 'var(--color-text-light)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.18s' }}>
+                          <Icon size={13} /> {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.25rem' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Ghi chú chi tiết</label>
+                    <textarea
+                      className="form-textarea"
+                      rows={3}
+                      value={form.notes}
+                      onChange={e => setForm({ ...form, notes: e.target.value })}
+                      placeholder="Mô tả thêm nếu cần..."
+                      style={{ minHeight: '90px', resize: 'vertical' }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Đính kèm hóa đơn / chứng từ</label>
+                    <div style={{
+                      flex: 1, border: '2px dashed var(--color-border)', borderRadius: '12px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      padding: '8px', position: 'relative', cursor: 'pointer', background: 'var(--color-bg)',
+                      overflow: 'hidden', minHeight: '90px', transition: 'border-color 0.2s'
+                    }}
+                      onDragOver={e => e.preventDefault()}
+                      onClick={() => document.getElementById('drawer-expense-image-upload')?.click()}
+                    >
+                      {uploadingImg ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="spinner sm"></div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Đang nén & tải lên...</span>
+                        </div>
+                      ) : form.image_url ? (
+                        <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <img
+                            src={form.image_url.startsWith('http') ? form.image_url : `${import.meta.env.VITE_API_URL || '/backend'}${form.image_url}`}
+                            alt="Hóa đơn"
+                            style={{ maxWidth: '100%', maxHeight: '72px', objectFit: 'contain', borderRadius: '6px' }}
+                          />
+                          <button
+                            type="button"
+                            style={{
+                              position: 'absolute', top: -4, right: -4, background: 'rgba(239, 68, 68, 0.9)',
+                              color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setForm({ ...form, image_url: '' });
+                            }}
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1 text-center" style={{ padding: '4px' }}>
+                          <Upload size={20} className="text-light" />
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chọn hoặc kéo thả ảnh</span>
+                          <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)' }}>WEBP, PNG, JPG (tối đa 5MB)</span>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        id="drawer-expense-image-upload"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingImg(true);
+                          try {
+                            const compressedFile = await compressToWebP(file);
+                            const uploadData = new FormData();
+                            uploadData.append('file', compressedFile);
+                            if (form.image_url) {
+                              uploadData.append('previous_url', form.image_url);
+                            }
+                            const res = await api.post('/upload', uploadData, {
+                              headers: { 'Content-Type': 'multipart/form-data' }
+                            });
+                            if (res.data && res.data.success && res.data.data?.url) {
+                              setForm({ ...form, image_url: res.data.data.url });
+                              addToast('Tải lên và nén ảnh hóa đơn thành công!', 'success');
+                            } else {
+                              addToast('Tải ảnh thất bại', 'error');
+                            }
+                          } catch (err: any) {
+                            addToast('Lỗi khi nén & tải ảnh: ' + (err.message || err), 'error');
+                          } finally {
+                            setUploadingImg(false);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
-              {/* VAT Settings Panel */}
-              <div style={{ 
-                background: 'var(--color-surface)', 
-                padding: '1.25rem', 
-                borderRadius: '16px', 
-                border: '1px solid var(--color-border-light)', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '1.25rem',
-                boxShadow: 'var(--shadow-sm)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(189, 29, 45, 0.08)', color: 'var(--color-primary)', display: 'grid', placeItems: 'center' }}>
-                    <FileText size={16} />
+              {/* Right Column: Sidebar (Phê duyệt & Vận hành) */}
+              <div style={{ flex: isMobile ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderLeft: isMobile ? 'none' : '1px solid var(--color-border-light)', paddingLeft: isMobile ? '0' : '1.5rem' }}>
+                
+                {/* Áp dụng cho (Chia bill) */}
+                <div style={{ 
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                    <label className="form-label" style={{ fontWeight: 800, margin: 0, fontSize: '0.9rem', color: 'var(--color-text)' }}>Áp dụng cho</label>
+                    
+                    <div style={{
+                      display: 'inline-flex',
+                      background: 'var(--color-surface)',
+                      padding: '3px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--color-border-light)'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (allocationType !== 'contact') {
+                            setAllocationType('contact');
+                            setForm(prev => ({ ...prev, entities: [] }));
+                          }
+                        }}
+                        style={{
+                          padding: '4px 12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: allocationType === 'contact' ? 'var(--color-primary-light)' : 'transparent',
+                          color: allocationType === 'contact' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        Khách
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (allocationType !== 'company') {
+                            setAllocationType('company');
+                            setForm(prev => ({ ...prev, entities: [] }));
+                          }
+                        }}
+                        style={{
+                          padding: '4px 12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: allocationType === 'company' ? 'var(--color-primary-light)' : 'transparent',
+                          color: allocationType === 'company' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        Đối tác
+                      </button>
+                    </div>
                   </div>
-                  <span style={{ fontWeight: 750, fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--color-text)' }}>Hóa đơn & Thuế VAT</span>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {form.entities.length === 0 ? (
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                        Chưa áp dụng cho ai
+                      </span>
+                    ) : (
+                      form.entities.map((e: any) => (
+                        <span key={e.entity_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '6px 12px', borderRadius: 'var(--radius-lg)', fontSize: '0.8125rem', fontWeight: 600, border: '1px solid rgba(163, 20, 34, 0.2)' }}>
+                          <Avatar name={e.name} src={e.avatar_url} size={20} />
+                          {e.name || `${allocationType === 'contact' ? 'Khách hàng' : 'Đối tác'} #${e.entity_id}`}
+                          <X size={14} style={{ cursor: 'pointer', marginLeft: 4 }} onClick={() => setForm({ ...form, entities: form.entities.filter((x: any) => x.entity_id !== e.entity_id) })} />
+                        </span>
+                      ))
+                    )}
+                  </div>
+
+                  {allocationType === 'contact' ? (
+                    <CustomSelect
+                      options={contacts.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
+                        value: String(c.id),
+                        label: `${c.last_name || ''} ${c.first_name}`.trim(),
+                        avatar: c.avatar_url,
+                        sublabel: c.company_name
+                      }))}
+                      value=""
+                      onChange={(val) => {
+                        const found = contacts.find(c => String(c.id) === val);
+                        if (found) {
+                          setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: `${found.last_name || ''} ${found.first_name}`.trim(), avatar_url: found.avatar_url }] });
+                        }
+                      }}
+                      placeholder="+ Thêm khách hàng..."
+                      searchable
+                      showAvatars
+                    />
+                  ) : (
+                    <CustomSelect
+                      options={companies.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
+                        value: String(c.id),
+                        label: c.name || c.company_name || 'Không tên',
+                        avatar: c.logo_url || c.logo,
+                        sublabel: c.code || c.phone
+                      }))}
+                      value=""
+                      onChange={(val) => {
+                        const found = companies.find(c => String(c.id) === val);
+                        if (found) {
+                          const bankUpdate = (found.bank_name || found.bank_account_number || found.bank_account_name) && !form.bank_account_number ? {
+                            request_bank_transfer: true,
+                            bank_name: found.bank_name || form.bank_name || '',
+                            bank_account_number: found.bank_account_number || form.bank_account_number || '',
+                            bank_account_name: found.bank_account_name || form.bank_account_name || ''
+                          } : {};
+
+                          setForm(prev => ({ 
+                            ...prev, 
+                            entities: [...prev.entities, { entity_type: 'company', entity_id: found.id, name: found.name || found.company_name || 'Không tên', avatar_url: found.logo_url || found.logo }],
+                            ...bankUpdate
+                          }));
+                        }
+                      }}
+                      placeholder="+ Thêm đối tác / giảng viên..."
+                      searchable
+                      showAvatars
+                    />
+                  )}
                 </div>
 
-                <div style={{ background: 'var(--color-bg-light)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <CustomCheckbox
-                      checked={form.has_vat_invoice}
-                      onChange={() => {
-                        const nextHasVat = !form.has_vat_invoice;
+                <div style={{ 
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                    Phê duyệt & Vận hành
+                  </h4>
+
+                  {/* Creator */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người tạo</label>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 12px',
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '8px',
+                      height: '38px'
+                    }}>
+                      <Avatar src={user?.avatar_url || user?.avatar} name={user?.full_name || user?.name || user?.username} size="sm" />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user?.full_name || user?.name || user?.username}</span>
+                    </div>
+                  </div>
+
+                  {/* Approver */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-danger)' }}>Người duyệt *</label>
+                    <CustomSelect
+                      options={users.map((u: any) => ({
+                        value: u.id,
+                        label: u.full_name,
+                        avatar: u.avatar_url,
+                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                      }))}
+                      value={form.approver_id}
+                      onChange={val => {
+                        const numVal = Number(val);
                         setForm({
                           ...form,
-                          has_vat_invoice: nextHasVat,
-                          is_vat_inclusive: nextHasVat ? form.is_vat_inclusive : false
+                          approver_id: numVal,
+                          related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
                         });
                       }}
-                      label="Có hóa đơn VAT"
+                      placeholder="Chọn người duyệt..."
+                      searchable
+                      showAvatars
                     />
-                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '26px' }}>Chứng từ thuế</span>
+                  </div>
+
+                  {/* Date (Ngày chi) */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Ngày chi *</label>
+                    <input 
+                      className="form-input" 
+                      type="date" 
+                      value={form.date} 
+                      onChange={e => setForm({ ...form, date: e.target.value })} 
+                      style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
+                      required
+                    />
                   </div>
                 </div>
 
-                {form.has_vat_invoice && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -8 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      gap: '1.25rem',
-                      padding: '1.25rem',
-                      background: 'rgba(59, 130, 246, 0.02)',
-                      border: '1px dashed rgba(59, 130, 246, 0.2)',
-                      borderRadius: '12px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px dashed var(--color-border-light)', paddingBottom: '12px' }}>
-                      <CustomCheckbox
-                        checked={form.is_vat_inclusive}
-                        onChange={() => setForm({ ...form, is_vat_inclusive: !form.is_vat_inclusive })}
-                        label="Bao gồm VAT (Giá sau thuế)"
-                      />
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '26px' }}>Đơn giá nhập phía trên đã bao gồm thuế VAT</span>
-                    </div>
+                {/* Related Users */}
+                <div style={{ 
+                  background: 'var(--color-surface)',
+                  padding: '1.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid var(--color-border-light)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                    Người liên quan
+                  </h4>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Thuế %</label>
-                        <CustomSelect
-                          options={[
-                            { value: '0', label: '0%' },
-                            { value: '5', label: '5%' },
-                            { value: '8', label: '8%' },
-                            { value: '10', label: '10%' }
-                          ]}
-                          value={vatPercent}
-                          onChange={val => setVatPercent(val.toString())}
-                          placeholder="Thuế %"
-                        />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Tiền thuế VAT ({form.currency || 'VND'})</label>
-                        <input
-                          className="form-input"
-                          type="number"
-                          value={form.vat_amount || ''}
-                          onChange={e => setForm({ ...form, vat_amount: e.target.value })}
-                          placeholder="Nhập số tiền thuế..."
-                          style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Bank Transfer Details Panel */}
-              <div style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>
-                      Yêu cầu thanh toán chuyển khoản
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                      Nhập thông tin số tài khoản và ngân hàng thụ hưởng nếu cần chuyển khoản
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={form.request_bank_transfer}
-                    onChange={(checked) => setForm({ ...form, request_bank_transfer: checked })}
-                  />
-                </div>
-
-                {form.request_bank_transfer && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '12px' }}
-                  >
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Tên ngân hàng *</label>
-                        <input
-                          className="form-input"
-                          type="text"
-                          value={form.bank_name || ''}
-                          onChange={e => setForm({ ...form, bank_name: e.target.value })}
-                          placeholder="Ví dụ: MB Bank, VCB..."
-                          required
-                        />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Số tài khoản (STK) *</label>
-                        <input
-                          className="form-input"
-                          type="text"
-                          value={form.bank_account_number || ''}
-                          onChange={e => setForm({ ...form, bank_account_number: e.target.value })}
-                          placeholder="Nhập số tài khoản..."
-                          required
-                        />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-text-light)' }}>Chủ tài khoản *</label>
-                        <input
-                          className="form-input"
-                          type="text"
-                          value={form.bank_account_name || ''}
-                          onChange={e => setForm({ ...form, bank_account_name: e.target.value.toUpperCase() })}
-                          placeholder="TÊN CHỦ TÀI KHOẢN..."
-                          required
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 600 }}>Danh mục chi phí</label>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  {CATEGORIES.map(c => {
-                    const Icon = c.icon;
-                    return (
-                      <button key={c.label} type="button" onClick={() => setForm({ ...form, category: c.label })}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `2px solid ${form.category === c.label ? c.color : 'var(--color-border)'}`, background: form.category === c.label ? `${c.color}15` : 'transparent', color: form.category === c.label ? c.color : 'var(--color-text-light)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.18s' }}>
-                        <Icon size={13} /> {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ color: 'var(--color-danger)', fontWeight: 700 }}>Người duyệt *</label>
-                  <CustomSelect
-                    options={users.map((u: any) => ({
-                      value: u.id,
-                      label: u.full_name,
-                      avatar: u.avatar_url,
-                      sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                    }))}
-                    value={form.approver_id}
-                    onChange={val => {
-                      const numVal = Number(val);
-                      setForm({
-                        ...form,
-                        approver_id: numVal,
-                        related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
-                      });
-                    }}
-                    placeholder="Chọn người duyệt..."
-                    searchable
-                    showAvatars
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 600 }}>Người liên quan</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ maxHeight: '80px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {form.related_user_ids.length === 0 ? <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Chưa chọn ai</span> :
+                    <div style={{ maxHeight: '100px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '4px', background: 'var(--color-bg)' }}>
+                      {form.related_user_ids.length === 0 ? (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Chưa chọn ai</span>
+                      ) : (
                         form.related_user_ids.map((uid: number) => {
                           const u = users.find((x: any) => x.id === uid);
                           return (
@@ -821,7 +1077,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                             </span>
                           );
                         })
-                      }
+                      )}
                     </div>
                     <CustomSelect
                       options={users.filter((u: any) => !form.related_user_ids.includes(u.id) && u.id !== form.approver_id).map((u: any) => ({
@@ -843,226 +1099,6 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                     />
                   </div>
                 </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ fontWeight: 600 }}>Ghi chú chi tiết</label>
-                  <textarea
-                    className="form-textarea"
-                    rows={3}
-                    value={form.notes}
-                    onChange={e => setForm({ ...form, notes: e.target.value })}
-                    placeholder="Mô tả thêm nếu cần..."
-                    style={{ minHeight: '90px', resize: 'vertical' }}
-                  />
-                </div>
-                <div className="form-group" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
-                  <label className="form-label" style={{ fontWeight: 600 }}>Đính kèm hóa đơn / chứng từ</label>
-                  <div style={{
-                    flex: 1, border: '2px dashed var(--color-border)', borderRadius: '12px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    padding: '8px', position: 'relative', cursor: 'pointer', background: 'var(--color-bg)',
-                    overflow: 'hidden', minHeight: '90px', transition: 'border-color 0.2s'
-                  }}
-                    onDragOver={e => e.preventDefault()}
-                    onClick={() => document.getElementById('drawer-expense-image-upload')?.click()}
-                  >
-                    {uploadingImg ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="spinner sm"></div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Đang nén & tải lên...</span>
-                      </div>
-                    ) : form.image_url ? (
-                      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img
-                          src={form.image_url.startsWith('http') ? form.image_url : `${import.meta.env.VITE_API_URL || '/backend'}${form.image_url}`}
-                          alt="Hóa đơn"
-                          style={{ maxWidth: '100%', maxHeight: '72px', objectFit: 'contain', borderRadius: '6px' }}
-                        />
-                        <button
-                          type="button"
-                          style={{
-                            position: 'absolute', top: -4, right: -4, background: 'rgba(239, 68, 68, 0.9)',
-                            color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setForm({ ...form, image_url: '' });
-                          }}
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-center" style={{ padding: '4px' }}>
-                        <Upload size={20} className="text-light" />
-                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chọn hoặc kéo thả ảnh</span>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)' }}>WEBP, PNG, JPG (tối đa 5MB)</span>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      id="drawer-expense-image-upload"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setUploadingImg(true);
-                        try {
-                          const compressedFile = await compressToWebP(file);
-                          const uploadData = new FormData();
-                          uploadData.append('file', compressedFile);
-                          if (form.image_url) {
-                            uploadData.append('previous_url', form.image_url);
-                          }
-                          const res = await api.post('/upload', uploadData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                          });
-                          if (res.data && res.data.success && res.data.data?.url) {
-                            setForm({ ...form, image_url: res.data.data.url });
-                            addToast('Tải lên và nén ảnh hóa đơn thành công!', 'success');
-                          } else {
-                            addToast('Tải ảnh thất bại', 'error');
-                          }
-                        } catch (err: any) {
-                          addToast('Lỗi khi nén & tải ảnh: ' + (err.message || err), 'error');
-                        } finally {
-                          setUploadingImg(false);
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group" style={{ background: 'var(--color-bg)', padding: '1.25rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-light)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
-                  <label className="form-label" style={{ fontWeight: 700, margin: 0 }}>Áp dụng cho (Chia đều bill)</label>
-                  
-                  {/* Segmented Control: 1 trong 2 */}
-                  <div style={{
-                    display: 'inline-flex',
-                    background: 'var(--color-surface)',
-                    padding: '3px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-border-light)'
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (allocationType !== 'contact') {
-                          setAllocationType('contact');
-                          setForm(prev => ({ ...prev, entities: [] }));
-                        }
-                      }}
-                      style={{
-                        padding: '4px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: allocationType === 'contact' ? 'var(--color-primary-light)' : 'transparent',
-                        color: allocationType === 'contact' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      Khách hàng
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (allocationType !== 'company') {
-                          setAllocationType('company');
-                          setForm(prev => ({ ...prev, entities: [] }));
-                        }
-                      }}
-                      style={{
-                        padding: '4px 12px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: allocationType === 'company' ? 'var(--color-primary-light)' : 'transparent',
-                        color: allocationType === 'company' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      Đối tác / Giảng viên
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                  {form.entities.length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                      Chưa áp dụng cho {allocationType === 'contact' ? 'khách hàng' : 'đối tác'} nào
-                    </span>
-                  ) : (
-                    form.entities.map((e: any) => (
-                      <span key={e.entity_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '6px 12px', borderRadius: 'var(--radius-lg)', fontSize: '0.8125rem', fontWeight: 600, border: '1px solid rgba(163, 20, 34, 0.2)' }}>
-                        <Avatar name={e.name} src={e.avatar_url} size={20} />
-                        {e.name || `${allocationType === 'contact' ? 'Khách hàng' : 'Đối tác'} #${e.entity_id}`}
-                        <X size={14} style={{ cursor: 'pointer', marginLeft: 4 }} onClick={() => setForm({ ...form, entities: form.entities.filter((x: any) => x.entity_id !== e.entity_id) })} />
-                      </span>
-                    ))
-                  )}
-                </div>
-
-                {allocationType === 'contact' ? (
-                  <CustomSelect
-                    options={contacts.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
-                      value: String(c.id),
-                      label: `${c.last_name || ''} ${c.first_name}`.trim(),
-                      avatar: c.avatar_url,
-                      sublabel: c.company_name
-                    }))}
-                    value=""
-                    onChange={(val) => {
-                      const found = contacts.find(c => String(c.id) === val);
-                      if (found) {
-                        setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: `${found.last_name || ''} ${found.first_name}`.trim(), avatar_url: found.avatar_url }] });
-                      }
-                    }}
-                    placeholder="+ Thêm khách hàng chia tiền bill..."
-                    searchable
-                    showAvatars
-                  />
-                ) : (
-                  <CustomSelect
-                    options={companies.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
-                      value: String(c.id),
-                      label: c.name || c.company_name || 'Không tên',
-                      avatar: c.logo_url || c.logo,
-                      sublabel: c.code || c.phone
-                    }))}
-                    value=""
-                    onChange={(val) => {
-                      const found = companies.find(c => String(c.id) === val);
-                      if (found) {
-                        const bankUpdate = (found.bank_name || found.bank_account_number || found.bank_account_name) && !form.bank_account_number ? {
-                          request_bank_transfer: true,
-                          bank_name: found.bank_name || form.bank_name || '',
-                          bank_account_number: found.bank_account_number || form.bank_account_number || '',
-                          bank_account_name: found.bank_account_name || form.bank_account_name || ''
-                        } : {};
-
-                        setForm(prev => ({ 
-                          ...prev, 
-                          entities: [...prev.entities, { entity_type: 'company', entity_id: found.id, name: found.name || found.company_name || 'Không tên', avatar_url: found.logo_url || found.logo }],
-                          ...bankUpdate
-                        }));
-                      }
-                    }}
-                    placeholder="+ Thêm đối tác / giảng viên chia tiền bill..."
-                    searchable
-                    showAvatars
-                  />
-                )}
               </div>
             </div>
           </motion.div>

@@ -18,10 +18,11 @@ class HRMController {
         $stmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.email, u.phone, u.role, u.is_active, u.dob, u.gender, u.citizen_id, u.address, u.bank_name, u.bank_account, u.team_id,
                    p.joined_date, p.base_salary, p.deal_salary, p.has_insurance, p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.kpi_multiplier_rules, p.custom_fields_json,
-                   p.annual_leave_total, p.annual_leave_used, p.compensatory_leave_total, p.compensatory_leave_used
+                   p.annual_leave_total, p.annual_leave_used, p.compensatory_leave_total, p.compensatory_leave_used,
+                   p.insurance_rate_bhxh, p.insurance_rate_bhyt, p.insurance_rate_bhtn
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
-            WHERE u.tenant_id = ? AND u.role NOT IN ('admin', 'superadmin', 'super_admin', 'director')
+            WHERE u.tenant_id = ?
             ORDER BY u.full_name
         ");
         $stmt->execute([$auth['tenant_id']]);
@@ -37,8 +38,9 @@ class HRMController {
 
         $stmt = $this->db->prepare("
             INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, kpi_multiplier_rules, custom_fields_json,
-                                      annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                      annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used,
+                                      insurance_rate_bhxh, insurance_rate_bhyt, insurance_rate_bhtn)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 joined_date = VALUES(joined_date),
                 base_salary = VALUES(base_salary),
@@ -53,7 +55,10 @@ class HRMController {
                 annual_leave_total = VALUES(annual_leave_total),
                 annual_leave_used = VALUES(annual_leave_used),
                 compensatory_leave_total = VALUES(compensatory_leave_total),
-                compensatory_leave_used = VALUES(compensatory_leave_used)
+                compensatory_leave_used = VALUES(compensatory_leave_used),
+                insurance_rate_bhxh = VALUES(insurance_rate_bhxh),
+                insurance_rate_bhyt = VALUES(insurance_rate_bhyt),
+                insurance_rate_bhtn = VALUES(insurance_rate_bhtn)
         ");
 
         $stmt->execute([
@@ -71,7 +76,10 @@ class HRMController {
             (float)($b['annual_leave_total'] ?? 12.0),
             (float)($b['annual_leave_used'] ?? 0.0),
             (float)($b['compensatory_leave_total'] ?? 0.0),
-            (float)($b['compensatory_leave_used'] ?? 0.0)
+            (float)($b['compensatory_leave_used'] ?? 0.0),
+            (float)($b['insurance_rate_bhxh'] ?? 8.00),
+            (float)($b['insurance_rate_bhyt'] ?? 1.50),
+            (float)($b['insurance_rate_bhtn'] ?? 1.00)
         ]);
 
         respond(200, ['success' => true]);
@@ -505,10 +513,11 @@ class HRMController {
         // Fetch all employees in tenant (excluding admin and director roles)
         $empStmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.gender, p.base_salary, p.deal_salary, p.has_insurance,
-                   p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date, p.custom_fields_json
+                   p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date, p.custom_fields_json,
+                   p.insurance_rate_bhxh, p.insurance_rate_bhyt, p.insurance_rate_bhtn
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
-            WHERE u.tenant_id = ? AND u.is_active = 1 AND u.role NOT IN ('admin', 'superadmin', 'super_admin', 'director')
+            WHERE u.tenant_id = ? AND u.is_active = 1
         ");
         $empStmt->execute([$auth['tenant_id']]);
         $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -672,9 +681,13 @@ class HRMController {
             if (!$isSpecialPeriod) {
                 $insuranceBase = (float)($emp['base_salary'] ?? 0.0);
                 if ((int)($emp['has_insurance'] ?? 0) === 1 && $insuranceBase > 0) {
-                    $bhxh = $insuranceBase * 0.08;
-                    $bhyt = $insuranceBase * 0.015;
-                    $bhtn = $insuranceBase * 0.01;
+                    $rateBhxh = isset($emp['insurance_rate_bhxh']) ? (float)$emp['insurance_rate_bhxh'] / 100 : 0.08;
+                    $rateBhyt = isset($emp['insurance_rate_bhyt']) ? (float)$emp['insurance_rate_bhyt'] / 100 : 0.015;
+                    $rateBhtn = isset($emp['insurance_rate_bhtn']) ? (float)$emp['insurance_rate_bhtn'] / 100 : 0.01;
+                    
+                    $bhxh = $insuranceBase * $rateBhxh;
+                    $bhyt = $insuranceBase * $rateBhyt;
+                    $bhtn = $insuranceBase * $rateBhtn;
                 }
             }
 

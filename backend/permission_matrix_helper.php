@@ -106,7 +106,7 @@ if (!function_exists('getActionModuleAndType')) {
         
         if (strpos($action, 'hrm') !== false) {
             $module = 'hrm';
-        } else if (strpos($action, 'attendance') !== false || strpos($action, 'checkin') !== false || strpos($action, 'check_in') !== false) {
+        } else if (strpos($action, 'attendance') !== false || strpos($action, 'checkin') !== false || strpos($action, 'check_in') !== false || strpos($action, 'shift') !== false) {
             $module = 'attendance';
         } else if (strpos($action, 'consultant') !== false) {
             $module = 'users';
@@ -118,7 +118,7 @@ if (!function_exists('getActionModuleAndType')) {
             'get_sse_updates', 'get_dashboard_stats', 'get_logs'
         ], true)) {
             $module = 'leads';
-        } else if (strpos($action, 'lead') !== false || strpos($action, 'round') !== false || strpos($action, 'rule') !== false || strpos($action, 'night_shift') !== false) {
+        } else if (strpos($action, 'lead') !== false || strpos($action, 'round') !== false || strpos($action, 'rule') !== false) {
             $module = 'leads';
         } else if (strpos($action, 'ticket') !== false) {
             if (strpos($action, 'setting') !== false) {

@@ -83,6 +83,14 @@ export default function MyPayslips() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Company configuration states
   const [companyName, setCompanyName] = useState('CÔNG TY CỔ PHẦN CÔNG NGHỆ IDEAS');
   const [companyAddress, setCompanyAddress] = useState('Tòa nhà IDEAS, 123 Đường Láng, Đống Đa, Hà Nội');
@@ -632,12 +640,12 @@ export default function MyPayslips() {
               </h3>
             </div>
 
-            {/* 12-Month Cards Layout (4 cards per row) */}
+            {/* 12-Month Cards Layout (6 cards per row) */}
             <div 
               style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(4, 1fr)', 
-                gap: '16px'
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)', 
+                gap: '12px'
               }} 
               className="no-print"
             >
@@ -658,62 +666,67 @@ export default function MyPayslips() {
                       }
                     }}
                     style={{
-                      padding: '18px 16px',
-                      borderRadius: '16px',
+                      padding: '12px 10px',
+                      borderRadius: '10px',
                       background: isSelected 
                         ? 'var(--color-surface, #ffffff)' 
                         : isAvailable 
                           ? 'var(--color-surface, #ffffff)' 
-                          : '#f8fafc',
+                          : 'var(--color-bg-light, #f8fafc)',
                       border: isSelected 
                         ? '2px solid var(--color-primary, #3b82f6)' 
                         : isAvailable
                           ? '1px solid var(--color-border, #e2e8f0)'
-                          : '1px dashed var(--color-border-light, #e2e8f0)',
-                      cursor: isAvailable ? 'pointer' : 'not-allowed',
-                      opacity: isAvailable ? 1 : 0.6,
+                          : '1px solid var(--color-border-light, #f1f5f9)',
+                      cursor: isAvailable ? 'pointer' : 'default',
+                      opacity: isAvailable ? 1 : 0.5,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s ease-in-out',
+                      gap: '4px',
+                      transition: 'all 0.15s ease',
                       boxShadow: isSelected 
-                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
+                        ? 'var(--shadow-md)'
                         : isAvailable
-                          ? '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
+                          ? 'var(--shadow-sm)'
                           : 'none',
                       pointerEvents: isAvailable ? 'auto' : 'none'
                     }}
                     className={isAvailable ? 'hover-translate-y' : ''}
                   >
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted, #64748b)' }}>Tháng</span>
-                    <span style={{ fontSize: '1.75rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)' }}>{m}</span>
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      fontWeight: 700, 
+                      color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted, #64748b)' 
+                    }}>
+                      Tháng {m}
+                    </span>
                     {isAvailable ? (
                       <>
                         <span style={{ 
-                          fontSize: '0.85rem', 
+                          fontSize: '0.8rem', 
                           fontWeight: 800, 
-                          color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
-                          marginTop: '4px' 
+                          color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)',
+                          marginTop: '2px'
                         }}>
                           {formatCurrency(payslipForMonth.net_salary)}
                         </span>
                         <span style={{ 
-                          fontSize: '0.65rem', 
+                          fontSize: '0.6rem', 
                           fontWeight: 700, 
                           color: payslipForMonth.status === 'confirmed' ? '#10b981' : '#f59e0b',
-                          background: payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                          padding: '2px 8px',
-                          borderRadius: '20px',
-                          marginTop: '4px',
-                          border: `1px solid ${payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                          background: payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.06)' : 'rgba(245, 158, 11, 0.06)',
+                          padding: '1px 6px',
+                          borderRadius: '12px',
+                          marginTop: '2px',
+                          border: `1px solid ${payslipForMonth.status === 'confirmed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}`
                         }}>
-                          {payslipForMonth.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
+                          {payslipForMonth.status === 'confirmed' ? 'Đã ký' : 'Chờ ký'}
                         </span>
                       </>
                     ) : (
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '6px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '2px' }}>
                         Chưa có
                       </span>
                     )}
@@ -737,8 +750,8 @@ export default function MyPayslips() {
                       setIsModalOpen(true);
                     }}
                     style={{
-                      padding: '18px 16px',
-                      borderRadius: '16px',
+                      padding: '12px 10px',
+                      borderRadius: '10px',
                       background: isSelected 
                         ? 'var(--color-surface, #ffffff)' 
                         : 'var(--color-surface, #ffffff)',
@@ -750,36 +763,41 @@ export default function MyPayslips() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s ease-in-out',
+                      gap: '4px',
+                      transition: 'all 0.15s ease',
                       boxShadow: isSelected 
-                        ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
-                        : '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
+                        ? 'var(--shadow-md)'
+                        : 'var(--shadow-sm)'
                     }}
                     className="hover-translate-y"
                   >
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', textAlign: 'center' }}>
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      fontWeight: 700, 
+                      color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text-muted, #64748b)',
+                      textAlign: 'center'
+                    }}>
                       {label}
                     </span>
                     <span style={{ 
-                      fontSize: '0.85rem', 
+                      fontSize: '0.8rem', 
                       fontWeight: 800, 
-                      color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)', 
-                      marginTop: '2px' 
+                      color: isSelected ? 'var(--color-primary, #3b82f6)' : 'var(--color-text, #1e293b)',
+                      marginTop: '2px'
                     }}>
                       {formatCurrency(payslipForPeriod.net_salary)}
                     </span>
                     <span style={{ 
-                      fontSize: '0.65rem', 
+                      fontSize: '0.6rem', 
                       fontWeight: 700, 
                       color: payslipForPeriod.status === 'confirmed' ? '#10b981' : '#f59e0b',
-                      background: payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                      padding: '2px 8px',
-                      borderRadius: '20px',
-                      marginTop: '4px',
-                      border: `1px solid ${payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                      background: payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.06)' : 'rgba(245, 158, 11, 0.06)',
+                      padding: '1px 6px',
+                      borderRadius: '12px',
+                      marginTop: '2px',
+                      border: `1px solid ${payslipForPeriod.status === 'confirmed' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}`
                     }}>
-                      {payslipForPeriod.status === 'confirmed' ? 'Đã ký nhận' : 'Chờ ký'}
+                      {payslipForPeriod.status === 'confirmed' ? 'Đã ký' : 'Chờ ký'}
                     </span>
                   </div>
                 );

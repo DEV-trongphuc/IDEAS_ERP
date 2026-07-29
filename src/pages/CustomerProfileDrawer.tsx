@@ -5538,19 +5538,21 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       <button
                         disabled={isSubmitting}
                         onClick={handleSave}
-                        className="btn"
+                        className="btn primary"
                         style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
                           gap: '8px', 
-                          padding: '8px 18px', 
+                          padding: '8px 20px', 
                           borderRadius: '10px', 
                           height: '40px', 
-                          fontSize: '0.875rem',
+                          fontSize: '0.9rem',
+                          fontWeight: 700,
                           background: 'var(--color-primary)',
                           borderColor: 'var(--color-primary)',
                           color: 'white',
                           cursor: 'pointer',
+                          boxShadow: 'var(--shadow-sm)',
                           transition: 'all 0.2s ease'
                         }}
                       >
@@ -11136,7 +11138,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       {/* CREATE DEPOSIT MODAL */}
       <AnimatePresence>
         {showDealModal && (
-          <div className="overlay-backdrop" style={{ zIndex: 1000020 }}>
+          <div className="overlay-backdrop" style={{ zIndex: 1000095 }}>
             <motion.div
               className="modal-sheet"
               style={{ width: '100%', maxWidth: 820, position: 'relative' }}
@@ -11351,67 +11353,151 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem' }}>
-                  {/* Left Column: Project & Price */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Chương trình giao dịch *</label>
-                      <CustomSelect
-                        searchable
-                        options={projectsList.map(p => ({
-                          value: String(p.id),
-                          label: p.name
-                        }))}
-                        value={depositProjectId}
-                        onChange={val => setDepositProjectId(val.toString())}
-                        placeholder="-- Chọn chương trình --"
-                      />
+                <div style={{ display: 'flex', flexDirection: isMobileOrTablet ? 'column' : 'row', gap: '1.5rem', alignItems: 'stretch' }}>
+                  {/* Left Column: Project, Price & Milestones */}
+                  <div style={{ flex: isMobileOrTablet ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    
+                    {/* Card 1: Thông tin chung */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Thông tin chung</h4>
+                      
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700 }}>Chương trình giao dịch *</label>
+                        <CustomSelect
+                          searchable
+                          options={projectsList.map(p => ({
+                            value: String(p.id),
+                            label: p.name
+                          }))}
+                          value={depositProjectId}
+                          onChange={val => setDepositProjectId(val.toString())}
+                          placeholder="-- Chọn chương trình --"
+                        />
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700 }}>Mã Học viên/Khách hàng *</label>
+                        <input
+                          type="text"
+                          placeholder="VD: HV001, MS105..."
+                          value={depositUnitCode}
+                          onChange={e => setDepositUnitCode(e.target.value.toUpperCase())}
+                          className="form-input"
+                          style={{ fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobileOrTablet ? '1fr' : '1fr 2fr', gap: '1rem' }}>
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700 }}>Loại tiền tệ *</label>
+                          <CustomSelect
+                            options={[
+                              { value: 'VND', label: 'VND' },
+                              { value: 'USD', label: 'USD' },
+                              { value: 'EURO', label: 'EURO' },
+                              { value: 'CHF', label: 'CHF' }
+                            ]}
+                            value={depositCurrency}
+                            onChange={val => setDepositCurrency(val)}
+                            width="100%"
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700 }}>Tổng doanh thu dự kiến ({depositCurrency}) *</label>
+                          <CurrencyInput
+                            value={depositPrice}
+                            onChange={val => setDepositPrice(String(val))}
+                            placeholder="Nhập giá trị giao dịch..."
+                            showTextHelper={true}
+                            currency={depositCurrency}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Mã Học viên/Khách hàng *</label>
-                      <input
-                        type="text"
-                        placeholder="VD: HV001, MS105..."
-                        value={depositUnitCode}
-                        onChange={e => setDepositUnitCode(e.target.value.toUpperCase())}
-                        className="form-input"
-                        style={{ fontWeight: 600 }}
-                      />
-                    </div>
+                    {/* Card 2: Lịch trình thanh toán */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <h4 style={{ fontSize: '0.875rem', fontWeight: 700, margin: 0 }}>Lịch trình thanh toán</h4>
+                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                            (Tổng tiền các đợt có thể nhỏ hơn tổng doanh thu dự kiến)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddMilestoneInput}
+                          style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}
+                        >
+                          <Plus size={14} /> Thêm đợt
+                        </button>
+                      </div>
 
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Loại tiền tệ *</label>
-                      <CustomSelect
-                        options={[
-                          { value: 'VND', label: 'VND' },
-                          { value: 'USD', label: 'USD' },
-                          { value: 'EURO', label: 'EURO' },
-                          { value: 'CHF', label: 'CHF' }
-                        ]}
-                        value={depositCurrency}
-                        onChange={val => setDepositCurrency(val)}
-                        width="100%"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontWeight: 700 }}>Tổng doanh thu dự kiến ({depositCurrency}) *</label>
-                      <CurrencyInput
-                        value={depositPrice}
-                        onChange={val => setDepositPrice(String(val))}
-                        placeholder="Nhập giá trị giao dịch..."
-                        showTextHelper={true}
-                        currency={depositCurrency}
-                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {depositMilestones.map((m, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              required
+                              placeholder={`Tên đợt ${idx + 1} (VD: Đợt 1 - Cọc giữ chỗ)`}
+                              value={m.name}
+                              onChange={e =>
+                                setDepositMilestones(prev =>
+                                  prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))
+                                )
+                              }
+                              className="form-input"
+                              style={{ flex: 1 }}
+                            />
+                            <div style={{ width: '220px', flexShrink: 0 }}>
+                              <CurrencyInput
+                                value={m.amount}
+                                required
+                                onChange={val =>
+                                  setDepositMilestones(prev =>
+                                    prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
+                                  )
+                                }
+                                placeholder={`Số tiền (${depositCurrency})`}
+                                showTextHelper={false}
+                                currency={depositCurrency}
+                              />
+                            </div>
+                            <input
+                              type="date"
+                              required
+                              value={m.expected_pay_date || ''}
+                              onChange={e =>
+                                setDepositMilestones(prev =>
+                                  prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
+                                )
+                              }
+                              className="form-input"
+                              style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}
+                            />
+                            {depositMilestones.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMilestoneInput(idx)}
+                                style={{ padding: '8px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', borderRadius: '50%' }}
+                                className="btn-icon sm"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Right Column: Commission & Proof */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingLeft: '1.5rem', borderLeft: '1px solid var(--color-border-light)' }}>
-                    <div className="form-group">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>Hoa hồng dự kiến</label>
+                  {/* Right Column: Commission, Approver & Proof Sidebar */}
+                  <div style={{ flex: isMobileOrTablet ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderLeft: isMobileOrTablet ? 'none' : '1px solid var(--color-border-light)', paddingLeft: isMobileOrTablet ? '0' : '1.5rem' }}>
+                    {/* Card 3: Hoa hồng dự kiến */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Hoa hồng dự kiến</h4>
                         <div style={{ display: 'inline-flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border-light)' }}>
                           <button
                             type="button"
@@ -11428,7 +11514,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               boxShadow: commissionType === 'percent' ? 'var(--shadow-sm)' : 'none'
                             }}
                           >
-                            % Phần trăm
+                            %
                           </button>
                           <button
                             type="button"
@@ -11445,7 +11531,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               boxShadow: commissionType === 'amount' ? 'var(--shadow-sm)' : 'none'
                             }}
                           >
-                            Số tiền (VND)
+                            VND
                           </button>
                         </div>
                       </div>
@@ -11480,166 +11566,116 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       )}
                     </div>
 
-                    {/* Kế toán phê duyệt */}
-                    <div className="form-group" style={{ marginTop: '1rem' }}>
-                      <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Kế toán phê duyệt <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                      <CustomSelect
-                        options={users
-                          .filter(u => String(u.role).toLowerCase() === 'accountant')
-                          .map(u => ({
-                            value: String(u.id),
-                            label: u.full_name || u.name || u.username,
-                            avatar: u.avatar_url || u.avatar
-                          }))}
-                        value={depositAccountantId}
-                        onChange={val => setDepositAccountantId(val.toString())}
-                        placeholder="-- Chọn kế toán phê duyệt --"
-                        showAvatars
-                        searchable
-                      />
-                    </div>
-
-                    {/* Phase 1 UNC upload */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '10px', marginTop: 'auto' }}>
-                      <label className="form-label" style={{ fontWeight: 700, margin: 0, fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        Minh chứng chuyển tiền Đợt 1 (UNC) <span style={{ color: 'var(--color-danger)' }}>*</span>
-                      </label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-                        <label
-                          className="btn outline sm"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', height: '32px', fontSize: '0.75rem', borderRadius: '8px' }}
-                        >
-                          <Upload size={13} /> {depositUncFile ? 'Chọn lại tệp' : 'Chọn ảnh UNC'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={e => {
-                              if (e.target.files && e.target.files.length > 0) {
-                                setDepositUncFile(e.target.files[0]);
-                              }
-                            }}
-                          />
-                        </label>
-                        {depositUncFile ? (
-                          <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
-                            ✓ {depositUncFile.name}
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                            Yêu cầu bắt buộc 1 UNC
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Milestones config */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-border-light)', marginTop: '1.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700 }}>Lịch trình thanh toán</h4>
-                      <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                        (Tổng tiền các đợt thanh toán có thể nhỏ hơn tổng doanh thu dự kiến)
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddMilestoneInput}
-                      style={{ fontSize: '0.75rem', color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}
-                    >
-                      <Plus size={14} /> Thêm đợt thanh toán
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {depositMilestones.map((m, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input
-                          type="text"
-                          required
-                          placeholder={`Tên đợt ${idx + 1} (VD: Đợt 1 - Cọc giữ chỗ)`}
-                          value={m.name}
-                          onChange={e =>
-                            setDepositMilestones(prev =>
-                              prev.map((item, i) => (i === idx ? { ...item, name: e.target.value } : item))
-                            )
-                          }
-                          className="form-input"
-                          style={{ flex: 1 }}
-                        />
-                        <div style={{ width: '220px', flexShrink: 0 }}>
-                          <CurrencyInput
-                            value={m.amount}
-                            required
-                            onChange={val =>
-                              setDepositMilestones(prev =>
-                                prev.map((item, i) => (i === idx ? { ...item, amount: String(val) } : item))
-                              )
-                            }
-                            placeholder={`Số tiền (${depositCurrency})`}
-                            showTextHelper={false}
-                            currency={depositCurrency}
-                          />
-                        </div>
-                        <input
-                          type="date"
-                          required
-                          value={m.expected_pay_date || ''}
-                          onChange={e =>
-                            setDepositMilestones(prev =>
-                              prev.map((item, i) => (i === idx ? { ...item, expected_pay_date: e.target.value } : item))
-                            )
-                          }
-                          className="form-input"
-                          style={{ height: '38px', padding: '8px 12px', fontSize: '0.85rem', width: '130px', flexShrink: 0 }}
-                        />
-                        {depositMilestones.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveMilestoneInput(idx)}
-                            style={{ padding: '8px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', borderRadius: '50%' }}
-                            className="btn-icon sm"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cài đặt nhắc lịch thanh toán tự động */}
-                {depositMilestones.length > 1 && (
-                  <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)', marginTop: '1.25rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Cài đặt nhắc lịch thanh toán tự động</span>
-                      <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
-                        <input
-                          type="checkbox"
-                          checked={autoRemind}
-                          onChange={e => setAutoRemind(e.target.checked)}
-                          style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                          position: 'absolute',
-                          cursor: 'pointer',
-                          inset: 0,
-                          backgroundColor: autoRemind ? 'var(--color-primary)' : '#ccc',
-                          borderRadius: '20px',
-                          transition: '0.3s'
+                    {/* Card 4: Kế toán phê duyệt */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                        Phê duyệt & Vận hành
+                      </h4>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người tạo</label>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 12px',
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border-light)',
+                          borderRadius: '8px',
+                          height: '38px'
                         }}>
-                          <span style={{
-                            position: 'absolute',
-                            content: '""',
-                            height: '14px',
-                            width: '14px',
-                            left: autoRemind ? '17px' : '3px',
-                            bottom: '3px',
-                            backgroundColor: 'white',
-                            borderRadius: '50%',
-                            transition: '0.3s'
+                          <Avatar src={(currentUser as any)?.avatar_url || (currentUser as any)?.avatar} name={(currentUser as any)?.full_name || (currentUser as any)?.username} size="sm" />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{(currentUser as any)?.full_name || (currentUser as any)?.username}</span>
+                        </div>
+                      </div>
+
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Kế toán phê duyệt <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                        <CustomSelect
+                          options={users
+                            .filter(u => String(u.role).toLowerCase() === 'accountant')
+                            .map(u => ({
+                              value: String(u.id),
+                              label: u.full_name || u.name || u.username,
+                              avatar: u.avatar_url || u.avatar
+                            }))}
+                          value={depositAccountantId}
+                          onChange={val => setDepositAccountantId(val.toString())}
+                          placeholder="-- Chọn kế toán phê duyệt --"
+                          showAvatars
+                          searchable
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card 5: Minh chứng thanh toán (UNC) */}
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                        Minh chứng thanh toán
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.12)', borderRadius: '10px' }}>
+                        <label className="form-label" style={{ fontWeight: 700, margin: 0, fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          Minh chứng Đợt 1 (UNC) <span style={{ color: 'var(--color-danger)' }}>*</span>
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                          <label
+                            className="btn outline sm"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', height: '32px', fontSize: '0.75rem', borderRadius: '8px' }}
+                          >
+                            <Upload size={13} /> {depositUncFile ? 'Chọn lại tệp' : 'Chọn ảnh UNC'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={e => {
+                                if (e.target.files && e.target.files.length > 0) {
+                                  setDepositUncFile(e.target.files[0]);
+                                }
+                              }}
+                            />
+                          </label>
+                          {depositUncFile ? (
+                            <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                              ✓ {depositUncFile.name}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                              Yêu cầu bắt buộc 1 UNC
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 6: Cài đặt nhắc lịch thanh toán tự động */}
+                    {depositMilestones.length > 1 && (
+                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch tự động</span>
+                          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
+                            <input
+                              type="checkbox"
+                              checked={autoRemind}
+                              onChange={e => setAutoRemind(e.target.checked)}
+                              style={{ opacity: 0, width: 0, height: 0 }}
+                            />
+                            <span style={{
+                              position: 'absolute',
+                              cursor: 'pointer',
+                              inset: 0,
+                              backgroundColor: autoRemind ? 'var(--color-primary)' : '#ccc',
+                              borderRadius: '20px',
+                              transition: '0.3s'
+                            }}>
+                              <span style={{
+                                position: 'absolute',
+                                content: '""',
+                                height: '14px',
+                                width: '14px',
+                                left: autoRemind ? '17px' : '3px',
+                                bottom: '3px',
+                                backgroundColor: 'white',
+                                borderRadius: '50%',
+                                transition: '0.3s'
                               }} />
                             </span>
                           </label>
@@ -11710,6 +11746,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         )}
                       </div>
                     )}
+                  </div>
+                </div>
 
                 {/* Multi-sale Co-op Commission Allocation Section (Removed) */}
 
@@ -13399,7 +13437,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         {/* Actions (Approve/Reject or Delete) */}
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
                           {/* Admin approval/rejection */}
-                          {isAdmin && m.status === 'paid' && (
+                          {isAdmin && m.status === 'paid' && m.unc_file_path && m.unc_file_path.trim() !== '' && (
                             <>
                               <button
                                 onClick={() => handleApproveFromModal(idx)}

@@ -1677,7 +1677,7 @@ export const Header = ({
             'Nhân viên kinh doanh': 'Hồ sơ và lịch làm việc của tư vấn viên',
             'Quản lý chấm công': 'Báo cáo check-in và xin nghỉ phép',
             'Chấm công': 'Ghi nhận check-in và xin nghỉ phép của tôi',
-            'Quản trị nhân sự & lương': 'Hồ sơ nhân sự, bảng lương và hợp đồng lao động',
+            'Nhân sự & Lương': 'Hồ sơ nhân sự, bảng lương và hợp đồng lao động',
             'Phiếu lương cá nhân': 'Xem phiếu lương chi tiết từng tháng và xác nhận nhận lương',
             'Cài đặt hệ thống': 'Các thông số và cấu hình chung toàn hệ thống',
             'Huấn luyện AI': 'Huấn luyện AI chatbot tư vấn và tự động hóa hỗ trợ',
@@ -1776,7 +1776,7 @@ export const Header = ({
             sale: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
             sales: ['Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương cá nhân', 'Kho Databank', 'Ticket hỗ trợ'],
             accountant: ['Sales Order', 'Purchase Order', 'Quy trình', 'Phiếu lương cá nhân', 'Nhà cung cấp', 'Đối tác kinh doanh', 'Bàn làm việc'],
-            hr: ['Quản trị nhân sự & lương', 'Quản lý chấm công', 'Quy trình', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu'],
+            hr: ['Nhân sự & Lương', 'Quản lý chấm công', 'Quy trình', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu'],
             marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data']
           };
 

@@ -351,13 +351,15 @@ export const SuppliersPage: React.FC = () => {
           <div className="spinner sm"></div>
         </div>
       ) : total === 0 ? (
-        <EmptyCard 
-          icon={<Truck size={48} />}
-          title="Chưa có nhà cung cấp nào"
-          description="Bắt đầu thêm các đối tác, nhà cung cấp để quản lý."
-          actionText={isSale ? undefined : "Thêm ngay"}
-          onAction={isSale ? undefined : () => handleOpenModal()}
-        />
+        <div className="card mobile-flat-container" style={{ padding: '2rem 1rem', overflow: 'hidden' }}>
+          <EmptyCard 
+            icon={<Truck size={48} />}
+            title="Chưa có nhà cung cấp nào"
+            description="Bắt đầu thêm các đối tác, nhà cung cấp để quản lý."
+            actionText={isSale ? undefined : "Thêm ngay"}
+            onAction={isSale ? undefined : () => handleOpenModal()}
+          />
+        </div>
       ) : (
         <>
           <div style={{

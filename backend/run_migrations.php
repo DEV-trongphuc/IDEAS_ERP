@@ -383,7 +383,6 @@ try {
         $logMsg("Đã bổ sung các cột phân cấp đại lý (tier, parent_id, commission_rate, focus_markets, agent_count) vào bảng companies.", "success");
     }
 
-    // 9. Create HRM and Payroll tables
     $conn->query("CREATE TABLE IF NOT EXISTS `hrm_profiles` (
         `user_id` INT PRIMARY KEY,
         `joined_date` DATE NOT NULL,
@@ -395,6 +394,10 @@ try {
         `allowance_phone` DECIMAL(15,2) DEFAULT 0.00,
         `kpi_target` DECIMAL(15,2) DEFAULT 0.00,
         `kpi_multiplier_rules` TEXT NULL,
+        `custom_fields_json` TEXT NULL,
+        `insurance_rate_bhxh` DECIMAL(5,2) DEFAULT 8.00,
+        `insurance_rate_bhyt` DECIMAL(5,2) DEFAULT 1.50,
+        `insurance_rate_bhtn` DECIMAL(5,2) DEFAULT 1.00,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");

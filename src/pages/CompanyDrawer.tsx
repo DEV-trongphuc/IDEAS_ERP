@@ -31,8 +31,8 @@ const TABS = [
   { id: 'contacts', label: 'Liên hệ', icon: <Users size={16} /> },
   { id: 'deals', label: 'Giao dịch Bán', icon: <Briefcase size={16} /> },
   { id: 'invoices', label: 'Phí hoa hồng', icon: <FileText size={16} /> },
-  { id: 'expenses', label: 'Chi trả đối tác', icon: <Plus size={16} /> },
-  { id: 'docs', label: 'Hợp đồng & Tài liệu', icon: <FileBadge size={16} /> },
+  { id: 'expenses', label: 'Chi trả thù lao', icon: <Plus size={16} /> },
+  { id: 'docs', label: 'Tài liệu', icon: <FileBadge size={16} /> },
   { id: 'settings', label: 'Thiết lập', icon: <Settings size={16} /> },
 ];
 
@@ -130,12 +130,12 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   const [baseTags, setBaseTags] = useState<string[]>(entity?.tags || []);
 
   const tierOptions = [
-    { value: 'f1', label: 'Đại lý F1' },
-    { value: 'f2', label: 'Đại lý F2' },
-    { value: 'f3', label: 'Đại lý F3' },
-    { value: 'ctv', label: 'CTV & Môi giới' },
-    { value: 'giang_vien', label: 'Giảng viên' },
-    { value: 'chuyen_gia', label: 'Chuyên gia' }
+    { value: 'f1', label: 'Giảng viên Cơ hữu' },
+    { value: 'f2', label: 'Giảng viên Thỉnh giảng' },
+    { value: 'f3', label: 'Giảng viên Đối tác' },
+    { value: 'ctv', label: 'Trợ giảng (TA)' },
+    { value: 'giang_vien', label: 'Giảng viên nước ngoài' },
+    { value: 'chuyen_gia', label: 'Chuyên gia / Cố vấn' }
   ];
 
   const parentOptions = useMemo(() => {
@@ -182,7 +182,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
 
       if (!formData.name || !formData.name.trim()) {
         newErrors.name = true;
-        addToast('Tên đại lý/đối tác là bắt buộc.', 'error');
+        addToast('Tên giảng viên là bắt buộc.', 'error');
       }
 
       const payload = { ...formData, tags };
@@ -215,11 +215,11 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
       setFormData(updated);
       setBaseData(updated);
       setBaseTags(updated.tags || []);
-      addToast('Đã cập nhật thông tin đối tác thành công', 'success');
+      addToast('Đã cập nhật thông tin giảng viên thành công', 'success');
       onSave(updated);
     } catch (e: any) {
       console.error("SAVE COMPANY ERROR:", e);
-      addToast(e.response?.data?.message || e.message || 'Lỗi khi lưu thông tin đối tác', 'error');
+      addToast(e.response?.data?.message || e.message || 'Lỗi khi lưu thông tin giảng viên', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -473,7 +473,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                 </button>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0.5rem', overflow: 'hidden' }}>
                   <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {activeTab ? (visibleTabs.find(t => t.id === activeTab)?.label || 'Chi tiết') : (formData?.name || 'Tên Đối tác')}
+                    {activeTab ? (visibleTabs.find(t => t.id === activeTab)?.label || 'Chi tiết') : (formData?.name || 'Tên Giảng viên')}
                   </h3>
                 </div>
                 <button
@@ -536,7 +536,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                     )}
                   </div>
                   <div>
-                    <h2 className={styles.title}>{formData?.name || 'Tên Đối tác'}</h2>
+                    <h2 className={styles.title}>{formData?.name || 'Tên Giảng viên'}</h2>
                     <p className={styles.subtitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Briefcase size={14} /> {formData?.tier ? formData.tier.toUpperCase() : 'F1'} · {formData?.focus_markets || 'Chưa cập nhật thế mạnh'}
                     </p>
@@ -578,16 +578,19 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                     {formData?.status === 'active' ? 'Hoạt động' : formData?.status === 'inactive' ? 'Ngừng' : 'Tiềm năng'}
                   </span>
                   <button 
-                    className="btn primary sm" 
+                    className="btn primary" 
                     disabled={isSaving}
                     style={{ 
                       background: 'var(--color-primary)', 
                       display: 'flex', 
                       alignItems: 'center', 
-                      gap: 6,
-                      padding: '6px 14px',
-                      fontSize: '0.8rem',
-                      height: '32px'
+                      gap: 8,
+                      padding: '8px 20px',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      height: '38px',
+                      borderRadius: '10px',
+                      boxShadow: 'var(--shadow-sm)'
                     }}
                     onClick={handleSave}
                   >
@@ -697,7 +700,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                   {/* Right: Basic Info */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
                     <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text)', margin: '0 0 2px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {formData?.name || 'Tên Đối tác'}
+                      {formData?.name || 'Tên Giảng viên'}
                     </h2>
                     <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Phone size={12} style={{ color: 'var(--color-primary)', flexShrink: 0 }} /> {formData?.phone || 'Chưa có SĐT'}
@@ -897,14 +900,14 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                   <fieldset disabled={disableEdit} style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }} className="animate-fade">
                     <div className="card-panel">
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="panel-title" style={{ margin: 0 }}>Hồ sơ Đại lý & Đối tác</h4>
+                        <h4 className="panel-title" style={{ margin: 0 }}>Hồ sơ Giảng viên</h4>
                       </div>
                       <div className="grid grid-2">
                         <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                          <label className="form-label">Tên Đại lý / Đối tác <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                          <label className="form-label">Họ và tên Giảng viên <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                           <input 
                             className="form-input" 
-                            placeholder="Tên đầy đủ của đại lý hoặc đối tác..." 
+                            placeholder="Tên đầy đủ của giảng viên..." 
                             value={formData?.name || ''} 
                             onChange={e => {
                               setFormData((prev: any) => ({ ...prev, name: e.target.value }));
@@ -920,7 +923,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                         </div>
                         
                         <div className="form-group">
-                          <label className="form-label">Phân loại / Cấp đại lý</label>
+                          <label className="form-label">Trình độ / Phân loại giảng viên</label>
                           <CustomSelect 
                             options={tierOptions}
                             value={formData?.tier || 'f1'}
@@ -931,45 +934,45 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                                 parent_id: (val === 'f2' || val === 'f3') ? prev.parent_id : null 
                               }));
                             }}
-                            placeholder="Chọn cấp đại lý..."
+                            placeholder="Chọn trình độ/phân loại..."
                           />
                         </div>
 
                         {(formData?.tier === 'f2' || formData?.tier === 'f3') && (
                           <div className="form-group">
-                            <label className="form-label">Đại lý F1 cấp trên trực tiếp</label>
+                            <label className="form-label">Giảng viên cơ hữu quản lý trực tiếp</label>
                             <CustomSelect 
                               options={parentOptions}
                               value={formData?.parent_id || ''}
                               onChange={val => setFormData((prev: any) => ({ ...prev, parent_id: val }))}
-                              placeholder="Chọn đại lý F1..."
+                              placeholder="Chọn giảng viên quản lý..."
                             />
                           </div>
                         )}
 
                         <div className="form-group">
-                          <label className="form-label">Khu vực / Dự án thế mạnh</label>
+                          <label className="form-label">Lĩnh vực / Môn học giảng dạy thế mạnh</label>
                           <input 
                             className="form-input" 
-                            placeholder="Ví dụ: Đất nền Long An, Căn hộ Q2..." 
+                            placeholder="Ví dụ: Lập trình Python, Machine Learning, Kế toán..." 
                             value={formData?.focus_markets || ''} 
                             onChange={e => setFormData((prev: any) => ({ ...prev, focus_markets: e.target.value }))} 
                           />
                         </div>
 
                         <div className="form-group">
-                          <label className="form-label">Số lượng Sales đối tác</label>
+                          <label className="form-label">Số giờ giảng dạy tối đa/tuần</label>
                           <input 
                             className="form-input" 
                             type="number"
-                            placeholder="Nhập số lượng nhân sự..." 
+                            placeholder="Nhập số giờ giảng dạy tối đa..." 
                             value={formData?.agent_count || 0} 
                             onChange={e => setFormData((prev: any) => ({ ...prev, agent_count: parseInt(e.target.value) || 0 }))} 
                           />
                         </div>
 
                         <div className="form-group">
-                          <label className="form-label">Trạng thái đối tác</label>
+                          <label className="form-label">Trạng thái giảng viên</label>
                           <CustomSelect 
                             options={[
                               { value: 'prospect', label: 'Tiềm năng' },
@@ -981,7 +984,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                           />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Người liên hệ đầu mối</label>
+                          <label className="form-label">Người liên hệ khẩn cấp / đại diện</label>
                           <input className="form-input" placeholder="Tên người liên hệ..." value={formData?.legal_representative || ''} onChange={e => setFormData((prev: any) => ({ ...prev, legal_representative: e.target.value }))} />
                         </div>
 
@@ -1066,7 +1069,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                       <h4 className="panel-title">Ghi chú chi tiết</h4>
                       <textarea
                         className="form-input"
-                        placeholder="Nhập ghi chú hoặc mô tả chi tiết về đại lý/đối tác này..."
+                        placeholder="Nhập ghi chú hoặc mô tả chi tiết về giảng viên này..."
                         rows={4}
                         value={formData?.notes || ''}
                         onChange={e => setFormData((prev: any) => ({ ...prev, notes: e.target.value }))}
@@ -1165,7 +1168,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                                     checked={field.value === 'true' || field.value === true} 
                                     onChange={e => {
                                       const newFields = [...formData.custom_fields];
-                                      newFields[index].value = e ? 'true' : 'false';
+                                      newFields[index].value = e.target.checked ? 'true' : 'false';
                                       setFormData({ ...formData, custom_fields: newFields });
                                     }} 
                                   />
@@ -1224,7 +1227,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                       <div>
                         <h4 className="panel-title" style={{ margin: 0, marginBottom: '0.25rem' }}>Danh sách Liên hệ (Sub-contacts)</h4>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>Quản lý các nhân sự thuộc doanh nghiệp B2B này.</p>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>Quản lý các thông tin liên hệ phụ thuộc giảng viên này.</p>
                       </div>
                       <button className="btn primary sm" onClick={() => {
                         const newContact = { id: Date.now(), name: 'Liên hệ mới', role: 'Chức vụ', phone: '', email: '', isPrimary: false };
@@ -1465,7 +1468,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                 {activeTab === 'expenses' && (
                   <div className="animate-fade">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                      <h4 className="panel-title" style={{ margin: 0 }}>Lịch sử Chi trả & Thưởng đối tác</h4>
+                      <h4 className="panel-title" style={{ margin: 0 }}>Lịch sử Chi trả & Thưởng thù lao giảng viên</h4>
                       {!disableEdit && (
                         <button 
                           className="btn primary sm" 
@@ -1520,14 +1523,14 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                 {activeTab === 'docs' && (
                   <div className="animate-fade">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                      <h4 className="panel-title" style={{ margin: 0 }}>Tài liệu Doanh nghiệp</h4>
+                      <h4 className="panel-title" style={{ margin: 0 }}>Tài liệu</h4>
                       <label className="btn outline sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <input type="file" style={{ display: 'none' }} onChange={async (e) => {
                           if (e.target.files?.[0]) {
                             const file = e.target.files[0];
                             const compressed = await compressToWebP(file);
                             setDocs(prev => [{ id: Date.now(), name: compressed.name, date: new Date().toLocaleDateString('vi-VN'), size: (compressed.size / 1024 / 1024).toFixed(1) + ' MB', type: compressed.name.split('.').pop() || 'file' }, ...prev]);
-                            addToast('Đã tải lên tài liệu doanh nghiệp mới.', 'success');
+                            addToast('Đã tải lên tài liệu mới.', 'success');
                           }
                         }} />
                         <Plus size={14} /> Upload Tệp
@@ -1536,8 +1539,8 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                     {docs.length === 0 ? (
                       <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center', background: 'var(--color-bg)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border)' }}>
                         <FileBadge size={48} color="var(--color-border)" style={{ margin: '0 auto 1rem auto' }} />
-                        <p style={{ fontWeight: 600, color: 'var(--color-text)' }}>Chưa có tài liệu doanh nghiệp</p>
-                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>Upload giấy phép kinh doanh, hợp đồng NDA, báo cáo tài chính...</p>
+                        <p style={{ fontWeight: 600, color: 'var(--color-text)' }}>Chưa có tài liệu</p>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>Upload hợp đồng, bằng cấp và các tài liệu liên quan...</p>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -1577,7 +1580,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                                   isDanger: true,
                                   onConfirm: () => {
                                     setDocs(prev => prev.filter(d => d.id !== doc.id));
-                                    addToast('Đã xóa tài liệu doanh nghiệp.', 'success');
+                                    addToast('Đã xóa tài liệu.', 'success');
                                   }
                                 });
                               }}><Trash2 size={14} /></button>
@@ -1592,16 +1595,16 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                 {activeTab === 'settings' && (
                   <div className="animate-fade" style={{ textAlign: 'left' }}>
                     <div className="card-panel mb-4">
-                      <h4 className="panel-title">Thiết lập Đối tác (Partner Settings)</h4>
-                      <p className="text-sm text-light mb-4">Cấu hình các tùy chọn ưu đãi và phân nhóm đại lý đối tác.</p>
+                      <h4 className="panel-title">Thiết lập Giảng viên (Instructor Settings)</h4>
+                      <p className="text-sm text-light mb-4">Cấu hình các tùy chọn ưu đãi và phân nhóm giảng viên.</p>
                       
                       <div className="form-group mb-4">
-                        <label className="form-label">Cấp độ liên kết (Partnership Level)</label>
+                        <label className="form-label">Cấp độ giảng dạy / Hợp tác</label>
                         <CustomSelect 
                           options={[
-                            { value: 'standard', label: 'Standard (Đại lý thông thường)' },
-                            { value: 'gold', label: 'Gold (Đại lý Vàng - Chiến lược)' },
-                            { value: 'platinum', label: 'Platinum (Đại lý Bạch kim - Độc quyền)' }
+                            { value: 'standard', label: 'Standard (Cơ bản)' },
+                            { value: 'gold', label: 'Gold (Ưu tiên)' },
+                            { value: 'platinum', label: 'Platinum (Độc quyền / Cố vấn)' }
                           ]}
                           value={formData.sla_level || 'standard'}
                           onChange={(val) => {
@@ -1611,7 +1614,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                       </div>
 
                       <div className="form-group mb-4">
-                        <label className="form-label">Chuyên viên hỗ trợ đối tác (Partner Support Representative)</label>
+                        <label className="form-label">Chuyên viên hỗ trợ giảng viên (Instructor Support Representative)</label>
                         <CustomSelect 
                           options={users.map(u => ({ 
                             value: String(u.id), 
@@ -1628,14 +1631,14 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
                         <CustomCheckbox 
-                          label={<div><span style={{ fontWeight: 600, display: 'block' }}>Áp dụng chính sách Đại lý</span><span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>Đại lý này sẽ nhận rổ hàng ưu tiên và chiết khấu nội bộ.</span></div>}
+                          label={<div><span style={{ fontWeight: 600, display: 'block' }}>Áp dụng chính sách thù lao ưu tiên</span><span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>Giảng viên này sẽ được ưu tiên nhận lớp và mức thù lao tốt.</span></div>}
                           checked={!!formData.wholesale_price}
-                          onChange={(checked) => setFormData({ ...formData, wholesale_price: checked })}
+                          onChange={(e) => setFormData({ ...formData, wholesale_price: e.target.checked })}
                         />
                         <CustomCheckbox 
-                          label={<div><span style={{ fontWeight: 600, display: 'block' }}>Miễn trừ thuế GTGT (VAT Exempt)</span><span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>Áp dụng khi đại lý tự xuất hóa đơn VAT đặc biệt.</span></div>}
+                          label={<div><span style={{ fontWeight: 600, display: 'block' }}>Miễn khấu trừ thuế TNCN tại nguồn</span><span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>Áp dụng khi giảng viên tự kê khai và quyết toán thuế TNCN riêng.</span></div>}
                           checked={!!formData.vat_exempt}
-                          onChange={(checked) => setFormData({ ...formData, vat_exempt: checked })}
+                          onChange={(e) => setFormData({ ...formData, vat_exempt: e.target.checked })}
                         />
                       </div>
                     </div>
@@ -1668,25 +1671,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
             </AnimatePresence>
             </div>
 
-            {/* Footer */}
-            {!isMobileOrTablet && (
-              <div className={styles.footer}>
-                {disableEdit ? (
-                  <button className="btn secondary" onClick={onClose}>Đóng</button>
-                ) : (
-                  <>
-                    <button className="btn ghost" onClick={handleClose}>Hủy bỏ</button>
-                    <button 
-                      className={`btn ${hasChanges ? 'primary' : 'outline'}`} 
-                      disabled={!hasChanges || isSaving}
-                      onClick={handleSave}
-                    >
-                      {isSaving ? 'Đang lưu...' : (hasChanges ? 'Lưu thông tin Đối tác' : 'Đã đồng bộ')}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+            {/* Footer removed */}
           </div>
 
           {/* Help Modal */}

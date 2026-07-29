@@ -4564,8 +4564,8 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                     </div>
                   </div>
 
-                  {/* KPI Cards Row (4 Columns) */}
-                  <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                  {/* KPI Cards Row (3 Columns) */}
+                  <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '0.75rem' }}>
                     {/* Card 1: Tổng khách hàng */}
                     <div className="stat-card hover-lift total-card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minHeight: '120px', borderRadius: '12px', border: '1px solid var(--color-border-light)', position: 'relative', overflow: 'hidden' }}>
                       <div className="decor-svg" style={{ color: '#a31422' }}>
@@ -4618,32 +4618,6 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fbbf24', display: 'inline-block' }} />
                             {t('Hợp tác (co.op)')}: {statsData.summary.coop_count || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 3: Từ Databank */}
-                    <div className="stat-card hover-lift fair_share_equity-card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minHeight: '120px', borderRadius: '12px', border: '1px solid var(--color-border-light)', position: 'relative', overflow: 'hidden' }}>
-                      <div className="decor-svg" style={{ color: '#34c759' }}>
-                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                          <path d="M20 30 C 20 20, 80 20, 80 30 C 80 40, 20 40, 20 30 Z" stroke="currentColor" strokeWidth="2" />
-                          <path d="M20 30 V 50 C 20 60, 80 60, 80 50 V 30" stroke="currentColor" strokeWidth="2" />
-                          <path d="M20 50 V 70 C 20 80, 80 80, 80 70 V 50" stroke="currentColor" strokeWidth="2" />
-                        </svg>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
-                        <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Từ Databank')}</span>
-                        <div className="stat-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(52, 199, 89, 0.08)', color: '#34c759', flexShrink: 0 }}><Database size={16} /></div>
-                      </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-                        <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
-                          {statsData.summary.databank_count || 0}
-                        </div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34c759', display: 'inline-block' }} />
-                            {t('Claim từ Kho Databank')}: {statsData.summary.databank_count || 0}
                           </span>
                         </div>
                       </div>
