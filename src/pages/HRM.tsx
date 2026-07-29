@@ -19,12 +19,84 @@ import {
 import { motion } from 'framer-motion';
 import { ApprovalDetailDrawer } from './Approvals';
 import type { ApprovalItem } from './Approvals';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#0d9488'];
 
 const FMT_COMPACT = (n: any) => {
   const num = Number(n || 0);
   return num >= 1e9 ? (num / 1e9).toFixed(1) + 'B' : num >= 1e6 ? (num / 1e6).toFixed(0) + 'M' : num >= 1e3 ? (num / 1e3).toFixed(0) + 'K' : String(num);
+};
+
+const FormattedMoneyInput = ({ value, onChange, disabled, width = '95px' }: { value: number; onChange: (val: number) => void; disabled?: boolean; width?: string }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(String(Math.round(Number(value || 0))));
+
+  useEffect(() => {
+    if (!isEditing) {
+      setInputValue(String(Math.round(Number(value || 0))));
+    }
+  }, [value, isEditing]);
+
+  const numVal = Math.round(Number(value || 0));
+  const formattedStr = new Intl.NumberFormat('vi-VN').format(numVal);
+
+  if (disabled) {
+    return <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{formattedStr}</span>;
+  }
+
+  return isEditing ? (
+    <input
+      type="number"
+      autoFocus
+      value={inputValue}
+      onChange={e => setInputValue(e.target.value)}
+      onBlur={() => {
+        setIsEditing(false);
+        onChange(Number(inputValue || 0));
+      }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          setIsEditing(false);
+          onChange(Number(inputValue || 0));
+        }
+      }}
+      style={{
+        width,
+        padding: '3px 6px',
+        textAlign: 'right',
+        border: '1.5px solid #3b82f6',
+        borderRadius: '6px',
+        background: 'var(--color-surface)',
+        color: 'var(--color-text)',
+        fontSize: '0.825rem',
+        fontWeight: 700,
+        outline: 'none',
+        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)'
+      }}
+    />
+  ) : (
+    <button
+      type="button"
+      onClick={() => setIsEditing(true)}
+      title="Bấm để nhập số tiền"
+      style={{
+        width,
+        padding: '3px 6px',
+        textAlign: 'right',
+        border: '1px solid var(--color-border)',
+        borderRadius: '6px',
+        background: numVal > 0 ? 'rgba(59, 130, 246, 0.04)' : 'var(--color-surface)',
+        color: numVal > 0 ? 'var(--color-text)' : 'var(--color-text-muted)',
+        fontSize: '0.825rem',
+        fontWeight: numVal > 0 ? 700 : 500,
+        cursor: 'pointer',
+        transition: 'all 0.15s ease'
+      }}
+    >
+      {formattedStr}
+    </button>
+  );
 };
 
 export default function HRM() {
@@ -484,6 +556,9 @@ export default function HRM() {
   };
 
   const [saving, setSaving] = useState(false);
+  const [confirmRunPayroll, setConfirmRunPayroll] = useState(false);
+  const [confirmPublishPayroll, setConfirmPublishPayroll] = useState(false);
+  const [confirmLockPayroll, setConfirmLockPayroll] = useState(false);
 
   const calcWorkingDaysForMonth = (monthStr: string) => {
     if (!monthStr || !monthStr.includes('-')) return 22;
@@ -615,9 +690,6 @@ export default function HRM() {
   };
 
   const handleLockPayroll = async () => {
-    if (!window.confirm(t('Bạn có chắc chắn muốn chốt và khóa sổ lương cho kỳ này? Sau khi chốt, dữ liệu sẽ được khóa cứng và nhân viên có thể xem phiếu lương chính thức.'))) {
-      return;
-    }
     setLocking(true);
     try {
       await fetchAPI('hrm/payroll', {
@@ -657,7 +729,8 @@ export default function HRM() {
   };
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+    const num = Math.round(Number(val || 0));
+    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(num) + ' đ';
   };
 
   return (
@@ -1782,7 +1855,7 @@ export default function HRM() {
                   <>
                     {/* Secondary Actions */}
                     <button
-                      onClick={handleRunPayroll}
+                      onClick={() => setConfirmRunPayroll(true)}
                       disabled={calculating}
                       className="btn outline"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 18px', fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', height: '38px' }}
@@ -1791,7 +1864,7 @@ export default function HRM() {
                       {calculating ? t('Đang tính...') : t('Tính lại lương')}
                     </button>
                     <button
-                      onClick={handlePublishPayroll}
+                      onClick={() => setConfirmPublishPayroll(true)}
                       disabled={publishing || payslips.length === 0}
                       className="btn outline"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 18px', fontSize: '0.875rem', fontWeight: 600, color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.5)', whiteSpace: 'nowrap', height: '38px' }}
@@ -1811,7 +1884,7 @@ export default function HRM() {
                       {saving ? t('Đang lưu...') : t('Lưu thay đổi')}
                     </button>
                     <button
-                      onClick={handleLockPayroll}
+                      onClick={() => setConfirmLockPayroll(true)}
                       disabled={locking || payslips.length === 0}
                       className="btn primary"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#ef4444', borderColor: '#ef4444', color: '#fff', padding: '8px 20px', fontSize: '0.875rem', fontWeight: 700, whiteSpace: 'nowrap', height: '38px' }}
@@ -1885,7 +1958,7 @@ export default function HRM() {
                   description={t('Không tải được phiếu lương nào trong kỳ này. Bấm quay lại và tính lại lương.')}
                 />
               ) : (
-                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', overflow: 'hidden' }}>
+                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', paddingBottom: '8px' }}>
                   <div style={{ padding: '1rem 1rem 0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#2563eb' }}>
                       <HelpCircle size={15} style={{ flexShrink: 0 }} />
@@ -1893,19 +1966,65 @@ export default function HRM() {
                     </div>
                   </div>
 
+                  <style>{`
+                    /* Hide browser default number input spinners */
+                    input[type="number"]::-webkit-inner-spin-button,
+                    input[type="number"]::-webkit-outer-spin-button {
+                      -webkit-appearance: none !important;
+                      margin: 0 !important;
+                    }
+                    input[type="number"] {
+                      -moz-appearance: textfield !important;
+                    }
+                    .payroll-scroll-red {
+                      overflow-x: scroll !important;
+                      overflow-y: hidden !important;
+                      padding-bottom: 6px;
+                    }
+                    .payroll-scroll-red::-webkit-scrollbar {
+                      height: 14px !important;
+                      display: block !important;
+                    }
+                    .payroll-scroll-red::-webkit-scrollbar-track {
+                      background: rgba(239, 68, 68, 0.15) !important;
+                      border-radius: 8px !important;
+                    }
+                    .payroll-scroll-red::-webkit-scrollbar-thumb {
+                      background: #ef4444 !important;
+                      border-radius: 8px !important;
+                      border: 2px solid var(--color-surface) !important;
+                    }
+                    .payroll-scroll-red::-webkit-scrollbar-thumb:hover {
+                      background: #dc2626 !important;
+                    }
+                    .payroll-table th:first-child,
+                    .payroll-table td:first-child {
+                      position: sticky !important;
+                      left: 0 !important;
+                      background-color: var(--color-surface, #ffffff);
+                      z-index: 100 !important;
+                      box-shadow: 4px 0 10px -2px rgba(0, 0, 0, 0.15) !important;
+                      border-right: 1px solid var(--color-border-light) !important;
+                    }
+                    .payroll-table th:first-child {
+                      z-index: 101 !important;
+                    }
+                    .payroll-table tr:hover td {
+                      background-color: var(--color-bg-light, #f8fafc) !important;
+                    }
+                    .payroll-table td:not(:first-child) {
+                      position: relative;
+                      z-index: 1;
+                    }
+                  `}</style>
+
                   {/* Horizontal Scroll Table Container */}
-                  <div style={{ overflowX: 'auto', position: 'relative' }} className="custom-scrollbar">
-                    <table style={{ width: '100%', minWidth: '1350px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left' }}>
+                  <div style={{ overflowX: 'scroll', position: 'relative' }} className="payroll-scroll-red">
+                    <table className="payroll-table" style={{ width: '100%', minWidth: '1350px', borderCollapse: 'separate', borderSpacing: 0, textAlign: 'left' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                           <th style={{
                             padding: '14px 16px',
-                            position: 'sticky',
-                            left: 0,
-                            background: 'var(--color-surface)',
-                            zIndex: 20,
-                            boxShadow: '3px 0 8px -2px rgba(0, 0, 0, 0.15)',
-                            borderRight: '1px solid var(--color-border-light)',
                             minWidth: '180px'
                           }}>
                             {t('Nhân viên')}
@@ -1930,17 +2049,7 @@ export default function HRM() {
                         const isLocked = ps.status === 'locked' || payslips.some(p => p.status === 'locked');
                         return (
                           <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
-                            <td style={{
-                              padding: '14px 16px',
-                              fontWeight: 600,
-                              position: 'sticky',
-                              left: 0,
-                              background: 'var(--color-surface)',
-                              zIndex: 15,
-                              boxShadow: '3px 0 8px -2px rgba(0, 0, 0, 0.15)',
-                              borderRight: '1px solid var(--color-border-light)',
-                              whiteSpace: 'nowrap'
-                            }}>
+                            <td style={{ padding: '14px 16px', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {ps.employee_name}
                             </td>
                             <td style={{ padding: '12px 8px' }}>
@@ -2028,76 +2137,46 @@ export default function HRM() {
                             <td style={{ padding: '14px 8px' }}>{formatCurrency(ps.salary_basic_calculated)}</td>
                             <td style={{ padding: '14px 8px', color: '#10b981', fontWeight: 600 }}>{formatCurrency(ps.overtime_salary || 0)}</td>
                             <td style={{ padding: '14px 8px' }}>
-                              {isLocked ? (
-                                <span>{formatCurrency(ps.diligence_bonus || 0)}</span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  value={ps.diligence_bonus || 0}
-                                  onChange={e => handleCellChange(ps.id, 'diligence_bonus', Number(e.target.value))}
-                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                />
-                              )}
+                              <FormattedMoneyInput
+                                value={ps.diligence_bonus || 0}
+                                onChange={val => handleCellChange(ps.id, 'diligence_bonus', val)}
+                                disabled={isLocked}
+                              />
                             </td>
                             <td style={{ padding: '14px 8px' }}>
-                              {isLocked ? (
-                                <span>{formatCurrency(ps.kpi_bonus || 0)}</span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  value={ps.kpi_bonus || 0}
-                                  onChange={e => handleCellChange(ps.id, 'kpi_bonus', Number(e.target.value))}
-                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                />
-                              )}
+                              <FormattedMoneyInput
+                                value={ps.kpi_bonus || 0}
+                                onChange={val => handleCellChange(ps.id, 'kpi_bonus', val)}
+                                disabled={isLocked}
+                              />
                             </td>
                             <td style={{ padding: '14px 8px' }}>
-                              {isLocked ? (
-                                <span>{formatCurrency(ps.allowance_total || 0)}</span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  value={ps.allowance_total || 0}
-                                  onChange={e => handleCellChange(ps.id, 'allowance_total', Number(e.target.value))}
-                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                />
-                              )}
+                              <FormattedMoneyInput
+                                value={ps.allowance_total || 0}
+                                onChange={val => handleCellChange(ps.id, 'allowance_total', val)}
+                                disabled={isLocked}
+                              />
                             </td>
                             <td style={{ padding: '14px 8px' }}>
-                              {isLocked ? (
-                                <span>{formatCurrency(ps.insurance_bhxh || 0)}</span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  value={ps.insurance_bhxh || 0}
-                                  onChange={e => handleCellChange(ps.id, 'insurance_bhxh', Number(e.target.value))}
-                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                />
-                              )}
+                              <FormattedMoneyInput
+                                value={ps.insurance_bhxh || 0}
+                                onChange={val => handleCellChange(ps.id, 'insurance_bhxh', val)}
+                                disabled={isLocked}
+                              />
                             </td>
                             <td style={{ padding: '14px 8px' }}>
-                              {isLocked ? (
-                                <span>{formatCurrency(ps.tax_pit || 0)}</span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  value={ps.tax_pit || 0}
-                                  onChange={e => handleCellChange(ps.id, 'tax_pit', Number(e.target.value))}
-                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                />
-                              )}
+                              <FormattedMoneyInput
+                                value={ps.tax_pit || 0}
+                                onChange={val => handleCellChange(ps.id, 'tax_pit', val)}
+                                disabled={isLocked}
+                              />
                             </td>
                             <td style={{ padding: '14px 8px' }}>
-                              {isLocked ? (
-                                <span>{formatCurrency(ps.advance_deduction || 0)}</span>
-                              ) : (
-                                <input
-                                  type="number"
-                                  value={ps.advance_deduction || 0}
-                                  onChange={e => handleCellChange(ps.id, 'advance_deduction', Number(e.target.value))}
-                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                />
-                              )}
+                              <FormattedMoneyInput
+                                value={ps.advance_deduction || 0}
+                                onChange={val => handleCellChange(ps.id, 'advance_deduction', val)}
+                                disabled={isLocked}
+                              />
                             </td>
                             <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(ps.net_salary)}</td>
                             <td style={{ padding: '14px 8px', textAlign: 'center' }}>
@@ -2165,6 +2244,42 @@ export default function HRM() {
           isAdmin={user?.role === 'admin' || user?.role === 'director' || user?.role === 'manager'}
         />
       )}
+
+      {/* Confirm Modal: Tính lại lương */}
+      <ConfirmModal
+        isOpen={confirmRunPayroll}
+        onClose={() => setConfirmRunPayroll(false)}
+        onConfirm={handleRunPayroll}
+        title="Xác nhận tính lại lương"
+        message="Bạn có chắc chắn muốn hệ thống tự động tính toán lại toàn bộ bảng lương tháng này dựa trên dữ liệu chấm công, đi trễ, tăng ca và hoa hồng mới nhất không?"
+        confirmText="Tính lại lương"
+        cancelText="Hủy"
+        confirmType="primary"
+      />
+
+      {/* Confirm Modal: Gửi yêu cầu xác nhận */}
+      <ConfirmModal
+        isOpen={confirmPublishPayroll}
+        onClose={() => setConfirmPublishPayroll(false)}
+        onConfirm={handlePublishPayroll}
+        title="Xác nhận gửi phiếu lương"
+        message="Bạn có chắc chắn muốn phát hành và gửi yêu cầu xác nhận phiếu lương kỳ này tới toàn bộ nhân sự không? Nhân sự sẽ nhận được thông báo để kiểm tra và xác nhận phiếu lương."
+        confirmText="Gửi yêu cầu"
+        cancelText="Hủy"
+        confirmType="success"
+      />
+
+      {/* Confirm Modal: Chốt & Khóa sổ lương */}
+      <ConfirmModal
+        isOpen={confirmLockPayroll}
+        onClose={() => setConfirmLockPayroll(false)}
+        onConfirm={handleLockPayroll}
+        title="Xác nhận Chốt & Khóa sổ lương"
+        message="Bạn có chắc chắn muốn chốt và khóa sổ lương kỳ này không? Sau khi chốt, dữ liệu sẽ được khóa cố định chính thức."
+        confirmText="Chốt & Khóa sổ"
+        cancelText="Hủy"
+        confirmType="danger"
+      />
     </div>
   );
 }
