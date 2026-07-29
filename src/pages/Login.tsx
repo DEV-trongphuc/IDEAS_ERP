@@ -307,10 +307,8 @@ export const Login = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h1 className="title-main">
-              IDEAS <br />
-              <span className="title-gradient">
-                DATA SYSTEM 2026.
-              </span>
+              IDEAS ERP <br />
+              <span className="title-gradient">AUTOMATION SYSTEM.</span>
             </h1>
             <p className="subtitle-main">
               {t("Giải pháp toàn diện giúp tự động hóa quy trình phân bổ khách hàng, tối ưu hóa điểm chạm và tăng tỷ lệ chuyển đổi.")}

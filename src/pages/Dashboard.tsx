@@ -748,8 +748,11 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     return (
       <div className="page-header" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms', marginBottom: '1.25rem' }}>
         <div>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-subtitle">{subtitle}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <h1 className="page-title" style={{ margin: 0 }}>{title}</h1>
+            {renderSubTabs()}
+          </div>
+          <p className="page-subtitle" style={{ marginTop: '4px' }}>{subtitle}</p>
         </div>
         <div className="mobile-w-full" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: 'auto' }}>
           <div className="mobile-flex-1" style={{ position: 'relative', zIndex: 100, flex: '1 1 auto', minWidth: '180px', maxWidth: isMobile ? 'none' : '320px' }}>
@@ -992,86 +995,372 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     if (!(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin')) {
       return null;
     }
+    const TABS = [
+      { key: 'default', label: t('Vận hành') },
+      { key: 'hr', label: t('Nhân sự') },
+      { key: 'accountant', label: t('Kế toán') },
+      { key: 'marketing', label: t('Marketing') }
+    ];
+    const activeTabIndex = TABS.findIndex(t => t.key === activeSubTab);
+    const tabWidth = 85;
+    const gap = 2;
+
     return (
       <div className="dashboard-subtab-container" style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '8px',
-        background: 'var(--color-bg)',
-        padding: '5px',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--color-border-light)',
-        marginTop: '1rem',
-        marginBottom: '1.25rem',
+        display: 'inline-flex',
+        background: 'var(--color-border-light)',
+        border: '1px solid var(--color-border)',
+        padding: '2px',
+        borderRadius: '8px',
+        gap: `${gap}px`,
         width: 'fit-content',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.02)',
-        animation: 'slideUp 0.4s ease-out both'
+        position: 'relative',
+        marginLeft: isMobile ? '0' : '0.75rem',
+        marginTop: isMobile ? '0.5rem' : '0',
+        verticalAlign: 'middle'
       }}>
-        <button
-          onClick={() => setActiveSubTab('default')}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.8125rem',
-            transition: 'all 0.2s',
-            background: activeSubTab === 'default' ? 'var(--color-primary)' : 'transparent',
-            color: activeSubTab === 'default' ? '#fff' : 'var(--color-text-muted)',
-          }}
-        >
-          {t('Vận hành')}
-        </button>
-        <button
-          onClick={() => setActiveSubTab('hr')}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.8125rem',
-            transition: 'all 0.2s',
-            background: activeSubTab === 'hr' ? 'var(--color-primary)' : 'transparent',
-            color: activeSubTab === 'hr' ? '#fff' : 'var(--color-text-muted)',
-          }}
-        >
-          {t('Nhân sự')}
-        </button>
-        <button
-          onClick={() => setActiveSubTab('accountant')}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.8125rem',
-            transition: 'all 0.2s',
-            background: activeSubTab === 'accountant' ? 'var(--color-primary)' : 'transparent',
-            color: activeSubTab === 'accountant' ? '#fff' : 'var(--color-text-muted)',
-          }}
-        >
-          {t('Kế toán')}
-        </button>
-        <button
-          onClick={() => setActiveSubTab('marketing')}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.8125rem',
-            transition: 'all 0.2s',
-            background: activeSubTab === 'marketing' ? 'var(--color-primary)' : 'transparent',
-            color: activeSubTab === 'marketing' ? '#fff' : 'var(--color-text-muted)',
-          }}
-        >
-          {t('Marketing')}
-        </button>
+        {/* Sliding Pill Background Indicator */}
+        <div style={{
+          position: 'absolute',
+          top: '2px',
+          bottom: '2px',
+          left: '2px',
+          width: `${tabWidth}px`,
+          borderRadius: '6px',
+          background: 'var(--color-surface)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: `translateX(${activeTabIndex * (tabWidth + gap)}px)`,
+          zIndex: 1
+        }} />
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveSubTab(t.key as any)}
+            style={{
+              width: `${tabWidth}px`,
+              height: '28px',
+              border: 'none',
+              outline: 'none',
+              boxShadow: 'none',
+              background: 'none',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              color: activeSubTab === t.key ? 'var(--color-text)' : 'var(--color-text-muted)',
+              position: 'relative',
+              zIndex: 2,
+              transition: 'color 0.2s',
+              padding: 0
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
+    );
+  };
+
+  const renderAdminWelcomeBanner = () => {
+    const issues = [];
+    if (pendingTicketsCount > 0) {
+      issues.push({
+        type: 'ticket',
+        text: pendingTicketsCount + ' ' + t('ticket hỗ trợ đang chờ phản hồi hoặc xử lý.'),
+        action: () => navigate('/tickets')
+      });
+    }
+    if (heldLeadsCount > 0) {
+      issues.push({
+        type: 'gatekeeper',
+        text: heldLeadsCount + ' ' + t('lead đang bị tạm giữ tại Gatekeeper.'),
+        action: () => navigate('/gatekeeper')
+      });
+    }
+    if (pendingCheckInsCount > 0) {
+      issues.push({
+        type: 'checkin',
+        text: pendingCheckInsCount + ' ' + t('yêu cầu chấm công/đi trễ cần duyệt.'),
+        action: () => navigate('/attendance')
+      });
+    }
+    if (pendingCoopsCount > 0) {
+      issues.push({
+        type: 'coop',
+        text: pendingCoopsCount + ' ' + t('yêu cầu hợp tác cần duyệt.'),
+        action: () => navigate('/cooperation-slips?status=pending_me')
+      });
+    }
+    if (pendingExpensesCount > 0) {
+      issues.push({
+        type: 'expense',
+        text: pendingExpensesCount + ' ' + t('yêu cầu thanh toán chi phí cần duyệt.'),
+        action: () => navigate('/expenses?status=pending')
+      });
+    }
+
+    const getRoleLabel = (role: string) => {
+      if (role === 'admin') return t('Quản trị viên');
+      if (role === 'superadmin' || role === 'super_admin') return t('Giám đốc điều hành');
+      if (role === 'director') return t('Giám đốc');
+      if (role === 'manager') return t('Quản lý');
+      return role;
+    };
+
+    const getRoleBadgeStyle = (role: string) => {
+      if (role === 'superadmin' || role === 'super_admin') {
+        return {
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+        };
+      }
+      if (role === 'director') {
+        return {
+          background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
+        };
+      }
+      if (role === 'manager') {
+        return {
+          background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+          boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)'
+        };
+      }
+      if (role === 'hr') {
+        return {
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+          boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
+        };
+      }
+      if (role === 'accountant') {
+        return {
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
+        };
+      }
+      if (role === 'marketing') {
+        return {
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+        };
+      }
+      return {
+        background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
+        boxShadow: '0 2px 8px rgba(189, 29, 45, 0.5)'
+      };
+    };
+
+    return (
+      <>
+        <style>{`
+          .welcome-banner {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #181515 0%, #381f21 50%, #121010 100%) !important;
+            border: 1px solid rgba(189, 29, 45, 0.4) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+            padding: 1.75rem 2.25rem !important;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 0.5rem;
+          }
+          .welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(189, 29, 45, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+          }
+          .welcome-banner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 35px rgba(189, 29, 45, 0.22), 0 1px 0 rgba(255, 255, 255, 0.12) inset !important;
+            border-color: rgba(189, 29, 45, 0.55) !important;
+          }
+          .welcome-action-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            cursor: pointer;
+            border-radius: 12px !important;
+            padding: 10px 20px !important;
+            font-size: 0.8rem !important;
+            font-weight: 750 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            text-decoration: none !important;
+          }
+          .welcome-action-btn.primary-btn {
+            background: linear-gradient(135deg, #BD1D2D 0%, #a31422 100%) !important;
+            border: none !important;
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(189, 29, 45, 0.45) !important;
+          }
+          .welcome-action-btn.primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(189, 29, 45, 0.6) !important;
+            filter: brightness(1.15);
+          }
+          .welcome-action-btn.outline-btn {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            color: #ffffff !important;
+          }
+          .welcome-action-btn.outline-btn:hover {
+            background: rgba(189, 29, 45, 0.18) !important;
+            border-color: rgba(189, 29, 45, 0.5) !important;
+            color: #ffffff !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(189, 29, 45, 0.25) !important;
+          }
+          .welcome-task-row {
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 12px !important;
+            padding: 10px 16px !important;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.825rem;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+          }
+          .welcome-task-row:hover {
+            background: rgba(189, 29, 45, 0.15) !important;
+            border-color: rgba(189, 29, 45, 0.4) !important;
+            color: #ffffff !important;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(189, 29, 45, 0.25) !important;
+          }
+          .welcome-banner-title {
+            font-size: 1.15rem !important;
+            font-weight: 800 !important;
+            color: #ffffff !important;
+            margin: 0 !important;
+            letter-spacing: -0.3px !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+            line-height: 1.3 !important;
+          }
+          @media (max-width: 768px) {
+            .welcome-banner {
+              padding: 0.875rem 1.125rem !important;
+              gap: 0.875rem !important;
+              border-radius: 16px !important;
+            }
+            .welcome-banner-title {
+              font-size: 0.95rem !important;
+            }
+          }
+        `}</style>
+
+        <div className="welcome-banner" style={{ marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px', minWidth: 0, flex: '1 1 auto' }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{ 
+                width: isMobile ? '50px' : '65px', 
+                height: isMobile ? '50px' : '65px', 
+                borderRadius: '18px', 
+                background: 'linear-gradient(135deg, #3a2223 0%, #1c1516 100%)', 
+                border: '2px solid rgba(189, 29, 45, 0.6)',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                fontSize: isMobile ? '1.25rem' : '1.6rem',
+                fontWeight: 800,
+                color: '#ffffff',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+              }}>
+                {user?.name ? user.name.substring(0, 2).toUpperCase() : 'AD'}
+              </div>
+              <div className="ping-dot" style={{ 
+                position: 'absolute', 
+                bottom: '-2px', 
+                right: '-2px', 
+                width: '12px', 
+                height: '12px', 
+                borderRadius: '50%', 
+                background: '#10b981', 
+                border: '2px solid #1a1313',
+                zIndex: 2
+              }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 className="welcome-banner-title">
+                {t('Xin chào')}, {user?.name || 'Admin'}
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 650, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Calendar size={12} style={{ opacity: 0.8 }} />
+                  {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
+                <span style={{ 
+                  padding: '2px 8px', 
+                  borderRadius: '6px', 
+                  fontSize: '0.65rem', 
+                  fontWeight: 800, 
+                  color: '#ffffff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.03em',
+                  ...getRoleBadgeStyle(user?.role || '')
+                }}>
+                  {getRoleLabel(user?.role || '')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : '520px', minWidth: isMobile ? '100%' : '320px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {t('Nhiệm vụ & Phê duyệt tồn đọng')}
+              </div>
+              {issues.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {issues.slice(0, 2).map((issue, index) => (
+                    <div key={index} className="welcome-task-row" onClick={issue.action}>
+                      {issue.type === 'ticket' && <AlertTriangle size={14} style={{ color: '#fbbf24' }} />}
+                      {issue.type === 'gatekeeper' && <Zap size={14} style={{ color: '#60a5fa' }} />}
+                      {issue.type === 'checkin' && <Clock size={14} style={{ color: '#ff8a8a' }} />}
+                      {issue.type === 'coop' && <Scale size={14} style={{ color: '#c084fc' }} />}
+                      {issue.type === 'expense' && <DollarSign size={14} style={{ color: '#34d399' }} />}
+                      <span style={{ flex: 1, fontSize: '0.78rem' }}>{issue.text}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '10px', 
+                  padding: isMobile ? '8px 12px' : '10px 16px', 
+                  background: 'rgba(255, 255, 255, 0.03)', 
+                  border: '1px dashed rgba(255, 255, 255, 0.15)', 
+                  borderRadius: '12px', 
+                  color: '#cbd5e1',
+                  fontSize: '0.75rem'
+                }}>
+                  <CheckCircle2 size={15} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span style={{ fontWeight: 650 }}>
+                    {t('Không có yêu cầu phê duyệt nào đang chờ xử lý. Chúc bạn 1 ngày làm việc năng lượng.')}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
     );
   };
 
@@ -1338,9 +1627,9 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     return renderDashboardWrapper(
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner at the very top */}
-        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
-
-        {renderSubTabs()}
+        {(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin') 
+          ? renderAdminWelcomeBanner() 
+          : renderWelcomeBannerForRole(t('Chào mừng trở lại! Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
 
         {/* Header (Title & Global Filter) below it */}
         {renderHeaderForRole(t("Hệ thống Quản lý Nhân sự & Bảng Lương (HRMS)"), t("Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.")) }
@@ -1601,9 +1890,9 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     return renderDashboardWrapper(
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '-0.75rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
-
-        {renderSubTabs()}
+        {(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin') 
+          ? renderAdminWelcomeBanner() 
+          : renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
 
         {/* Header */}
         {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
@@ -2070,25 +2359,12 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         
         {/* Welcome Banner */}
-        {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê nguồn lead, chiến dịch quảng cáo và chuyển đổi Ads.'), mktIssues)}
+        {(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin') 
+          ? renderAdminWelcomeBanner() 
+          : renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê nguồn lead, chiến dịch quảng cáo và chuyển đổi Ads.'), mktIssues)}
 
-        {renderSubTabs()}
-
-        {/* Header with Seeder Button for Admin/Director */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          {renderHeaderForRole(t("Tổng quan Hiệu suất Chiến dịch Ads"), t("Đo lường lượng lead đổ về, chi phí quảng cáo Ads và hiệu quả chuyển đổi kênh."))}
-          {(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin') && (
-            <button
-              onClick={handleSeedDemo}
-              disabled={seedingLoading}
-              className={`btn ${seedingLoading ? 'disabled' : 'primary'} sm`}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: seedingLoading ? 'not-allowed' : 'pointer' }}
-            >
-              <RefreshCw size={14} className={seedingLoading ? 'animate-spin' : ''} />
-              {seedingLoading ? t('Đang nạp...') : t('Nạp dữ liệu mẫu Marketing')}
-            </button>
-          )}
-        </div>
+        {/* Header */}
+        {renderHeaderForRole(t("Tổng quan Hiệu suất Chiến dịch Ads"), t("Đo lường lượng lead đổ về, chi phí quảng cáo Ads và hiệu quả chuyển đổi kênh."))}
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
@@ -2443,346 +2719,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         }
       `}</style>
 
-      {/* Personalized Welcome Card with Premium Aesthetics */}
-      {(() => {
-        const issues = [];
-        if (pendingTicketsCount > 0) {
-          issues.push({
-            type: 'ticket',
-            text: pendingTicketsCount + ' ' + t('ticket hỗ trợ đang chờ phản hồi hoặc xử lý.'),
-            action: () => navigate('/tickets')
-          });
-        }
-        if (heldLeadsCount > 0) {
-          issues.push({
-            type: 'gatekeeper',
-            text: heldLeadsCount + ' ' + t('lead đang bị tạm giữ tại Gatekeeper.'),
-            action: () => navigate('/gatekeeper')
-          });
-        }
-        if (pendingCheckInsCount > 0) {
-          issues.push({
-            type: 'checkin',
-            text: pendingCheckInsCount + ' ' + t('yêu cầu chấm công/đi trễ cần duyệt.'),
-            action: () => navigate('/attendance')
-          });
-        }
-        if (pendingCoopsCount > 0) {
-          issues.push({
-            type: 'coop',
-            text: pendingCoopsCount + ' ' + t('yêu cầu hợp tác cần duyệt.'),
-            action: () => navigate('/cooperation-slips?status=pending_me')
-          });
-        }
-        if (pendingExpensesCount > 0) {
-          issues.push({
-            type: 'expense',
-            text: pendingExpensesCount + ' ' + t('yêu cầu thanh toán chi phí cần duyệt.'),
-            action: () => navigate('/expenses?status=pending')
-          });
-        }
 
-        const getRoleLabel = (role: string) => {
-          if (role === 'admin') return t('Quản trị viên');
-          if (role === 'superadmin' || role === 'super_admin') return t('Giám đốc điều hành');
-          if (role === 'director') return t('Giám đốc');
-          if (role === 'manager') return t('Quản lý');
-          return role;
-        };
-
-        const getRoleBadgeStyle = (role: string) => {
-          if (role === 'superadmin' || role === 'super_admin') {
-            return {
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
-            };
-          }
-          if (role === 'director') {
-            return {
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)'
-            };
-          }
-          if (role === 'manager') {
-            return {
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.4)'
-            };
-          }
-          if (role === 'hr') {
-            return {
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
-            };
-          }
-          if (role === 'accountant') {
-            return {
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)'
-            };
-          }
-          if (role === 'marketing') {
-            return {
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
-            };
-          }
-          return {
-            background: 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)',
-            boxShadow: '0 2px 8px rgba(189, 29, 45, 0.5)'
-          };
-        };
-
-        return (
-          <>
-            <style>{`
-              .welcome-banner {
-                position: relative;
-                overflow: hidden;
-                background: linear-gradient(135deg, #181515 0%, #381f21 50%, #121010 100%) !important;
-                border: 1px solid rgba(189, 29, 45, 0.4) !important;
-                border-radius: 20px !important;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
-                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-                padding: 1.75rem 2.25rem !important;
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                flex-wrap: wrap;
-                gap: 1.5rem;
-                margin-bottom: 0.5rem;
-              }
-              .welcome-banner::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                right: -20%;
-                width: 350px;
-                height: 350px;
-                border-radius: 50%;
-                background: radial-gradient(circle, rgba(189, 29, 45, 0.15) 0%, transparent 70%);
-                pointer-events: none;
-              }
-              .welcome-banner:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 14px 35px rgba(189, 29, 45, 0.22), 0 1px 0 rgba(255, 255, 255, 0.12) inset !important;
-                border-color: rgba(189, 29, 45, 0.55) !important;
-              }
-              .welcome-action-btn {
-                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                cursor: pointer;
-                border-radius: 12px !important;
-                padding: 10px 20px !important;
-                font-size: 0.8rem !important;
-                font-weight: 750 !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                gap: 8px !important;
-                height: 38px !important;
-              }
-              .welcome-action-btn.primary-btn {
-                background: linear-gradient(135deg, #BD1D2D 0%, #a31422 100%) !important;
-                border: none !important;
-                color: white !important;
-                box-shadow: 0 4px 14px rgba(189, 29, 45, 0.45) !important;
-              }
-              .welcome-action-btn.primary-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(189, 29, 45, 0.6) !important;
-                filter: brightness(1.15);
-              }
-              .welcome-action-btn.outline-btn {
-                background: rgba(255, 255, 255, 0.05) !important;
-                border: 1px solid rgba(255, 255, 255, 0.18) !important;
-                color: #ffffff !important;
-              }
-              .welcome-action-btn.outline-btn:hover {
-                background: rgba(189, 29, 45, 0.18) !important;
-                border-color: rgba(189, 29, 45, 0.5) !important;
-                color: #ffffff !important;
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(189, 29, 45, 0.25) !important;
-              }
-              .welcome-task-row {
-                background: rgba(255, 255, 255, 0.04) !important;
-                border: 1px solid rgba(255, 255, 255, 0.12) !important;
-                border-radius: 12px !important;
-                padding: 10px 16px !important;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-size: 0.825rem;
-                color: #ffffff !important;
-                font-weight: 700 !important;
-                transition: all 0.2s ease;
-                cursor: pointer;
-                text-decoration: none;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
-              }
-              .welcome-task-row:hover {
-                background: rgba(189, 29, 45, 0.15) !important;
-                border-color: rgba(189, 29, 45, 0.4) !important;
-                color: #ffffff !important;
-                transform: translateX(4px);
-                box-shadow: 0 4px 12px rgba(189, 29, 45, 0.25) !important;
-              }
-              .welcome-banner-title {
-                font-size: 1.15rem !important;
-                font-weight: 800 !important;
-                color: #ffffff !important;
-                margin: 0 !important;
-                letter-spacing: -0.3px !important;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-                line-height: 1.3 !important;
-              }
-              @media (max-width: 768px) {
-                .welcome-banner {
-                  padding: 0.875rem 1.125rem !important;
-                  gap: 0.875rem !important;
-                  border-radius: 16px !important;
-                }
-                .welcome-banner-title {
-                  font-size: 0.95rem !important;
-                }
-                .resource-btn {
-                  width: 38px !important;
-                  padding: 0 !important;
-                  justify-content: center !important;
-                  gap: 0 !important;
-                }
-              }
-            `}</style>
-
-            <div className="welcome-banner">
-              {/* Left section: Welcome Info */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: isMobile ? '1.25rem' : '1.5rem', 
-                flex: isMobile ? '1 1 100%' : '1 1 340px', 
-                minWidth: 0,
-                borderBottom: isMobile ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
-                paddingBottom: isMobile ? '12px' : 0,
-                marginBottom: isMobile ? '12px' : 0
-              }}>
-                <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <Avatar 
-                    name={user?.name || 'User'} 
-                    src={user?.avatar} 
-                    size={isMobile ? 58 : 68} 
-                    style={{ border: '2px solid rgba(189, 29, 45, 0.45)', boxShadow: '0 0 12px rgba(189, 29, 45, 0.25)' }}
-                  />
-                  <span className="animate-pulse" style={{
-                    position: 'absolute',
-                    bottom: 1,
-                    right: 1,
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    backgroundColor: '#10b981',
-                    border: '2px solid #181515',
-                    boxShadow: '0 0 8px #10b981'
-                  }} />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '4px' : '8px' }}>
-                    <h2 className="welcome-banner-title" style={{ fontSize: isMobile ? '1.05rem' : '1.25rem' }}>
-                      {t('Xin chào')}, {user?.name || 'Ban điều hành'}
-                    </h2>
-                    {isMobile && (
-                      <span style={{ 
-                        fontSize: '0.625rem', 
-                        fontWeight: 900, 
-                        color: '#ffffff', 
-                        padding: '2px 8px', 
-                        borderRadius: '20px', 
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        ...getRoleBadgeStyle(user?.role || '')
-                      }}>
-                        {getRoleLabel(user?.role || '')}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#cbd5e1', fontWeight: 500 }}>
-                    <Clock size={12} style={{ color: '#ff4d5a' }} />
-                    {getCurrentDateVi()}
-                  </span>
-
-                  {!isMobile && (
-                    <div style={{ display: 'flex' }}>
-                      <span style={{ 
-                        fontSize: '0.625rem', 
-                        fontWeight: 900, 
-                        color: '#ffffff', 
-                        padding: '2px 8px', 
-                        borderRadius: '20px', 
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        ...getRoleBadgeStyle(user?.role || '')
-                      }}>
-                        {getRoleLabel(user?.role || '')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Middle section: Issues/Tasks */}
-              <div style={{ flex: isMobile ? '1 1 100%' : '2 1 380px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: isMobile ? '100%' : '280px' }}>
-                <h4 style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#f4f4f5', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
-                  {t('Nhiệm vụ & Phê duyệt tồn đọng')}
-                </h4>
-                {issues.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {issues.map((issue, index) => (
-                      <div 
-                        key={index} 
-                        onClick={issue.action}
-                        className="welcome-task-row"
-                        style={{ padding: isMobile ? '8px 12px' : '10px 16px' }}
-                      >
-                        {issue.type === 'coop' && <Scale size={14} style={{ color: '#fbbf24' }} />}
-                        {issue.type === 'ticket' && <TicketIcon size={14} style={{ color: '#60a5fa' }} />}
-                        {issue.type === 'gatekeeper' && <Filter size={14} style={{ color: '#a78bfa' }} />}
-                        {issue.type === 'checkin' && <Clock size={14} style={{ color: '#ff8a8a' }} />}
-                        {issue.type === 'expense' && <DollarSign size={14} style={{ color: '#10b981' }} />}
-                        <span style={{ flex: 1, fontSize: '0.78rem' }}>{issue.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px', 
-                    padding: isMobile ? '8px 12px' : '10px 16px', 
-                    background: 'rgba(255, 255, 255, 0.03)', 
-                    border: '1px dashed rgba(255, 255, 255, 0.15)', 
-                    borderRadius: '12px', 
-                    color: '#cbd5e1',
-                    fontSize: '0.75rem'
-                  }}>
-                    <CheckCircle2 size={15} style={{ color: '#10b981', flexShrink: 0 }} />
-                    <span style={{ fontWeight: 650 }}>
-                      {t('Không có yêu cầu phê duyệt nào đang chờ xử lý. Chúc bạn 1 ngày làm việc năng lượng.')}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right section: Quick Actions */}
-              <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
-                
-              </div>
-            </div>
-          </>
-        );
-      })()}
-
-      {renderSubTabs()}
 
       {/* Header */}
       <div className="page-header" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms' }}>
