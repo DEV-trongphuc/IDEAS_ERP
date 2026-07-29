@@ -2176,6 +2176,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
       const depositsData = resDeposits?.data?.data || [];
       const depositsList = (Array.isArray(depositsData) ? depositsData : []).map((d: any) => ({
+        ...d,
         id: d.id,
         title: `${d.project_name} - Căn ${d.unit_code}`,
         value: d.price,
@@ -3032,6 +3033,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
         const depositsRes = await api.get(`/deposits?contact_id=${contact.id}`);
         const depositsList = (depositsRes.data.data || []).map((d: any) => ({
+          ...d,
           id: d.id,
           title: `${d.project_name} - Căn ${d.unit_code}`,
           value: d.price,
