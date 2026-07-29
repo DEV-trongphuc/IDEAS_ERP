@@ -826,6 +826,29 @@ class CheckInController {
         respond(200, $requests, 'Lấy danh sách phiếu đề xuất thành công');
     }
 
+    public function getBulkRequestDetail(array $auth, int $id): void {
+        $stmt = $this->db->prepare("
+            SELECT r.*, u.full_name, u.role as user_role
+            FROM attendance_bulk_requests r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.id = ?
+        ");
+        $stmt->execute([$id]);
+        $req = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$req) {
+            respond(404, null, 'Không tìm thấy phiếu đề xuất', false);
+        }
+
+        $stmtDetails = $this->db->prepare("
+            SELECT * FROM attendance_bulk_request_details WHERE request_id = ?
+        ");
+        $stmtDetails->execute([$id]);
+        $req['details'] = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
+
+        respond(200, $req);
+    }
+
     public function approveBulkRequest(array $auth, int $id): void {
         requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr']);
         $b = getBody();
