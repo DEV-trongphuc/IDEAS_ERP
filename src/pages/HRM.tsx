@@ -2284,10 +2284,10 @@ export default function HRM() {
                                 padding: '2px 8px', 
                                 borderRadius: 10,
                                 textTransform: 'uppercase',
-                                background: ps.status === 'locked' ? 'rgba(239, 68, 68, 0.1)' : ps.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : ps.status === 'sent' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                                color: ps.status === 'locked' ? '#ef4444' : ps.status === 'confirmed' ? '#10b981' : ps.status === 'sent' ? '#3b82f6' : '#6b7280'
+                                background: ps.status === 'locked' ? 'rgba(239, 68, 68, 0.1)' : ps.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : ps.status === 'disputed' ? 'rgba(239, 68, 68, 0.1)' : ps.status === 'sent' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                                color: ps.status === 'locked' ? '#ef4444' : ps.status === 'confirmed' ? '#10b981' : ps.status === 'disputed' ? '#ef4444' : ps.status === 'sent' ? '#3b82f6' : '#6b7280'
                               }}>
-                                {ps.status === 'locked' ? t('Đã khóa') : ps.status === 'confirmed' ? t('Đã nhận') : ps.status === 'sent' ? t('Đang chờ') : t('Nháp')}
+                                {ps.status === 'locked' ? t('Đã khóa') : ps.status === 'confirmed' ? t('Đã ký') : ps.status === 'disputed' ? t('Yêu cầu thay đổi') : ps.status === 'sent' ? t('Đang chờ') : t('Nháp')}
                               </span>
                             </td>
                           </tr>
