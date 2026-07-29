@@ -3985,7 +3985,7 @@ switch ($action) {
         if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
             // Fetch invoices (SO) for the date
             $invRes = $conn->query("
-                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.first_name, ct.last_name
+                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.first_name, ct.last_name, i.deal_id
                 FROM invoices i
                 LEFT JOIN contacts ct ON i.contact_id = ct.id
                 WHERE DATE(i.issue_date) = '$escapedDate' AND i.deleted_at IS NULL $pendingFilterSO
@@ -3999,7 +3999,8 @@ switch ($action) {
                         'total' => (float)$row['total'],
                         'status' => $row['status'],
                         'issue_date' => $row['issue_date'],
-                        'customer_name' => ($row['first_name'] || $row['last_name']) ? trim($row['first_name'] . ' ' . $row['last_name']) : 'N/A'
+                        'customer_name' => ($row['first_name'] || $row['last_name']) ? trim($row['first_name'] . ' ' . $row['last_name']) : 'N/A',
+                        'deal_id' => $row['deal_id'] ? (int)$row['deal_id'] : null
                     ];
                 }
             }

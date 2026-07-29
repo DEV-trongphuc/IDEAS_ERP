@@ -966,18 +966,34 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     setActivePOId(poId);
   };
 
-  const handleOpenSO = async (soId: number) => {
-    try {
-      const res = await fetchAPI(`deposits?id=${soId}`);
-      if (res.success && res.data && res.data.length > 0) {
-        setSelectedDepForManage(res.data[0]);
-        setShowManageModal(true);
-      } else {
-        setActiveSOId(soId);
+  const handleOpenSO = async (itemOrId: any) => {
+    const isObject = typeof itemOrId === 'object' && itemOrId !== null;
+    const dealId = isObject ? itemOrId.deal_id : null;
+    const invoiceId = isObject ? itemOrId.id : itemOrId;
+
+    if (dealId) {
+      try {
+        const res = await fetchAPI(`deposits?id=${dealId}`);
+        if (res.success && res.data && res.data.length > 0) {
+          setSelectedDepForManage(res.data[0]);
+          setShowManageModal(true);
+          return;
+        }
+      } catch (err) {
+        console.error("Error fetching deposit details:", err);
       }
-    } catch (err) {
-      setActiveSOId(soId);
+    } else if (!isObject) {
+      try {
+        const res = await fetchAPI(`deposits?id=${invoiceId}`);
+        if (res.success && res.data && res.data.length > 0) {
+          setSelectedDepForManage(res.data[0]);
+          setShowManageModal(true);
+          return;
+        }
+      } catch (err) {}
     }
+
+    setActiveSOId(invoiceId);
   };
 
   const toggleExpandSale = (saleName: string) => {
@@ -5301,7 +5317,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                             </thead>
                             <tbody>
                                {dayDetails.invoices.map((item: any, idx: number) => (
-                                <tr key={item.id || idx} onClick={() => handleOpenSO(item.id)} style={{ cursor: 'pointer' }}>
+                                <tr key={item.id || idx} onClick={() => handleOpenSO(item)} style={{ cursor: 'pointer' }}>
                                   <td>
                                     <strong style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.invoice_number || `#${item.id}`}</strong>
                                   </td>
