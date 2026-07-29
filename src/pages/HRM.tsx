@@ -1455,398 +1455,8 @@ export default function HRM() {
                 )}
               </div>
             ) : null}
-            {viewMode === 'detail' && (
-              <>
-                {/* Drawer Backdrop Overlay */}
-                <div 
-                  className="drawer-backdrop" 
-                  onClick={() => setViewMode('archive')}
-                  style={{ zIndex: 10500 }}
-                />
-
-                {/* Full Drawer Sheet Container */}
-                <div style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
-                  right: 0,
-                  bottom: 0,
-                  background: 'var(--color-bg)',
-                  zIndex: 10501,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  boxShadow: 'var(--shadow-2xl)',
-                  animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}>
-                  {/* Detail View Drawer Header */}
-                  <div style={{
-                    padding: '1rem 1.5rem',
-                    borderBottom: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    flexWrap: isMobile ? 'wrap' : 'nowrap'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <button
-                        onClick={() => setViewMode('archive')}
-                        className="btn outline sm hover-lift"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          fontSize: '0.8125rem',
-                          fontWeight: 700,
-                          color: 'var(--color-text)',
-                          borderColor: 'var(--color-border)'
-                        }}
-                      >
-                        <ArrowLeft size={16} />
-                        {t('Quay lại danh sách')}
-                      </button>
-                      <div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                          {t('Bảng tính lương')} {getPeriodLabel(payrollMonth)}
-                          {payslips.some(ps => ps.status === 'locked') && (
-                            <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>{t('Đã chốt')}</span>
-                          )}
-                        </h3>
-                      </div>
-                    </div>
-
-                    {/* Main Month Action Controls & Close Button */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {payslips.some(ps => ps.status === 'locked') ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600 }}>🔒 {t('Bảng lương kỳ này đã được Chốt và Khóa.')}</span>
-                          <button
-                            onClick={handleUnlockPayroll}
-                            className="btn text"
-                            style={{ color: 'var(--color-primary)', fontWeight: 700, padding: 0, background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.8rem' }}
-                          >
-                            {t('Mở khóa để sửa')}
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <button
-                            onClick={handleRunPayroll}
-                            disabled={calculating}
-                            className="btn primary"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem' }}
-                          >
-                            <Play size={14} />
-                            {calculating ? t('Đang tính...') : t('Tính lại lương')}
-                          </button>
-                          <button
-                            onClick={handleSavePayroll}
-                            disabled={saving || payslips.length === 0}
-                            className="btn primary"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#6366f1', padding: '6px 14px', fontSize: '0.8rem' }}
-                          >
-                            <Save size={14} />
-                            {saving ? t('Đang lưu...') : t('Lưu thay đổi')}
-                          </button>
-                          <button
-                            onClick={handlePublishPayroll}
-                            disabled={publishing || payslips.length === 0}
-                            className="btn primary"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', padding: '6px 14px', fontSize: '0.8rem' }}
-                          >
-                            <Send size={14} />
-                            {publishing ? t('Đang gửi...') : t('Gửi yêu cầu xác nhận')}
-                          </button>
-                          <button
-                            onClick={handleLockPayroll}
-                            disabled={locking || payslips.length === 0}
-                            className="btn primary"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', padding: '6px 14px', fontSize: '0.8rem' }}
-                          >
-                            <Lock size={14} />
-                            {locking ? t('Đang khóa...') : t('Chốt & Khóa sổ lương')}
-                          </button>
-                        </>
-                      )}
-
-                      <button
-                        onClick={() => setViewMode('archive')}
-                        style={{
-                          background: 'var(--color-bg)',
-                          border: '1px solid var(--color-border)',
-                          padding: '6px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          color: 'var(--color-text-muted)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '34px',
-                          width: '34px',
-                          marginLeft: '4px'
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Drawer Content Body */}
-                  <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }} className="custom-scrollbar">
-                    {/* Stats Summary Cards */}
-                    {payslips.length > 0 && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Nhân sự tính lương')}</span>
-                          <strong style={{ fontSize: '1.25rem', color: 'var(--color-text)' }}>{stats.empCount}</strong>
-                        </div>
-                        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng Lương ngày công')}</span>
-                          <strong style={{ fontSize: '1.1rem', color: 'var(--color-text)' }}>{formatCurrency(stats.totalBasic)}</strong>
-                        </div>
-                        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng phụ cấp')}</span>
-                          <strong style={{ fontSize: '1.1rem', color: 'var(--color-text)' }}>{formatCurrency(stats.totalAllowances)}</strong>
-                        </div>
-                        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng các khoản thưởng')}</span>
-                          <strong style={{ fontSize: '1.1rem', color: '#10b981' }}>{formatCurrency(stats.totalBonuses)}</strong>
-                        </div>
-                        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng các khoản trừ')}</span>
-                          <strong style={{ fontSize: '1.1rem', color: '#ef4444' }}>-{formatCurrency(stats.totalDeductions)}</strong>
-                        </div>
-                        <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 10 }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG THỰC LĨNH (NET)')}</span>
-                          <strong style={{ fontSize: '1.3rem', color: 'var(--color-primary)' }}>{formatCurrency(stats.totalNet)}</strong>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Detail Table */}
-                    {payslips.length === 0 ? (
-                      <EmptyCard
-                        icon={<DollarSign size={40} />}
-                        title={t('Không có dữ liệu')}
-                        description={t('Không tải được phiếu lương nào trong kỳ này. Bấm quay lại và tính lại lương.')}
-                      />
-                    ) : (
-                      <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: '#2563eb' }}>
-                          <HelpCircle size={15} style={{ flexShrink: 0 }} />
-                          <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
-                        </div>
-
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                              <th style={{ padding: '12px 8px' }}>{t('Nhân viên')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Công thực tế / Chuẩn')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Đi trễ (phút)')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Tăng ca (ngày)')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Lương ngày công')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Lương tăng ca')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Thưởng chuyên cần')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Thưởng KPI')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Phụ cấp')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Khấu trừ BHXH')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Thuế TNCN')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Tạm ứng')}</th>
-                              <th style={{ padding: '12px 8px' }}>{t('Thực lĩnh (Net)')}</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center' }}>{t('Trạng thái')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {payslips.map(ps => {
-                              const isLocked = ps.status === 'locked' || payslips.some(p => p.status === 'locked');
-                              return (
-                                <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
-                                  <td style={{ padding: '14px 8px', fontWeight: 600 }}>{ps.employee_name}</td>
-                                  <td style={{ padding: '12px 8px' }}>
-                                    <div style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '3px',
-                                      padding: '2px 6px',
-                                      borderRadius: '6px',
-                                      background: isLocked ? 'transparent' : 'var(--color-bg-light)',
-                                      border: isLocked ? 'none' : '1px solid var(--color-border-light)'
-                                    }}>
-                                      {isLocked ? (
-                                        <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{ps.work_days_actual}</span>
-                                      ) : (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={ps.work_days_actual}
-                                          onChange={e => handleCellChange(ps.id, 'work_days_actual', Number(e.target.value))}
-                                          title={t('Số ngày công làm thực tế')}
-                                          style={{
-                                            width: '42px',
-                                            padding: '2px 2px',
-                                            textAlign: 'center',
-                                            border: '1px solid var(--color-border)',
-                                            borderRadius: '4px',
-                                            background: 'var(--color-surface)',
-                                            color: 'var(--color-text)',
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700
-                                          }}
-                                        />
-                                      )}
-                                      <span style={{ color: 'var(--color-text-muted)', fontWeight: 700, padding: '0 1px' }}>/</span>
-                                      {isLocked ? (
-                                        <span style={{ fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{ps.work_days_required}</span>
-                                      ) : (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={ps.work_days_required}
-                                          onChange={e => handleCellChange(ps.id, 'work_days_required', Number(e.target.value))}
-                                          title={t('Số ngày công tiêu chuẩn tháng (Có thể sửa cho nhân sự deal riêng)')}
-                                          style={{
-                                            width: '42px',
-                                            padding: '2px 2px',
-                                            textAlign: 'center',
-                                            border: '1px dashed var(--color-primary, #3b82f6)',
-                                            borderRadius: '4px',
-                                            background: 'rgba(59, 130, 246, 0.04)',
-                                            color: 'var(--color-primary)',
-                                            fontSize: '0.8rem',
-                                            fontWeight: 700
-                                          }}
-                                        />
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{ps.lateness_minutes}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.lateness_minutes}
-                                        onChange={e => handleCellChange(ps.id, 'lateness_minutes', Number(e.target.value))}
-                                        style={{ width: '56px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{ps.overtime_days || 0}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        value={ps.overtime_days || 0}
-                                        onChange={e => handleCellChange(ps.id, 'overtime_days', Number(e.target.value))}
-                                        style={{ width: '50px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>{formatCurrency(ps.salary_basic_calculated)}</td>
-                                  <td style={{ padding: '14px 8px', color: '#10b981', fontWeight: 600 }}>{formatCurrency(ps.overtime_salary || 0)}</td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{formatCurrency(ps.diligence_bonus || 0)}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.diligence_bonus || 0}
-                                        onChange={e => handleCellChange(ps.id, 'diligence_bonus', Number(e.target.value))}
-                                        style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{formatCurrency(ps.kpi_bonus || 0)}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.kpi_bonus || 0}
-                                        onChange={e => handleCellChange(ps.id, 'kpi_bonus', Number(e.target.value))}
-                                        style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{formatCurrency(ps.allowance_total || 0)}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.allowance_total || 0}
-                                        onChange={e => handleCellChange(ps.id, 'allowance_total', Number(e.target.value))}
-                                        style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{formatCurrency(ps.insurance_bhxh || 0)}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.insurance_bhxh || 0}
-                                        onChange={e => handleCellChange(ps.id, 'insurance_bhxh', Number(e.target.value))}
-                                        style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{formatCurrency(ps.tax_pit || 0)}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.tax_pit || 0}
-                                        onChange={e => handleCellChange(ps.id, 'tax_pit', Number(e.target.value))}
-                                        style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px' }}>
-                                    {isLocked ? (
-                                      <span>{formatCurrency(ps.advance_deduction || 0)}</span>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        value={ps.advance_deduction || 0}
-                                        onChange={e => handleCellChange(ps.id, 'advance_deduction', Number(e.target.value))}
-                                        style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
-                                      />
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(ps.net_salary)}</td>
-                                  <td style={{ padding: '14px 8px', textAlign: 'center' }}>
-                                    <span style={{ 
-                                      fontSize: '0.725rem', 
-                                      fontWeight: 700, 
-                                      padding: '2px 8px', 
-                                      borderRadius: 10,
-                                      textTransform: 'uppercase',
-                                      background: ps.status === 'locked' ? 'rgba(239, 68, 68, 0.1)' : ps.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : ps.status === 'sent' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                                      color: ps.status === 'locked' ? '#ef4444' : ps.status === 'confirmed' ? '#10b981' : ps.status === 'sent' ? '#3b82f6' : '#6b7280'
-                                    }}>
-                                      {ps.status === 'locked' ? t('Đã khóa') : ps.status === 'confirmed' ? t('Đã nhận') : ps.status === 'sent' ? t('Đang chờ') : t('Nháp')}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+          </div>
+        )}
 
             {/* Calculate New Period Modal / Drawer */}
             {isNewPeriodModalOpen && (
@@ -1935,8 +1545,6 @@ export default function HRM() {
                 </div>
               </div>
             )}
-          </div>
-        )}
       </div>
 
       {/* Edit Profile Dialog */}
@@ -2087,6 +1695,400 @@ export default function HRM() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Payroll Detail Drawer Overlay */}
+      {viewMode === 'detail' && (
+        <>
+          {/* Drawer Backdrop Overlay */}
+          <div 
+            className="drawer-backdrop" 
+            onClick={() => setViewMode('archive')}
+            style={{ zIndex: 10500 }}
+          />
+
+          {/* Full Drawer Sheet Container */}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+            right: 0,
+            bottom: 0,
+            background: 'var(--color-bg)',
+            zIndex: 10501,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow-2xl)',
+            animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            {/* Detail View Drawer Header */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderBottom: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: isMobile ? 'wrap' : 'nowrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={() => setViewMode('archive')}
+                  className="btn outline sm hover-lift"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    color: 'var(--color-text)',
+                    borderColor: 'var(--color-border)'
+                  }}
+                >
+                  <ArrowLeft size={16} />
+                  {t('Quay lại danh sách')}
+                </button>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {t('Bảng tính lương')} {getPeriodLabel(payrollMonth)}
+                    {payslips.some(ps => ps.status === 'locked') && (
+                      <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>{t('Đã chốt')}</span>
+                    )}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Main Month Action Controls & Close Button */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {payslips.some(ps => ps.status === 'locked') ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '6px 14px', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600 }}>🔒 {t('Bảng lương kỳ này đã được Chốt và Khóa.')}</span>
+                    <button
+                      onClick={handleUnlockPayroll}
+                      className="btn text"
+                      style={{ color: 'var(--color-primary)', fontWeight: 700, padding: 0, background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      {t('Mở khóa để sửa')}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleRunPayroll}
+                      disabled={calculating}
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.8rem' }}
+                    >
+                      <Play size={14} />
+                      {calculating ? t('Đang tính...') : t('Tính lại lương')}
+                    </button>
+                    <button
+                      onClick={handleSavePayroll}
+                      disabled={saving || payslips.length === 0}
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#6366f1', padding: '6px 14px', fontSize: '0.8rem' }}
+                    >
+                      <Save size={14} />
+                      {saving ? t('Đang lưu...') : t('Lưu thay đổi')}
+                    </button>
+                    <button
+                      onClick={handlePublishPayroll}
+                      disabled={publishing || payslips.length === 0}
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', padding: '6px 14px', fontSize: '0.8rem' }}
+                    >
+                      <Send size={14} />
+                      {publishing ? t('Đang gửi...') : t('Gửi yêu cầu xác nhận')}
+                    </button>
+                    <button
+                      onClick={handleLockPayroll}
+                      disabled={locking || payslips.length === 0}
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', padding: '6px 14px', fontSize: '0.8rem' }}
+                    >
+                      <Lock size={14} />
+                      {locking ? t('Đang khóa...') : t('Chốt & Khóa sổ lương')}
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => setViewMode('archive')}
+                  style={{
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    padding: '6px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '34px',
+                    width: '34px',
+                    marginLeft: '4px'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Drawer Content Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }} className="custom-scrollbar">
+              {/* Stats Summary Cards */}
+              {payslips.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Nhân sự tính lương')}</span>
+                    <strong style={{ fontSize: '1.25rem', color: 'var(--color-text)' }}>{stats.empCount}</strong>
+                  </div>
+                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng Lương ngày công')}</span>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-text)' }}>{formatCurrency(stats.totalBasic)}</strong>
+                  </div>
+                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng phụ cấp')}</span>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--color-text)' }}>{formatCurrency(stats.totalAllowances)}</strong>
+                  </div>
+                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng các khoản thưởng')}</span>
+                    <strong style={{ fontSize: '1.1rem', color: '#10b981' }}>{formatCurrency(stats.totalBonuses)}</strong>
+                  </div>
+                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('Tổng các khoản trừ')}</span>
+                    <strong style={{ fontSize: '1.1rem', color: '#ef4444' }}>-{formatCurrency(stats.totalDeductions)}</strong>
+                  </div>
+                  <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: 4, background: 'rgba(59, 130, 246, 0.04)', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: 10 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{t('TỔNG THỰC LĨNH (NET)')}</span>
+                    <strong style={{ fontSize: '1.3rem', color: 'var(--color-primary)' }}>{formatCurrency(stats.totalNet)}</strong>
+                  </div>
+                </div>
+              )}
+
+              {/* Detail Table */}
+              {payslips.length === 0 ? (
+                <EmptyCard
+                  icon={<DollarSign size={40} />}
+                  title={t('Không có dữ liệu')}
+                  description={t('Không tải được phiếu lương nào trong kỳ này. Bấm quay lại và tính lại lương.')}
+                />
+              ) : (
+                <div style={{ overflowX: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.18)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: '#2563eb' }}>
+                    <HelpCircle size={15} style={{ flexShrink: 0 }} />
+                    <span>{t('💡 Mẹo UI: Bạn có thể nhập/chỉnh sửa trực tiếp Ngày công thực tế (vế trước) hoặc Ngày công quy chuẩn (vế sau - viền xanh) cho từng nhân sự có thỏa thuận deal riêng.')}</span>
+                  </div>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--color-border-light)', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                        <th style={{ padding: '12px 8px' }}>{t('Nhân viên')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Công thực tế / Chuẩn')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Đi trễ (phút)')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Tăng ca (ngày)')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Lương ngày công')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Lương tăng ca')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Thưởng chuyên cần')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Thưởng KPI')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Phụ cấp')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Khấu trừ BHXH')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Thuế TNCN')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Tạm ứng')}</th>
+                        <th style={{ padding: '12px 8px' }}>{t('Thực lĩnh (Net)')}</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'center' }}>{t('Trạng thái')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payslips.map(ps => {
+                        const isLocked = ps.status === 'locked' || payslips.some(p => p.status === 'locked');
+                        return (
+                          <tr key={ps.id} style={{ borderBottom: '1px solid var(--color-border-light)', fontSize: '0.85rem' }}>
+                            <td style={{ padding: '14px 8px', fontWeight: 600 }}>{ps.employee_name}</td>
+                            <td style={{ padding: '12px 8px' }}>
+                              <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '2px 6px',
+                                borderRadius: '6px',
+                                background: isLocked ? 'transparent' : 'var(--color-bg-light)',
+                                border: isLocked ? 'none' : '1px solid var(--color-border-light)'
+                              }}>
+                                {isLocked ? (
+                                  <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{ps.work_days_actual}</span>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={ps.work_days_actual}
+                                    onChange={e => handleCellChange(ps.id, 'work_days_actual', Number(e.target.value))}
+                                    title={t('Số ngày công làm thực tế')}
+                                    style={{
+                                      width: '42px',
+                                      padding: '2px 2px',
+                                      textAlign: 'center',
+                                      border: '1px solid var(--color-border)',
+                                      borderRadius: '4px',
+                                      background: 'var(--color-surface)',
+                                      color: 'var(--color-text)',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 700
+                                    }}
+                                  />
+                                )}
+                                <span style={{ color: 'var(--color-text-muted)', fontWeight: 700, padding: '0 1px' }}>/</span>
+                                {isLocked ? (
+                                  <span style={{ fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{ps.work_days_required}</span>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={ps.work_days_required}
+                                    onChange={e => handleCellChange(ps.id, 'work_days_required', Number(e.target.value))}
+                                    title={t('Số ngày công tiêu chuẩn tháng (Có thể sửa cho nhân sự deal riêng)')}
+                                    style={{
+                                      width: '42px',
+                                      padding: '2px 2px',
+                                      textAlign: 'center',
+                                      border: '1px dashed var(--color-primary, #3b82f6)',
+                                      borderRadius: '4px',
+                                      background: 'rgba(59, 130, 246, 0.04)',
+                                      color: 'var(--color-primary)',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 700
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{ps.lateness_minutes}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.lateness_minutes}
+                                  onChange={e => handleCellChange(ps.id, 'lateness_minutes', Number(e.target.value))}
+                                  style={{ width: '56px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{ps.overtime_days || 0}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  step="any"
+                                  value={ps.overtime_days || 0}
+                                  onChange={e => handleCellChange(ps.id, 'overtime_days', Number(e.target.value))}
+                                  style={{ width: '50px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>{formatCurrency(ps.salary_basic_calculated)}</td>
+                            <td style={{ padding: '14px 8px', color: '#10b981', fontWeight: 600 }}>{formatCurrency(ps.overtime_salary || 0)}</td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{formatCurrency(ps.diligence_bonus || 0)}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.diligence_bonus || 0}
+                                  onChange={e => handleCellChange(ps.id, 'diligence_bonus', Number(e.target.value))}
+                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{formatCurrency(ps.kpi_bonus || 0)}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.kpi_bonus || 0}
+                                  onChange={e => handleCellChange(ps.id, 'kpi_bonus', Number(e.target.value))}
+                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{formatCurrency(ps.allowance_total || 0)}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.allowance_total || 0}
+                                  onChange={e => handleCellChange(ps.id, 'allowance_total', Number(e.target.value))}
+                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{formatCurrency(ps.insurance_bhxh || 0)}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.insurance_bhxh || 0}
+                                  onChange={e => handleCellChange(ps.id, 'insurance_bhxh', Number(e.target.value))}
+                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{formatCurrency(ps.tax_pit || 0)}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.tax_pit || 0}
+                                  onChange={e => handleCellChange(ps.id, 'tax_pit', Number(e.target.value))}
+                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px' }}>
+                              {isLocked ? (
+                                <span>{formatCurrency(ps.advance_deduction || 0)}</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  value={ps.advance_deduction || 0}
+                                  onChange={e => handleCellChange(ps.id, 'advance_deduction', Number(e.target.value))}
+                                  style={{ width: '85px', padding: '2px 4px', textAlign: 'right', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
+                                />
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>{formatCurrency(ps.net_salary)}</td>
+                            <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                              <span style={{ 
+                                fontSize: '0.725rem', 
+                                fontWeight: 700, 
+                                padding: '2px 8px', 
+                                borderRadius: 10,
+                                textTransform: 'uppercase',
+                                background: ps.status === 'locked' ? 'rgba(239, 68, 68, 0.1)' : ps.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : ps.status === 'sent' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                                color: ps.status === 'locked' ? '#ef4444' : ps.status === 'confirmed' ? '#10b981' : ps.status === 'sent' ? '#3b82f6' : '#6b7280'
+                              }}>
+                                {ps.status === 'locked' ? t('Đã khóa') : ps.status === 'confirmed' ? t('Đã nhận') : ps.status === 'sent' ? t('Đang chờ') : t('Nháp')}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Approval Detail Drawer */}
