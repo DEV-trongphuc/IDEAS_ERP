@@ -1240,6 +1240,7 @@ class HRMController {
         try {
             $stmt = $this->db->prepare("
                 UPDATE monthly_payslips SET
+                    work_days_required = ?,
                     work_days_actual = ?,
                     lateness_minutes = ?,
                     lateness_penalty = ?,
@@ -1258,6 +1259,7 @@ class HRMController {
             
             foreach ($payslips as $ps) {
                 $stmt->execute([
+                    (float)($ps['work_days_required'] ?? 26),
                     $ps['work_days_actual'],
                     $ps['lateness_minutes'],
                     $ps['lateness_penalty'],

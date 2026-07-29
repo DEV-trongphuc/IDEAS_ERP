@@ -484,6 +484,24 @@ export default function HRM() {
 
   const [saving, setSaving] = useState(false);
 
+  const calcWorkingDaysForMonth = (monthStr: string) => {
+    if (!monthStr || !monthStr.includes('-')) return 22;
+    const [yearStr, mStr] = monthStr.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(mStr, 10);
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) return 22;
+
+    const totalDays = new Date(year, month, 0).getDate();
+    let weekdays = 0;
+    for (let day = 1; day <= totalDays; day++) {
+      const dayOfWeek = new Date(year, month - 1, day).getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        weekdays++;
+      }
+    }
+    return weekdays;
+  };
+
   const handleCellChange = (id: number, field: string, value: number) => {
     setPayslips(prev => prev.map(ps => {
       if (ps.id !== id) return ps;
@@ -494,17 +512,25 @@ export default function HRM() {
       const profile = profiles.find(p => Number(p.id) === Number(ps.user_id));
       const dealSalary = profile ? Number(profile.deal_salary || 0) : 0;
       
-      // 1. Recalculate salary_basic_calculated if work_days_actual changes
-      if (field === 'work_days_actual') {
-        updated.salary_basic_calculated = updated.work_days_required > 0 
-          ? Math.round((dealSalary / updated.work_days_required) * value) 
+      // 1. Recalculate salary_basic_calculated if work_days_actual or work_days_required changes
+      if (field === 'work_days_actual' || field === 'work_days_required') {
+        const reqDays = Number(updated.work_days_required || 0);
+        const actDays = Number(updated.work_days_actual || 0);
+        const otDays = Number(updated.overtime_days || 0);
+
+        updated.salary_basic_calculated = reqDays > 0 
+          ? Math.round((dealSalary / reqDays) * actDays) 
+          : 0;
+        updated.overtime_salary = reqDays > 0 
+          ? Math.round(((dealSalary / reqDays) * otDays * 1.5)) 
           : 0;
       }
       
       // 2. Recalculate overtime_salary if overtime_days changes
       if (field === 'overtime_days') {
-        updated.overtime_salary = updated.work_days_required > 0 
-          ? Math.round(((dealSalary / updated.work_days_required) * value * 1.5)) 
+        const reqDays = Number(updated.work_days_required || 0);
+        updated.overtime_salary = reqDays > 0 
+          ? Math.round(((dealSalary / reqDays) * value * 1.5)) 
           : 0;
       }
       
@@ -1583,7 +1609,19 @@ export default function HRM() {
                                       style={{ width: '48px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '0.8rem' }}
                                     />
                                   )}
-                                  <span>/ {ps.work_days_required}</span>
+                                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 600, margin: '0 2px' }}>/</span>
+                                  {isLocked ? (
+                                    <span style={{ fontWeight: 700, color: 'var(--color-text-muted)' }}>{ps.work_days_required}</span>
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={ps.work_days_required}
+                                      onChange={e => handleCellChange(ps.id, 'work_days_required', Number(e.target.value))}
+                                      title={t('Số ngày công tiêu chuẩn (Có thể sửa cho từng nhân sự deal riêng)')}
+                                      style={{ width: '48px', padding: '2px 4px', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: 600 }}
+                                    />
+                                  )}
                                 </div>
                               </td>
                               <td style={{ padding: '14px 8px' }}>
@@ -1722,7 +1760,11 @@ export default function HRM() {
                       <label className="form-label" style={{ fontWeight: 600, marginBottom: 6 }}>{t('Chọn kỳ thanh toán')}</label>
                       <select
                         value={newPeriodMonth}
-                        onChange={e => setNewPeriodMonth(e.target.value)}
+                        onChange={e => {
+                          const mVal = e.target.value;
+                          setNewPeriodMonth(mVal);
+                          setNewPeriodWorkDays(calcWorkingDaysForMonth(mVal));
+                        }}
                         className="form-input"
                         style={{ height: 38 }}
                       >
