@@ -3,6 +3,7 @@ import api from '../api/axios';
 import { createPortal } from 'react-dom';
 import { Database, Search, Filter, ChevronLeft, ChevronRight, Download, RefreshCw, User, Users, Phone, Mail, Clock, Tag, ExternalLink, AlertTriangle, CheckCircle2, XCircle, ShieldAlert, Calendar, LayoutList, Sparkles, Check, X, Edit, Bell, Copy, CheckCircle, BarChart2, Scale, Info, Ban, UserPlus, Send, Plus } from 'lucide-react';
 import { ExpenseCreateDrawer } from '../components/ExpenseCreateDrawer';
+import { DepositDetailDrawer } from '../components/DepositDetailDrawer';
 import {
   Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -953,6 +954,8 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   const [expandedSales, setExpandedSales] = useState<Record<string, boolean>>({});
   const [activePOId, setActivePOId] = useState<number | null>(null);
   const [activeSOId, setActiveSOId] = useState<number | null>(null);
+  const [selectedDepForManage, setSelectedDepForManage] = useState<any | null>(null);
+  const [showManageModal, setShowManageModal] = useState(false);
   const [financeSummary, setFinanceSummary] = useState<any>(null);
   const [pendingOnly, setPendingOnly] = useState<boolean>(false);
   const [showCreateExpenseModal, setShowCreateExpenseModal] = useState<boolean>(false);
@@ -963,8 +966,18 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     setActivePOId(poId);
   };
 
-  const handleOpenSO = (soId: number) => {
-    setActiveSOId(soId);
+  const handleOpenSO = async (soId: number) => {
+    try {
+      const res = await fetchAPI(`deposits?id=${soId}`);
+      if (res.success && res.data && res.data.length > 0) {
+        setSelectedDepForManage(res.data[0]);
+        setShowManageModal(true);
+      } else {
+        setActiveSOId(soId);
+      }
+    } catch (err) {
+      setActiveSOId(soId);
+    }
   };
 
   const toggleExpandSale = (saleName: string) => {
@@ -6849,6 +6862,19 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
         invoiceId={activeSOId}
         onClose={() => setActiveSOId(null)}
       />
+
+      {showManageModal && selectedDepForManage && (
+        <DepositDetailDrawer
+          isOpen={showManageModal}
+          onClose={() => setShowManageModal(false)}
+          deposit={selectedDepForManage}
+          onSaveSuccess={() => {
+            fetchCalendarStats();
+            if (selectedDate) handleDateClick(selectedDate);
+          }}
+          zIndex={2000000}
+        />
+      )}
 
       <style>{`
         @media (max-width: 768px) {
