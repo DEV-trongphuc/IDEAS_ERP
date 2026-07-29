@@ -275,6 +275,8 @@ class NotificationService {
                                     "Nhân viên <strong>$userName</strong> vừa gửi Yêu cầu cập nhật công bổ sung ngày $today lúc " . substr($time, 0, 5) . ".<br/>" .
                                     "Lý do: <em>\"$reason\"</em>.<br/>" .
                                     "Vui lòng truy cập hệ thống CRM để phê duyệt."
+                ];
+
             case 'APPROVAL_REMINDER':
                 $recipients = $payload['recipients'] ?? [];
                 $msg = $payload['message'] ?? 'Có đề xuất đang chờ bạn phê duyệt!';
