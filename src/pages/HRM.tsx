@@ -1829,10 +1829,44 @@ export default function HRM() {
                   {t('Quay lại danh sách')}
                 </button>
                 <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    {t('Bảng tính lương')} {getPeriodLabel(payrollMonth)}
-                    {payslips.some(ps => ps.status === 'locked') && (
-                      <span style={{ fontSize: '0.725rem', fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>{t('Đã chốt')}</span>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span>{t('Bảng tính lương')} {getPeriodLabel(payrollMonth)}</span>
+                    {!payslips.some(ps => ps.status === 'locked') ? (
+                      <button
+                        onClick={() => setConfirmLockPayroll(true)}
+                        disabled={locking || payslips.length === 0}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '5px 12px',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          color: '#ef4444',
+                          background: 'rgba(239, 68, 68, 0.08)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          marginLeft: '4px'
+                        }}
+                        className="hover-lift"
+                        title={t('Chốt & Khóa sổ lương')}
+                      >
+                        <Lock size={14} />
+                        <span>{locking ? t('Đang khóa...') : t('Chốt lương')}</span>
+                      </button>
+                    ) : (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginLeft: '4px' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                          <CheckCircle size={14} /> {t('Đã khóa')}
+                        </span>
+                        <button
+                          onClick={handleUnlockPayroll}
+                          style={{ color: 'var(--color-primary)', fontWeight: 700, padding: '2px 6px', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.75rem' }}
+                        >
+                          {t('Mở khóa')}
+                        </button>
+                      </div>
                     )}
                   </h3>
                 </div>
@@ -1840,18 +1874,7 @@ export default function HRM() {
 
               {/* Main Month Action Controls & Close Button */}
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', overflowX: 'auto', paddingBottom: '2px' }} className="custom-scrollbar">
-                {payslips.some(ps => ps.status === 'locked') ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 16px', borderRadius: 10, whiteSpace: 'nowrap' }}>
-                    <span style={{ fontSize: '0.875rem', color: '#ef4444', fontWeight: 600 }}>🔒 {t('Bảng lương kỳ này đã được Chốt và Khóa.')}</span>
-                    <button
-                      onClick={handleUnlockPayroll}
-                      className="btn text"
-                      style={{ color: 'var(--color-primary)', fontWeight: 700, padding: 0, background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.875rem' }}
-                    >
-                      {t('Mở khóa để sửa')}
-                    </button>
-                  </div>
-                ) : (
+                {!payslips.some(ps => ps.status === 'locked') && (
                   <>
                     {/* Secondary Actions */}
                     <button
@@ -1873,24 +1896,15 @@ export default function HRM() {
                       {publishing ? t('Đang gửi...') : t('Gửi yêu cầu xác nhận')}
                     </button>
 
-                    {/* Primary Actions */}
+                    {/* Primary Action (Save) */}
                     <button
                       onClick={handleSavePayroll}
                       disabled={saving || payslips.length === 0}
                       className="btn primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#4f46e5', borderColor: '#4f46e5', color: '#fff', padding: '8px 20px', fontSize: '0.875rem', fontWeight: 700, whiteSpace: 'nowrap', height: '38px' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', fontSize: '0.875rem', fontWeight: 700, whiteSpace: 'nowrap', height: '38px' }}
                     >
                       <Save size={16} />
                       {saving ? t('Đang lưu...') : t('Lưu thay đổi')}
-                    </button>
-                    <button
-                      onClick={() => setConfirmLockPayroll(true)}
-                      disabled={locking || payslips.length === 0}
-                      className="btn primary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#ef4444', borderColor: '#ef4444', color: '#fff', padding: '8px 20px', fontSize: '0.875rem', fontWeight: 700, whiteSpace: 'nowrap', height: '38px' }}
-                    >
-                      <Lock size={16} />
-                      {locking ? t('Đang khóa...') : t('Chốt & Khóa sổ lương')}
                     </button>
                   </>
                 )}
