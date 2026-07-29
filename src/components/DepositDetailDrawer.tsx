@@ -47,13 +47,15 @@ interface DepositDetailDrawerProps {
   onClose: () => void;
   deposit: any;
   onSaveSuccess: () => void;
+  zIndex?: number;
 }
 
 export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   isOpen,
   onClose,
   deposit,
-  onSaveSuccess
+  onSaveSuccess,
+  zIndex
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -484,11 +486,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
     ? Math.round((tempExpectedCommission || selectedDepForManage.expected_commission || 0) * (totalApprovedMilestones / selectedDepForManage.price))
     : 0;
 
+  const baseZIndex = zIndex || 1000100;
+
   return createPortal(
     <>
       <AnimatePresence>
         {isOpen && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 1000000, display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: baseZIndex, display: 'flex', justifyContent: 'flex-end' }}>
             {/* Overlay */}
             <motion.div
               className="drawer-backdrop"
@@ -501,7 +505,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                 inset: 0,
                 backgroundColor: 'rgba(15, 23, 42, 0.4)',
                 backdropFilter: 'blur(4px)',
-                zIndex: 1000005
+                zIndex: baseZIndex + 5
               }}
             />
             {/* Drawer panel */}
@@ -520,7 +524,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                 boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
                 display: 'flex',
                 flexDirection: 'column',
-                zIndex: 1000010
+                zIndex: baseZIndex + 10
               }}
             >
               {/* Header */}

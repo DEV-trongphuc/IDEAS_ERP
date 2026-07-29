@@ -12464,6 +12464,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           onClose={() => setShowManageModal(false)}
           deposit={selectedDepForManage}
           onSaveSuccess={() => fetchData('deals')}
+          zIndex={zIndex ? zIndex + 20 : 1000100}
         />
       )}
     </>,
