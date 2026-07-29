@@ -914,25 +914,40 @@ class HRMController {
         $action = $b['action'] ?? 'confirm';
         $note = trim($b['note'] ?? '');
 
+        if ($id <= 0) respond(400, null, 'Thiếu ID phiếu lương', false);
+
+        // Fetch payslip to verify permission
+        $stmtCheck = $this->db->prepare("SELECT * FROM monthly_payslips WHERE id = ?");
+        $stmtCheck->execute([$id]);
+        $psRow = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+        if (!$psRow) {
+            respond(404, null, 'Không tìm thấy phiếu lương', false);
+            return;
+        }
+
+        $isOwner = ((int)$psRow['user_id'] === (int)$auth['user_id']);
+        $isAdmin = $this->isAdmin($auth);
+
+        if (!$isOwner && !$isAdmin) {
+            respond(403, null, 'Bạn không có quyền thao tác trên phiếu lương này', false);
+            return;
+        }
+
         if ($action === 'dispute') {
             if (empty($note)) respond(400, null, 'Vui lòng nhập lý do/ghi chú yêu cầu thay đổi', false);
 
-            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'disputed', note = ? WHERE id = ? AND user_id = ? AND status IN ('sent', 'draft')");
-            $stmt->execute([$note, $id, $auth['user_id']]);
+            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'disputed', note = ? WHERE id = ?");
+            $stmt->execute([$note, $id]);
 
             // Dispatch Notification
             try {
-                $stmtP = $this->db->prepare("SELECT p.*, u.full_name FROM monthly_payslips p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
-                $stmtP->execute([$id]);
-                $psRow = $stmtP->fetch(PDO::FETCH_ASSOC);
-                if ($psRow) {
-                    require_once __DIR__ . '/../NotificationService.php';
-                    NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_DISPUTED', [
-                        'user_name' => $psRow['full_name'],
-                        'month_year' => $psRow['month_year'],
-                        'note' => $note
-                    ]);
-                }
+                require_once __DIR__ . '/../NotificationService.php';
+                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_DISPUTED', [
+                    'user_name' => $psRow['employee_name'] ?? 'Nhân viên',
+                    'month_year' => $psRow['month_year'],
+                    'note' => $note
+                ]);
             } catch (\Throwable $e) {}
 
             respond(200, ['success' => true, 'message' => 'Đã gửi yêu cầu thay đổi thành công']);
@@ -941,24 +956,19 @@ class HRMController {
 
         if (empty($signatureUrl)) respond(400, null, 'Chữ ký là bắt buộc để xác nhận phiếu lương', false);
 
-        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'confirmed', signature_url = ?, confirmed_at = NOW() WHERE id = ? AND user_id = ? AND status IN ('sent', 'draft')");
-        $stmt->execute([$signatureUrl, $id, $auth['user_id']]);
+        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'confirmed', signature_url = ?, confirmed_at = NOW() WHERE id = ?");
+        $stmt->execute([$signatureUrl, $id]);
 
         // Dispatch Notification
         try {
-            $stmtP = $this->db->prepare("SELECT p.*, u.full_name FROM monthly_payslips p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
-            $stmtP->execute([$id]);
-            $psRow = $stmtP->fetch(PDO::FETCH_ASSOC);
-            if ($psRow) {
-                require_once __DIR__ . '/../NotificationService.php';
-                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_CONFIRMED', [
-                    'user_name' => $psRow['full_name'],
-                    'month_year' => $psRow['month_year']
-                ]);
-            }
+            require_once __DIR__ . '/../NotificationService.php';
+            NotificationService::send($this->db, $auth['tenant_id'], 'HRM_PAYSLIP_CONFIRMED', [
+                'user_name' => $psRow['employee_name'] ?? 'Nhân viên',
+                'month_year' => $psRow['month_year']
+            ]);
         } catch (\Throwable $e) {}
 
-        respond(200, ['success' => true]);
+        respond(200, ['success' => true, 'signature_url' => $signatureUrl]);
     }
 
     public function lockPayroll(array $auth): void {

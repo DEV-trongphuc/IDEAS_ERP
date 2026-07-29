@@ -197,7 +197,10 @@ export default function MyPayslips() {
     try {
       const res = await fetchAPI(`hrm/payroll?month_year=${selectedMonth}`);
       if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-        setPayslip(res.data[0]);
+        setPayslip((prev: any) => {
+          if (!prev?.id) return res.data[0];
+          return res.data.find((p: any) => p.id === prev.id) || res.data[0];
+        });
       } else {
         setPayslip(null);
       }
@@ -383,6 +386,7 @@ export default function MyPayslips() {
         })
       });
       toast.success(t('Đã ký nhận và xác nhận phiếu lương thành công!'));
+      setPayslip((prev: any) => prev ? { ...prev, status: 'confirmed', signature_url: signatureUrl } : null);
       loadAllPayslips();
       loadPayslip();
     } catch (err: any) {
@@ -411,6 +415,7 @@ export default function MyPayslips() {
         })
       });
       toast.success(t('Đã gửi yêu cầu thay đổi phiếu lương thành công!'));
+      setPayslip((prev: any) => prev ? { ...prev, status: 'disputed', note: disputeNote } : null);
       setDisputeModalOpen(false);
       setDisputeNote('');
       setIsModalOpen(false);
