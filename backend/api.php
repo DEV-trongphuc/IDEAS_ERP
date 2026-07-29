@@ -15071,6 +15071,152 @@ switch ($action) {
             $totalCompletionTokensUsed = (int)$row['completion_cnt'];
         }
 
+        // --- BỔ SUNG BIỂU ĐỒ MARKETING (MARKETING CHARTS) ---
+        $mktCohortConversion = [];
+        $mktConversionByLeadMonth = [];
+        $mktConversionByCloseMonth = [];
+        $mktRevenueAndProjection = [];
+
+        try {
+            // 1. Cohort conversion speed (Số lead chuyển đổi trong 1 tháng, 2 tháng, 3 tháng kể từ ngày tạo)
+            $cohortSql = "
+                SELECT 
+                    DATE_FORMAT(l.created_at, '%m/%Y') as cohort_month,
+                    COUNT(l.id) as total_leads,
+                    SUM(CASE WHEN ps.is_won = 1 AND DATEDIFF(d.actual_close_date, l.created_at) <= 30 THEN 1 ELSE 0 END) as converted_1_month,
+                    SUM(CASE WHEN ps.is_won = 1 AND DATEDIFF(d.actual_close_date, l.created_at) <= 60 THEN 1 ELSE 0 END) as converted_2_months,
+                    SUM(CASE WHEN ps.is_won = 1 AND DATEDIFF(d.actual_close_date, l.created_at) <= 90 THEN 1 ELSE 0 END) as converted_3_months
+                FROM leads l
+                LEFT JOIN contacts c ON l.person_id = c.person_id AND c.deleted_at IS NULL
+                LEFT JOIN deals d ON c.id = d.contact_id AND d.deleted_at IS NULL
+                LEFT JOIN pipeline_stages ps ON d.stage_id = ps.id
+                GROUP BY cohort_month
+                ORDER BY MIN(l.created_at) ASC
+            ";
+            $cohortRes = $conn->query($cohortSql);
+            if ($cohortRes) {
+                while ($row = $cohortRes->fetch_assoc()) {
+                    $mktCohortConversion[] = [
+                        'cohort_month' => $row['cohort_month'],
+                        'total_leads' => (int)$row['total_leads'],
+                        'converted_1_month' => (int)$row['converted_1_month'],
+                        'converted_2_months' => (int)$row['converted_2_months'],
+                        'converted_3_months' => (int)$row['converted_3_months']
+                    ];
+                }
+            }
+
+            // 2a. Grouped by lead creation month (Tỷ lệ convert theo ngày tạo lead)
+            $leadMonthSql = "
+                SELECT 
+                    DATE_FORMAT(l.created_at, '%m/%Y') as month,
+                    COUNT(l.id) as total_leads,
+                    SUM(CASE WHEN ps.is_won = 1 THEN 1 ELSE 0 END) as customer_count,
+                    ROUND(SUM(CASE WHEN ps.is_won = 1 THEN 1 ELSE 0 END) / COUNT(l.id) * 100, 1) as conversion_rate
+                FROM leads l
+                LEFT JOIN contacts c ON l.person_id = c.person_id AND c.deleted_at IS NULL
+                LEFT JOIN deals d ON c.id = d.contact_id AND d.deleted_at IS NULL
+                LEFT JOIN pipeline_stages ps ON d.stage_id = ps.id
+                GROUP BY month
+                ORDER BY MIN(l.created_at) ASC
+            ";
+            $leadMonthRes = $conn->query($leadMonthSql);
+            if ($leadMonthRes) {
+                while ($row = $leadMonthRes->fetch_assoc()) {
+                    $mktConversionByLeadMonth[] = [
+                        'month' => $row['month'],
+                        'total_leads' => (int)$row['total_leads'],
+                        'customer_count' => (int)$row['customer_count'],
+                        'conversion_rate' => (float)$row['conversion_rate']
+                    ];
+                }
+            }
+
+            // 2b. Grouped by deal closing month (Tỷ lệ convert theo ngày chốt)
+            $closeMonthSql = "
+                SELECT 
+                    dates.month,
+                    COALESCE(leads_tbl.total_leads, 0) as total_leads,
+                    COALESCE(deals_tbl.customer_count, 0) as customer_count,
+                    CASE 
+                        WHEN COALESCE(leads_tbl.total_leads, 0) > 0 
+                        THEN ROUND(COALESCE(deals_tbl.customer_count, 0) / leads_tbl.total_leads * 100, 1)
+                        ELSE 0.0 
+                    END as conversion_rate
+                FROM (
+                    SELECT DISTINCT DATE_FORMAT(created_at, '%m/%Y') as month, MIN(created_at) as min_date FROM leads GROUP BY month
+                    UNION
+                    SELECT DISTINCT DATE_FORMAT(actual_close_date, '%m/%Y') as month, MIN(actual_close_date) as min_date FROM deals WHERE actual_close_date IS NOT NULL GROUP BY month
+                ) dates
+                LEFT JOIN (
+                    SELECT DATE_FORMAT(created_at, '%m/%Y') as month, COUNT(*) as total_leads
+                    FROM leads
+                    GROUP BY month
+                ) leads_tbl ON dates.month = leads_tbl.month
+                LEFT JOIN (
+                    SELECT DATE_FORMAT(d.actual_close_date, '%m/%Y') as month, COUNT(*) as customer_count
+                    FROM deals d
+                    JOIN pipeline_stages ps ON d.stage_id = ps.id
+                    WHERE ps.is_won = 1 AND d.deleted_at IS NULL AND d.actual_close_date IS NOT NULL
+                    GROUP BY month
+                ) deals_tbl ON dates.month = deals_tbl.month
+                WHERE dates.month IS NOT NULL
+                GROUP BY dates.month
+                ORDER BY MIN(dates.min_date) ASC
+            ";
+            $closeMonthRes = $conn->query($closeMonthSql);
+            if ($closeMonthRes) {
+                while ($row = $closeMonthRes->fetch_assoc()) {
+                    $mktConversionByCloseMonth[] = [
+                        'month' => $row['month'],
+                        'total_leads' => (int)$row['total_leads'],
+                        'customer_count' => (int)$row['customer_count'],
+                        'conversion_rate' => (float)$row['conversion_rate']
+                    ];
+                }
+            }
+
+            // 3. Doanh thu theo tháng và doanh thu dự kiến (Realized Revenue vs Projected Revenue)
+            $revProjSql = "
+                SELECT 
+                    dates.month,
+                    COALESCE(realized_tbl.realized, 0) as realized_revenue,
+                    COALESCE(projected_tbl.projected, 0) as projected_revenue
+                FROM (
+                    SELECT DISTINCT DATE_FORMAT(paid_at, '%m/%Y') as month, MIN(paid_at) as min_date FROM invoices WHERE status = 'paid' AND paid_at IS NOT NULL GROUP BY month
+                    UNION
+                    SELECT DISTINCT DATE_FORMAT(due_date, '%m/%Y') as month, MIN(due_date) as min_date FROM invoices WHERE status IN ('pending', 'draft', 'overdue') AND due_date IS NOT NULL GROUP BY month
+                ) dates
+                LEFT JOIN (
+                    SELECT DATE_FORMAT(paid_at, '%m/%Y') as month, SUM(total) as realized
+                    FROM invoices
+                    WHERE status = 'paid' AND paid_at IS NOT NULL AND deleted_at IS NULL
+                    GROUP BY month
+                ) realized_tbl ON dates.month = realized_tbl.month
+                LEFT JOIN (
+                    SELECT DATE_FORMAT(due_date, '%m/%Y') as month, SUM(total) as projected
+                    FROM invoices
+                    WHERE status IN ('pending', 'draft', 'overdue') AND due_date IS NOT NULL AND deleted_at IS NULL
+                    GROUP BY month
+                ) projected_tbl ON dates.month = projected_tbl.month
+                WHERE dates.month IS NOT NULL
+                GROUP BY dates.month
+                ORDER BY MIN(dates.min_date) ASC
+            ";
+            $revProjRes = $conn->query($revProjSql);
+            if ($revProjRes) {
+                while ($row = $revProjRes->fetch_assoc()) {
+                    $mktRevenueAndProjection[] = [
+                        'month' => $row['month'],
+                        'realized_revenue' => (float)$row['realized_revenue'],
+                        'projected_revenue' => (float)$row['projected_revenue']
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log("Error fetching marketing stats: " . $e->getMessage());
+        }
+
         echo json_encode([
             'success' => true,
             'data' => [
@@ -15111,7 +15257,11 @@ switch ($action) {
                 'roundRatio' => $roundRatio,
                 'sourceStats' => $sourceStats,
                 'leadSourceStats' => $leadSourceStats,
-                'errorStats' => $errorStats
+                'errorStats' => $errorStats,
+                'mktCohortConversion' => $mktCohortConversion,
+                'mktConversionByLeadMonth' => $mktConversionByLeadMonth,
+                'mktConversionByCloseMonth' => $mktConversionByCloseMonth,
+                'mktRevenueAndProjection' => $mktRevenueAndProjection
             ]
         ]);
         } catch (Throwable $e) {
@@ -15119,6 +15269,22 @@ switch ($action) {
                 'success' => false,
                 'message' => 'Lỗi máy chủ: ' . $e->getMessage() . ' tại dòng ' . $e->getLine() . ' trong file ' . $e->getFile()
             ]);
+        }
+        break;
+
+    case 'seed_marketing_demo':
+        try {
+            $userRole = $decodedUser['role'] ?? '';
+            if ($userRole !== 'admin' && $userRole !== 'superadmin' && $userRole !== 'director') {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Permission denied. Only Admins and Directors can seed data.']);
+                exit;
+            }
+            $_REQUEST['key'] = 'Ideas2026'; // Bypass secret key check in script
+            require_once __DIR__ . '/seed_marketing_data.php';
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         break;
 

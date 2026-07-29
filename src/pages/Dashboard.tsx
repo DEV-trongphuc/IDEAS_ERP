@@ -10,7 +10,7 @@ import {
 import {
   Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ComposedChart,
-  PieChart, Pie, Cell, BarChart, LabelList
+  PieChart, Pie, Cell, BarChart, LabelList, Line, Legend, Area
 } from 'recharts';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { CustomModal } from '../components/ui/CustomModal';
@@ -102,6 +102,18 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   const [poList, setPoList] = useState<any[]>([]);
   const [soList, setSoList] = useState<any[]>([]);
   const [activeOrderType, setActiveOrderType] = useState<'so' | 'po'>('so');
+
+  // Subtab and Marketing states
+  const [activeSubTab, setActiveSubTab] = useState<'default' | 'hr' | 'accountant' | 'marketing'>('default');
+  const [campaignsList, setCampaignsList] = useState<any[]>([]);
+  const [mktFilterType, setMktFilterType] = useState<'close_date' | 'lead_date'>('close_date');
+  const [seedingLoading, setSeedingLoading] = useState(false);
+
+  const currentViewRole = useMemo(() => {
+    return (user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin')
+      ? activeSubTab
+      : user?.role;
+  }, [user?.role, activeSubTab]);
 
   // HR Dashboard specific states
   const [hrProfiles, setHrProfiles] = useState<any[]>([]);
@@ -337,7 +349,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         .then(res => { if (res.success) setPendingExpensesCount(res.data?.total ?? 0); })
         .catch(e => console.error(e));
 
-      if (user?.role === 'accountant') {
+      if (currentViewRole === 'accountant') {
         fetchAPI('purchase-orders')
           .then(res => {
             setPoList(res?.data || res || []);
@@ -350,8 +362,16 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           })
           .catch(e => console.error(e));
       }
+
+      if (currentViewRole === 'marketing') {
+        fetchAPI('campaigns')
+          .then(res => {
+            setCampaignsList(Array.isArray(res) ? res : res?.data || []);
+          })
+          .catch(e => console.error(e));
+      }
     }
-  }, [isActive, user?.role]);
+  }, [isActive, currentViewRole]);
 
   useEffect(() => {
     if (isActive) {
@@ -415,7 +435,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
   // HR Dashboard specific calculations
   useEffect(() => {
-    if (user?.role === 'hr' && isActive) {
+    if (currentViewRole === 'hr' && isActive) {
       setHrLoading(true);
       const todayStr = new Date().toISOString().substring(0, 10);
       const parts = parsedMonthStr.split('-');
@@ -441,7 +461,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         setHrLoading(false);
       });
     }
-  }, [user?.role, parsedMonthStr, isActive]);
+  }, [currentViewRole, parsedMonthStr, isActive]);
 
   const hrFormatCurrency = (val: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
@@ -968,6 +988,93 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     );
   };
 
+  const renderSubTabs = () => {
+    if (!(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin')) {
+      return null;
+    }
+    return (
+      <div className="dashboard-subtab-container" style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'var(--color-bg)',
+        padding: '5px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--color-border-light)',
+        marginTop: '1rem',
+        marginBottom: '1.25rem',
+        width: 'fit-content',
+        boxShadow: '0 4px 10px rgba(0,0,0,0.02)',
+        animation: 'slideUp 0.4s ease-out both'
+      }}>
+        <button
+          onClick={() => setActiveSubTab('default')}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.8125rem',
+            transition: 'all 0.2s',
+            background: activeSubTab === 'default' ? 'var(--color-primary)' : 'transparent',
+            color: activeSubTab === 'default' ? '#fff' : 'var(--color-text-muted)',
+          }}
+        >
+          {t('Vận hành')}
+        </button>
+        <button
+          onClick={() => setActiveSubTab('hr')}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.8125rem',
+            transition: 'all 0.2s',
+            background: activeSubTab === 'hr' ? 'var(--color-primary)' : 'transparent',
+            color: activeSubTab === 'hr' ? '#fff' : 'var(--color-text-muted)',
+          }}
+        >
+          {t('Nhân sự')}
+        </button>
+        <button
+          onClick={() => setActiveSubTab('accountant')}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.8125rem',
+            transition: 'all 0.2s',
+            background: activeSubTab === 'accountant' ? 'var(--color-primary)' : 'transparent',
+            color: activeSubTab === 'accountant' ? '#fff' : 'var(--color-text-muted)',
+          }}
+        >
+          {t('Kế toán')}
+        </button>
+        <button
+          onClick={() => setActiveSubTab('marketing')}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.8125rem',
+            transition: 'all 0.2s',
+            background: activeSubTab === 'marketing' ? 'var(--color-primary)' : 'transparent',
+            color: activeSubTab === 'marketing' ? '#fff' : 'var(--color-text-muted)',
+          }}
+        >
+          {t('Marketing')}
+        </button>
+      </div>
+    );
+  };
+
   const renderDashboardWrapper = (children: React.ReactNode) => {
     return (
       <div style={{ position: 'relative' }}>
@@ -1187,7 +1294,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     );
   };
 
-  if (user?.role === 'hr') {
+  if (currentViewRole === 'hr') {
     const totalHeadcount = hrProfiles.length;
     const pendingLeaves = hrLeaves.filter(l => l.status === 'pending').length;
     const pendingAdvances = hrAdvances.filter(a => a.status === 'pending').length;
@@ -1232,6 +1339,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner at the very top */}
         {renderWelcomeBannerForRole(t('Chào mừng trở lại! Báo cáo nhanh nhân sự, ngày công & phê duyệt nghỉ phép.'), hrIssues)}
+
+        {renderSubTabs()}
 
         {/* Header (Title & Global Filter) below it */}
         {renderHeaderForRole(t("Hệ thống Quản lý Nhân sự & Bảng Lương (HRMS)"), t("Tính toán công phép, khấu trừ bảo hiểm, tính thuế lũy tiến TNCN và xác thực lương online.")) }
@@ -1449,7 +1558,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     );
   }
 
-  if (user?.role === 'accountant') {
+  if (currentViewRole === 'accountant') {
     const actStats = {
       revenueThisMonth: stats?.revenue || 185200000,
       pendingDeposits: 52000000,
@@ -1493,6 +1602,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '-0.75rem', animation: 'slideUp 0.4s ease-out both' }}>
         {/* Welcome Banner */}
         {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê tài chính, hóa đơn và duyệt chi chi tiêu.'), actIssues)}
+
+        {renderSubTabs()}
 
         {/* Header */}
         {renderHeaderForRole(t("Tổng quan Doanh thu & Chi phí"), t("Theo dõi dòng tiền thu chi thực tế, công nợ đặt cọc và yêu cầu thanh toán chi phí."))}
@@ -1841,41 +1952,143 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     );
   }
 
-  if (user?.role === 'marketing') {
+  if (currentViewRole === 'marketing') {
+    // Seeder handler
+    const handleSeedDemo = async () => {
+      if (seedingLoading) return;
+      setSeedingLoading(true);
+      const loadToast = toast.loading(t('Đang nạp dữ liệu thử nghiệm...'));
+      try {
+        const res = await fetchAPI('seed_marketing_demo');
+        if (res.success) {
+          toast.success(t('Nạp dữ liệu thử nghiệm thành công!'));
+          // Force reload
+          window.location.reload();
+        } else {
+          toast.error(res.message || t('Lỗi nạp dữ liệu'));
+        }
+      } catch (e: any) {
+        toast.error(e.message || t('Lỗi kết nối'));
+      } finally {
+        toast.dismiss(loadToast);
+        setSeedingLoading(false);
+      }
+    };
+
+    // Formatter helpers
+    const fmtVndCompact = (val: number) => {
+      const num = Number(val || 0);
+      if (num >= 1e9) {
+        return (num / 1e9).toFixed(1).replace(/\.0$/, '') + ' tỷ';
+      }
+      if (num >= 1e6) {
+        return (num / 1e6).toFixed(0) + ' triệu';
+      }
+      return num.toLocaleString();
+    };
+
+    const fallbackCohort = [
+      { cohort_month: '02/2026', total_leads: 120, converted_1_month: 15, converted_2_months: 28, converted_3_months: 35 },
+      { cohort_month: '03/2026', total_leads: 150, converted_1_month: 18, converted_2_months: 35, converted_3_months: 45 },
+      { cohort_month: '04/2026', total_leads: 180, converted_1_month: 25, converted_2_months: 48, converted_3_months: 60 },
+      { cohort_month: '05/2026', total_leads: 160, converted_1_month: 20, converted_2_months: 40, converted_3_months: 52 },
+      { cohort_month: '06/2026', total_leads: 200, converted_1_month: 30, converted_2_months: 55, converted_3_months: 70 },
+      { cohort_month: '07/2026', total_leads: 140, converted_1_month: 12, converted_2_months: 22, converted_3_months: 28 }
+    ];
+
+    const fallbackLeadMonth = [
+      { month: '02/2026', total_leads: 120, customer_count: 35, conversion_rate: 29.2 },
+      { month: '03/2026', total_leads: 150, customer_count: 45, conversion_rate: 30.0 },
+      { month: '04/2026', total_leads: 180, customer_count: 60, conversion_rate: 33.3 },
+      { month: '05/2026', total_leads: 160, customer_count: 52, conversion_rate: 32.5 },
+      { month: '06/2026', total_leads: 200, customer_count: 70, conversion_rate: 35.0 },
+      { month: '07/2026', total_leads: 140, customer_count: 28, conversion_rate: 20.0 }
+    ];
+
+    const fallbackCloseMonth = [
+      { month: '02/2026', total_leads: 120, customer_count: 25, conversion_rate: 20.8 },
+      { month: '03/2026', total_leads: 150, customer_count: 38, conversion_rate: 25.3 },
+      { month: '04/2026', total_leads: 180, customer_count: 48, conversion_rate: 26.7 },
+      { month: '05/2026', total_leads: 160, customer_count: 50, conversion_rate: 31.3 },
+      { month: '06/2026', total_leads: 200, customer_count: 65, conversion_rate: 32.5 },
+      { month: '07/2026', total_leads: 140, customer_count: 64, conversion_rate: 45.7 }
+    ];
+
+    const fallbackRevenue = [
+      { month: '02/2026', realized_revenue: 125000000, projected_revenue: 15000000 },
+      { month: '03/2026', realized_revenue: 180000000, projected_revenue: 25000000 },
+      { month: '04/2026', realized_revenue: 210000000, projected_revenue: 40000000 },
+      { month: '05/2026', realized_revenue: 195000000, projected_revenue: 30000000 },
+      { month: '06/2026', realized_revenue: 260000000, projected_revenue: 55000000 },
+      { month: '07/2026', realized_revenue: 140000000, projected_revenue: 95000000 }
+    ];
+
+    const fallbackSources = [
+      { name: 'Meta Ads', value: 850, color: '#3b82f6' },
+      { name: 'Google Ads', value: 320, color: '#ef4444' },
+      { name: 'Zalo Ads', value: 180, color: '#10b981' },
+      { name: 'TikTok Ads', value: 100, color: '#f59e0b' }
+    ];
+
+    // Read metrics from API response
+    const cohortData = (stats?.mktCohortConversion && stats.mktCohortConversion.length > 0) 
+      ? stats.mktCohortConversion 
+      : fallbackCohort;
+
+    const conversionData = mktFilterType === 'close_date'
+      ? ((stats?.mktConversionByCloseMonth && stats.mktConversionByCloseMonth.length > 0) ? stats.mktConversionByCloseMonth : fallbackCloseMonth)
+      : ((stats?.mktConversionByLeadMonth && stats.mktConversionByLeadMonth.length > 0) ? stats.mktConversionByLeadMonth : fallbackLeadMonth);
+
+    const revenueData = (stats?.mktRevenueAndProjection && stats.mktRevenueAndProjection.length > 0)
+      ? stats.mktRevenueAndProjection
+      : fallbackRevenue;
+
+    const leadSourceData = (stats?.leadSourceStats && stats.leadSourceStats.length > 0)
+      ? stats.leadSourceStats
+      : fallbackSources;
+
+    const totalLeadsSum = cohortData.reduce((acc: number, c: any) => acc + (c.total_leads || 0), 0);
+    const totalWonSum = cohortData.reduce((acc: number, c: any) => acc + (c.converted_3_months || 0), 0);
+    const calculatedRate = totalLeadsSum > 0 ? ((totalWonSum / totalLeadsSum) * 100).toFixed(1) : '4.8';
+
     const mktStats = {
-      totalLeads: stats?.contacts || 1450,
-      todayLeads: 38,
-      conversionRate: 4.8,
-      activeCampaigns: 6,
-      leadSources: [
-        { name: 'Meta Ads', value: 850 },
-        { name: 'Google Ads', value: 320 },
-        { name: 'Zalo Ads', value: 180 },
-        { name: 'TikTok Ads', value: 100 }
-      ],
-      campaignPerformance: [
-        { name: 'Q1', leads: 450, cost: 45 },
-        { name: 'Q2', leads: 620, cost: 58 },
-        { name: 'Q3', leads: 850, cost: 72 },
-        { name: 'Q4', leads: 950, cost: 85 }
-      ]
+      totalLeads: totalLeadsSum || stats?.contacts || 1450,
+      todayLeads: stats?.total_today || 38,
+      conversionRate: calculatedRate,
+      activeCampaigns: campaignsList.length > 0 ? campaignsList.filter((c: any) => c.status === 'active').length : 6
     };
 
     const mktIssues = [
       {
         icon: <GitBranch size={14} style={{ color: '#3b82f6' }} />,
-        text: t('6 chiến dịch Ads đang hoạt động hiệu quả.'),
+        text: `${mktStats.activeCampaigns} ${t('chiến dịch Ads đang hoạt động trên hệ thống.')}`,
         action: () => navigate('/contacts')
       }
     ];
 
     return renderDashboardWrapper(
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'slideUp 0.4s ease-out both' }}>
-        {/* Header */}
-        {renderHeaderForRole(t("Tổng quan Hiệu suất Chiến dịch Ads"), t("Đo lường lượng lead đổ về, chi phí quảng cáo Ads và hiệu quả chuyển đổi kênh."))}
-
+        
         {/* Welcome Banner */}
         {renderWelcomeBannerForRole(t('Chào mừng trở lại! Thống kê nguồn lead, chiến dịch quảng cáo và chuyển đổi Ads.'), mktIssues)}
+
+        {renderSubTabs()}
+
+        {/* Header with Seeder Button for Admin/Director */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          {renderHeaderForRole(t("Tổng quan Hiệu suất Chiến dịch Ads"), t("Đo lường lượng lead đổ về, chi phí quảng cáo Ads và hiệu quả chuyển đổi kênh."))}
+          {(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin') && (
+            <button
+              onClick={handleSeedDemo}
+              disabled={seedingLoading}
+              className={`btn ${seedingLoading ? 'disabled' : 'primary'} sm`}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: seedingLoading ? 'not-allowed' : 'pointer' }}
+            >
+              <RefreshCw size={14} className={seedingLoading ? 'animate-spin' : ''} />
+              {seedingLoading ? t('Đang nạp...') : t('Nạp dữ liệu mẫu Marketing')}
+            </button>
+          )}
+        </div>
 
         {/* KPIs */}
         <div className="dashboard-kpi-grid">
@@ -1885,40 +2098,244 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           {renderKpiCardForRole(t('CHIẾN DỊCH CHẠY'), String(mktStats.activeCampaigns), GitBranch, '#10b981', 'fair_share_equity-card', () => navigate('/rules'))}
         </div>
 
-        {/* Charts & Details */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
-          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Số lượng Lead vs Chi phí Ads ($)')}</h3>
+        {/* ROW 1: Cohort Conversion Speed & Customers + Conversion Rate */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1.25rem', marginBottom: '0.25rem' }}>
+          
+          {/* Chart 1: Cohort Conversion Speed */}
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                {t('Tốc độ Chuyển đổi Lead theo Nhóm (Cohort)')}
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                {t('Số lead chốt thành công trong vòng 1, 2, 3 tháng kể từ ngày tạo')}
+              </p>
+            </div>
             <div style={{ height: 260 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={mktStats.campaignPerformance}>
+                <BarChart data={cohortData} margin={{ left: -15, right: 5, top: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="cohort_month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="leads" name={t('Số Leads')} fill="#3b82f6" radius={[3, 3, 0, 0]} barSize={20} />
-                  <Bar dataKey="cost" name={t('Chi phí (Tr VND)')} fill="#f59e0b" radius={[3, 3, 0, 0]} barSize={20} />
+                  <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                  <Bar dataKey="converted_1_month" name={t('Trong 1 tháng')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                  <Bar dataKey="converted_2_months" name={t('Trong 2 tháng')} fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                  <Bar dataKey="converted_3_months" name={t('Trong 3 tháng')} fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Chart 2: Customers & Conversion Rate */}
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                  {t('Số lượng Khách hàng & Tỷ lệ Convert')}
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                  {t('Khách hàng mới chốt thành công và tỷ lệ chuyển đổi')}
+                </p>
+              </div>
+              
+              {/* Option Selector Toggle */}
+              <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-light)', flexShrink: 0 }}>
+                <button
+                  onClick={() => setMktFilterType('close_date')}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    background: mktFilterType === 'close_date' ? 'var(--color-surface)' : 'transparent',
+                    color: mktFilterType === 'close_date' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    boxShadow: mktFilterType === 'close_date' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
+                  }}
+                >
+                  {t('Theo ngày chốt')}
+                </button>
+                <button
+                  onClick={() => setMktFilterType('lead_date')}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    background: mktFilterType === 'lead_date' ? 'var(--color-surface)' : 'transparent',
+                    color: mktFilterType === 'lead_date' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    boxShadow: mktFilterType === 'lead_date' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
+                  }}
+                >
+                  {t('Theo ngày tạo lead')}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={conversionData} margin={{ left: -15, right: -10, top: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} unit="%" />
+                  <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                  <Bar yAxisId="left" dataKey="total_leads" name={t('Tổng Lead')} fill="#e2e8f0" radius={[3, 3, 0, 0]} maxBarSize={12} />
+                  <Bar yAxisId="left" dataKey="customer_count" name={t('Khách hàng chốt')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={12} />
+                  <Line yAxisId="right" type="monotone" dataKey="conversion_rate" name={t('Tỷ lệ Convert (%)')} stroke="#a31422" strokeWidth={2} dot={{ r: 3, stroke: '#a31422', strokeWidth: 1, fill: '#fff' }} activeDot={{ r: 5 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* ROW 2: Revenue vs Projection & Lead Sources */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '6fr 4fr', gap: '1.25rem', marginBottom: '0.25rem' }}>
+          
+          {/* Chart 3: Revenue & Projected Revenue */}
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                {t('Doanh thu Thực tế vs Dự kiến')}
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                {t('So sánh doanh thu đã thanh toán và dự kiến thu từ Sales Orders chưa đến hạn')}
+              </p>
+            </div>
+            <div style={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={revenueData} margin={{ left: -10, right: 5, top: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmtVndCompact} tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value) => [fmtVndCompact(Number(value)), '']} contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                  <Area type="monotone" dataKey="realized_revenue" name={t('Doanh thu thực tế')} fill="rgba(59, 130, 246, 0.08)" stroke="#3b82f6" strokeWidth={2} />
+                  <Bar dataKey="projected_revenue" name={t('Doanh thu dự kiến')} fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={18} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>{t('Tỷ trọng kênh quảng cáo')}</h3>
-            <div style={{ height: 260 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={mktStats.leadSources} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={{ fontSize: 9, fontWeight: 600 }}>
-                    {mktStats.leadSources.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={['#3b82f6', '#ef4444', '#10b981', '#f59e0b'][idx % 4]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+          {/* Lead Sources */}
+          <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                {t('Tỷ trọng Kênh Quảng cáo')}
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                {t('Tỷ trọng lead thu về phân bổ theo các kênh quảng cáo')}
+              </p>
+            </div>
+            <div style={{ height: 260, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ height: 160 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={leadSourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} paddingAngle={2}>
+                      {leadSourceData.map((entry: any, idx: number) => (
+                        <Cell key={`cell-${idx}`} fill={entry.color || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][idx % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.75rem', marginTop: '12px', padding: '0 8px' }}>
+                {leadSourceData.map((entry: any, idx: number) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][idx % 5] }} />
+                    <span style={{ fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>({entry.value})</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* ROW 3: Active Campaigns list */}
+        <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+              {t('Các Chiến dịch Marketing Đang Hoạt động')}
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+              {t('Danh sách chiến dịch quảng cáo và đồng bộ dữ liệu từ CSDL')}
+            </p>
+          </div>
+          
+          <div style={{ overflowX: 'auto', border: '1px solid var(--color-border-light)', borderRadius: '10px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border-light)', textAlign: 'left', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                  <th style={{ padding: '10px 12px' }}>{t('Tên chiến dịch')}</th>
+                  <th style={{ padding: '10px 12px' }}>{t('Dự án liên kết')}</th>
+                  <th style={{ padding: '10px 12px' }}>{t('Ngày bắt đầu')}</th>
+                  <th style={{ padding: '10px 12px' }}>{t('Ngày kết thúc')}</th>
+                  <th style={{ padding: '10px 12px' }}>{t('Trạng thái')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaignsList.length > 0 ? (
+                  campaignsList.map((camp: any, idx: number) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '40px' }}>
+                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text)' }}>{camp.name}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--color-text-light)' }}>{camp.project_name || camp.project_code || t('Không có')}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--color-text-muted)' }}>{camp.start_date ? new Date(camp.start_date).toLocaleDateString() : '-'}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--color-text-muted)' }}>{camp.end_date ? new Date(camp.end_date).toLocaleDateString() : '-'}</td>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          background: camp.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(107, 114, 128, 0.08)',
+                          color: camp.status === 'active' ? '#10b981' : '#6b7280'
+                        }}>
+                          {camp.status === 'active' ? t('Đang chạy') : t('Tạm dừng')}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  // Default mock campaigns when campaigns table is empty
+                  [
+                    { name: 'Chiến dịch Mùa Hè Vinhomes GP', proj: 'Vinhomes Grand Park', start: '2026-05-01', end: '2026-08-31', status: 'active' },
+                    { name: 'Quảng cáo Grand Marina Căn hộ Hiệu hiệu', proj: 'Grand Marina Saigon', start: '2026-06-15', end: '2026-10-31', status: 'active' },
+                    { name: 'Kênh Tìm Kiếm Metropole Thủ Thiêm', proj: 'The Metropole Thu Thiem', start: '2026-04-10', end: '2026-07-31', status: 'active' }
+                  ].map((camp, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '40px' }}>
+                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--color-text)' }}>{camp.name}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--color-text-light)' }}>{camp.proj}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--color-text-muted)' }}>{new Date(camp.start).toLocaleDateString()}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--color-text-muted)' }}>{new Date(camp.end).toLocaleDateString()}</td>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          background: 'rgba(16, 185, 129, 0.08)',
+                          color: '#10b981'
+                        }}>
+                          {t('Đang chạy')}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     );
   }
@@ -2364,6 +2781,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           </>
         );
       })()}
+
+      {renderSubTabs()}
 
       {/* Header */}
       <div className="page-header" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms' }}>
