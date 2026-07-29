@@ -32,11 +32,18 @@ class NotificationController {
             
             $actorName = null;
             if (!$isWarning && !empty($item['body'])) {
-                $cleanBody = preg_replace('/^Nhân viên\s+/u', '', $item['body']);
-                if (preg_match('/^(.+?)(?:\s*\([^)]*\))?\s+(?:đã|vừa|gửi|báo|có|check-in)\s+/u', $cleanBody, $matches)) {
+                $cleanBody = preg_replace('/^(?:Nhân viên|Nhân sự|Đồng nghiệp)\s+/u', '', $item['body']);
+                if (preg_match('/^(.+?)(?:\s*\([^)]*\))?\s+(?:đã|vừa|gửi|báo|có|check-in|nhắc)\s+/u', $cleanBody, $matches)) {
                     $possibleName = trim($matches[1]);
                     if (isset($avatars[$possibleName])) {
                         $actorName = $possibleName;
+                    } else {
+                        foreach ($avatars as $uName => $uAvt) {
+                            if (mb_strtolower($possibleName) === mb_strtolower($uName)) {
+                                $actorName = $uName;
+                                break;
+                            }
+                        }
                     }
                 }
             }
