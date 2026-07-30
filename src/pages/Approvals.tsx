@@ -1594,9 +1594,9 @@ export default function Approvals() {
                 />
 
                 <motion.div
-                  initial={{ x: '100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: '100%' }}
+                  initial={isMobile ? { y: '100%' } : { opacity: 0, x: '250px' }}
+                  animate={{ y: 0, x: 0, opacity: 1 }}
+                  exit={isMobile ? { y: '100%' } : { opacity: 0, x: '250px' }}
                   transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
                   style={{
                     position: 'fixed',
