@@ -1475,8 +1475,8 @@ export default function Approvals() {
                     {/* Category: TÀI CHÍNH & KẾ TOÁN */}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
-                        <div style={{ width: '4px', height: '14px', background: '#10b981', borderRadius: '2px' }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                        <div style={{ width: '4px', height: '14px', background: 'var(--color-primary, #a31422)', borderRadius: '2px' }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Tài chính & Kế toán')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
@@ -1553,8 +1553,8 @@ export default function Approvals() {
                     {/* Category: NHÂN SỰ & QUY TRÌNH */}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
-                        <div style={{ width: '4px', height: '14px', background: '#3b82f6', borderRadius: '2px' }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                        <div style={{ width: '4px', height: '14px', background: 'var(--color-primary, #a31422)', borderRadius: '2px' }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Nhân sự & Quy trình')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
@@ -1636,8 +1636,8 @@ export default function Approvals() {
                     {/* Category: HÀNH CHÍNH & TÀI SẢN */}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
-                        <div style={{ width: '4px', height: '14px', background: '#06b6d4', borderRadius: '2px' }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                        <div style={{ width: '4px', height: '14px', background: 'var(--color-primary, #a31422)', borderRadius: '2px' }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Hành chính & Thiết bị')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
