@@ -10,6 +10,7 @@ type User = {
   email?: string;
   consultant_id?: number;
   avatar?: string;
+  avatar_url?: string;
   signature_url?: string | null;
   manager_behavior_mode?: string;
   two_factor_enabled?: number;

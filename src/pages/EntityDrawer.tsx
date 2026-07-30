@@ -60,7 +60,8 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <AnimatePresence>
+    <>
+      <AnimatePresence>
       {isOpen && (
         <>
           <motion.div

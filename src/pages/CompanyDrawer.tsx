@@ -73,6 +73,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
 
   const [activeTab, setActiveTab] = useState(() => window.innerWidth <= 1024 ? '' : 'info');
   const [formData, setFormData] = useState(entity || {});
+  const isPartner = ['f1', 'f2', 'f3', 'ctv'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
   const [tags, setTags] = useState<string[]>(entity?.tags || []);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -423,7 +424,8 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <AnimatePresence>
+    <>
+      <AnimatePresence>
       {isOpen && (
         <>
           <motion.div
@@ -1268,9 +1270,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                   </div>
                 )}
 
-                {activeTab === 'contacts' && (() => {
-                  const isPartner = ['f1', 'f2', 'f3', 'ctv'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
-                  return (
+                {activeTab === 'contacts' && (
                     <div className="animate-fade">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <div>
@@ -1340,7 +1340,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                               <button 
                                 className="btn secondary sm"
                                 onClick={() => {
-                                  useUIStore.getState().setSelectedContactId(sc.id);
+                                  navigate(`/contacts?open_contact_id=${sc.id}`);
                                 }}
                               >
                                 Chi tiết
@@ -1482,8 +1482,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                         )}
                       </div>
                     </div>
-                  );
-                })()}
+                  )}
 
 
                 {activeTab === 'deals' && (
