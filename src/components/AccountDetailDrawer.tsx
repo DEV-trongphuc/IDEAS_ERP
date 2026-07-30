@@ -1261,7 +1261,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
             </button>
           </div>
         </motion.div>
-      </div>,
+          </motion.div>
+        )}
+      </AnimatePresence>,
       document.body
     );
   }
