@@ -22,8 +22,7 @@ const TYPES = [
   { id: 'call', label: 'Cuộc gọi', icon: <Phone size={16} />, color: 'var(--color-primary)' },
   { id: 'zalo_connect', label: 'Zalo', icon: <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain' }} alt="Zalo" />, color: '#0084FF' },
   { id: 'email', label: 'Email', icon: <Mail size={16} />, color: '#10b981' },
-  { id: 'meeting', label: 'Gặp gỡ', icon: <Users size={16} />, color: '#f59e0b' },
-  { id: 'note', label: 'Ghi chú', icon: <AlignLeft size={16} />, color: '#f59e0b' }
+  { id: 'meeting', label: 'Gặp gỡ', icon: <Users size={16} />, color: '#f59e0b' }
 ];
 
 const DEFAULT_SUBJECTS: Record<string, string> = {
@@ -210,7 +209,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
           className="modal-sheet" 
           style={{ 
             width: '100%', 
-            maxWidth: isMobile ? '100%' : 540, 
+            maxWidth: isMobile ? '100%' : 640, 
             padding: 0,
             borderTopLeftRadius: '24px',
             borderTopRightRadius: '24px',
@@ -263,7 +262,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
             }}
           >
             {/* Type selector */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: isMobile ? '6px' : '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: isMobile ? '6px' : '10px' }}>
               {TYPES.map(t => (
                 <button 
                   key={t.id} type="button"
