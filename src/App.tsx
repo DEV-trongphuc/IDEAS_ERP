@@ -118,7 +118,7 @@ const AppTabs = () => {
   } else if (currentPath === '/quotes') {
     return <Navigate to="/" replace />;
   } else if (currentPath === '/expenses') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant', 'hr'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/tickets') {
