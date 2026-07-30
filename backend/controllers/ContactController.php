@@ -47,6 +47,10 @@ class ContactController {
 
         $where  = ['c.tenant_id = ?', 'c.deleted_at IS NULL', 'c.owner_id IS NOT NULL'];
         $params = [$tid];
+        $role = strtolower($auth['role'] ?? '');
+        if ($role === 'sale_admin' || $role === 'saleadmin') {
+            $where[] = "c.status = 'customer'";
+        }
 
         // Validating sort fields
         $allowedSort = ['created_at', 'updated_at', 'first_name', 'lead_score', 'last_contact'];
@@ -196,6 +200,12 @@ class ContactController {
 
         $stmt = $this->db->prepare("
             SELECT c.*, 
+                   (
+                       SELECT MIN(dm.created_at)
+                       FROM deposit_milestones dm
+                       JOIN deposits dep ON dm.deposit_id = dep.id
+                       WHERE dep.contact_id = c.id
+                   ) as closed_date,
                    CASE 
                        WHEN comp.deleted_at IS NOT NULL THEN CONCAT(comp.name, ' (Đã xóa)')
                        ELSE comp.name 
@@ -1321,7 +1331,7 @@ class ContactController {
             $permissionsJson = json_decode($resQ['permissions_json'], true);
         }
 
-        if (in_array($auth['role'], ['admin', 'superadmin', 'super_admin'], true)) {
+        if (in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin'], true)) {
             return 'all';
         }
 

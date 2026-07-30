@@ -29,11 +29,11 @@ const TABS = [
   { id: 'info', label: 'Thông tin', icon: <Building2 size={16} /> },
   { id: 'activities', label: 'Hoạt động', icon: <History size={16} /> },
   { id: 'contacts', label: 'Liên hệ', icon: <Users size={16} /> },
-  { id: 'sales_orders', label: 'Đơn bán hàng (SO)', icon: <FileText size={16} /> },
-  { id: 'purchase_orders', label: 'Đơn mua hàng (PO / Phí)', icon: <FileBadge size={16} /> },
-  { id: 'deals', label: 'Giao dịch Bán', icon: <Briefcase size={16} /> },
-  { id: 'invoices', label: 'Phiếu thanh toán & Hóa đơn', icon: <FileText size={16} /> },
-  { id: 'expenses', label: 'Chi trả thù lao / Phí', icon: <Plus size={16} /> },
+  { id: 'sales_orders', label: 'Đơn bán (SO)', icon: <FileText size={16} /> },
+  { id: 'purchase_orders', label: 'Đơn mua (PO)', icon: <FileBadge size={16} /> },
+  { id: 'deals', label: 'Giao dịch', icon: <Briefcase size={16} /> },
+  { id: 'invoices', label: 'Hóa đơn', icon: <FileText size={16} /> },
+  { id: 'expenses', label: 'Chi trả thù lao', icon: <Plus size={16} /> },
   { id: 'docs', label: 'Tài liệu', icon: <FileBadge size={16} /> },
   { id: 'settings', label: 'Thiết lập', icon: <Settings size={16} /> },
 ];
@@ -79,11 +79,8 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
   const visibleTabs = useMemo(() => {
-    if (isSale) {
-      return TABS.filter(t => ['info', 'contacts', 'docs', 'activities', 'sales_orders'].includes(t.id));
-    }
     return disableEdit ? TABS.filter(t => t.id !== 'settings') : TABS;
-  }, [disableEdit, isSale]);
+  }, [disableEdit]);
 
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -184,7 +181,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
 
       if (!formData.name || !formData.name.trim()) {
         newErrors.name = true;
-        addToast('Tên giảng viên là bắt buộc.', 'error');
+        addToast('Tên đối tác là bắt buộc.', 'error');
       }
 
       const payload = { ...formData, tags };
@@ -312,6 +309,37 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
     }
   };
 
+  const [salesOrders, setSalesOrders] = useState<any[]>([]);
+  const [loadingSO, setLoadingSO] = useState(false);
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
+  const [loadingPO, setLoadingPO] = useState(false);
+
+  const fetchSalesOrders = async () => {
+    if (!entity?.id) return;
+    setLoadingSO(true);
+    try {
+      const r = await api.get('/sales-orders', { params: { company_id: entity.id, limit: 100 } });
+      setSalesOrders(r.data.data?.orders || r.data.data || []);
+    } catch {
+      setSalesOrders([]);
+    } finally {
+      setLoadingSO(false);
+    }
+  };
+
+  const fetchPurchaseOrders = async () => {
+    if (!entity?.id) return;
+    setLoadingPO(true);
+    try {
+      const r = await api.get('/purchase-orders', { params: { supplier_id: entity.id, limit: 100 } });
+      setPurchaseOrders(r.data.data?.orders || r.data.data || []);
+    } catch {
+      setPurchaseOrders([]);
+    } finally {
+      setLoadingPO(false);
+    }
+  };
+
   const handleCreateDeal = async () => {
     if (!dealForm.title.trim() || isSaving) return;
     try {
@@ -346,6 +374,8 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
     if (activeTab === 'activities') fetchActivities();
     if (activeTab === 'invoices') fetchInvoices();
     if (activeTab === 'expenses') fetchExpenses();
+    if (activeTab === 'sales_orders') fetchSalesOrders();
+    if (activeTab === 'purchase_orders') fetchPurchaseOrders();
   }, [activeTab]);
   
   const [prevEntityId, setPrevEntityId] = useState<number | null>(null);
@@ -383,6 +413,8 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
 
         fetchInvoices();
         fetchExpenses();
+        fetchSalesOrders();
+        fetchPurchaseOrders();
     } else {
       setFormData({});
       setTags([]);
@@ -392,6 +424,8 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
       setDeals([]);
       setInvoices([]);
       setExpenses([]);
+      setSalesOrders([]);
+      setPurchaseOrders([]);
     }
   }, [entity]);
 
@@ -909,53 +943,143 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                 {activeTab === 'info' && (
                   <fieldset disabled={disableEdit} style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }} className="animate-fade">
                     {/* Partner Statistics Cards (For CTV / Đại lý) */}
-                    {['f1', 'f2', 'f3', 'ctv'].includes(String(formData?.tier || entity?.tier || '').toLowerCase()) && (
+                    {['f1', 'f2', 'f3', 'ctv', 'ca_nhan', 'doanh_nghiep'].includes(String(formData?.tier || entity?.tier || '').toLowerCase()) && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                        <div className="card-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%)', border: '1px solid rgba(59, 130, 246, 0.15)', borderRadius: '14px' }}>
-                          <div style={{ padding: '10px', background: '#3b82f6', borderRadius: '10px', color: 'white', display: 'flex' }}>
-                            <Users size={20} />
+                        {/* Card 1: Khách hàng giới thiệu */}
+                        <div className="stat-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', minHeight: '120px', position: 'relative', overflow: 'hidden' }}>
+                          {/* Decorative Background SVG */}
+                          <div className="decor-svg" style={{ color: '#3b82f6', opacity: 0.05, position: 'absolute', right: '-15px', bottom: '-15px', width: '90px', height: '90px', pointerEvents: 'none', zIndex: 1 }}>
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                              <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+                              <circle cx="35" cy="45" r="15" fill="currentColor" fillOpacity="0.2" />
+                              <circle cx="65" cy="45" r="15" fill="currentColor" fillOpacity="0.4" />
+                              <circle cx="50" cy="70" r="18" fill="currentColor" fillOpacity="0.6" />
+                            </svg>
                           </div>
-                          <div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Khách hàng giới thiệu</span>
-                            <strong style={{ fontSize: '1.25rem', color: 'var(--color-text)' }}>{subContacts.length}</strong>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
+                            <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Khách hàng giới thiệu</span>
+                            <div style={{
+                              color: '#3b82f6',
+                              background: 'rgba(59, 130, 246, 0.08)',
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <Users size={18} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative', zIndex: 2 }}>
+                            <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.75rem', lineHeight: 1.1 }}>
+                              {subContacts.length}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
+                              <span>{isPartner ? 'Khách hàng giới thiệu' : 'Liên hệ phụ thuộc'}</span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="card-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '14px' }}>
-                          <div style={{ padding: '10px', background: '#10b981', borderRadius: '10px', color: 'white', display: 'flex' }}>
-                            <TrendingUp size={20} />
+                        {/* Card 2: Doanh thu mang lại */}
+                        <div className="stat-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', minHeight: '120px', position: 'relative', overflow: 'hidden' }}>
+                          {/* Decorative Background SVG */}
+                          <div className="decor-svg" style={{ color: '#10b981', opacity: 0.05, position: 'absolute', right: '-15px', bottom: '-15px', width: '90px', height: '90px', pointerEvents: 'none', zIndex: 1 }}>
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                              <path d="M10 50 Q 50 10 90 50 T 90 90" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
+                              <circle cx="10" cy="50" r="6" fill="currentColor" />
+                              <circle cx="50" cy="10" r="6" fill="currentColor" />
+                              <circle cx="90" cy="50" r="6" fill="currentColor" />
+                              <path d="M50 10 L 90 50" stroke="currentColor" strokeWidth="1.5" />
+                            </svg>
                           </div>
-                          <div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Doanh thu mang lại</span>
-                            <strong style={{ fontSize: '1.25rem', color: 'var(--color-text)' }}>
-                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(invoices.reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0))}
-                            </strong>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
+                            <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Doanh thu mang lại</span>
+                            <div style={{
+                              color: '#10b981',
+                              background: 'rgba(16, 185, 129, 0.08)',
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <TrendingUp size={18} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative', zIndex: 2 }}>
+                            <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.75rem', lineHeight: 1.1 }}>
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
+                                salesOrders.length > 0 
+                                  ? salesOrders.reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0) 
+                                  : invoices.reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0)
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                              <span>{salesOrders.length > 0 ? 'Tổng đơn hàng SO' : 'Hóa đơn ghi nhận'}</span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="card-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '14px' }}>
-                          <div style={{ padding: '10px', background: '#ef4444', borderRadius: '10px', color: 'white', display: 'flex' }}>
-                            <DollarSign size={20} />
+                        {/* Card 3: Hoa hồng phát sinh */}
+                        <div className="stat-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', minHeight: '120px', position: 'relative', overflow: 'hidden' }}>
+                          {/* Decorative Background SVG */}
+                          <div className="decor-svg" style={{ color: '#ef4444', opacity: 0.05, position: 'absolute', right: '-15px', bottom: '-15px', width: '90px', height: '90px', pointerEvents: 'none', zIndex: 1 }}>
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                              <circle cx="50" cy="50" r="30" stroke="currentColor" strokeWidth="2" />
+                              <path d="M50 35 V 65 M35 50 H 65" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                            </svg>
                           </div>
-                          <div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hoa hồng phát sinh</span>
-                            <strong style={{ fontSize: '1.25rem', color: 'var(--color-text)' }}>
-                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(expenses.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0))}
-                            </strong>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', position: 'relative', zIndex: 2 }}>
+                            <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Hoa hồng phát sinh</span>
+                            <div style={{
+                              color: '#ef4444',
+                              background: 'rgba(239, 68, 68, 0.08)',
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              <DollarSign size={18} />
+                            </div>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative', zIndex: 2 }}>
+                            <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.75rem', lineHeight: 1.1 }}>
+                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
+                                purchaseOrders.length > 0 
+                                  ? purchaseOrders.reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0) 
+                                  : expenses.reduce((acc: number, curr: any) => acc + (Number(curr.amount) || 0), 0)
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+                              <span>{purchaseOrders.length > 0 ? 'Tổng đơn mua PO' : 'Lịch sử chi trả'}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     )}
                     <div className="card-panel">
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="panel-title" style={{ margin: 0 }}>Hồ sơ Giảng viên</h4>
+                        <h4 className="panel-title" style={{ margin: 0 }}>Hồ sơ Đối tác</h4>
                       </div>
                       <div className="grid grid-2">
                         <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                          <label className="form-label">Họ và tên Giảng viên <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                          <label className="form-label">Tên Đối tác <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                           <input 
                             className="form-input" 
-                            placeholder="Tên đầy đủ của giảng viên..." 
+                            placeholder="Tên đối tác..." 
                             value={formData?.name || ''} 
                             onChange={e => {
                               setFormData((prev: any) => ({ ...prev, name: e.target.value }));
@@ -971,10 +1095,10 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                         </div>
                         
                         <div className="form-group">
-                          <label className="form-label">Trình độ / Phân loại giảng viên</label>
+                          <label className="form-label">Loại hình đối tác</label>
                           <CustomSelect 
                             options={tierOptions}
-                            value={formData?.tier || 'f1'}
+                            value={formData?.tier || 'ca_nhan'}
                             onChange={val => {
                               setFormData((prev: any) => ({ 
                                 ...prev, 
@@ -982,18 +1106,18 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                                 parent_id: (val === 'f2' || val === 'f3') ? prev.parent_id : null 
                               }));
                             }}
-                            placeholder="Chọn trình độ/phân loại..."
+                            placeholder="Chọn loại hình đối tác..."
                           />
                         </div>
 
                         {(formData?.tier === 'f2' || formData?.tier === 'f3') && (
                           <div className="form-group">
-                            <label className="form-label">Giảng viên cơ hữu quản lý trực tiếp</label>
+                            <label className="form-label">Đối tác quản lý trực tiếp</label>
                             <CustomSelect 
                               options={parentOptions}
                               value={formData?.parent_id || ''}
                               onChange={val => setFormData((prev: any) => ({ ...prev, parent_id: val }))}
-                              placeholder="Chọn giảng viên quản lý..."
+                              placeholder="Chọn đối tác quản lý..."
                             />
                           </div>
                         )}
@@ -1020,7 +1144,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                         </div>
 
                         <div className="form-group">
-                          <label className="form-label">Trạng thái giảng viên</label>
+                          <label className="form-label">Trạng thái đối tác</label>
                           <CustomSelect 
                             options={[
                               { value: 'prospect', label: 'Tiềm năng' },
@@ -1117,7 +1241,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                       <h4 className="panel-title">Ghi chú chi tiết</h4>
                       <textarea
                         className="form-input"
-                        placeholder="Nhập ghi chú hoặc mô tả chi tiết về giảng viên này..."
+                        placeholder="Nhập ghi chú hoặc mô tả chi tiết về đối tác này..."
                         rows={4}
                         value={formData?.notes || ''}
                         onChange={e => setFormData((prev: any) => ({ ...prev, notes: e.target.value }))}
@@ -1510,6 +1634,114 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                               <p className="text-xs text-light mt-1">Giá trị: <strong style={{ color: 'var(--color-text)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(d.value || 0)}</strong> • Ngày dự kiến: {d.expected_close || 'Chưa xác định'}</p>
                             </div>
                             <span className={`badge ${d.stage_color ? '' : 'warning'}`} style={d.stage_color ? { background: d.stage_color + '20', color: d.stage_color } : {}}>{d.stage || d.pipeline_stage || 'Đang xử lý'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'sales_orders' && (
+                  <div className="animate-fade">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                      <h4 className="panel-title" style={{ margin: 0 }}>Đơn bán hàng (Sales Order - SO)</h4>
+                      {!disableEdit && (
+                        <button 
+                          className="btn primary sm" 
+                          onClick={() => {
+                            useUIStore.getState().setShowPOS(true);
+                          }}
+                        >
+                          <Plus size={14}/> Tạo Đơn bán hàng
+                        </button>
+                      )}
+                    </div>
+                    {loadingSO ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                        <Loader2 size={24} className="spin" style={{ margin: '0 auto' }} />
+                      </div>
+                    ) : salesOrders.length === 0 ? (
+                      <div className="card-panel" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                        <FileText size={32} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
+                        <p style={{ fontWeight: 600 }}>Chưa có đơn bán hàng (SO) nào</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {salesOrders.map((so: any) => (
+                          <div key={so.id} className="card-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
+                            <div>
+                              <h4 style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-primary)' }}>{so.so_number || `SO-${so.id}`}</h4>
+                              <p className="text-xs text-light mt-1">
+                                Ngày đặt: {so.order_date || 'Chưa rõ'} • Tổng tiền: <strong style={{ color: 'var(--color-text)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(so.total || 0)}</strong>
+                              </p>
+                              {so.notes && <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px', fontStyle: 'italic' }}>{so.notes}</p>}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                              <span className={`badge ${so.status === 'approved' || so.status === 'completed' ? 'success' : so.status === 'draft' ? 'info' : 'warning'}`}>
+                                {so.status === 'approved' ? 'Đã duyệt' : so.status === 'completed' ? 'Hoàn thành' : so.status === 'draft' ? 'Nháp' : 'Chờ duyệt'}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: so.payment_status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: so.payment_status === 'paid' ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                                {so.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'purchase_orders' && (
+                  <div className="animate-fade">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                      <h4 className="panel-title" style={{ margin: 0 }}>Đơn mua hàng (Purchase Order - PO)</h4>
+                      {!disableEdit && (
+                        <button 
+                          className="btn primary sm" 
+                          onClick={() => {
+                            const primaryContact = subContacts.find(sc => sc.isPrimary) || subContacts[0];
+                            navigate('/expenses', { 
+                              state: { 
+                                openCreate: true, 
+                                defaultContact: primaryContact ? {
+                                  id: primaryContact.id,
+                                  name: primaryContact.name,
+                                  avatar_url: ''
+                                } : null
+                              } 
+                            });
+                            onClose();
+                          }}
+                        >
+                          <Plus size={14}/> Tạo Đơn mua hàng (PO)
+                        </button>
+                      )}
+                    </div>
+                    {loadingPO ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                        <Loader2 size={24} className="spin" style={{ margin: '0 auto' }} />
+                      </div>
+                    ) : purchaseOrders.length === 0 ? (
+                      <div className="card-panel" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                        <FileBadge size={32} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
+                        <p style={{ fontWeight: 600 }}>Chưa có đơn mua hàng (PO) nào</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {purchaseOrders.map((po: any) => (
+                          <div key={po.id} className="card-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
+                            <div>
+                              <h4 style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-danger)' }}>{po.po_number || `PO-${po.id}`}</h4>
+                              <p className="text-xs text-light mt-1">
+                                Ngày lập: {po.order_date || 'Chưa rõ'} • Tổng tiền: <strong style={{ color: 'var(--color-text)' }}>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(po.total || 0)}</strong>
+                              </p>
+                              {po.notes && <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '4px', fontStyle: 'italic' }}>{po.notes}</p>}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                              <span className={`badge ${po.status === 'received' || po.status === 'approved' ? 'success' : po.status === 'rejected' ? 'danger' : 'warning'}`}>
+                                {po.status === 'received' ? 'Đã nhận hàng' : po.status === 'approved' ? 'Đã duyệt' : po.status === 'rejected' ? 'Từ chối' : 'Chờ duyệt'}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>

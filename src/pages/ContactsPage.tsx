@@ -185,7 +185,11 @@ const FMT_VND = (n: any) => {
 };
 const AGO_DAYS = (d: string) => d ? Math.floor((Date.now()-new Date(d).getTime())/86400000) : 999;
 
-export const ContactsPage: React.FC = () => {
+interface ContactsPageProps {
+  defaultSegment?: string;
+}
+
+export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'tiem_nang' }) => {
   const { user } = useAuth();
   const isSale = user?.role === 'sale';
   const navigate = useNavigate();
@@ -262,7 +266,7 @@ export const ContactsPage: React.FC = () => {
       }
     }
   }, [openContactId]);
-  const [segment, setSegment] = useState('tiem_nang');
+  const [segment, setSegment] = useState(defaultSegment);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [page, setPage] = useState(1);
@@ -883,69 +887,6 @@ export const ContactsPage: React.FC = () => {
           </button>
         </div>
       )}
-
-      {/* Tab Selectors: Tiềm năng & Học viên */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        background: 'var(--color-surface)',
-        border: '1px solid var(--color-border-light)',
-        padding: '4px',
-        borderRadius: '12px',
-        width: 'fit-content',
-        marginBottom: '1rem',
-        boxShadow: 'var(--shadow-xs)'
-      }}>
-        <button
-          type="button"
-          onClick={() => {
-            setSegment('tiem_nang');
-            setPage(1);
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '0.825rem',
-            fontWeight: 700,
-            background: segment === 'tiem_nang' ? 'var(--color-primary)' : 'transparent',
-            color: segment === 'tiem_nang' ? '#ffffff' : 'var(--color-text-muted)',
-            transition: 'all 0.2s ease-in-out'
-          }}
-        >
-          <Users size={14} />
-          <span>Tiềm năng</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setSegment('customer');
-            setPage(1);
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '0.825rem',
-            fontWeight: 700,
-            background: segment === 'customer' ? 'var(--color-primary)' : 'transparent',
-            color: segment === 'customer' ? '#ffffff' : 'var(--color-text-muted)',
-            transition: 'all 0.2s ease-in-out'
-          }}
-        >
-          <GraduationCap size={14} />
-          <span>Học viên</span>
-        </button>
-      </div>
 
       {/* Search + filter row */}
       <div className={isMobile ? "" : "card"} style={{ padding: isMobile ? '0' : '0.75rem 1rem', marginBottom:'0.75rem', display:'flex', gap:'0.75rem', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', background: isMobile ? 'transparent' : undefined, border: isMobile ? 'none' : undefined, boxShadow: isMobile ? 'none' : undefined }}>
@@ -1811,7 +1752,11 @@ export const ContactsPage: React.FC = () => {
                     {columns.find(c => c.id === 'updated_at')?.visible && !columns.find(c => c.id === 'owner')?.visible && (
                       <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Cập nhật</th>
                     )}
-                    {columns.find(c => c.id === 'created_at')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Ngày tạo</th>}
+                    {columns.find(c => c.id === 'created_at')?.visible && (
+                      <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>
+                        {segment === 'customer' ? 'Ngày chốt' : 'Ngày tạo'}
+                      </th>
+                    )}
                     {columns.find(c => c.id === 'score')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Score</th>}
                     {/* Hiding actions column header */}
                   </tr>
@@ -1908,7 +1853,16 @@ export const ContactsPage: React.FC = () => {
                                 {c.stage_name}
                               </span>
                             ) : (
-                              <span className={`badge ${STATUS_CLASS[c.status] || 'info'}`}>{STATUS_LABEL[c.status] || c.status}</span>
+                              <span 
+                                className={`badge ${STATUS_CLASS[c.status] || 'info'}`}
+                                style={c.status === 'customer' ? {
+                                  backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                                  color: '#ec4899',
+                                  border: '1px solid rgba(236, 72, 153, 0.2)'
+                                } : undefined}
+                              >
+                                {STATUS_LABEL[c.status] || c.status}
+                              </span>
                             )}
                           </td>
                         )}
@@ -2052,8 +2006,8 @@ export const ContactsPage: React.FC = () => {
                         {columns.find(col => col.id === 'created_at')?.visible && (
                           <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
                             <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-                              {c.created_at ? (() => {
-                                const d = new Date(c.created_at);
+                              {(segment === 'customer' ? (c.closed_date || c.created_at) : c.created_at) ? (() => {
+                                const d = new Date(segment === 'customer' ? (c.closed_date || c.created_at) : c.created_at);
                                 const pad = (n: number) => String(n).padStart(2, '0');
                                 return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
                               })() : '—'}
@@ -2247,7 +2201,20 @@ export const ContactsPage: React.FC = () => {
                                   {c.stage_name}
                                 </span>
                               ) : (
-                                <span className={`badge ${STATUS_CLASS[c.status] || 'info'}`} style={{ borderRadius: '8px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: 700 }}>
+                                <span 
+                                  className={`badge ${STATUS_CLASS[c.status] || 'info'}`} 
+                                  style={{ 
+                                    borderRadius: '8px', 
+                                    padding: '4px 8px', 
+                                    fontSize: '0.72rem', 
+                                    fontWeight: 700,
+                                    ...(c.status === 'customer' ? {
+                                      backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                                      color: '#ec4899',
+                                      border: '1px solid rgba(236, 72, 153, 0.2)'
+                                    } : {})
+                                  }}
+                                >
                                   {STATUS_LABEL[c.status] || c.status}
                                 </span>
                               )}

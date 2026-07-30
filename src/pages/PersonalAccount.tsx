@@ -244,6 +244,9 @@ const PersonalAccountInner = () => {
         return { label: 'Manager', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.1)' };
       case 'assistant':
         return { label: 'Assistant', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
+      case 'sale_admin':
+      case 'saleadmin':
+        return { label: 'Sale Admin', color: '#4f46e5', bg: 'rgba(79, 70, 229, 0.1)' };
       case 'sale':
       case 'sales':
         return { label: 'Sales', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' };

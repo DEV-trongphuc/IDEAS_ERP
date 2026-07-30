@@ -35,6 +35,7 @@ export const CompaniesPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim(), 350);
   const [statusFilter, setStatusFilter] = useState('');
+  const [tierFilter, setTierFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [deleteItem, setDeleteItem] = useState<any>(null);
@@ -53,6 +54,7 @@ export const CompaniesPage: React.FC = () => {
       const params: any = { page, limit: pageSize };
       if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter) params.status = statusFilter;
+      if (tierFilter) params.tier = tierFilter;
       
       const r = await api.get('/companies', { params });
       const data = r.data.data;
@@ -65,7 +67,7 @@ export const CompaniesPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, debouncedSearch, statusFilter]);
+  }, [page, pageSize, debouncedSearch, statusFilter, tierFilter]);
 
   useEffect(() => {
     fetchCompanies();
@@ -73,7 +75,7 @@ export const CompaniesPage: React.FC = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, statusFilter]);
+  }, [debouncedSearch, statusFilter, tierFilter]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -146,27 +148,31 @@ export const CompaniesPage: React.FC = () => {
   };
 
   const getTierLabel = (tier: string) => {
-    if (!tier) return 'Đại lý F1';
+    if (!tier) return 'Đối tác cá nhân';
     const t = String(tier).toLowerCase();
-    if (t === 'ctv') return 'CTV / Môi giới';
-    if (t === 'giang_vien') return 'Giảng viên';
-    if (t === 'chuyen_gia') return 'Chuyên gia';
-    if (t.startsWith('f')) return 'Đại lý ' + t.toUpperCase();
-    return t.charAt(0).toUpperCase() + t.slice(1);
+    if (t === 'ca_nhan') return 'Đối tác cá nhân';
+    if (t === 'doanh_nghiep') return 'Đối tác doanh nghiệp';
+    if (t === 'ctv') return 'Trợ giảng (TA)';
+    if (t === 'giang_vien') return 'Giảng viên nước ngoài';
+    if (t === 'chuyen_gia') return 'Chuyên gia / Cố vấn';
+    if (t === 'f1') return 'Giảng viên Cơ hữu';
+    if (t === 'f2') return 'Giảng viên Thỉnh giảng';
+    if (t === 'f3') return 'Giảng viên Đối tác';
+    return t;
   };
 
   return (
     <div className="page-container anim-fade-up">
       <div className="page-header" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px', marginBottom: '1.5rem' }}>
         <div>
-          <h1 className="page-title" style={{ fontSize: isMobile ? '1.45rem' : '1.75rem' }}>Giảng viên & Chuyên gia</h1>
-          <p className="page-subtitle" style={{ fontSize: '0.8rem' }}>{loading ? '...' : `${total} giảng viên, chuyên gia`}</p>
+          <h1 className="page-title" style={{ fontSize: isMobile ? '1.45rem' : '1.75rem' }}>Đối tác</h1>
+          <p className="page-subtitle" style={{ fontSize: '0.8rem' }}>{loading ? '...' : `${total} đối tác`}</p>
         </div>
         {!isSale && (
           <button 
             className="btn primary" 
             onClick={openCreate} 
-            title="Thêm giảng viên/chuyên gia" 
+            title="Thêm đối tác" 
             style={{ 
               padding: isMobile ? '8px' : '8px 16px', 
               display: 'flex', 
@@ -179,7 +185,7 @@ export const CompaniesPage: React.FC = () => {
             }}
           >
             <Plus size={16} />
-            {!isMobile && <span>Thêm giảng viên/chuyên gia</span>}
+            {!isMobile && <span>Thêm đối tác</span>}
           </button>
         )}
       </div>
@@ -192,7 +198,7 @@ export const CompaniesPage: React.FC = () => {
           <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <input
               type="text"
-              placeholder="Tìm tên giảng viên, chuyên môn thế mạnh..."
+              placeholder="Tìm tên đối tác, chuyên môn thế mạnh..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="form-input"
@@ -244,10 +250,10 @@ export const CompaniesPage: React.FC = () => {
                 justifyContent: 'center',
                 borderRadius: '10px',
                 border: '1px solid var(--color-border)',
-                background: statusFilter ? 'var(--color-primary-light)' : 'transparent',
-                color: statusFilter ? 'var(--color-primary)' : 'var(--color-text)'
+                background: (statusFilter || tierFilter) ? 'var(--color-primary-light, rgba(163, 20, 34, 0.08))' : 'transparent',
+                color: (statusFilter || tierFilter) ? 'var(--color-primary, #a31422)' : 'var(--color-text)'
               }}
-              title="Bộ lọc trạng thái"
+              title="Bộ lọc trạng thái & loại hình"
             >
               <MoreHorizontal size={20} />
             </button>
@@ -267,39 +273,81 @@ export const CompaniesPage: React.FC = () => {
                   border: '1px solid var(--color-border-light)',
                   borderRadius: '12px',
                   boxShadow: 'var(--shadow-lg)',
-                  padding: '8px',
+                  padding: '12px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '4px',
+                  gap: '12px',
                   zIndex: 1000,
-                  minWidth: '150px'
+                  minWidth: '220px'
                 }}>
-                  <div style={{ padding: '6px 8px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                    Trạng thái
-                  </div>
-                  <button 
-                    onClick={() => { setStatusFilter(''); setShowFiltersMenu(false); }}
-                    style={{
-                      padding: '8px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                      background: statusFilter === '' ? 'var(--color-bg)' : 'transparent',
-                      color: 'var(--color-text)', fontWeight: statusFilter === '' ? 700 : 500
-                    }}
-                  >
-                    Tất cả
-                  </button>
-                  {STATUSES.map(st => (
+                  {/* Section 1: Trạng thái */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                      Trạng thái
+                    </div>
                     <button 
-                      key={st}
-                      onClick={() => { setStatusFilter(st); setShowFiltersMenu(false); }}
+                      onClick={() => { setStatusFilter(''); }}
                       style={{
-                        padding: '8px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                        background: statusFilter === st ? 'var(--color-bg)' : 'transparent',
-                        color: 'var(--color-text)', fontWeight: statusFilter === st ? 700 : 500
+                        padding: '6px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        background: statusFilter === '' ? 'var(--color-bg)' : 'transparent',
+                        color: 'var(--color-text)', fontWeight: statusFilter === '' ? 700 : 500
                       }}
                     >
-                      {ST_LABEL[st]}
+                      Tất cả
                     </button>
-                  ))}
+                    {STATUSES.map(st => (
+                      <button 
+                        key={st}
+                        onClick={() => { setStatusFilter(st); }}
+                        style={{
+                          padding: '6px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                          background: statusFilter === st ? 'var(--color-bg)' : 'transparent',
+                          color: 'var(--color-text)', fontWeight: statusFilter === st ? 700 : 500
+                        }}
+                      >
+                        {ST_LABEL[st]}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--color-border-light)' }} />
+
+                  {/* Section 2: Loại hình đối tác */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                      Loại hình đối tác
+                    </div>
+                    <button 
+                      onClick={() => { setTierFilter(''); }}
+                      style={{
+                        padding: '6px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        background: tierFilter === '' ? 'var(--color-bg)' : 'transparent',
+                        color: 'var(--color-text)', fontWeight: tierFilter === '' ? 700 : 500
+                      }}
+                    >
+                      Tất cả
+                    </button>
+                    <button 
+                      onClick={() => { setTierFilter('ca_nhan'); }}
+                      style={{
+                        padding: '6px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        background: tierFilter === 'ca_nhan' ? 'var(--color-bg)' : 'transparent',
+                        color: 'var(--color-text)', fontWeight: tierFilter === 'ca_nhan' ? 700 : 500
+                      }}
+                    >
+                      Đối tác cá nhân
+                    </button>
+                    <button 
+                      onClick={() => { setTierFilter('doanh_nghiep'); }}
+                      style={{
+                        padding: '6px 12px', fontSize: '0.8125rem', textAlign: 'left', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        background: tierFilter === 'doanh_nghiep' ? 'var(--color-bg)' : 'transparent',
+                        color: 'var(--color-text)', fontWeight: tierFilter === 'doanh_nghiep' ? 700 : 500
+                      }}
+                    >
+                      Đối tác doanh nghiệp
+                    </button>
+                  </div>
                 </div>
               </>
             )}
@@ -466,7 +514,7 @@ export const CompaniesPage: React.FC = () => {
               <EmptyCard 
                 icon={<Building2 size={48} />}
                 title="Chưa có đối tác nào"
-                description="Thêm đại lý F1/F2, CTV liên kết, Giảng viên hoặc Chuyên gia đầu tiên."
+                description="Thêm đối tác, đại lý F1/F2, CTV liên kết đầu tiên."
                 actionText={isSale ? undefined : "Thêm Đối tác"}
                 onAction={isSale ? undefined : openCreate}
               />
@@ -498,9 +546,9 @@ export const CompaniesPage: React.FC = () => {
             <table style={{ width: '100%', minWidth: 700 }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)' }}>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Đại lý / Đối tác</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Đối tác</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Hotline / Email</th>
-                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Cấp đại lý</th>
+                  <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Loại hình</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Thế mạnh</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Số lượng Sales</th>
                   <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Trạng thái</th>
@@ -566,7 +614,7 @@ export const CompaniesPage: React.FC = () => {
                       <EmptyCard 
                         icon={<Building2 size={48} />}
                         title="Chưa có đối tác nào"
-                        description="Thêm đại lý F1/F2, CTV liên kết, Giảng viên hoặc Chuyên gia đầu tiên."
+                        description="Thêm đối tác, đại lý F1/F2, CTV liên kết đầu tiên."
                         actionText={isSale ? undefined : "Thêm Đối tác"}
                         onAction={isSale ? undefined : openCreate}
                       />

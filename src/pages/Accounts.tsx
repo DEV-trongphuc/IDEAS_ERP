@@ -736,6 +736,7 @@ const AccountsInner = () => {
     if (r === 'director') return <span style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Director</span>;
     if (r === 'manager') return <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Manager</span>;
     if (r === 'assistant') return <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Assistant</span>;
+    if (r === 'sale_admin' || r === 'saleadmin') return <span style={{ background: 'rgba(79, 70, 229, 0.1)', color: '#4f46e5', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Sale Admin</span>;
     if (r === 'sale' || r === 'sales') return <span style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Sales</span>;
     if (r === 'hr') return <span style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>HR</span>;
     if (r === 'accountant') return <span style={{ background: 'rgba(14, 165, 233, 0.1)', color: '#0ea5e9', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700 }}>Accountant</span>;
@@ -750,6 +751,7 @@ const AccountsInner = () => {
     if (r === 'director') return 'Director';
     if (r === 'manager') return 'Manager';
     if (r === 'assistant') return 'Assistant';
+    if (r === 'sale_admin' || r === 'saleadmin') return 'Sale Admin';
     if (r === 'sale' || r === 'sales') return 'Sales';
     if (r === 'hr') return 'HR';
     if (r === 'accountant') return 'Accountant';
@@ -959,6 +961,7 @@ const AccountsInner = () => {
                     { value: 'manager', label: t('Trưởng phòng / Trưởng nhóm (Manager)') },
                     { value: 'assistant', label: t('Trợ lý (Assistant)') },
                     { value: 'sale', label: t('Sale / Nhân viên (Sales)') },
+                    { value: 'sale_admin', label: t('Sale Admin') },
                     { value: 'hr', label: t('Nhân sự (HR)') },
                     { value: 'accountant', label: t('Kế toán (Accountant)') },
                     { value: 'marketing', label: t('Marketing') },

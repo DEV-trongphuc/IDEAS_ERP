@@ -86,7 +86,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training', '/hrm'];
-  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard'];
+  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/contacts', '/students', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/cash-flow', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -100,14 +100,22 @@ const AppTabs = () => {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/consultants') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr', 'accountant'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/attendance') {
     if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'attendance')) {
       return <Navigate to="/" replace />;
     }
-  } else if (currentPath === '/deposits') {
+  } else if (currentPath === '/contacts' || currentPath === '/deals') {
+    if (['hr', 'accountant', 'sale_admin', 'saleadmin'].includes(user?.role || '')) {
+      return <Navigate to="/" replace />;
+    }
+  } else if (currentPath === '/students') {
+    if (user?.role === 'hr') {
+      return <Navigate to="/" replace />;
+    }
+  } else if (['/deposits', '/cash-flow'].includes(currentPath)) {
     if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'deposit')) {
       return <Navigate to="/" replace />;
     }
@@ -119,7 +127,7 @@ const AppTabs = () => {
   } else if (currentPath === '/quotes') {
     return <Navigate to="/" replace />;
   } else if (currentPath === '/expenses') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant', 'hr'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant', 'hr', 'sale_admin', 'saleadmin'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/tickets') {
@@ -175,7 +183,9 @@ const AppTabs = () => {
       case '/calendar':
         return user?.role === 'sale' ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" /> : <DataList key="calendar" />;
       case '/contacts':
-        return <ContactsPage key="contacts" />;
+        return <ContactsPage key="contacts" defaultSegment="tiem_nang" />;
+      case '/students':
+        return <ContactsPage key="students" defaultSegment="customer" />;
       case '/companies':
         return <CompaniesPage key="companies" />;
       case '/deals':
@@ -225,7 +235,9 @@ const AppTabs = () => {
       case '/projects':
         return <ProjectsPage key="projects" />;
       case '/deposits':
-        return <DepositsPage key="deposits" />;
+        return <DepositsPage key="deposits" defaultTab="list" />;
+      case '/cash-flow':
+        return <DepositsPage key="cash-flow" defaultTab="stats" />;
       case '/hrm':
         return <HRM key="hrm" />;
       case '/my-payslips':

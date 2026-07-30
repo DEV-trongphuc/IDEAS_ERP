@@ -27,6 +27,9 @@ class CompanyController {
 
         // Fallbacks
         $role = strtolower($auth['role'] ?? '');
+        if ($role === 'sale_admin' || $role === 'saleadmin') {
+            return 'all';
+        }
         if ($role === 'director' || $role === 'assistant') {
             return $action === 'delete' ? 'none' : 'all';
         }
@@ -58,9 +61,11 @@ class CompanyController {
         if (!in_array($sortBy, $allowedSort)) $sortBy = 'created_at';
         if (!in_array(strtoupper($order), ['ASC', 'DESC'])) $order = 'DESC';
 
+        $tier = $_GET['tier'] ?? '';
         if ($search) { $where[] = 'MATCH(c.name,c.email) AGAINST(? IN BOOLEAN MODE)'; $params[] = "$search*"; }
         if ($status) { $where[] = 'c.status=?'; $params[] = $status; }
         if ($stage)  { $where[] = 'c.stage_id=?'; $params[] = (int)$stage; }
+        if ($tier)   { $where[] = 'c.tier=?'; $params[] = $tier; }
 
         // Enforce Read Scope
         $scope = $this->getScope($auth, 'read');

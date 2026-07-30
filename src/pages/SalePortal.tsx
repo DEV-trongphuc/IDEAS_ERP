@@ -857,6 +857,19 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     window.dispatchEvent(event);
   }, [wsViewMode]);
 
+  useEffect(() => {
+    const handleEnterFocusMode = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const task = customEvent.detail?.task;
+      if (task) {
+        setWsViewMode('focus');
+        setSelectedTaskForDetails(task);
+      }
+    };
+    window.addEventListener('enter-focus-mode', handleEnterFocusMode);
+    return () => window.removeEventListener('enter-focus-mode', handleEnterFocusMode);
+  }, []);
+
   const parseDescriptionAndChecklist = (descText: string) => {
     const lines = descText ? descText.split('\n') : [];
     const descLines: string[] = [];
@@ -6960,7 +6973,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         flexDirection: 'column',
                         gap: '4px'
                       }}
-                      className="hover-lift"
+                      className="hover-bg-alt"
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{
@@ -8041,8 +8054,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                     <ComposedChart data={activeChartData} margin={{ left: -20, right: 5, top: 10 }}>
                       <defs>
                         <linearGradient id="chartBarGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={1} />
-                          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.25} />
+                          <stop offset="0%" stopColor="#e63946" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#a31422" stopOpacity={1} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />

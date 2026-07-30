@@ -24,8 +24,7 @@ export function hasModuleApprovalAccess(
 
   const role = (user.role || '').toLowerCase().trim();
 
-  // Admin, Super Admin, and Director always have approval authority & full navigation access
-  if (['admin', 'superadmin', 'super_admin', 'director'].includes(role)) {
+  if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin'].includes(role)) {
     return true;
   }
 

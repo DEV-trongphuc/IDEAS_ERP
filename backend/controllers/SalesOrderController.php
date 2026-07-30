@@ -26,6 +26,18 @@ class SalesOrderController {
         $where = ["so.tenant_id = :tenant_id"];
         $params = [':tenant_id' => $tenantId];
 
+        $companyId = (int)($_GET['company_id'] ?? 0);
+        if ($companyId > 0) {
+            $where[] = "so.company_id = :company_id";
+            $params[':company_id'] = $companyId;
+        }
+
+        $contactId = (int)($_GET['contact_id'] ?? 0);
+        if ($contactId > 0) {
+            $where[] = "so.contact_id = :contact_id";
+            $params[':contact_id'] = $contactId;
+        }
+
         if (!empty($status)) {
             $where[] = "so.status = :status";
             $params[':status'] = $status;

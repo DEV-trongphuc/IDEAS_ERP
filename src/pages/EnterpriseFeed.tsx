@@ -664,7 +664,7 @@ export const EnterpriseFeed: React.FC = () => {
 
   return (
     <div style={{
-      maxWidth: '1250px',
+      maxWidth: '1380px',
       margin: '0 auto',
       padding: '2rem 1.5rem',
       fontFamily: "'Outfit', 'Inter', sans-serif"
@@ -673,7 +673,7 @@ export const EnterpriseFeed: React.FC = () => {
         .feed-layout {
           display: grid;
           grid-template-columns: 1fr 340px;
-          gap: 36px;
+          gap: 48px;
           align-items: start;
         }
         .icon-only-select [class*="trigger"] {

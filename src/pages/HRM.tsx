@@ -119,6 +119,9 @@ export default function HRM() {
         return { bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6', text: t('Kế toán') };
       case 'marketing':
         return { bg: 'rgba(13, 148, 136, 0.08)', color: '#0d9488', text: t('Marketing') };
+      case 'sale_admin':
+      case 'saleadmin':
+        return { bg: 'rgba(79, 70, 229, 0.08)', color: '#4f46e5', text: t('Sale Admin') };
       case 'sales':
       default:
         return { bg: 'rgba(100, 116, 139, 0.08)', color: '#64748b', text: t('Sales') };

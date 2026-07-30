@@ -240,7 +240,7 @@ export const Login = () => {
 
     if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 300));
-      let userRole = roleName.toLowerCase();
+      let userRole = roleName.toLowerCase().replace(/\s+/g, '_');
       if (userRole === 'sales') userRole = 'sale';
       login(`demo_token_quick_${userRole}`, {
         id: emailVal === 'haidang@Ideas.net' ? 1000 : 999,
@@ -504,6 +504,12 @@ export const Login = () => {
                 style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
               >
                 Sale
+              </button>
+              <button
+                onClick={() => handleQuickLogin('saleadmin@ideas.edu.vn', '123456', 'Sale Admin')}
+                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+              >
+                Sale Admin
               </button>
               <button
                 onClick={() => handleQuickLogin('hr@Ideas.test', 'hr123', 'HR')}

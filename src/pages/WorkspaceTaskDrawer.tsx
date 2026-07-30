@@ -5,7 +5,7 @@ import {
   Bold, Italic, List, ListOrdered, Image as ImageIcon, 
   Users, RefreshCw, Layers, CheckSquare2, Info, Receipt, Scale, ArrowUpRight, Search, Save, Bell, BellOff,
   Eye, ExternalLink, UserPlus, UserCheck, Edit3, Play, Sparkles, ArrowRight, Building2, Megaphone, Loader2, RotateCcw,
-  CheckCircle2, XCircle, Camera
+  CheckCircle2, XCircle, Camera, Target
 } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
@@ -1869,6 +1869,34 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               {isMuted ? <BellOff size={18} /> : <Bell size={18} />}
             </button>
 
+            {!embedMode && (window.location.pathname === '/workspace' || window.location.pathname === '/') && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('enter-focus-mode', { detail: { task } }));
+                  handleCloseDrawer();
+                }}
+                className="hover-lift"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s'
+                }}
+                title={t("Chế độ tập trung")}
+              >
+                <Target size={18} />
+              </button>
+            )}
+
             <button
               onClick={handleManualSave}
               disabled={isSaving}
@@ -1919,10 +1947,21 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         </div>
 
         {/* Drawer Body - 2 Columns Layout */}
-        <div style={{ display: 'flex', flexDirection: isMobileOrTablet ? 'column' : 'row', flex: 1, overflowY: 'auto', padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 1rem 4.5rem 1rem' : '1.5rem 1.5rem 4.5rem 1.5rem'), gap: isMobileOrTablet ? '1rem' : (embedMode ? '1rem' : '1.5rem') }} className={`custom-scrollbar ${embedMode ? 'focus-right-column' : ''}`}>
+        <div style={{ display: 'flex', flexDirection: isMobileOrTablet ? 'column' : 'row', flex: 1, overflow: 'hidden' }} className={embedMode ? 'focus-right-column' : ''}>
           
           {/* Left Column (7) */}
-          <div style={{ flex: isMobileOrTablet ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: isMobileOrTablet ? '1rem' : (embedMode ? '1rem' : '1.5rem'), minWidth: 0 }}>
+          <div 
+            style={{ 
+              flex: isMobileOrTablet ? 'none' : 7, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: isMobileOrTablet ? '1rem' : (embedMode ? '12px' : '1.5rem'), 
+              minWidth: 0,
+              overflowY: 'auto',
+              padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 1.25rem 1.5rem 1.25rem' : '1.5rem 2rem 1.5rem 2rem')
+            }}
+            className="custom-scrollbar"
+          >
             
             {/* Tên công việc */}
             <div className="card" style={cardStyle}>
@@ -2316,6 +2355,11 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                       <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {/* Subtask Card */}
                         <div 
+                          onClick={() => {
+                            if (task?.id !== 'new') {
+                              setSelectedSubtask(isCommentsOpen ? null : item);
+                            }
+                          }}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -2327,16 +2371,22 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             transition: 'all 0.2s',
                             opacity: item.done ? 0.8 : 1,
                             position: 'relative',
-                            gap: '10px'
+                            gap: '10px',
+                            cursor: task?.id !== 'new' ? 'pointer' : 'default'
                           }}
+                          className={task?.id !== 'new' ? "hover-bg-alt" : ""}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
                             {/* Round & Large Custom Checkbox */}
-                            <div style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}>
+                            <div 
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}
+                            >
                               <input
                                 type="checkbox"
                                 checked={!!item.done}
                                 onChange={() => handleToggleChecklist(item.id)}
+                                onClick={(e) => e.stopPropagation()}
                                 disabled={currentUser?.role === 'viewer'}
                                 style={{
                                   opacity: 0,
@@ -2383,7 +2433,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: '3px' }}>
                               {/* Title / Inline Edit */}
                               {isEditingThis ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                                >
                                   <input
                                     type="text"
                                     className="form-input"
@@ -2397,13 +2450,15 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                         setEditingChecklistId(null);
                                       }
                                     }}
+                                    onClick={(e) => e.stopPropagation()}
                                     autoFocus
                                     style={{ fontSize: '0.82rem', padding: '4px 8px', height: '32px', borderRadius: '6px', width: '100%' }}
                                   />
                                   <button
                                     type="button"
                                     className="btn primary sm"
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
                                       setEditingChecklistId(null);
                                     }}
@@ -2414,7 +2469,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   <button
                                     type="button"
                                     className="btn outline sm"
-                                    onClick={() => setEditingChecklistId(null)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingChecklistId(null);
+                                    }}
                                     style={{ padding: '4px 8px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
                                   >
                                     ✕
@@ -2434,7 +2492,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   {currentUser?.role !== 'viewer' && (
                                     <button
                                       type="button"
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setEditingChecklistId(item.id);
                                         setEditingChecklistTitle(item.title);
                                       }}
@@ -2477,7 +2536,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                {itemUsers.length > 0 && (
                                  <div 
-                                   onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id);
+                                   }}
                                    style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                                    title={itemUsers.map(u => u.full_name || u.name).join(', ')}
                                  >
@@ -2523,7 +2585,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
                                <button
                                  type="button"
-                                 onClick={() => setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id)}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id);
+                                 }}
                                  disabled={currentUser?.role === 'viewer'}
                                  style={{
                                    border: '1px dashed var(--color-primary)',
@@ -2540,37 +2605,41 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                  }}
                                  className="hover-scale"
                                  title={t('Phân công người thực hiện')}
-                               >
+                                >
                                  <UserPlus size={12} color="var(--color-primary)" />
                                </button>
 
                               {/* User selection dropdown popup */}
                               {isAssigneeDropdownOpen && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  right: 0,
-                                  marginTop: '6px',
-                                  zIndex: 9999,
-                                  background: 'var(--color-surface)',
-                                  border: '1px solid var(--color-border-light)',
-                                  borderRadius: '12px',
-                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                                  minWidth: '220px',
-                                  maxHeight: '230px',
-                                  overflowY: 'auto',
-                                  padding: '6px',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '2px'
-                                }}>
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: 0,
+                                    marginTop: '6px',
+                                    zIndex: 9999,
+                                    background: 'var(--color-surface)',
+                                    border: '1px solid var(--color-border-light)',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                                    minWidth: '220px',
+                                    maxHeight: '230px',
+                                    overflowY: 'auto',
+                                    padding: '6px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '2px'
+                                  }}
+                                >
                                   <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
                                     {t('Phân công người thực hiện:')}
                                   </div>
                                   
                                   {/* Unassign option */}
                                   <div
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       handleUpdateChecklistItemAssignee(item.id, '');
                                       setActiveAssigneeDropdownId(null);
                                     }}
@@ -2595,7 +2664,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                     return (
                                       <div
                                         key={u.id}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           const nextAssignees = isAssigned
                                             ? assignedIds.filter(id => id !== String(u.id))
                                             : [...assignedIds, String(u.id)];
@@ -2637,7 +2707,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                 <div style={{ position: 'relative' }}>
                                   <button
                                     type="button"
-                                    onClick={() => setSelectedSubtask(isCommentsOpen ? null : item)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedSubtask(isCommentsOpen ? null : item);
+                                    }}
                                     style={{
                                       border: isCommentsOpen ? '1px solid var(--color-primary)' : '1px solid var(--color-border-light)',
                                       background: isCommentsOpen ? 'rgba(163, 20, 34, 0.06)' : 'transparent',
@@ -2683,7 +2756,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             {currentUser?.role !== 'viewer' && (
                               <button
                                 type="button"
-                                onClick={() => setDeleteSubtaskTarget({ id: item.id, title: item.title })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteSubtaskTarget({ id: item.id, title: item.title });
+                                }}
                                 style={{
                                   border: 'none',
                                   background: 'transparent',
@@ -3336,7 +3412,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
           </div>
 
           {/* Right Column (3) */}
-          <div style={{ flex: isMobileOrTablet ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: isMobileOrTablet ? '1rem' : (embedMode ? '1rem' : '1.5rem'), minWidth: 0 }}>
+          <div 
+            style={{ 
+              flex: isMobileOrTablet ? 'none' : 3, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: isMobileOrTablet ? '1rem' : (embedMode ? '12px' : '1.5rem'), 
+              minWidth: 0,
+              background: 'var(--color-bg)',
+              borderLeft: isMobileOrTablet ? 'none' : '1px solid var(--color-border-light)',
+              overflowY: 'auto',
+              padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 1.25rem 1.5rem 1.25rem' : '1.5rem 2rem 1.5rem 2rem')
+            }}
+            className="custom-scrollbar"
+          >
             
             {/* Tiến độ công việc */}
             <div className="card" style={cardStyle}>
@@ -3737,32 +3826,6 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               </div>
             )}
 
-            {/* Nhóm / Team liên quan */}
-            <div className="card" style={cardStyle}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                {t('Liên kết Nhóm / Team')}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <CustomSelect
-                    searchable
-                    showAvatars
-                    options={[
-                      { value: '', label: t('Chọn nhóm...') },
-                      ...allowedTeams.map(t => ({ value: String(t.id), label: t.name }))
-                    ]}
-                    value={erpMeta.team_id ? String(erpMeta.team_id) : ''}
-                    onChange={val => {
-                      const nextTeam = val ? Number(val) : null;
-                      const nextMeta = { ...erpMeta, team_id: nextTeam };
-                      setErpMeta(nextMeta);
-                      handleSaveMeta(nextMeta);
-                    }}
-                    placeholder={t('Chọn nhóm...')}
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Approval Banner */}
             {formData.require_approval === 1 && formData.progress === 100 && (
@@ -3932,140 +3995,271 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               )}
             </div>
 
-            {/* Người thực hiện */}
+            {/* Người thực hiện & Người liên quan */}
+            <div className="card" style={cardStyle}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={cardLabelStyle}>
+                    {t('Người thực hiện chính')}
+                  </label>
+                  <CustomSelect
+                    options={users.map(u => ({
+                      value: String(u.id),
+                      label: u.full_name,
+                      avatar: u.avatar || u.avatar_url
+                    }))}
+                    value={String(formData.user_id || '')}
+                    onChange={val => {
+                      handleUpdateField('user_id', Number(val));
+                    }}
+                    searchable
+                    showAvatars
+                  />
+                </div>
+                
+                <div style={{ borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px' }}>
+                  <label style={cardLabelStyle}>
+                    {t('Người liên quan')}
+                  </label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                    {/* Selected participant avatars */}
+                    {participants.length > 0 && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                        {participants.map((u, idx) => (
+                          <div
+                            key={u.id}
+                            style={{
+                              marginLeft: idx === 0 ? 0 : -8,
+                              border: '1.5px solid var(--color-surface)',
+                              borderRadius: '50%',
+                              overflow: 'hidden',
+                              zIndex: 10 - idx,
+                              boxShadow: 'var(--shadow-sm)',
+                              display: 'flex'
+                            }}
+                            title={u.full_name || u.name}
+                          >
+                            <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={28} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Dash add button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowParticipantDropdown(!showParticipantDropdown)}
+                      disabled={currentUser?.role === 'viewer'}
+                      style={{
+                        border: '1px dashed var(--color-primary)',
+                        background: 'rgba(163, 20, 34, 0.04)',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
+                        padding: 0,
+                        transition: 'all 0.15s ease'
+                      }}
+                      className="hover-scale"
+                      title={t('Thêm người liên quan')}
+                    >
+                      <UserPlus size={14} color="var(--color-primary)" />
+                    </button>
+                    
+                    {/* Dropdown list of users */}
+                    {showParticipantDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '6px',
+                        zIndex: 9999,
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border-light)',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                        minWidth: '220px',
+                        maxHeight: '230px',
+                        overflowY: 'auto',
+                        padding: '6px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
+                      }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                          {t('Chọn người liên quan:')}
+                        </div>
+                        {users.map((u: any) => {
+                          const isSelected = participantIds.includes(Number(u.id));
+                          return (
+                            <div
+                              key={u.id}
+                              onClick={() => handleToggleParticipant(Number(u.id))}
+                              style={{
+                                padding: '6px 8px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                                color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                                fontWeight: isSelected ? 600 : 400
+                              }}
+                              className="hover-bg-alt"
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
+                                <span>{u.full_name || u.name}</span>
+                              </div>
+                              {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Nhóm / Team liên quan */}
+            <div className="card" style={cardStyle}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                {t('Liên kết Nhóm / Team')}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <CustomSelect
+                    searchable
+                    showAvatars
+                    options={[
+                      { value: '', label: t('Chọn nhóm...') },
+                      ...allowedTeams.map(t => ({ value: String(t.id), label: t.name }))
+                    ]}
+                    value={erpMeta.team_id ? String(erpMeta.team_id) : ''}
+                    onChange={val => {
+                      const nextTeam = val ? Number(val) : null;
+                      const nextMeta = { ...erpMeta, team_id: nextTeam };
+                      setErpMeta(nextMeta);
+                      handleSaveMeta(nextMeta);
+                    }}
+                    placeholder={t('Chọn nhóm...')}
+                  />
+                </div>
+              </div>
+            </div>
+
+
+
+            {/* Phân loại công việc */}
             <div className="card" style={cardStyle}>
               <label style={cardLabelStyle}>
-                {t('Người thực hiện')}
+                {t('Phân loại công việc')}
               </label>
               <CustomSelect
-                options={users.map(u => ({
-                  value: String(u.id),
-                  label: u.full_name,
-                  avatar: u.avatar || u.avatar_url
-                }))}
-                value={String(formData.user_id || '')}
-                onChange={val => {
-                  handleUpdateField('user_id', Number(val));
+                options={[
+                  { value: 'task', label: t('Công việc chính') },
+                  { value: 'meeting', label: t('Lịch hẹn gặp gỡ') }
+                ]}
+                value={formData.type || 'task'}
+                onChange={async (val) => {
+                  const newType = String(val);
+                  setFormData((prev: any) => ({ ...prev, type: newType }));
+                  await handleUpdateField('type', newType);
+                  onUpdate();
+                  toast.success(t('Đã thay đổi phân loại công việc'));
                 }}
-                searchable
-                showAvatars
               />
             </div>
 
-            {/* Người liên quan */}
+            {/* Độ ưu tiên & Hạn hoàn thành */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="card" style={cardStyle}>
+                <label style={cardLabelStyle}>
+                  {t('Độ ưu tiên')}
+                </label>
+                <CustomSelect
+                  options={[
+                    { value: 'high', label: t('Cao') },
+                    { value: 'medium', label: t('Trung bình') },
+                    { value: 'low', label: t('Thấp') }
+                  ]}
+                  value={formData.priority || 'medium'}
+                  onChange={val => {
+                    handleUpdateField('priority', String(val));
+                  }}
+                />
+              </div>
+
+              <div className="card" style={cardStyle}>
+                <label style={cardLabelStyle}>
+                  {t('Hạn hoàn thành')}
+                </label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.due_date ? formData.due_date.substring(0, 10) : ''}
+                  onChange={(e) => {
+                    handleUpdateField('due_date', e.target.value || null);
+                  }}
+                  style={{ fontSize: '0.8rem', padding: '6px 10px', height: '36px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
+                />
+              </div>
+            </div>
+
+            {/* Thẻ tag */}
             <div className="card" style={cardStyle}>
               <label style={cardLabelStyle}>
-                {t('Người liên quan')}
+                {t('Thẻ tag')}
               </label>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
-                {/* Selected participant avatars */}
-                {participants.length > 0 && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    {participants.map((u, idx) => (
-                      <div
-                        key={u.id}
-                        style={{
-                          marginLeft: idx === 0 ? 0 : -8,
-                          border: '1.5px solid var(--color-surface)',
-                          borderRadius: '50%',
-                          overflow: 'hidden',
-                          zIndex: 10 - idx,
-                          boxShadow: 'var(--shadow-sm)',
-                          display: 'flex'
-                        }}
-                        title={u.full_name || u.name}
-                      >
-                        <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={28} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Dash add button */}
-                <button
-                  type="button"
-                  onClick={() => setShowParticipantDropdown(!showParticipantDropdown)}
-                  disabled={currentUser?.role === 'viewer'}
-                  style={{
-                    border: '1px dashed var(--color-primary)',
-                    background: 'rgba(163, 20, 34, 0.04)',
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
-                    padding: 0,
-                    transition: 'all 0.15s ease'
-                  }}
-                  className="hover-scale"
-                  title={t('Thêm người liên quan')}
-                >
-                  <UserPlus size={14} color="var(--color-primary)" />
-                </button>
-                
-                {/* Dropdown list of users */}
-                {showParticipantDropdown && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    marginTop: '6px',
-                    zIndex: 9999,
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                    minWidth: '220px',
-                    maxHeight: '230px',
-                    overflowY: 'auto',
-                    padding: '6px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px'
-                  }}>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
-                      {t('Chọn người liên quan:')}
-                    </div>
-                    {users.map((u: any) => {
-                      const isSelected = participantIds.includes(Number(u.id));
-                      return (
-                        <div
-                          key={u.id}
-                          onClick={() => handleToggleParticipant(Number(u.id))}
-                          style={{
-                            padding: '6px 8px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            background: isSelected ? 'var(--color-primary-light)' : 'transparent',
-                            color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
-                            fontWeight: isSelected ? 600 : 400
-                          }}
-                          className="hover-bg-alt"
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
-                            <span>{u.full_name || u.name}</span>
-                          </div>
-                          {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                {(formData.tags || '').split(',').filter(Boolean).map((tag: string, tIdx: number) => (
+                  <span key={tIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(107, 114, 128, 0.08)', color: 'var(--color-text-light)', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px' }}>
+                    <span>{tag}</span>
+                    <button
+                      onClick={() => {
+                        const next = (formData.tags || '').split(',').filter(Boolean).filter((t: string) => t !== tag).join(',');
+                        handleUpdateField('tags', next);
+                      }}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', padding: 0 }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
+              <input
+                type="text"
+                className="form-input"
+                placeholder={t('Gõ tag & nhấn Enter...')}
+                style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const inputVal = (e.target as HTMLInputElement).value.trim();
+                    if (inputVal) {
+                      const tags = (formData.tags || '').split(',').filter(Boolean);
+                      if (!tags.includes(inputVal)) {
+                        tags.push(inputVal);
+                        handleUpdateField('tags', tags.join(','));
+                      }
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }
+                }}
+              />
             </div>
 
             {/* Lặp lại định kỳ */}
             <div className="card" style={cardStyle}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={cardLabelStyle}>🔄 {t('Lặp lại định kỳ')}</span>
+                  <span style={cardLabelStyle}>{t('Lặp lại định kỳ')}</span>
                   {erpMeta.recurrence?.pattern && erpMeta.recurrence.pattern !== 'none' && (
                     <span className="badge success" style={{ fontSize: '0.625rem', borderRadius: '4px', padding: '2px 6px', textTransform: 'none', letterSpacing: 'normal' }}>
                       {erpMeta.recurrence?.pattern === 'daily' ? t('Hàng ngày') :
@@ -4220,105 +4414,6 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Phân loại công việc */}
-            <div className="card" style={cardStyle}>
-              <label style={cardLabelStyle}>
-                {t('Phân loại công việc')}
-              </label>
-              <CustomSelect
-                options={[
-                  { value: 'task', label: t('Công việc chính') },
-                  { value: 'meeting', label: t('Lịch hẹn gặp gỡ') }
-                ]}
-                value={formData.type || 'task'}
-                onChange={async (val) => {
-                  const newType = String(val);
-                  setFormData((prev: any) => ({ ...prev, type: newType }));
-                  await handleUpdateField('type', newType);
-                  onUpdate();
-                  toast.success(t('Đã thay đổi phân loại công việc'));
-                }}
-              />
-            </div>
-
-            {/* Độ ưu tiên & Hạn hoàn thành */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div className="card" style={cardStyle}>
-                <label style={cardLabelStyle}>
-                  {t('Độ ưu tiên')}
-                </label>
-                <CustomSelect
-                  options={[
-                    { value: 'high', label: t('Cao') },
-                    { value: 'medium', label: t('Trung bình') },
-                    { value: 'low', label: t('Thấp') }
-                  ]}
-                  value={formData.priority || 'medium'}
-                  onChange={val => {
-                    handleUpdateField('priority', String(val));
-                  }}
-                />
-              </div>
-
-              <div className="card" style={cardStyle}>
-                <label style={cardLabelStyle}>
-                  {t('Hạn hoàn thành')}
-                </label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={formData.due_date ? formData.due_date.substring(0, 10) : ''}
-                  onChange={(e) => {
-                    handleUpdateField('due_date', e.target.value || null);
-                  }}
-                  style={{ fontSize: '0.8rem', padding: '6px 10px', height: '36px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
-                />
-              </div>
-            </div>
-
-            {/* Thẻ tag */}
-            <div className="card" style={cardStyle}>
-              <label style={cardLabelStyle}>
-                {t('Thẻ tag')}
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-                {(formData.tags || '').split(',').filter(Boolean).map((tag: string, tIdx: number) => (
-                  <span key={tIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(107, 114, 128, 0.08)', color: 'var(--color-text-light)', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px' }}>
-                    <span>{tag}</span>
-                    <button
-                      onClick={() => {
-                        const next = (formData.tags || '').split(',').filter(Boolean).filter((t: string) => t !== tag).join(',');
-                        handleUpdateField('tags', next);
-                      }}
-                      style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', padding: 0 }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <input
-                type="text"
-                className="form-input"
-                placeholder={t('Gõ tag & nhấn Enter...')}
-                style={{ fontSize: '0.78rem', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--color-border)' }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const inputVal = (e.target as HTMLInputElement).value.trim();
-                    if (inputVal) {
-                      const tags = (formData.tags || '').split(',').filter(Boolean);
-                      if (!tags.includes(inputVal)) {
-                        tags.push(inputVal);
-                        handleUpdateField('tags', tags.join(','));
-                      }
-                      (e.target as HTMLInputElement).value = '';
-                    }
-                  }
-                }}
-              />
             </div>
             {/* Nút xóa công việc ở dưới cùng */}
             {canDelete && (

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, GitBranch, Settings, ChevronLeft, Webhook, Link2, Database, ShieldCheck, Ticket, Plus, Scale, Filter, Cpu, Building2, TrendingUp, FileText, Calendar, Package, Receipt, CreditCard, BarChart2, Truck, File, Boxes, Layers, Clock, Home, CheckSquare, LifeBuoy, User, Clipboard, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, GitBranch, Settings, ChevronLeft, Webhook, Link2, Database, ShieldCheck, Ticket, Plus, Scale, Filter, Cpu, Building2, TrendingUp, FileText, Calendar, Package, Receipt, CreditCard, BarChart2, Truck, File, Boxes, Layers, Clock, Home, CheckSquare, LifeBuoy, User, Clipboard, Globe, GraduationCap } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useEffect, useState, useRef, Fragment } from 'react';
@@ -34,12 +34,13 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'KHÁCH HÀNG',
     items: [
-      { name: 'Tiềm năng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant'] },
-      { name: 'Pipeline', href: '/deals', icon: TrendingUp, hideForRoles: ['hr', 'accountant'] },
-      { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant'] },
-      { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer', 'hr', 'accountant', 'marketing'] },
-      { name: 'AI Pre-screener', href: '/gatekeeper', icon: Filter, adminOnly: true, badgeKey: 'gatekeeper', hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'marketing'] },
-      { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets', hideForRoles: ['hr', 'accountant'] },
+      { name: 'Tiềm năng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Học viên', href: '/students', icon: GraduationCap, hideForRoles: ['hr'] },
+      { name: 'Pipeline', href: '/deals', icon: TrendingUp, hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
+      { name: 'AI Pre-screener', href: '/gatekeeper', icon: Filter, adminOnly: true, badgeKey: 'gatekeeper', hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
+      { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets', hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
       { name: 'Ticket hỗ trợ', href: '/support-tickets', icon: LifeBuoy, badgeKey: 'supportTickets' }
     ]
   },
@@ -49,15 +50,16 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
-      { name: 'Giảng viên & Chuyên gia', href: '/companies', icon: Building2 },
+      { name: 'Đối tác', href: '/companies', icon: Building2 },
       { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
     ]
   },
   {
     title: 'TÀI CHÍNH',
     items: [
+      { name: 'Purchase Order', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingExpenses' },
       { name: 'Sales Order', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingDeposits' },
-      { name: 'Purchase Order', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingExpenses' }
+      { name: 'Dự báo dòng tiền', href: '/cash-flow', icon: TrendingUp, hideForRoles: ['viewer', 'marketing'] }
     ]
   },
   {
@@ -72,22 +74,22 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Tài khoản cá nhân', href: '/account', icon: User },
       { name: 'Phòng ban', href: '/consultants?tab=teams', icon: Users },
       { name: 'Nhân sự công ty', href: '/consultants', icon: Users },
-      { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing', 'accountant'] },
+      { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing', 'accountant', 'sale_admin', 'saleadmin'] },
       { name: 'Lịch trình', href: '/calendar', icon: Calendar, hideForRoles: ['hr'] },
       { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr'] },
-      { name: 'Nhân sự & Lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
+      { name: 'Nhân sự & Lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
       { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
     ]
   },
   {
     title: 'CÀI ĐẶT HỆ THỐNG',
     items: [
-      { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director', 'hr', 'accountant', 'marketing'] },
-      { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director', 'hr', 'accountant', 'marketing'] },
-      { name: 'Quản lý tài khoản', href: '/accounts', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing'] },
-      { name: 'Vòng phân bổ', href: '/rounds', icon: GitBranch, adminOnly: true, hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant'] },
-      { name: 'Quy tắc định tuyến', href: '/rules', icon: Webhook, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'hr', 'accountant'] },
-      { name: 'Tích hợp Data', href: '/integrations', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'hr', 'accountant'] }
+      { name: 'Cài đặt hệ thống', href: '/settings', icon: Settings, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
+      { name: 'Huấn luyện AI', href: '/ai-training', icon: Cpu, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'director', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
+      { name: 'Quản lý tài khoản', href: '/accounts', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
+      { name: 'Vòng phân bổ', href: '/rounds', icon: GitBranch, adminOnly: true, hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Quy tắc định tuyến', href: '/rules', icon: Webhook, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Tích hợp Data', href: '/integrations', icon: Link2, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'] }
     ]
   }
 ];
@@ -128,17 +130,21 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
     { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
     { name: 'Tiềm năng', href: '/contacts', icon: Users },
+    { name: 'Học viên', href: '/students', icon: GraduationCap },
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   sales: [
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
     { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
     { name: 'Tiềm năng', href: '/contacts', icon: Users },
+    { name: 'Học viên', href: '/students', icon: GraduationCap },
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   accountant: [
-    { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
+    { name: 'Học viên', href: '/students', icon: GraduationCap },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
+    { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
+    { name: 'Dự báo dòng tiền', href: '/cash-flow', icon: TrendingUp },
     { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' },
     { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
   ],
@@ -371,7 +377,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
 
     // Reorder items in "CHƯƠNG TRÌNH" specifically for accountant
     if (group.title === 'CHƯƠNG TRÌNH' && user?.role === 'accountant') {
-      const order = ['Nhà cung cấp', 'Giảng viên & Chuyên gia', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
+      const order = ['Nhà cung cấp', 'Đối tác', 'Chương trình', 'Tài liệu', 'Chiến dịch'];
       filteredItems.sort((a, b) => {
         const idxA = order.indexOf(a.name);
         const idxB = order.indexOf(b.name);

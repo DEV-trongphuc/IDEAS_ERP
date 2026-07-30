@@ -1,4 +1,4 @@
-﻿/*!999999\- enable the sandbox mode */ 
+/*!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.6.18-MariaDB, for Linux (x86_64)
 --
 -- Host: localhost    Database: vhvxoigh_db_Ideas
@@ -2618,7 +2618,7 @@ CREATE TABLE `users` (
   `phone` varchar(50) DEFAULT NULL,
   `avatar_url` varchar(255) DEFAULT NULL,
   `signature_url` longtext DEFAULT NULL COMMENT 'Chữ ký mẫu cá nhân',
-  `role` enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director') NOT NULL DEFAULT 'sales',
+  `role` enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin') NOT NULL DEFAULT 'sales',
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `two_factor_enabled` tinyint(1) DEFAULT 0,
   `two_factor_type` varchar(20) DEFAULT 'email',

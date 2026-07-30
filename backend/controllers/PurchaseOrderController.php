@@ -5,15 +5,28 @@ class PurchaseOrderController {
 
     public function index(array $auth): void {
         $tid = $auth['tenant_id'];
-        $stmt = $this->db->prepare("
-            SELECT po.*, s.name as supplier_name, u.full_name as creator_name
-            FROM purchase_orders po
-            LEFT JOIN suppliers s ON po.supplier_id = s.id
-            LEFT JOIN users u ON po.created_by = u.id
-            WHERE po.tenant_id = ?
-            ORDER BY po.created_at DESC
-        ");
-        $stmt->execute([$tid]);
+        $supplierId = (int)($_GET['supplier_id'] ?? 0);
+        if ($supplierId > 0) {
+            $stmt = $this->db->prepare("
+                SELECT po.*, s.name as supplier_name, u.full_name as creator_name
+                FROM purchase_orders po
+                LEFT JOIN suppliers s ON po.supplier_id = s.id
+                LEFT JOIN users u ON po.created_by = u.id
+                WHERE po.tenant_id = ? AND po.supplier_id = ?
+                ORDER BY po.created_at DESC
+            ");
+            $stmt->execute([$tid, $supplierId]);
+        } else {
+            $stmt = $this->db->prepare("
+                SELECT po.*, s.name as supplier_name, u.full_name as creator_name
+                FROM purchase_orders po
+                LEFT JOIN suppliers s ON po.supplier_id = s.id
+                LEFT JOIN users u ON po.created_by = u.id
+                WHERE po.tenant_id = ?
+                ORDER BY po.created_at DESC
+            ");
+            $stmt->execute([$tid]);
+        }
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (!empty($orders)) {

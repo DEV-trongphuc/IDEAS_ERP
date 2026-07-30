@@ -397,15 +397,19 @@ export const ExpensesPage: React.FC = () => {
           <h1 className="page-title">Chi phí Vận hành</h1>
           <p className="page-subtitle">Quản lý và theo dõi các khoản chi phí doanh nghiệp</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" style={{ alignItems: 'center' }}>
+          <button 
+            className="btn secondary" 
+            onClick={() => addToast('Đang xuất bảng kê...', 'info')} 
+            title="Xuất dữ liệu"
+            style={{ padding: 0, width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Download size={16} />
+          </button>
           <PeriodFilter
             value={period}
             onChange={(p, r) => { setPeriod(p); setDateRange(r); setPage(1); }}
           />
-          <button className="btn secondary" onClick={() => addToast('Đang xuất bảng kê...', 'info')} title="Xuất dữ liệu">
-            <Download size={16} />
-            <span className="hide-on-mobile"> Xuất</span>
-          </button>
           <button className="btn primary" onClick={openCreate} title="Nhập chi phí">
             <Plus size={16} />
             <span className="hide-on-mobile"> Nhập chi phí</span>
@@ -971,6 +975,40 @@ export const ExpensesPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Action Buttons 50/50 below money banner */}
+                    {viewItem.status === 'pending' && (
+                      ['admin', 'superadmin', 'super_admin', 'director', 'hr', 'accountant'].includes(String(user?.role).toLowerCase()) || 
+                      (viewItem.approver_id && Number(viewItem.approver_id) === Number(user?.id))
+                    ) && (
+                      <div style={{ display: 'flex', gap: '12px', width: '100%', flexShrink: 0 }}>
+                        <button 
+                          className="btn danger" 
+                          style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 800, height: '42px', fontSize: '0.875rem', borderRadius: '12px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s' }} 
+                          onClick={() => setRejectingItem(viewItem)}
+                        >
+                          <XCircle size={16} /> Từ chối
+                        </button>
+                        <button 
+                          className="btn success" 
+                          style={{ flex: 1, background: '#10b981', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 800, height: '42px', fontSize: '0.875rem', borderRadius: '12px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', transition: 'all 0.2s' }} 
+                          onClick={async () => {
+                            try {
+                              await api.patch(`/expenses/${viewItem.id}`, { status: 'approved' });
+                              setItems(prev => prev.map(e => e.id === viewItem.id ? {...e, status: 'approved'} : e));
+                              addToast('Đã phê duyệt chi phí', 'success');
+                              setViewItem(null);
+                              fetchExpenses();
+                              window.dispatchEvent(new Event('refresh-pending-counts'));
+                            } catch (e: any) {
+                              addToast('Lỗi khi phê duyệt chi phí', 'error');
+                            }
+                          }}
+                        >
+                          <CheckCircle2 size={16} /> Phê duyệt
+                        </button>
+                      </div>
+                    )}
+
                     {/* Details Info Card */}
                     <div className="card" style={{ 
                       background: 'var(--color-surface)',
@@ -998,16 +1036,16 @@ export const ExpensesPage: React.FC = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Ngày chi</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Ngày tạo phiếu</span>
                           <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                            {viewItem.date && !isNaN(Date.parse(viewItem.date)) ? new Date(viewItem.date).toLocaleDateString('vi-VN') : '—'}
+                            {viewItem.created_at ? new Date(viewItem.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
                           </span>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Ngày tạo phiếu</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Ngày chi</span>
                           <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                            {viewItem.created_at ? new Date(viewItem.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                            {viewItem.date && !isNaN(Date.parse(viewItem.date)) ? new Date(viewItem.date).toLocaleDateString('vi-VN') : '—'}
                           </span>
                         </div>
 

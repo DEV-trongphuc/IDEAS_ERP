@@ -698,10 +698,17 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     if (role === 'hr') return t('Nhân sự');
     if (role === 'accountant') return t('Kế toán');
     if (role === 'marketing') return t('Marketing');
+    if (role === 'sale_admin' || role === 'saleadmin') return t('Sale Admin');
     return role;
   };
 
   const getRoleBadgeStyle = (role: string) => {
+    if (role === 'sale_admin' || role === 'saleadmin') {
+      return {
+        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)'
+      };
+    }
     if (role === 'superadmin' || role === 'super_admin') {
       return {
         background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',

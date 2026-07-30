@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense, useRef } from 'react';
+import React, { useEffect, useState, lazy, Suspense, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import { compressToWebP } from '../utils/imageCompress';
@@ -97,7 +97,7 @@ const formatMoney = (val: string | number, currency: string = 'VND') => {
   }).format(num);
 };
 
-export default function DepositsPage() {
+export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'list' | 'stats' }) {
   const { user } = useAuth();
   const isViewer = user?.role === 'viewer';
   const { showConfirm, addToast, setShowPOS } = useUIStore();
@@ -109,7 +109,7 @@ export default function DepositsPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const [activeViewTab, setActiveViewTab] = useState<'list' | 'stats'>('list');
+  const [activeViewTab, setActiveViewTab] = useState<'list' | 'stats'>(defaultTab);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (document.documentElement.getAttribute('data-theme') as 'light' | 'dark') || 'light';
   });
@@ -127,6 +127,25 @@ export default function DepositsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProjectId, setFilterProjectId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+
+  const projectOptions = useMemo(() => {
+    return [
+      { value: '', label: t("Tất cả chương trình") },
+      ...projects.map(p => ({
+        value: String(p.id),
+        label: p.name
+      }))
+    ];
+  }, [projects, t]);
+
+  const statusOptions = useMemo(() => {
+    return [
+      { value: '', label: t("Tất cả trạng thái") },
+      { value: 'pending_admin', label: t("Đang giao dịch") },
+      { value: 'approved', label: t("Hoàn tất") },
+      { value: 'cancelled', label: t("Đã hủy") }
+    ];
+  }, [t]);
 
   const filteredDepositsList = React.useMemo(() => {
     let list = deposits;
@@ -1210,41 +1229,47 @@ export default function DepositsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {t("Quản lý thanh toán")}
-            <button
-              onClick={() => setShowInfoModal(true)}
-              style={{
-                background: 'rgba(0, 0, 0, 0.02)',
-                border: '1px solid var(--color-border)',
-                padding: '3px 8px',
-                borderRadius: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer',
-                color: 'var(--color-text-muted)',
-                transition: 'all 0.2s',
-                height: '24px'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = 'var(--color-primary)';
-                e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                e.currentTarget.style.background = 'var(--color-primary-light)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = 'var(--color-text-muted)';
-                e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
-              }}
-              title={t("Xem hướng dẫn quy tắc đặt hàng & đổi sản phẩm")}
-            >
-              <Info size={12} />
-              <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>
-            </button>
+            {activeViewTab === 'stats' ? t("Dự báo dòng tiền") : t("Quản lý thanh toán")}
+            {activeViewTab !== 'stats' && (
+              <button
+                onClick={() => setShowInfoModal(true)}
+                style={{
+                  background: 'rgba(0, 0, 0, 0.02)',
+                  border: '1px solid var(--color-border)',
+                  padding: '3px 8px',
+                  borderRadius: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-muted)',
+                  transition: 'all 0.2s',
+                  height: '24px'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--color-primary)';
+                  e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                  e.currentTarget.style.background = 'var(--color-primary-light)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'var(--color-text-muted)';
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                }}
+                title={t("Xem hướng dẫn quy tắc đặt hàng & đổi sản phẩm")}
+              >
+                <Info size={12} />
+                <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>
+              </button>
+            )}
           </h1>
-          <p className="page-subtitle">{t("Theo dõi đơn hàng, tiến độ thanh toán và duyệt Sales Order")}</p>
+          <p className="page-subtitle">
+            {activeViewTab === 'stats' 
+              ? t("Theo dõi và dự báo dòng tiền vào ra chi tiết theo các mốc thời gian") 
+              : t("Theo dõi đơn hàng, tiến độ thanh toán và duyệt Sales Order")}
+          </p>
         </div>
-        {!isViewer && (
+        {!isViewer && activeViewTab !== 'stats' && (
           <button
             onClick={() => setShowPOS(true)}
             className="btn primary"
@@ -1256,65 +1281,7 @@ export default function DepositsPage() {
         )}
       </div>
 
-      {/* Tab Switcher */}
-      {isAdmin && (
-        <div style={{ 
-          display: 'flex',
-          background: 'var(--color-border-light)',
-          border: '1px solid var(--color-border)',
-          padding: '2px',
-          borderRadius: '8px',
-          gap: '2px',
-          width: 'fit-content',
-          position: 'relative',
-          marginBottom: '1.5rem'
-        }}>
-          <button
-            onClick={() => setActiveViewTab('list')}
-            style={{
-              padding: '6px 16px',
-              height: '34px',
-              borderRadius: '6px',
-              border: 'none',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              background: activeViewTab === 'list' ? 'var(--color-surface)' : 'transparent',
-              color: activeViewTab === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
-              boxShadow: activeViewTab === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
-          >
-            Danh sách thanh toán
-          </button>
-          <button
-            onClick={() => setActiveViewTab('stats')}
-            style={{
-              padding: '6px 16px',
-              height: '34px',
-              borderRadius: '6px',
-              border: 'none',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              background: activeViewTab === 'stats' ? 'var(--color-surface)' : 'transparent',
-              color: activeViewTab === 'stats' ? 'var(--color-text)' : 'var(--color-text-light)',
-              boxShadow: activeViewTab === 'stats' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
-          >
-            Dự báo dòng tiền
-          </button>
-        </div>
-      )}
+
 
       {activeViewTab === 'list' ? (
         <>
@@ -1457,33 +1424,28 @@ export default function DepositsPage() {
             </div>
 
             {/* Project Filter */}
-            <div style={{ width: '200px' }}>
-              <select
+            <div style={{ width: '220px' }}>
+              <CustomSelect
+                options={projectOptions}
                 value={filterProjectId}
-                onChange={(e) => setFilterProjectId(e.target.value)}
-                className="form-input"
-                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}
-              >
-                <option value="">{t("Tất cả chương trình")}</option>
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setFilterProjectId(val)}
+                searchable={true}
+                placeholder={t("Tất cả chương trình")}
+                width="100%"
+                size="md"
+              />
             </div>
 
             {/* Status Filter */}
             <div style={{ width: '180px' }}>
-              <select
+              <CustomSelect
+                options={statusOptions}
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="form-input"
-                style={{ width: '100%', height: '38px', borderRadius: '10px', margin: 0, padding: '0 10px' }}
-              >
-                <option value="">{t("Tất cả trạng thái")}</option>
-                <option value="pending_admin">{t("Đang giao dịch")}</option>
-                <option value="approved">{t("Hoàn tất")}</option>
-                <option value="cancelled">{t("Đã hủy")}</option>
-              </select>
+                onChange={(val) => setFilterStatus(val)}
+                placeholder={t("Tất cả trạng thái")}
+                width="100%"
+                size="md"
+              />
             </div>
           </div>
 
