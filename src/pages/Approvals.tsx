@@ -2735,27 +2735,29 @@ export default function Approvals() {
                                     borderRadius: '8px', 
                                     fontSize: '0.8rem', 
                                     display: 'flex', 
-                                    flexDirection: 'column',
-                                    gap: '4px',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
                                     color: 'var(--color-text)'
                                   }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <span><strong>{t('Thời gian quy đổi:')}</strong></span>
-                                      <strong style={{ color: 'var(--color-primary)' }}>
-                                        {requestedDays} {t('ngày công')}
-                                      </strong>
-                                    </div>
-                                    {(deductComp > 0 || deductAnnual > 0) && (
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '4px', marginTop: '2px' }}>
-                                        <span>{t('Khấu trừ dự kiến:')}</span>
-                                        <span style={{ fontWeight: 600, color: 'var(--color-danger)' }}>
-                                          {[
-                                            deductComp > 0 ? `-${Number(deductComp.toFixed(2))} ${t('ngày phép bù')}` : null,
-                                            deductAnnual > 0 ? `-${Number(deductAnnual.toFixed(2))} ${t('ngày phép năm')}` : null
-                                          ].filter(Boolean).join(', ')}
-                                        </span>
-                                      </div>
-                                    )}
+                                    <span><strong>{t('Khấu trừ dự kiến:')}</strong></span>
+                                    <strong style={{ color: 'var(--color-primary)' }}>
+                                      {(() => {
+                                        if (leaveType === 'unpaid') {
+                                          return t('Nghỉ không lương (Không khấu trừ phép)');
+                                        }
+                                        if (leaveType === 'sick') {
+                                          return t('Nghỉ ốm / thai sản (Không khấu trừ phép)');
+                                        }
+                                        if (isInsufficient) {
+                                          return t('Không đủ phép (Cần chuyển sang Nghỉ không lương)');
+                                        }
+                                        
+                                        return [
+                                          deductComp > 0 ? `-${Number(deductComp.toFixed(2))} ${t('phép bù')}` : null,
+                                          deductAnnual > 0 ? `-${Number(deductAnnual.toFixed(2))} ${t('phép năm')}` : null
+                                        ].filter(Boolean).join(', ') || t('0 ngày');
+                                      })()}
+                                    </strong>
                                   </div>
 
                                   {isInsufficient && (
