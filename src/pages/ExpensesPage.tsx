@@ -776,7 +776,7 @@ export const ExpensesPage: React.FC = () => {
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
                 onClick={e => e.stopPropagation()}
                 style={{
                   position: 'fixed',

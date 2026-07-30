@@ -595,28 +595,28 @@ export default function Approvals() {
     const s = status ? status.toLowerCase() : 'pending';
     if (s === 'approved' || s === 'confirmed') {
       return (
-        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', textTransform: 'uppercase' }}>
-          {t('Đã duyệt')}
+        <span className="badge success" style={{ fontSize: '0.65rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px', height: 'auto', borderRadius: '6px' }}>
+          <CheckCircle2 size={10} /> {t('Đã duyệt')}
         </span>
       );
     }
     if (s === 'level1_approved') {
       return (
-        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', textTransform: 'uppercase' }}>
-          {t('Đã duyệt Cấp 1')}
+        <span className="badge info" style={{ fontSize: '0.65rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px', height: 'auto', borderRadius: '6px' }}>
+          <CheckCircle2 size={10} /> {t('Đã duyệt Cấp 1')}
         </span>
       );
     }
     if (s === 'rejected' || s === 'failed') {
       return (
-        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', textTransform: 'uppercase' }}>
-          {t('Từ chối')}
+        <span className="badge danger" style={{ fontSize: '0.65rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px', height: 'auto', borderRadius: '6px' }}>
+          <XCircle size={10} /> {t('Từ chối')}
         </span>
       );
     }
     return (
-      <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 8, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', textTransform: 'uppercase' }}>
-        {t('Chờ duyệt')}
+      <span className="badge warning" style={{ fontSize: '0.65rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: '3px', height: 'auto', borderRadius: '6px' }}>
+        <Clock size={10} /> {t('Chờ duyệt')}
       </span>
     );
   };
@@ -1597,7 +1597,7 @@ export default function Approvals() {
                   initial={{ x: '100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '100%' }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
                   style={{
                     position: 'fixed',
                     top: 0,

@@ -1267,22 +1267,17 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
         <div className="welcome-banner" style={{ marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px', minWidth: 0, flex: '1 1 auto' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <div style={{ 
-                width: isMobile ? '50px' : '65px', 
-                height: isMobile ? '50px' : '65px', 
-                borderRadius: '18px', 
-                background: 'linear-gradient(135deg, #3a2223 0%, #1c1516 100%)', 
-                border: '2px solid rgba(189, 29, 45, 0.6)',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                fontSize: isMobile ? '1.25rem' : '1.6rem',
-                fontWeight: 800,
-                color: '#ffffff',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
-              }}>
-                {user?.name ? user.name.substring(0, 2).toUpperCase() : 'AD'}
-              </div>
+              <Avatar
+                name={user?.name || 'Admin'}
+                src={user?.avatar || user?.avatar_url}
+                size={isMobile ? 50 : 65}
+                style={{
+                  borderRadius: '18px',
+                  border: '2px solid rgba(189, 29, 45, 0.6)',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                  fontWeight: 800
+                }}
+              />
               <div className="ping-dot" style={{ 
                 position: 'absolute', 
                 bottom: '-2px', 
