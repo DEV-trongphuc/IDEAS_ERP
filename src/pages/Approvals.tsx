@@ -265,6 +265,71 @@ const formatApprovalCurrency = (amount: number | string, currency: string = 'VND
   }).format(num);
 };
 
+const formatNumberWithDots = (val: string | number) => {
+  if (val === undefined || val === null || val === '') return '';
+  const numStr = String(val).replace(/\D/g, '');
+  if (!numStr) return '';
+  return new Intl.NumberFormat('vi-VN').format(Number(numStr));
+};
+
+function docSoTiengViet(num: number): string {
+  if (num === 0) return 'Không đồng';
+  
+  const docBlock = (n: number, showZero: boolean): string => {
+    const chuSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+    let str = '';
+    const tram = Math.floor(n / 100);
+    const chuc = Math.floor((n % 100) / 10);
+    const donvi = n % 10;
+    
+    if (tram > 0 || showZero) {
+      str += chuSo[tram] + ' trăm ';
+    }
+    
+    if (chuc > 1) {
+      str += chuSo[chuc] + ' mươi ';
+    } else if (chuc === 1) {
+      str += 'mười ';
+    } else if (tram > 0 && donvi > 0) {
+      str += 'lẻ ';
+    }
+    
+    if (donvi > 0) {
+      if (donvi === 1 && chuc > 1) {
+        str += 'mốt';
+      } else if (donvi === 5 && chuc > 0) {
+        str += 'lăm';
+      } else if (donvi === 4 && chuc > 1) {
+        str += 'tư';
+      } else {
+        str += chuSo[donvi];
+      }
+    }
+    
+    return str.trim();
+  };
+
+  const donViNhom = ['', ' nghìn', ' triệu', ' tỷ', ' nghìn tỷ', ' triệu tỷ'];
+  let str = '';
+  let temp = num;
+  let nhom = 0;
+  
+  while (temp > 0) {
+    const sub = temp % 1000;
+    if (sub > 0) {
+      const subStr = docBlock(sub, nhom > 0);
+      str = subStr + donViNhom[nhom] + ' ' + str;
+    }
+    temp = Math.floor(temp / 1000);
+    nhom++;
+  }
+  
+  str = str.trim();
+  if (!str) return 'Không đồng';
+  
+  return str.charAt(0).toUpperCase() + str.slice(1) + ' đồng';
+}
+
 export default function Approvals() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -2829,14 +2894,22 @@ export default function Approvals() {
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số tiền tạm ứng')}</label>
                                 <input
-                                  type="number"
+                                  type="text"
                                   className="form-input"
-                                  value={paymentDetails}
-                                  onChange={e => setPaymentDetails(e.target.value)}
-                                  placeholder={t('Ví dụ: 5000000')}
+                                  value={formatNumberWithDots(paymentDetails)}
+                                  onChange={e => {
+                                    const rawVal = e.target.value.replace(/\D/g, '');
+                                    setPaymentDetails(rawVal);
+                                  }}
+                                  placeholder={t('Ví dụ: 5.000.000')}
                                   style={{ height: '36px', fontSize: '0.8rem' }}
                                   required
                                 />
+                                {paymentDetails && Number(paymentDetails) > 0 && (
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                                    {docSoTiengViet(Number(paymentDetails))}
+                                  </div>
+                                )}
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại tiền tệ')}</label>
@@ -2864,6 +2937,23 @@ export default function Approvals() {
                                 style={{ height: '36px', fontSize: '0.8rem' }}
                                 required
                               />
+                            </div>
+                            <div style={{
+                              background: 'rgba(245, 158, 11, 0.04)',
+                              border: '1px solid rgba(245, 158, 11, 0.15)',
+                              padding: '12px 14px',
+                              borderRadius: '10px',
+                              fontSize: '0.78rem',
+                              color: '#b45309',
+                              fontWeight: 600,
+                              lineHeight: 1.4,
+                              display: 'flex',
+                              gap: '8px',
+                              alignItems: 'flex-start',
+                              marginTop: '4px'
+                            }}>
+                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                              <span>{t('Lưu ý: Khoản tạm ứng này sẽ tự động trừ vào lương thực lãnh của tháng sau khi được duyệt đầy đủ các bước.')}</span>
                             </div>
                           </div>
                         ) : formType === 'general' ? (
@@ -3114,17 +3204,23 @@ export default function Approvals() {
                                       </div>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <input
-                                          type="number"
+                                          type="text"
                                           className="form-input"
-                                          value={inst.amount === 0 ? '' : inst.amount}
+                                          value={formatNumberWithDots(inst.amount)}
                                           onChange={e => {
+                                            const rawVal = e.target.value.replace(/\D/g, '');
                                             const list = [...installments];
-                                            list[index].amount = Number(e.target.value);
+                                            list[index].amount = Number(rawVal);
                                             setInstallments(list);
                                           }}
                                           placeholder={t('Số tiền (VND)')}
                                           style={{ height: '32px', fontSize: '0.75rem' }}
                                         />
+                                        {inst.amount > 0 && (
+                                          <div style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '2px', fontStyle: 'italic' }}>
+                                            {docSoTiengViet(inst.amount)}
+                                          </div>
+                                        )}
                                       </div>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <input
@@ -3270,18 +3366,24 @@ export default function Approvals() {
                                       </td>
                                       <td style={{ padding: '8px' }}>
                                         <input
-                                          type="number"
+                                          type="text"
                                           className="form-input"
-                                          value={item.price}
+                                          value={formatNumberWithDots(item.price)}
                                           onChange={e => {
+                                            const rawVal = e.target.value.replace(/\D/g, '');
                                             const updated = [...expenseItems];
-                                            updated[idx].price = Number(e.target.value);
+                                            updated[idx].price = Number(rawVal);
                                             setExpenseItems(updated);
                                           }}
                                           style={{ padding: '4px 8px', height: '28px', fontSize: '0.8rem' }}
-                                          min="0"
+                                          placeholder="0"
                                           required
                                         />
+                                        {item.price > 0 && (
+                                          <div style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '2px', fontStyle: 'italic', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={docSoTiengViet(item.price)}>
+                                            {docSoTiengViet(item.price)}
+                                          </div>
+                                        )}
                                       </td>
                                       <td style={{ padding: '8px', fontWeight: 600 }}>{formatApprovalCurrency(lineTotal, currencyType)}</td>
                                       <td style={{ padding: '8px' }}>
