@@ -1524,7 +1524,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       'company_id', 'company_name', 'owner_id', 'first_name', 'last_name', 'email', 'phone',
       'mobile', 'job_title', 'department', 'source', 'status', 'notes',
       'birthday', 'address', 'city', 'ward', 'expected_revenue', 'win_probability', 'gender', 'zalo_link', 'fb_link', 'customer_type', 'industry', 'budget_range',
-      'project_id', 'campaign_id', 'ttl1_completed', 'ttl1_data'
+      'project_id', 'campaign_id', 'ttl1_completed', 'ttl1_data', 'citizen_id', 'passport'
     ];
 
     const cleanObject = (obj: any) => {
@@ -1563,7 +1563,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       'mobile', 'job_title', 'department', 'source', 'status', 'notes',
       'birthday', 'address', 'city', 'ward', 'expected_revenue', 'win_probability', 'last_contact', 'created_at',
       'gender', 'zalo_link', 'fb_link', 'customer_type', 'industry', 'budget_range', 'project_id', 'campaign_id', 'ttl1_completed', 'ttl1_data',
-      'stage_id', 'pipeline_status', 'temperature', 'suggested_temperature', 'collaborator_ids'
+      'stage_id', 'pipeline_status', 'temperature', 'suggested_temperature', 'collaborator_ids', 'citizen_id', 'passport'
     ];
     const payload: Record<string, any> = {};
     allowedFields.forEach(f => { if (formData[f] !== undefined) payload[f] = formData[f]; });
@@ -3642,7 +3642,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       'id', 'company_id', 'company_name', 'owner_id', 'first_name', 'last_name', 
       'email', 'phone', 'mobile', 'job_title', 'department', 'source', 'status', 
       'notes', 'birthday', 'address', 'city', 'ward', 'expected_revenue', 
-      'win_probability', 'last_contact', 'created_at', 'updated_at', 'avatar_url', 'tags'
+      'win_probability', 'last_contact', 'created_at', 'updated_at', 'avatar_url', 'tags',
+      'citizen_id', 'passport'
     ];
     if (systemKeys.includes(key.toLowerCase())) {
       addToast(`Tên trường "${key}" trùng với tên hệ thống. Vui lòng chọn tên khác!`, 'error');
@@ -4819,44 +4820,35 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             const isBackward = i < safeIndex;
             const stColor = overridePurpleColor(st.color);
             return (
-              <React.Fragment key={st.id}>
-                {i > 0 && (
-                  <div style={{
-                    width: '12px',
-                    height: '2px',
-                    background: isActive ? stColor : 'var(--color-border-light)',
-                    alignSelf: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.3s'
-                  }} />
-                )}
-                <div
-                  onClick={() => {
-                    if (isCurrent) return;
-                    handleStageTransition(String(st.id), st.name);
-                  }}
-                  style={{
-                    flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : 'pointer',
-                    display: 'flex', alignItems: 'center', transition: 'all 0.3s',
-                    opacity: isBackward ? 0.75 : 1
-                  }}
-                >
-                  <div style={{
-                    position: 'relative', zIndex: 2, flex: 1,
-                    background: isCurrent ? 'var(--color-primary)' : (isBackward ? 'rgba(163, 20, 34, 0.03)' : 'var(--color-surface)'),
-                    color: isCurrent ? '#fff' : (isBackward ? 'rgba(163, 20, 34, 0.65)' : 'var(--color-text-muted)'),
-                    border: isCurrent ? '2px solid var(--color-primary)' : (isBackward ? '1px solid rgba(163, 20, 34, 0.25)' : '1px solid var(--color-border-light)'),
-                    padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    whiteSpace: 'nowrap',
-                    boxShadow: isCurrent ? '0 4px 12px rgba(189, 29, 45, 0.2)' : 'none',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}>
-                    {isCurrent && <UserCheck size={12} />}
-                    {st.name}
-                  </div>
+              <div
+                key={st.id}
+                onClick={() => {
+                  if (isCurrent) return;
+                  handleStageTransition(String(st.id), st.name);
+                }}
+                style={{
+                  flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', transition: 'all 0.3s',
+                  opacity: isBackward ? 0.75 : 1
+                }}
+              >
+
+
+                <div style={{
+                  position: 'relative', zIndex: 2, flex: 1,
+                  background: isCurrent ? 'var(--color-primary)' : (isBackward ? 'rgba(163, 20, 34, 0.03)' : 'var(--color-surface)'),
+                  color: isCurrent ? '#fff' : (isBackward ? 'rgba(163, 20, 34, 0.65)' : 'var(--color-text-muted)'),
+                  border: isCurrent ? '2px solid var(--color-primary)' : (isBackward ? '1px solid rgba(163, 20, 34, 0.25)' : '1px solid var(--color-border-light)'),
+                  padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: isCurrent ? '0 4px 12px rgba(189, 29, 45, 0.2)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}>
+                  {isCurrent && <UserCheck size={12} />}
+                  {st.name}
                 </div>
-              </React.Fragment>
+              </div>
             );
           });
         })()}
@@ -6341,7 +6333,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             </div>
                           </div>
                           <span style={{ fontSize: isMobileOrTablet ? '0.8rem' : '0.95rem', fontWeight: 800, color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{FMT(formData.actual_revenue || 0)}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><span style={{ color: '#10b981', fontWeight: 700 }}>{formData.paid_invoice_count || 0}</span> hóa đơn</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}><span style={{ color: '#10b981', fontWeight: 700 }}>{deals.reduce((sum, d) => sum + (d.milestones?.length || 0), 0)}</span> hóa đơn</span>
                         </div>
 
                         <div className="card-panel stat-card hover-lift" style={{ 
@@ -6556,12 +6548,49 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             }} />
                           </div>
                           <div className="form-group">
-                            <label className="form-label">Ngày sinh</label>
-                            <input className="form-input" type="date" value={formData.birthday || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, birthday: val }));
-                            }} />
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">Ngày sinh</label>
+                                <input className="form-input" type="date" value={formData.birthday || ''} onChange={e => {
+                                  const val = e.target.value;
+                                  setFormData((prev: any) => ({ ...prev, birthday: val }));
+                                }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">Giới tính</label>
+                                <CustomSelect
+                                  options={[
+                                    { value: '', label: '— Chưa chọn —' },
+                                    { value: 'male', label: 'Nam' },
+                                    { value: 'female', label: 'Nữ' },
+                                    { value: 'other', label: 'Khác' }
+                                  ]}
+                                  value={formData.gender || ''}
+                                  onChange={val => setFormData((prev: any) => ({ ...prev, gender: val as string }))}
+                                />
+                              </div>
+                            </div>
                           </div>
+
+                          <div className="form-group">
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">CCCD</label>
+                                <input className="form-input" placeholder="Nhập số CCCD" value={formData.citizen_id || ''} onChange={e => {
+                                  const val = e.target.value;
+                                  setFormData((prev: any) => ({ ...prev, citizen_id: val }));
+                                }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">Số Passport</label>
+                                <input className="form-input" placeholder="Nhập số Passport" value={formData.passport || ''} onChange={e => {
+                                  const val = e.target.value;
+                                  setFormData((prev: any) => ({ ...prev, passport: val }));
+                                }} />
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="form-group">
                             <label className="form-label">Chức danh</label>
                             <input className="form-input" placeholder="ví dụ: Giám đốc" value={formData.job_title || ''} onChange={e => {
@@ -6575,19 +6604,6 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               value={formData.address || ''}
                               onChange={addr => setFormData((prev: any) => ({ ...prev, address: addr }))}
                               placeholder="Chọn địa chỉ liên hệ..."
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Giới tính</label>
-                            <CustomSelect
-                              options={[
-                                { value: '', label: '— Chưa chọn —' },
-                                { value: 'male', label: 'Nam' },
-                                { value: 'female', label: 'Nữ' },
-                                { value: 'other', label: 'Khác' }
-                              ]}
-                              value={formData.gender || ''}
-                              onChange={val => setFormData((prev: any) => ({ ...prev, gender: val as string }))}
                             />
                           </div>
                           <div className="form-group">
@@ -6910,20 +6926,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               onChange={val => setFormData((prev: any) => ({ ...prev, industry: val as string }))}
                             />
                           </div>
-                          <div className="form-group">
-                            <label className="form-label">Phân khúc ngân sách</label>
-                            <CustomSelect
-                              options={[
-                                { value: '', label: '— Chưa chọn —' },
-                                { value: 'under_2b', label: 'Dưới 2 Tỷ' },
-                                { value: '2b_5b', label: '2 Tỷ - 5 Tỷ' },
-                                { value: '5b_10b', label: '5 Tỷ - 10 Tỷ' },
-                                { value: 'above_10b', label: 'Trên 10 Tỷ' }
-                              ]}
-                              value={formData.budget_range || ''}
-                              onChange={val => setFormData((prev: any) => ({ ...prev, budget_range: val as string }))}
-                            />
-                          </div>
+
                           <div className="form-group">
                             <label className="form-label">Dự kiến doanh thu</label>
                             <CurrencyInput
