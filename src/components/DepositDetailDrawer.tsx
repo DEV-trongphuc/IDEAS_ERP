@@ -15,6 +15,7 @@ import { CustomModal } from './ui/CustomModal';
 import { compressToWebP } from '../utils/imageCompress';
 import { fetchAPI } from '../utils/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { numberToVietnameseText } from '../utils/numberToText';
 
 interface Deposit {
   id: number;
@@ -1224,6 +1225,19 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                   className="form-input"
                                   style={{ width: '100%', height: '34px', fontSize: '0.775rem', padding: '0 10px', borderRadius: '6px' }}
                                 />
+                                {(() => {
+                                  const currentVal = selectedDepForManage.currency !== 'VND'
+                                    ? (m.original_amount !== null && m.original_amount !== undefined ? m.original_amount : m.expected_amount)
+                                    : m.expected_amount;
+                                  if (currentVal > 0) {
+                                    return (
+                                      <div style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '2px', fontStyle: 'italic' }} title={numberToVietnameseText(currentVal, selectedDepForManage.currency)}>
+                                        {numberToVietnameseText(currentVal, selectedDepForManage.currency)}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                                 {selectedDepForManage.currency !== 'VND' && (
                                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', paddingLeft: '4px', fontWeight: 600 }}>
                                     ≈ {formatNumberWithCommas(m.expected_amount)} VND

@@ -664,7 +664,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                             value={price}
                             onChange={val => setPrice(String(val))}
                             placeholder="0"
-                            showTextHelper={false}
+                            showTextHelper={true}
                             currency="VND"
                           />
                         </div>
@@ -712,7 +712,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                               value={expectedCommission}
                               onChange={val => setExpectedCommission(String(val))}
                               placeholder="0"
-                              showTextHelper={false}
+                              showTextHelper={true}
                               currency="VND"
                             />
                           ) : (
@@ -787,7 +787,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                                   )
                                 }
                                 placeholder={`Số tiền (${currency})`}
-                                showTextHelper={false}
+                                showTextHelper={true}
                                 currency={currency}
                               />
                               {currency !== 'VND' && (

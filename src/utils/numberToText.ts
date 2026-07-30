@@ -8,77 +8,86 @@ export const numberToText = (number: number | string, currency: string = 'VND'):
 export const numberToVietnameseText = (number: number | string, currency: string = 'VND'): string => {
   if (number === "" || number === null || number === undefined) return "";
   
-  const str = String(number).replace(/,/g, "");
+  const str = String(number).replace(/[^0-9]/g, "");
   const n = parseInt(str);
   
   if (isNaN(n) || n === 0) return "";
   if (n > 9999999999999) return "Số quá lớn (vượt quá 9999 tỷ)";
 
-  const defaultNumbers = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
-  
-  const readThreeDigits = (num: number, showZeroHundred: boolean): string => {
-    let res = "";
-    const hundred = Math.floor(num / 100);
-    const ten = Math.floor((num % 100) / 10);
-    const unit = num % 10;
+  const units = ["", " nghìn", " triệu", " tỷ", " nghìn tỷ", " triệu tỷ"];
+  const digits = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
 
-    if (hundred > 0) {
-      res += defaultNumbers[hundred] + " trăm ";
-    } else if (showZeroHundred) {
-      res += "không trăm ";
+  const readThreeDigits = (num: number, isFirst: boolean): string => {
+    let hundred = Math.floor(num / 100);
+    let ten = Math.floor((num % 100) / 10);
+    let single = num % 10;
+    let res = "";
+
+    if (hundred > 0 || !isFirst) {
+      res += digits[hundred] + " trăm ";
     }
 
     if (ten > 0) {
-      if (ten === 1) res += "mười ";
-      else res += defaultNumbers[ten] + " mươi ";
-    } else if (hundred > 0 || showZeroHundred) {
-      if (unit > 0) res += "lẻ ";
+      if (ten === 1) {
+        res += "mười ";
+      } else {
+        res += digits[ten] + " mươi ";
+      }
+    } else if (hundred > 0 && single > 0) {
+      res += "lẻ ";
     }
 
-    if (unit > 0) {
-      if (ten > 1 && unit === 1) res += "mốt";
-      else if (ten > 0 && unit === 5) res += "lăm";
-      else defaultNumbers[unit] && (res += defaultNumbers[unit]);
+    if (single > 0) {
+      if (single === 1 && ten > 1) {
+        res += "mốt";
+      } else if (single === 5 && ten > 0) {
+        res += "lăm";
+      } else if (single === 4 && ten > 1) {
+        res += "tư";
+      } else {
+        res += digits[single];
+      }
     }
 
-    return res;
+    return res.trim();
   };
 
-  const units = ["", " nghìn", " triệu", " tỷ"];
-  let res = "";
-  let tempN = n;
-
-  const groups: number[] = [];
-  while (tempN > 0) {
-    groups.push(tempN % 1000);
-    tempN = Math.floor(tempN / 1000);
+  let cleanNum = Math.floor(n);
+  let groups: number[] = [];
+  while (cleanNum > 0) {
+    groups.push(cleanNum % 1000);
+    cleanNum = Math.floor(cleanNum / 1000);
   }
 
+  let result = "";
   for (let i = groups.length - 1; i >= 0; i--) {
-    const group = groups[i];
-    const groupText = readThreeDigits(group, i < groups.length - 1);
-    
-    if (groupText.trim() !== "") {
-      const pos = i % 3; // 0: unit/billion, 1: thousand, 2: million
-      const billionGroup = Math.floor(i / 3);
-      
-      let unitName = units[pos];
-      for(let j=0; j<billionGroup; j++) unitName += " tỷ";
-
-      res += groupText + unitName + " ";
+    let groupVal = groups[i];
+    if (groupVal === 0) {
+      continue;
     }
+    
+    let isFirst = (i === groups.length - 1);
+    let groupStr = readThreeDigits(groupVal, isFirst);
+    
+    const pos = i % 3;
+    const billionGroup = Math.floor(i / 3);
+    let unitName = units[pos];
+    for (let j = 0; j < billionGroup; j++) {
+      unitName += " tỷ";
+    }
+    
+    result += groupStr + unitName + " ";
   }
 
-  res = res.trim();
-  if (res === "") return "";
+  result = result.trim();
+  if (!result) return "";
   
-  // Capitalize first letter
-  res = res.charAt(0).toUpperCase() + res.slice(1);
-  
+  result = result.charAt(0).toUpperCase() + result.slice(1);
+
   let suffix = "đồng";
   if (currency === 'USD') suffix = "đô la Mỹ";
   else if (currency === 'EURO') suffix = "Euro";
   else if (currency === 'CHF') suffix = "Franc Thụy Sĩ";
   
-  return res + " " + suffix;
+  return result + " " + suffix;
 };
