@@ -398,7 +398,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
     for (let m of tempMilestones) {
       if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {
-        addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái đã đóng/đã duyệt bắt buộc phải có file minh chứng đính kèm.`, 'error');
+        addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái chờ ghi nhận hoặc đã ghi nhận bắt buộc phải có file minh chứng đính kèm.`, 'error');
         return;
       }
     }
@@ -1218,7 +1218,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                     display: 'inline-block',
                                     whiteSpace: 'nowrap'
                                   }}>
-                                    {m.status === 'approved' ? 'Đã duyệt' : m.status === 'paid' ? 'Chờ duyệt' : m.status === 'failed' ? 'Từ chối' : 'Chờ nộp'}
+                                    {m.status === 'approved' ? 'Đã ghi nhận' : m.status === 'paid' ? 'Chờ ghi nhận' : m.status === 'failed' ? 'Từ chối' : 'Chờ nộp'}
                                   </span>
                                   {m.approval_date && m.status === 'approved' && (
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
