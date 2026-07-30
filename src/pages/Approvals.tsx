@@ -2655,7 +2655,17 @@ export default function Approvals() {
                         </div>
 
                         {/* List of comments */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div 
+                          style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: '10px',
+                            maxHeight: '240px',
+                            overflowY: 'auto',
+                            paddingRight: '6px'
+                          }}
+                          className="custom-scrollbar"
+                        >
                           {createComments.length === 0 ? (
                             <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
                               {t('Chưa có bình luận nào.')}
@@ -4356,7 +4366,18 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
               </h3>
 
               {/* List of comments */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1.25rem' }}>
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '10px', 
+                  marginBottom: '1.25rem',
+                  maxHeight: '320px',
+                  overflowY: 'auto',
+                  paddingRight: '6px'
+                }}
+                className="custom-scrollbar"
+              >
                 {localComments.length === 0 ? (
                   <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
                     {t('Chưa có bình luận nào.')}
