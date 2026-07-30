@@ -85,6 +85,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   const [comments, setComments] = useState<any[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [activeTab, setActiveTab] = useState<'comments' | 'timeline'>('comments');
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [loadingTimeline, setLoadingTimeline] = useState(false);
+  const [timelinePage, setTimelinePage] = useState(1);
   const [newCommentText, setNewCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentAttachments, setCommentAttachments] = useState<any[]>([]);
@@ -178,6 +182,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         toast.error(t('Lỗi tắt thông báo: ') + (err.response?.data?.message || err.message));
       })
       .finally(() => setLoadingMute(false));
+  };
+
+  const handleShareTask = () => {
+    if (!formData.id) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('task_id', String(formData.id));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      toast.success(t('Đã sao chép liên kết chia sẻ công việc!'));
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+      toast.error(t('Không thể sao chép liên kết'));
+    });
   };
 
   const getTomorrowString = () => {
@@ -534,6 +552,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     }
   };
 
+  const loadTimeline = async (taskId: number) => {
+    setLoadingTimeline(true);
+    try {
+      const res = await api.get(`/activities/${taskId}/timeline`);
+      if (res.data && res.data.success) {
+        setTimeline(res.data.data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingTimeline(false);
+    }
+  };
+
   const loadSubtaskComments = async (taskId: number, subtaskId: string) => {
     setLoadingSubtaskComments(true);
     try {
@@ -696,8 +728,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       setCampaignTarget(parsedMeta.campaign_target || '');
       if (normalizedTask.id !== 'new') {
         loadComments(normalizedTask.id);
+        loadTimeline(normalizedTask.id);
       } else {
         setComments([]);
+        setTimeline([]);
       }
 
       // Compute and store original hash
@@ -1110,6 +1144,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
           return nextData;
         });
         onUpdate();
+        loadTimeline(task.id);
       }
     } catch (e: any) {
       toast.error(t('Lỗi cập nhật: ') + e.message);
@@ -1439,6 +1474,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
       if (res.data && res.data.success) {
         loadComments(task.id);
+        loadTimeline(task.id);
         toast.success(t('Đã thêm bình luận!'));
       }
     } catch (e: any) {
@@ -1661,7 +1697,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       return bChecked - aChecked;
     });
 
-  const currentHash = (() => {
+  const currentHash = React.useMemo(() => {
     const cleanObj = (obj: any) => {
       const clean: any = {};
       Object.keys(obj || {}).forEach(key => {
@@ -1677,7 +1713,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       formData: cleanObj(formData),
       erpMeta: cleanObj(erpMeta)
     });
-  })();
+  }, [formData, erpMeta]);
 
   const handleImageClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -1689,6 +1725,71 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const hasChanges = originalHash !== currentHash;
 
   const isApproverOrAdmin = currentUser && Number(currentUser.id) === Number(formData.approver_id);
+
+  const formatLogAction = (log: any) => {
+    const action = log.action;
+    let data: any = {};
+    try {
+      data = JSON.parse(log.new_data || '{}');
+    } catch(e) {}
+    
+    switch (action) {
+      case 'CREATE':
+        return `đã tạo công việc "${data.subject || ''}"`;
+      case 'UPDATE':
+        const keys = Object.keys(data);
+        const displayKeys = keys.filter(k => [
+          'status', 'progress', 'priority', 'user_id', 'due_date', 'body', 'subject', 'participant_ids', 'tags'
+        ].includes(k));
+        
+        if (displayKeys.length > 0) {
+          const changes = displayKeys.map(k => {
+            const val = data[k];
+            if (k === 'status') {
+              const statusLabels: Record<string, string> = {
+                todo: 'Cần làm',
+                in_progress: 'Đang làm',
+                done: 'Hoàn thành',
+                cancelled: 'Đã hủy',
+                pending: 'Chờ duyệt'
+              };
+              return `trạng thái thành "${statusLabels[val] || val}"`;
+            }
+            if (k === 'progress') return `tiến độ thành ${val}%`;
+            if (k === 'priority') {
+              const priorityLabels: Record<string, string> = {
+                low: 'Thấp',
+                medium: 'Trung bình',
+                high: 'Cao'
+              };
+              return `độ ưu tiên thành "${priorityLabels[val] || val}"`;
+            }
+            if (k === 'user_id') {
+              const assignedUser = users.find(u => Number(u.id) === Number(val));
+              return `người thực hiện thành "${assignedUser?.full_name || val}"`;
+            }
+            if (k === 'due_date') return `thời hạn thành "${val || 'không có'}"`;
+            if (k === 'body') return `mô tả công việc`;
+            if (k === 'subject') return `tên công việc`;
+            if (k === 'participant_ids') return `người liên quan`;
+            if (k === 'tags') return `nhãn công việc`;
+            return `trường "${k}"`;
+          });
+          return `đã cập nhật ${changes.join(', ')}`;
+        }
+        return 'đã cập nhật thông tin công việc';
+      case 'ADD_COMMENT':
+        return 'đã thêm bình luận mới';
+      case 'DELETE_COMMENT':
+        return 'đã xóa bình luận';
+      case 'CANCEL_MEETING':
+        return `đã hủy lịch hẹn. Lý do: "${data.reason || ''}"`;
+      case 'RESCHEDULE_MEETING':
+        return `đã dời lịch hẹn đến ngày ${data.due_date || ''}`;
+      default:
+        return `đã thực hiện thao tác "${action}"`;
+    }
+  };
 
   const content = (
     <motion.div 
@@ -1844,6 +1945,32 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
           </div>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
+            {/* Share Task Button */}
+            {formData.id && formData.id !== 'new' && (
+              <button
+                type="button"
+                onClick={handleShareTask}
+                className="hover-lift"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s'
+                }}
+                title={t("Chia sẻ liên kết công việc")}
+              >
+                <Share2 size={18} />
+              </button>
+            )}
+
             {/* Notification Mute Bell Button */}
             <button
               type="button"
@@ -3188,223 +3315,415 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               </div>
             </div>
 
-            {/* Bình luận & Trao đổi */}
+            {/* Bình luận & Trao đổi hoặc Dòng thời gian */}
             {task?.id !== 'new' && (
               <div className="card" style={cardStyle}>
-                <label style={cardLabelStyle}>
-                  {t('Bình luận & Trao đổi')} ({comments.length})
-                </label>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border-light)', marginBottom: '14px', gap: '20px' }}>
+                  <button 
+                    onClick={() => setActiveTab('comments')} 
+                    style={{ 
+                      padding: '8px 4px', 
+                      fontSize: '0.85rem', 
+                      fontWeight: 700, 
+                      border: 'none', 
+                      background: 'none', 
+                      borderBottom: activeTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent', 
+                      color: activeTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <MessageSquare size={14} />
+                    <span>{t('Bình luận & Trao đổi')} ({comments.length})</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('timeline')} 
+                    style={{ 
+                      padding: '8px 4px', 
+                      fontSize: '0.85rem', 
+                      fontWeight: 700, 
+                      border: 'none', 
+                      background: 'none', 
+                      borderBottom: activeTab === 'timeline' ? '2px solid var(--color-primary)' : '2px solid transparent', 
+                      color: activeTab === 'timeline' ? 'var(--color-primary)' : 'var(--color-text-muted)', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Clock size={14} />
+                    <span>{t('Dòng thời gian')} ({timeline.length})</span>
+                  </button>
+                </div>
 
-                {/* Add comment input */}
-                <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '12px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
-                  {replyTo && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(163, 20, 34, 0.08)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', color: '#a31422', fontWeight: 700 }}>
-                      <span>Đang trả lời {replyTo.userName}</span>
-                      <button onClick={() => setReplyTo(null)} style={{ border: 'none', background: 'transparent', color: '#a31422', cursor: 'pointer', fontWeight: 800, fontSize: '0.9rem', padding: '0 4px' }}>×</button>
-                    </div>
-                  )}
-                  <div style={{ position: 'relative' }}>
-                    <MentionInput
-                      value={newCommentText}
-                      onChange={e => setNewCommentText(e.target.value)}
-                      onImagePaste={addLocalTaskCommentAttachment}
-                      onFilePaste={addLocalTaskCommentAttachment}
-                      placeholder={t('Viết bình luận... (Dán ảnh trực tiếp Ctrl+V)')}
-                      style={{ minHeight: '65px', fontSize: '0.85rem', paddingRight: '40px' }}
-                      disabled={isSubmittingComment || uploadingFile}
-                    />
-                    <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: (uploadingFile || isSubmittingComment) ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
-                      <input type="file" onChange={handleCommentAttachmentUpload} style={{ display: 'none' }} disabled={uploadingFile || isSubmittingComment} />
-                      {uploadingFile ? <RefreshCw className="spin" size={18} /> : <Paperclip size={18} />}
-                    </label>
-                  </div>
-                  
-                  {/* Attachment Chips List */}
-                  {commentAttachments.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '2px' }}>
-                      {commentAttachments.map((att: any, idx: number) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', color: 'var(--color-text)' }}>
-                          {att.previewUrl ? (
-                            <img src={att.previewUrl} alt="preview" style={{ width: '22px', height: '22px', borderRadius: '4px', objectFit: 'cover' }} />
-                          ) : (
-                            <Paperclip size={11} color="var(--color-primary)" />
-                          )}
-                          <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{att.name}</span>
-                          <button onClick={() => removeTaskCommentAttachment(idx)} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>×</button>
+                {activeTab === 'comments' ? (
+                  <>
+                    {/* Add comment input */}
+                    <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '12px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                      {replyTo && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(163, 20, 34, 0.08)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', color: '#a31422', fontWeight: 700 }}>
+                          <span>Đang trả lời {replyTo.userName}</span>
+                          <button onClick={() => setReplyTo(null)} style={{ border: 'none', background: 'transparent', color: '#a31422', cursor: 'pointer', fontWeight: 800, fontSize: '0.9rem', padding: '0 4px' }}>×</button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px' }}>
-                    <button
-                      onClick={handlePostComment}
-                      disabled={isSubmittingComment || uploadingFile || (!newCommentText.trim() && commentAttachments.length === 0)}
-                      className="btn primary sm"
-                      style={{ padding: '6px 18px', fontSize: '0.78rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
-                    >
-                      {isSubmittingComment ? <RefreshCw className="spin" size={13} /> : <Send size={13} />}
-                      <span>{t('Gửi')}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Comments feed list */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '420px', overflowY: 'auto', marginTop: '4px' }} className="custom-scrollbar">
-                  {loadingComments ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <StatRowSkeleton />
-                      <StatRowSkeleton />
-                      <StatRowSkeleton />
-                    </div>
-                  ) : comments.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
-                      {t('Chưa có thảo luận nào.')}
-                    </div>
-                  ) : (
-                    (() => {
-                      const rootComments = comments.filter((c: any) => !c.parent_id);
-                      const getReplies = (parentId: number) => {
-                        return comments
-                          .filter((c: any) => Number(c.parent_id) === Number(parentId))
-                          .sort((a: any, b: any) => new Date(a.created_at.replace(/-/g, '/')).getTime() - new Date(b.created_at.replace(/-/g, '/')).getTime());
-                      };
-
-                      const renderSingleComment = (comment: any, isReply: boolean = false) => {
-                        const commUser = users.find(u => Number(u.id) === Number(comment.user_id));
-                        let commentParsedAtts = [];
-                        if (comment.attachments) {
-                          try {
-                            commentParsedAtts = typeof comment.attachments === 'string' ? JSON.parse(comment.attachments) : comment.attachments;
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        }
-                        if (!Array.isArray(commentParsedAtts)) commentParsedAtts = [];
-
-                        return (
-                          <div 
-                            key={comment.id} 
-                            id={`workspace-comment-${comment.id}`}
-                            style={{ 
-                              display: 'flex', 
-                              gap: '12px', 
-                              background: isReply ? 'transparent' : 'var(--color-bg-alt, rgba(0, 0, 0, 0.01))', 
-                              border: isReply ? 'none' : '1px solid var(--color-border-light)', 
-                              padding: isReply ? '6px 0' : '12px 16px', 
-                              borderRadius: isReply ? '0' : '16px',
-                              borderLeft: undefined,
-                              transition: 'all 0.5s ease',
-                              marginTop: isReply ? '6px' : '0'
-                            }}
-                          >
-                            <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={isReply ? 24 : 28} />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: isReply ? '0.75rem' : '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
-                              </div>
-                              {comment.content && /<[a-z][\s\S]*>/i.test(comment.content) ? (
-                                <div 
-                                  className="rich-text-editor-content"
-                                  dangerouslySetInnerHTML={{ __html: comment.content }}
-                                  style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45' }}
-                                />
+                      )}
+                      <div style={{ position: 'relative' }}>
+                        <MentionInput
+                          value={newCommentText}
+                          onChange={e => setNewCommentText(e.target.value)}
+                          onImagePaste={addLocalTaskCommentAttachment}
+                          onFilePaste={addLocalTaskCommentAttachment}
+                          placeholder={t('Viết bình luận... (Dán ảnh trực tiếp Ctrl+V)')}
+                          style={{ minHeight: '65px', fontSize: '0.85rem', paddingRight: '40px' }}
+                          disabled={isSubmittingComment || uploadingFile}
+                        />
+                        <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: (uploadingFile || isSubmittingComment) ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
+                          <input type="file" onChange={handleCommentAttachmentUpload} style={{ display: 'none' }} disabled={uploadingFile || isSubmittingComment} />
+                          {uploadingFile ? <RefreshCw className="spin" size={18} /> : <Paperclip size={18} />}
+                        </label>
+                      </div>
+                      
+                      {/* Attachment Chips List */}
+                      {commentAttachments.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '2px' }}>
+                          {commentAttachments.map((att: any, idx: number) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', color: 'var(--color-text)' }}>
+                              {att.previewUrl ? (
+                                <img src={att.previewUrl} alt="preview" style={{ width: '22px', height: '22px', borderRadius: '4px', objectFit: 'cover' }} />
                               ) : (
-                                <div style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
-                                  {renderCommentContent(comment.content)}
-                                </div>
+                                <Paperclip size={11} color="var(--color-primary)" />
                               )}
-                              {commentParsedAtts.length > 0 && (
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                                  {commentParsedAtts.map((url: any, aIdx: number) => {
-                                    const name = typeof url === 'string' ? url.substring(url.lastIndexOf('/') + 1) : (url.name || 'File');
-                                    const rawHref = typeof url === 'string' ? url : (url.url || '#');
-
-                                    const apiBase = import.meta.env.VITE_API_URL || '/backend';
-                                    let href = rawHref;
-                                    if (rawHref && rawHref.startsWith('uploads/')) {
-                                      href = `${apiBase}/${rawHref}`;
-                                    } else if (rawHref && rawHref.startsWith('storage/uploads/')) {
-                                      href = `${apiBase}/${rawHref.replace('storage/uploads/', 'uploads/')}`;
-                                    }
-
-                                    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)/i.test(href);
-
-                                    if (isImage) {
-                                      return (
-                                        <div key={aIdx} style={{ marginTop: '4px', display: 'inline-block' }}>
-                                          <a href={href} target="_blank" rel="noreferrer">
-                                            <img 
-                                              src={href} 
-                                              alt={name} 
-                                              style={{ 
-                                                maxWidth: '240px', 
-                                                maxHeight: '160px', 
-                                                borderRadius: '8px', 
-                                                border: '1px solid var(--color-border-light)', 
-                                                objectFit: 'cover',
-                                                cursor: 'zoom-in',
-                                                boxShadow: 'var(--shadow-sm)'
-                                              }} 
-                                            />
-                                          </a>
-                                        </div>
-                                      );
-                                    }
-
-                                    return (
-                                      <a key={aIdx} href={href} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none', color: 'var(--color-primary)', fontSize: '0.65rem' }}>
-                                        <FileText size={10} />
-                                        <span>{name}</span>
-                                      </a>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              
-                              {!isReply && (
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                                  <button
-                                    onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp' })}
-                                    style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
-                                    className="hover-lift"
-                                  >
-                                    <MessageSquare size={12} style={{ marginTop: '1px' }} />
-                                    <span>Phản hồi</span>
-                                  </button>
-                                </div>
-                              )}
+                              <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{att.name}</span>
+                              <button onClick={() => removeTaskCommentAttachment(idx)} style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}>×</button>
                             </div>
-                          </div>
-                        );
-                      };
+                          ))}
+                        </div>
+                      )}
 
-                      return rootComments.map((rootComment: any) => {
-                        const replies = getReplies(rootComment.id);
-                        return (
-                          <div key={rootComment.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                            {renderSingleComment(rootComment, false)}
-                            {replies.length > 0 && (
-                              <div style={{ 
-                                marginLeft: '26px', 
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                gap: '12px', 
-                                borderLeft: '2px solid var(--color-border-light)', 
-                                paddingLeft: '18px', 
-                                marginTop: '8px',
-                                marginBottom: '6px'
-                              }}>
-                                {replies.map((reply: any) => renderSingleComment(reply, true))}
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px' }}>
+                        <button
+                          onClick={handlePostComment}
+                          disabled={isSubmittingComment || uploadingFile || (!newCommentText.trim() && commentAttachments.length === 0)}
+                          className="btn primary sm"
+                          style={{ padding: '6px 18px', fontSize: '0.78rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
+                        >
+                          {isSubmittingComment ? <RefreshCw className="spin" size={13} /> : <Send size={13} />}
+                          <span>{t('Gửi')}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Comments feed list */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '420px', overflowY: 'auto', marginTop: '4px' }} className="custom-scrollbar">
+                      {loadingComments ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <StatRowSkeleton />
+                          <StatRowSkeleton />
+                          <StatRowSkeleton />
+                        </div>
+                      ) : comments.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                          {t('Chưa có thảo luận nào.')}
+                        </div>
+                      ) : (
+                        (() => {
+                          const rootComments = comments.filter((c: any) => !c.parent_id);
+                          const getReplies = (parentId: number) => {
+                            return comments
+                              .filter((c: any) => Number(c.parent_id) === Number(parentId))
+                              .sort((a: any, b: any) => new Date(a.created_at.replace(/-/g, '/')).getTime() - new Date(b.created_at.replace(/-/g, '/')).getTime());
+                          };
+
+                          const renderSingleComment = (comment: any, isReply: boolean = false) => {
+                            const commUser = users.find(u => Number(u.id) === Number(comment.user_id));
+                            let commentParsedAtts = [];
+                            if (comment.attachments) {
+                              try {
+                                commentParsedAtts = typeof comment.attachments === 'string' ? JSON.parse(comment.attachments) : comment.attachments;
+                              } catch (e) {
+                                console.error(e);
+                              }
+                            }
+                            if (!Array.isArray(commentParsedAtts)) commentParsedAtts = [];
+
+                            return (
+                              <div 
+                                key={comment.id} 
+                                id={`workspace-comment-${comment.id}`}
+                                style={{ 
+                                  display: 'flex', 
+                                  gap: '12px', 
+                                  background: isReply ? 'transparent' : 'var(--color-bg-alt, rgba(0, 0, 0, 0.01))', 
+                                  border: isReply ? 'none' : '1px solid var(--color-border-light)', 
+                                  padding: isReply ? '6px 0' : '12px 16px', 
+                                  borderRadius: isReply ? '0' : '16px',
+                                  borderLeft: undefined,
+                                  transition: 'all 0.5s ease',
+                                  marginTop: isReply ? '6px' : '0'
+                                }}
+                              >
+                                <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={isReply ? 24 : 28} />
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: isReply ? '0.75rem' : '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
+                                    <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
+                                  </div>
+                                  {comment.content && /<[a-z][\s\S]*>/i.test(comment.content) ? (
+                                    <div 
+                                      className="rich-text-editor-content"
+                                      dangerouslySetInnerHTML={{ __html: comment.content }}
+                                      style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45' }}
+                                    />
+                                  ) : (
+                                    <div style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
+                                      {renderCommentContent(comment.content)}
+                                    </div>
+                                  )}
+                                  {commentParsedAtts.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                      {commentParsedAtts.map((url: any, aIdx: number) => {
+                                        const name = typeof url === 'string' ? url.substring(url.lastIndexOf('/') + 1) : (url.name || 'File');
+                                        const rawHref = typeof url === 'string' ? url : (url.url || '#');
+
+                                        const apiBase = import.meta.env.VITE_API_URL || '/backend';
+                                        let href = rawHref;
+                                        if (rawHref && rawHref.startsWith('uploads/')) {
+                                          href = `${apiBase}/${rawHref}`;
+                                        } else if (rawHref && rawHref.startsWith('storage/uploads/')) {
+                                          href = `${apiBase}/${rawHref.replace('storage/uploads/', 'uploads/')}`;
+                                        }
+
+                                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)/i.test(href);
+
+                                        if (isImage) {
+                                          return (
+                                            <div key={aIdx} style={{ marginTop: '4px', display: 'inline-block' }}>
+                                              <a href={href} target="_blank" rel="noreferrer">
+                                                <img 
+                                                  src={href} 
+                                                  alt={name} 
+                                                  style={{ 
+                                                    maxWidth: '240px', 
+                                                    maxHeight: '160px', 
+                                                    borderRadius: '8px', 
+                                                    border: '1px solid var(--color-border-light)', 
+                                                    objectFit: 'cover',
+                                                    cursor: 'zoom-in',
+                                                    boxShadow: 'var(--shadow-sm)'
+                                                  }} 
+                                                />
+                                              </a>
+                                            </div>
+                                          );
+                                        }
+
+                                        return (
+                                          <a key={aIdx} href={href} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none', color: 'var(--color-primary)', fontSize: '0.65rem' }}>
+                                            <FileText size={10} />
+                                            <span>{name}</span>
+                                          </a>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  
+                                  {!isReply && (
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                      <button
+                                        onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp' })}
+                                        style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        className="hover-lift"
+                                      >
+                                        <MessageSquare size={12} style={{ marginTop: '1px' }} />
+                                        <span>Phản hồi</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()
-                  )}
-                </div>
+                            );
+                          };
+
+                          return rootComments.map((rootComment: any) => {
+                            const replies = getReplies(rootComment.id);
+                            return (
+                              <div key={rootComment.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                                {renderSingleComment(rootComment, false)}
+                                {replies.length > 0 && (
+                                  <div style={{ 
+                                    marginLeft: '26px', 
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    gap: '12px', 
+                                    borderLeft: '2px solid var(--color-border-light)', 
+                                    paddingLeft: '18px', 
+                                    marginTop: '8px',
+                                    marginBottom: '6px'
+                                  }}>
+                                    {replies.map((reply: any) => renderSingleComment(reply, true))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 5px', position: 'relative' }}>
+                    {/* Scrollable Container for Timeline */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '450px', overflowY: 'auto', paddingRight: '6px', position: 'relative' }} className="custom-scrollbar">
+                      {/* Vertical line connector */}
+                      <div style={{ position: 'absolute', left: '17px', top: '15px', bottom: '15px', width: '2px', background: 'var(--color-border-light)' }} />
+                      
+                      {loadingTimeline ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <StatRowSkeleton />
+                          <StatRowSkeleton />
+                        </div>
+                      ) : timeline.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', padding: '20px 0' }}>
+                          {t('Chưa có lịch sử hoạt động ghi nhận')}
+                        </div>
+                      ) : (
+                        (() => {
+                          const itemsPerPage = 20;
+                          const startIndex = (timelinePage - 1) * itemsPerPage;
+                          const paginatedTimeline = timeline.slice(startIndex, startIndex + itemsPerPage);
+
+                          return paginatedTimeline.map((log: any, idx: number) => {
+                            const dateStr = log.created_at ? new Date(log.created_at.replace(/-/g, '/')).toLocaleString('vi-VN') : '';
+                            let data: any = {};
+                            try {
+                              data = JSON.parse(log.new_data || '{}');
+                            } catch(e) {}
+
+                            // Parse changes
+                            const keys = Object.keys(data);
+                            const displayKeys = keys.filter(k => [
+                              'status', 'progress', 'priority', 'user_id', 'due_date'
+                            ].includes(k));
+
+                            const getActionMainText = () => {
+                              switch (log.action) {
+                                case 'CREATE':
+                                  return t('đã tạo công việc này');
+                                case 'UPDATE':
+                                  if (displayKeys.length > 0) {
+                                    const changes = displayKeys.map(k => {
+                                      const val = data[k];
+                                      if (k === 'status') {
+                                        const statusLabels: Record<string, string> = {
+                                          todo: t('Cần làm'),
+                                          in_progress: t('Đang làm'),
+                                          done: t('Hoàn thành'),
+                                          cancelled: t('Đã hủy'),
+                                          pending: t('Chờ duyệt'),
+                                          planned: t('Lên kế hoạch')
+                                        };
+                                        return `${t('trạng thái')} thành "${statusLabels[val] || val}"`;
+                                      }
+                                      if (k === 'progress') return `${t('tiến độ')} thành ${val}%`;
+                                      if (k === 'priority') {
+                                        const priorityLabels: Record<string, string> = {
+                                          low: t('Thấp'),
+                                          medium: t('Trung bình'),
+                                          high: t('Cao')
+                                        };
+                                        return `${t('độ ưu tiên')} thành "${priorityLabels[val] || val}"`;
+                                      }
+                                      if (k === 'user_id') {
+                                        const assignedUser = users.find(u => Number(u.id) === Number(val));
+                                        return `${t('người thực hiện')} thành "${assignedUser?.full_name || val}"`;
+                                      }
+                                      if (k === 'due_date') return `${t('thời hạn')} thành "${val || t('không có')}"`;
+                                      if (k === 'body') return t('mô tả công việc');
+                                      if (k === 'subject') return t('tên công việc');
+                                      if (k === 'participant_ids') return t('người liên quan');
+                                      if (k === 'tags') return t('nhãn công việc');
+                                      return `trường "${k}"`;
+                                    });
+                                    return `${t('đã cập nhật')} ${changes.join(', ')}`;
+                                  }
+                                  return t('đã cập nhật thông tin công việc');
+                                case 'ADD_COMMENT':
+                                  return t('đã thêm bình luận mới');
+                                case 'DELETE_COMMENT':
+                                  return t('đã xóa bình luận');
+                                case 'CANCEL_MEETING':
+                                  return `${t('đã hủy lịch hẹn')} (Lý do: "${data.reason || ''}")`;
+                                case 'RESCHEDULE_MEETING':
+                                  return `${t('đã dời lịch hẹn đến ngày')} ${data.due_date || ''}`;
+                                default:
+                                  return `${t('đã thực hiện thao tác')} "${log.action}"`;
+                              }
+                            };
+
+                            return (
+                              <div key={idx} style={{ display: 'flex', gap: '15px', position: 'relative', zIndex: 1 }}>
+                                {/* Avatar */}
+                                <div style={{ flexShrink: 0 }}>
+                                  <Avatar 
+                                    src={log.user_avatar} 
+                                    name={log.user_name || t('Hệ thống')} 
+                                    size={36} 
+                                  />
+                                </div>
+                                
+                                {/* Log details */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, paddingTop: '2px' }}>
+                                  <div style={{ fontSize: '0.825rem', color: 'var(--color-text)', lineHeight: '1.4' }}>
+                                    <strong style={{ color: 'var(--color-primary)', marginRight: '6px' }}>
+                                      {log.user_name || t('Hệ thống')}
+                                    </strong>
+                                    {getActionMainText()}
+                                  </div>
+                                  
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                                    {dateStr}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()
+                      )}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {timeline.length > 20 && (
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '10px', borderTop: '1px solid var(--color-border-light)', paddingTop: '15px' }}>
+                        {Array.from({ length: Math.min(5, Math.ceil(timeline.length / 20)) }).map((_, pIdx) => {
+                          const pNum = pIdx + 1;
+                          return (
+                            <button
+                              key={pNum}
+                              onClick={() => setTimelinePage(pNum)}
+                              className={`btn sm ${timelinePage === pNum ? 'primary' : 'border'}`}
+                              style={{ 
+                                minWidth: '32px', 
+                                height: '32px', 
+                                borderRadius: '8px', 
+                                padding: 0, 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center',
+                                background: timelinePage === pNum ? 'var(--color-primary)' : 'var(--color-surface)',
+                                borderColor: timelinePage === pNum ? 'var(--color-primary)' : 'var(--color-border)',
+                                color: timelinePage === pNum ? '#fff' : 'var(--color-text)'
+                              }}
+                            >
+                              {pNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {/* Bottom Spacer to prevent content from being flush against the bottom */}

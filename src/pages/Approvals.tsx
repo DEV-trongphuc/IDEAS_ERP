@@ -463,6 +463,33 @@ export default function Approvals() {
   const [stationeryItem, setStationeryItem] = useState('');
   const [stationeryQty, setStationeryQty] = useState('');
   
+  const [myBalance, setMyBalance] = useState<{
+    annual_leave_total: number;
+    annual_leave_used: number;
+    compensatory_leave_total: number;
+    compensatory_leave_used: number;
+  } | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState(false);
+
+  const fetchMyBalance = async () => {
+    try {
+      setLoadingBalance(true);
+      const res = await api.get('/hrm/my-balance');
+      if (res.data) {
+        setMyBalance(res.data);
+      }
+    } catch (e) {
+      console.error('Error fetching leave balance:', e);
+    } finally {
+      setLoadingBalance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showCreateModal && formType === 'leave') {
+      fetchMyBalance();
+    }
+  }, [showCreateModal, formType]);
   // Table item state
   const [expenseItems, setExpenseItems] = useState<any[]>([
     { id: Date.now(), content: '', quantity: 1, price: 0, vat: 10 }
@@ -2214,6 +2241,24 @@ export default function Approvals() {
                                 daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
                               }
 
+                              if (myBalance) {
+                                if (leaveType === 'annual') {
+                                  const remainingAnnual = myBalance.annual_leave_total - myBalance.annual_leave_used;
+                                  if (daysVal > remainingAnnual) {
+                                    toast.error(t('Bạn không đủ số ngày phép năm còn lại! Vui lòng chọn "Nghỉ việc riêng (không lương)".'));
+                                    setSubmitting(false);
+                                    return;
+                                  }
+                                } else if (leaveType === 'compensatory') {
+                                  const remainingComp = myBalance.compensatory_leave_total - myBalance.compensatory_leave_used;
+                                  if (daysVal > remainingComp) {
+                                    toast.error(t('Bạn không đủ số ngày phép bù còn lại! Vui lòng chọn "Nghỉ việc riêng (không lương)".'));
+                                    setSubmitting(false);
+                                    return;
+                                  }
+                                }
+                              }
+
                               let leaveReasonStr = leaveReason;
                               if (isRecurring) {
                                 leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
@@ -2588,6 +2633,16 @@ export default function Approvals() {
                                   ]}
                                   width="100%"
                                 />
+                                {myBalance && (
+                                  <div style={{ fontSize: '0.72rem', marginTop: '6px', fontWeight: 600, display: 'flex', flexWrap: 'wrap', gap: '8px 12px' }}>
+                                    <span style={{ color: 'var(--color-primary)' }}>
+                                      {t('Còn lại phép năm:')} {Number((myBalance.annual_leave_total - myBalance.annual_leave_used).toFixed(2))} {t('ngày')}
+                                    </span>
+                                    <span style={{ color: '#d97706' }}>
+                                      {t('Còn lại phép bù:')} {Number((myBalance.compensatory_leave_total - myBalance.compensatory_leave_used).toFixed(2))} {t('ngày')}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Thời gian nghỉ')}</label>
@@ -2651,23 +2706,64 @@ export default function Approvals() {
                               />
                             </div>
 
-                            {/* Duration preview alert */}
-                            <div className="card-panel" style={{ 
-                              padding: '10px 14px', 
-                              background: 'rgba(59, 130, 246, 0.06)', 
-                              border: '1px solid rgba(59, 130, 246, 0.15)', 
-                              borderRadius: '8px', 
-                              fontSize: '0.8rem', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'space-between',
-                              color: 'var(--color-text)'
-                            }}>
-                              <span><strong>{t('Thời gian quy đổi:')}</strong></span>
-                              <strong style={{ color: 'var(--color-primary)' }}>
-                                {calculateWorkingDays(leaveFrom, leaveTo, leaveSession)} {t('ngày công')}
-                              </strong>
-                            </div>
+                            {(() => {
+                              const requestedDays = calculateWorkingDays(leaveFrom, leaveTo, leaveSession);
+                              let isInsufficient = false;
+                              let errorMsg = '';
+                              
+                              if (myBalance) {
+                                if (leaveType === 'annual') {
+                                  const remainingAnnual = myBalance.annual_leave_total - myBalance.annual_leave_used;
+                                  if (requestedDays > remainingAnnual) {
+                                    isInsufficient = true;
+                                    errorMsg = t('Bạn không đủ số ngày phép năm còn lại (cần {req} ngày, còn {rem} ngày). Vui lòng chuyển loại nghỉ sang "Nghỉ việc riêng (không lương)".').replace('{req}', String(requestedDays)).replace('{rem}', String(Number(remainingAnnual.toFixed(2))));
+                                  }
+                                } else if (leaveType === 'compensatory') {
+                                  const remainingComp = myBalance.compensatory_leave_total - myBalance.compensatory_leave_used;
+                                  if (requestedDays > remainingComp) {
+                                    isInsufficient = true;
+                                    errorMsg = t('Bạn không đủ số ngày phép bù còn lại (cần {req} ngày, còn {rem} ngày). Vui lòng chuyển loại nghỉ sang "Nghỉ việc riêng (không lương)".').replace('{req}', String(requestedDays)).replace('{rem}', String(Number(remainingComp.toFixed(2))));
+                                  }
+                                }
+                              }
+
+                              return (
+                                <>
+                                  {/* Duration preview alert */}
+                                  <div className="card-panel" style={{ 
+                                    padding: '10px 14px', 
+                                    background: 'rgba(59, 130, 246, 0.06)', 
+                                    border: '1px solid rgba(59, 130, 246, 0.15)', 
+                                    borderRadius: '8px', 
+                                    fontSize: '0.8rem', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between',
+                                    color: 'var(--color-text)'
+                                  }}>
+                                    <span><strong>{t('Thời gian quy đổi:')}</strong></span>
+                                    <strong style={{ color: 'var(--color-primary)' }}>
+                                      {requestedDays} {t('ngày công')}
+                                    </strong>
+                                  </div>
+
+                                  {isInsufficient && (
+                                    <div className="card-panel" style={{ 
+                                      padding: '10px 14px', 
+                                      background: 'rgba(239, 68, 68, 0.08)', 
+                                      border: '1px solid rgba(239, 68, 68, 0.25)', 
+                                      borderRadius: '8px', 
+                                      fontSize: '0.78rem', 
+                                      color: 'var(--color-danger)',
+                                      fontWeight: 600,
+                                      lineHeight: '1.4'
+                                    }}>
+                                      {errorMsg}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         ) : formType === 'late_early' ? (
                           /* LATE / EARLY REGISTRATION FORM */

@@ -5,18 +5,6 @@ class ContactController {
     private PDO $db;
     public function __construct(PDO $db) { 
         $this->db = $db; 
-        try {
-            $this->db->exec("ALTER TABLE contacts ADD COLUMN not_lead_proposed TINYINT(1) DEFAULT 0");
-        } catch (Exception $e) {}
-        try {
-            $this->db->exec("ALTER TABLE contacts ADD COLUMN not_lead_proposed_by INT(11) NULL");
-        } catch (Exception $e) {}
-        try {
-            $this->db->exec("ALTER TABLE contacts ADD COLUMN not_lead_proposed_at TIMESTAMP NULL");
-        } catch (Exception $e) {}
-        try {
-            $this->db->exec("ALTER TABLE contacts ADD COLUMN campaign_id INT(11) NULL");
-        } catch (Exception $e) {}
     }
 
     public function index(array $auth): void {
@@ -1168,9 +1156,7 @@ class ContactController {
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         
-        foreach ($ids as $cid) {
-            $this->restorePersonPublicStatus((int)$cid, $auth['tenant_id']);
-        }
+        $this->restorePersonsPublicStatusBatch($ids, $auth['tenant_id']);
         
         logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'BULK_DELETE', 'contact', null, json_encode(['ids' => $ids]));
         respond(200, null, "Đã xóa " . $stmt->rowCount() . " liên hệ");
@@ -1411,6 +1397,75 @@ class ContactController {
                 $stmtUp = $this->db->prepare("UPDATE persons SET is_public = 1 WHERE id = ?");
                 $stmtUp->execute([$personId]);
             }
+        }
+    }
+
+    private function restorePersonsPublicStatusBatch(array $contactIds, int $tenantId): void {
+        if (empty($contactIds)) return;
+        
+        $placeholders = implode(',', array_fill(0, count($contactIds), '?'));
+        
+        // 1. Fetch all distinct person_ids linked to these contactIds
+        $stmt = $this->db->prepare("SELECT DISTINCT person_id FROM contacts WHERE id IN ($placeholders) AND tenant_id = ?");
+        $stmt->execute(array_merge($contactIds, [$tenantId]));
+        $personIds = array_filter(array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN)));
+        if (empty($personIds)) return;
+        
+        $inPeople = implode(',', array_fill(0, count($personIds), '?'));
+        
+        // 2. Fetch active claims count for all these person_ids
+        $stmtCount = $this->db->prepare("
+            SELECT person_id, COUNT(*) as active_claims 
+            FROM contacts 
+            WHERE person_id IN ($inPeople) AND tenant_id = ? AND owner_id IS NOT NULL AND deleted_at IS NULL
+            GROUP BY person_id
+        ");
+        $stmtCount->execute(array_merge($personIds, [$tenantId]));
+        $claimsMap = [];
+        while ($row = $stmtCount->fetch(PDO::FETCH_ASSOC)) {
+            $claimsMap[(int)$row['person_id']] = (int)$row['active_claims'];
+        }
+        
+        // 3. Fetch protected status (won status) count for all these person_ids
+        $stmtProtected = $this->db->prepare("
+            SELECT person_id, COUNT(*) as protected_count 
+            FROM contacts 
+            WHERE person_id IN ($inPeople) AND tenant_id = ? AND deleted_at IS NULL AND pipeline_status = (
+                SELECT setting_value FROM system_settings WHERE setting_key = 'deal_won_status' LIMIT 1
+            )
+            GROUP BY person_id
+        ");
+        $stmtProtected->execute(array_merge($personIds, [$tenantId]));
+        $protectedMap = [];
+        while ($row = $stmtProtected->fetch(PDO::FETCH_ASSOC)) {
+            $protectedMap[(int)$row['person_id']] = ((int)$row['protected_count'] > 0);
+        }
+        
+        // 4. Fetch max parallel claims setting
+        $maxParallelClaims = 2;
+        $stmtSetting = $this->db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'max_parallel_sales_per_client' LIMIT 1");
+        $stmtSetting->execute();
+        $sVal = $stmtSetting->fetchColumn();
+        if ($sVal !== false) {
+            $maxParallelClaims = (int)$sVal;
+        }
+        
+        // 5. Identify which person_ids should be set to is_public = 1
+        $qualifyingPersonIds = [];
+        foreach ($personIds as $personId) {
+            $activeClaims = $claimsMap[$personId] ?? 0;
+            $hasProtectedStatus = $protectedMap[$personId] ?? false;
+            
+            if ($activeClaims < $maxParallelClaims && !$hasProtectedStatus) {
+                $qualifyingPersonIds[] = $personId;
+            }
+        }
+        
+        // 6. Bulk update is_public = 1
+        if (!empty($qualifyingPersonIds)) {
+            $inQualifying = implode(',', array_fill(0, count($qualifyingPersonIds), '?'));
+            $stmtUp = $this->db->prepare("UPDATE persons SET is_public = 1 WHERE id IN ($inQualifying)");
+            $stmtUp->execute($qualifyingPersonIds);
         }
     }
 

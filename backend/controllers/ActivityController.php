@@ -2,19 +2,10 @@
 class ActivityController {
     private PDO $db;
     public function __construct(PDO $db) { 
-        $this->db = $db; 
-        try {
-            $this->db->exec("ALTER TABLE activities ADD COLUMN contact_id INT NULL AFTER related_id");
-        } catch (Exception $e) {}
-        try {
-            $this->db->exec("ALTER TABLE activity_comments ADD COLUMN parent_id INT NULL DEFAULT NULL");
-        } catch (Exception $e) {}
-        try {
-            $this->db->exec("ALTER TABLE activity_comments ADD COLUMN subtask_id VARCHAR(255) NULL DEFAULT NULL");
-        } catch (Exception $e) {}
+        $this->db = $db;
     }
 
-    private function getFirstImageUrl(array $activity): ?string {
+    private function getFirstImageUrl(array $activity, ?array $comments = null): ?string {
         // 1. Check description/body HTML for <img> tag or markdown image
         $body = $activity['body'] ?? '';
         if ($body) {
@@ -58,14 +49,16 @@ class ActivityController {
         // 2. Check comments
         $actId = (int)($activity['id'] ?? 0);
         if ($actId > 0) {
-            $cStmt = $this->db->prepare("
-                SELECT content, attachments 
-                FROM activity_comments 
-                WHERE activity_id = ? 
-                ORDER BY id ASC
-            ");
-            $cStmt->execute([$actId]);
-            $comments = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($comments === null) {
+                $cStmt = $this->db->prepare("
+                    SELECT content, attachments 
+                    FROM activity_comments 
+                    WHERE activity_id = ? 
+                    ORDER BY id ASC
+                ");
+                $cStmt->execute([$actId]);
+                $comments = $cStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
             foreach ($comments as $comment) {
                 // Check attachments column (JSON array of URLs)
                 $atts = $comment['attachments'] ?? '';
@@ -108,58 +101,6 @@ class ActivityController {
             return true;
         }
 
-        // General workspace tasks (not linked to private CRM entities contact, company, deal) are accessible to all tenant members
-        if (empty($activity['related_type']) || in_array($activity['related_type'], ['project', 'campaign', 'team'], true)) {
-            return true;
-        }
-
-        // Project / Campaign roster checks for sales, managers, and directors
-        if (!empty($activity['related_type']) && in_array($activity['related_type'], ['project', 'campaign'], true)) {
-            if (in_array($auth['role'], ['sale', 'sales', 'manager', 'director'], true)) {
-                if ($activity['related_type'] === 'project') {
-                    $checkRoster = $this->db->prepare('
-                        SELECT project_id FROM project_roster WHERE project_id=? AND user_id=?
-                        UNION
-                        SELECT id FROM projects WHERE id=? AND tenant_id=? AND created_by=?
-                    ');
-                    $checkRoster->execute([
-                        (int)$activity['related_id'], $auth['user_id'],
-                        (int)$activity['related_id'], $auth['tenant_id'], $auth['user_id']
-                    ]);
-                    if ($checkRoster->fetch()) {
-                        if (in_array($auth['role'], ['sale', 'sales'], true)) {
-                            if (empty($activity['user_id'])) {
-                                return true;
-                            }
-                        } else {
-                            return true;
-                        }
-                    }
-                } else if ($activity['related_type'] === 'campaign') {
-                    $checkRoster = $this->db->prepare('
-                        SELECT id FROM marketing_campaigns WHERE id=? AND tenant_id=? AND (FIND_IN_SET(?, user_ids) OR FIND_IN_SET(?, manager_ids) OR created_by = ?)
-                    ');
-                    $checkRoster->execute([
-                        (int)$activity['related_id'], $auth['tenant_id'], $auth['user_id'], $auth['user_id'], $auth['user_id']
-                    ]);
-                    if ($checkRoster->fetch()) {
-                        if (in_array($auth['role'], ['sale', 'sales'], true)) {
-                            if (empty($activity['user_id'])) {
-                                return true;
-                            }
-                        } else {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // For directors, they can view all other activity types (contacts, deals, companies, etc.)
-        if ($auth['role'] === 'director') {
-            return true;
-        }
-        
         // 1. Check Creator/Assignee
         if ((int)$activity['user_id'] === (int)$auth['user_id']) {
             return true;
@@ -177,209 +118,6 @@ class ActivityController {
         if (isset($activity['participant_ids'])) {
             $pIds = array_filter(array_map('intval', explode(',', $activity['participant_ids'])));
             if (in_array((int)$auth['user_id'], $pIds, true)) {
-                return true;
-            }
-        }
-        
-        // 4. Check related entity ownership (Contact, Company, Deal)
-        if (!empty($activity['related_type']) && !empty($activity['related_id'])) {
-            $table = $activity['related_type'] === 'contact' ? 'contacts' : ($activity['related_type'] === 'company' ? 'companies' : 'deals');
-            
-            if (in_array($auth['role'], ['sales', 'sale'], true)) {
-                if ($activity['related_type'] === 'contact') {
-                    $checkOwner = $this->db->prepare("SELECT id FROM contacts WHERE id=? AND tenant_id=? AND (owner_id=? OR FIND_IN_SET(?, collaborator_ids) OR id IN (
-                        SELECT contact_id FROM cooperation_slips 
-                        WHERE shares_json IS NOT NULL AND JSON_VALID(shares_json) AND JSON_CONTAINS(JSON_KEYS(shares_json), JSON_QUOTE(CAST(? AS CHAR)))
-                    ))");
-                    $checkOwner->execute([(int)$activity['related_id'], $auth['tenant_id'], $auth['user_id'], $auth['user_id'], $auth['user_id']]);
-                } else if ($activity['related_type'] === 'deal') {
-                    $checkOwner = $this->db->prepare("
-                        SELECT d.id FROM deals d
-                        LEFT JOIN contacts ct ON d.contact_id = ct.id AND ct.deleted_at IS NULL
-                        WHERE d.id=? AND d.tenant_id=? AND (
-                            d.owner_id=? 
-                            OR ct.owner_id=? 
-                            OR FIND_IN_SET(?, ct.collaborator_ids)
-                            OR d.contact_id IN (
-                                SELECT contact_id FROM cooperation_slips 
-                                WHERE shares_json IS NOT NULL AND JSON_VALID(shares_json) AND JSON_CONTAINS(JSON_KEYS(shares_json), JSON_QUOTE(CAST(? AS CHAR)))
-                            )
-                        )
-                    ");
-                    $checkOwner->execute([
-                        (int)$activity['related_id'], $auth['tenant_id'], 
-                        $auth['user_id'], $auth['user_id'], $auth['user_id'], $auth['user_id']
-                    ]);
-                } else if ($activity['related_type'] === 'project') {
-                    $checkOwner = $this->db->prepare('
-                        SELECT project_id FROM project_roster WHERE project_id=? AND user_id=?
-                        UNION
-                        SELECT id FROM projects WHERE id=? AND tenant_id=? AND created_by=?
-                    ');
-                    $checkOwner->execute([
-                        (int)$activity['related_id'], $auth['user_id'],
-                        (int)$activity['related_id'], $auth['tenant_id'], $auth['user_id']
-                    ]);
-                } else if (in_array($activity['related_type'], ['company', 'companies'], true)) {
-                    $checkOwner = $this->db->prepare("SELECT id FROM companies WHERE id=? AND tenant_id=? AND owner_id=?");
-                    $checkOwner->execute([(int)$activity['related_id'], $auth['tenant_id'], $auth['user_id']]);
-                } else {
-                    try {
-                        $checkOwner = $this->db->prepare("SELECT id FROM `$table` WHERE id=? AND tenant_id=? AND owner_id=?");
-                        $checkOwner->execute([(int)$activity['related_id'], $auth['tenant_id'], $auth['user_id']]);
-                    } catch (Throwable $e) {
-                        $checkOwner = null;
-                    }
-                }
-                if ($checkOwner && $checkOwner->fetch()) {
-                    return true;
-                }
-            } elseif ($auth['role'] === 'manager') {
-                if ($activity['related_type'] === 'deal') {
-                    $checkOwner = $this->db->prepare("
-                        SELECT d.id FROM deals d
-                        LEFT JOIN contacts ct ON d.contact_id = ct.id AND ct.deleted_at IS NULL
-                        WHERE d.id=? AND d.tenant_id=? AND (
-                            d.owner_id=? 
-                            OR ct.owner_id=?
-                            OR d.owner_id IN (
-                                SELECT id FROM users WHERE team_id IN (
-                                    SELECT id FROM teams WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
-                                )
-                            )
-                            OR ct.owner_id IN (
-                                SELECT id FROM users WHERE team_id IN (
-                                    SELECT id FROM teams WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
-                                )
-                            )
-                        )
-                    ");
-                    $checkOwner->execute([
-                        (int)$activity['related_id'], $auth['tenant_id'], 
-                        $auth['user_id'], $auth['user_id'],
-                        $auth['user_id'], $auth['user_id']
-                    ]);
-                } else {
-                    try {
-                        $checkOwner = $this->db->prepare("SELECT id FROM `$table` WHERE id=? AND tenant_id=? AND (owner_id=? OR owner_id IN (
-                            SELECT id FROM users WHERE team_id IN (
-                                SELECT id FROM teams WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
-                            )
-                        ))");
-                        $checkOwner->execute([(int)$activity['related_id'], $auth['tenant_id'], $auth['user_id'], $auth['user_id']]);
-                    } catch (Throwable $e) {
-                        $checkOwner = null;
-                    }
-                }
-                if ($checkOwner && $checkOwner->fetch()) {
-                    return true;
-                }
-            }
-        }
-
-        // 5. Check metadata contacts inside erp_task.related_contact_ids
-        if (!empty($activity['body']) && strpos($activity['body'], '{"erp_task":') === 0) {
-            try {
-                $parsed = json_decode($activity['body'], true);
-                if (isset($parsed['erp_task']['related_contact_ids'])) {
-                    $contactIds = array_filter(array_map('intval', (array)$parsed['erp_task']['related_contact_ids']));
-                    if (!empty($contactIds)) {
-                        $inPlaceholders = implode(',', array_fill(0, count($contactIds), '?'));
-                        if (in_array($auth['role'], ['sales', 'sale'], true)) {
-                            $checkOwner = $this->db->prepare("
-                                SELECT id FROM contacts 
-                                WHERE id IN ($inPlaceholders) AND tenant_id=? AND (owner_id=? OR id IN (
-                                    SELECT contact_id FROM cooperation_slips 
-                                    WHERE JSON_CONTAINS(JSON_KEYS(CASE WHEN (shares_json IS NOT NULL AND JSON_VALID(shares_json)) THEN shares_json ELSE '\"{}\"' END), JSON_QUOTE(CAST(? AS CHAR)))
-                                ))
-                            ");
-                            $params = array_merge($contactIds, [$auth['tenant_id'], $auth['user_id'], $auth['user_id']]);
-                            $checkOwner->execute($params);
-                            if ($checkOwner->fetch()) {
-                                return true;
-                            }
-                        } elseif ($auth['role'] === 'manager') {
-                            $checkOwner = $this->db->prepare("
-                                SELECT id FROM contacts 
-                                WHERE id IN ($inPlaceholders) AND tenant_id=? AND (owner_id=? OR owner_id IN (
-                                    SELECT id FROM users WHERE team_id IN (
-                                        SELECT id FROM teams WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
-                                    )
-                                ))
-                            ");
-                            $params = array_merge($contactIds, [$auth['tenant_id'], $auth['user_id'], $auth['user_id']]);
-                            $checkOwner->execute($params);
-                            if ($checkOwner->fetch()) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            } catch (Throwable $e) {
-                // silent catch
-            }
-        }
-        
-        // 5. Team-based tags check
-        if (!empty($activity['tags']) && strpos($activity['tags'], 'internal_') === 0) {
-            // Check if it's a global scope announcement
-            if (!empty($activity['body']) && strpos($activity['body'], '"scope":"global"') !== false) {
-                return true;
-            }
-
-            // Check if user belongs to the same team as the creator
-            $creatorId = !empty($activity['created_by']) ? (int)$activity['created_by'] : 0;
-            if ($creatorId > 0) {
-                $stmtTeamCheck = $this->db->prepare("
-                    SELECT 1 FROM users u 
-                    WHERE u.id = ? 
-                      AND u.team_id = (SELECT team_id FROM users WHERE id = ?)
-                ");
-                $stmtTeamCheck->execute([$creatorId, $auth['user_id']]);
-                if ($stmtTeamCheck->fetch()) {
-                    return true;
-                }
-            }
-
-            // Check if user belongs to the same team as the assignee
-            $assigneeId = !empty($activity['user_id']) ? (int)$activity['user_id'] : 0;
-            if ($assigneeId > 0) {
-                $stmtTeamCheck = $this->db->prepare("
-                    SELECT 1 FROM users u 
-                    WHERE u.id = ? 
-                      AND u.team_id = (SELECT team_id FROM users WHERE id = ?)
-                ");
-                $stmtTeamCheck->execute([$assigneeId, $auth['user_id']]);
-                if ($stmtTeamCheck->fetch()) {
-                    return true;
-                }
-            }
-
-            // If the current user is a manager of the creator or assignee's team
-            if ($auth['role'] === 'manager') {
-                $checkMgr = $this->db->prepare("
-                    SELECT 1 FROM teams 
-                    WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
-                      AND id IN (
-                          SELECT team_id FROM users WHERE id = ? OR id = ?
-                      )
-                ");
-                $checkMgr->execute([$auth['user_id'], $creatorId, $assigneeId]);
-                if ($checkMgr->fetch()) {
-                    return true;
-                }
-            }
-        }
-        
-        // 6. Check if target user belongs to manager's team
-        if ($auth['role'] === 'manager') {
-            $stmtMgrTeam = $this->db->prepare("
-                SELECT 1 FROM users WHERE id = ? AND team_id IN (
-                    SELECT id FROM teams WHERE FIND_IN_SET(?, CONCAT(leader_id, CHAR(44), COALESCE(co_leader_ids, leader_id)))
-                )
-            ");
-            $stmtMgrTeam->execute([$activity['user_id'], $auth['user_id']]);
-            if ($stmtMgrTeam->fetch()) {
                 return true;
             }
         }
@@ -588,8 +326,26 @@ class ActivityController {
         ");
         $stmt->execute($params);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Pre-fetch activity comments to resolve the N+1 queries bottleneck
+        $activityIds = array_column($items, 'id');
+        $preFetchedComments = [];
+        if (!empty($activityIds)) {
+            $placeholders = implode(',', array_fill(0, count($activityIds), '?'));
+            $cStmt = $this->db->prepare("
+                SELECT activity_id, content, attachments 
+                FROM activity_comments 
+                WHERE activity_id IN ($placeholders) 
+                ORDER BY id ASC
+            ");
+            $cStmt->execute($activityIds);
+            while ($cRow = $cStmt->fetch(PDO::FETCH_ASSOC)) {
+                $preFetchedComments[$cRow['activity_id']][] = $cRow;
+            }
+        }
+
         foreach ($items as &$item) {
-            $item['first_image_url'] = $this->getFirstImageUrl($item);
+            $item['first_image_url'] = $this->getFirstImageUrl($item, $preFetchedComments[$item['id']] ?? []);
         }
         respond(200,['items'=>$items,'total'=>$total,'page'=>$page,'limit'=>$limit]);
     }
@@ -1024,7 +780,31 @@ class ActivityController {
             }
         }
 
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'UPDATE', 'activity', $id, json_encode($b));
+        // Calculate actual changes to log in audit_logs
+        $actualChanges = [];
+        foreach ($fields as $f) {
+            if (array_key_exists($f, $b)) {
+                $oldVal = $activity[$f];
+                $newVal = $b[$f];
+                
+                // Normalize empty values and nulls
+                $oldNorm = ($oldVal === null || $oldVal === '') ? null : $oldVal;
+                $newNorm = ($newVal === null || $newVal === '') ? null : $newVal;
+                
+                if (in_array($f, ['user_id', 'related_id', 'contact_id', 'approver_id', 'progress', 'require_approval'])) {
+                    $oldNorm = $oldNorm !== null ? (int)$oldNorm : null;
+                    $newNorm = $newNorm !== null ? (int)$newNorm : null;
+                }
+                
+                if ($oldNorm !== $newNorm) {
+                    $actualChanges[$f] = $newNorm;
+                }
+            }
+        }
+
+        if (!empty($actualChanges)) {
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'UPDATE', 'activity', $id, json_encode($actualChanges));
+        }
 
         $this->show($auth,$id);
     }
@@ -1566,5 +1346,35 @@ class ActivityController {
 
     private function getSecurityExpiration(string $status, ?string $baseDate = null): ?string {
         return null;
+    }
+
+    public function getTimeline(array $auth, int $id): void {
+        $check = $this->db->prepare("SELECT * FROM activities WHERE id=? AND tenant_id=? AND deleted_at IS NULL");
+        $check->execute([$id, $auth['tenant_id']]);
+        $activity = $check->fetch(PDO::FETCH_ASSOC);
+        if (!$activity) respond(404, null, 'Không tìm thấy hoạt động', false);
+
+        if (!$this->hasAccess($auth, $activity)) {
+            respond(403, null, 'Bạn không có quyền xem hoạt động này', false);
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT l.*, u.full_name as user_name, u.avatar_url as user_avatar
+            FROM audit_logs l
+            LEFT JOIN users u ON l.user_id = u.id
+            WHERE l.tenant_id = ? 
+              AND (
+                (l.resource = 'activity' AND l.resource_id = ?)
+                OR (l.resource = 'activity_comment' AND l.resource_id IN (
+                    SELECT id FROM activity_comments WHERE activity_id = ?
+                ))
+              )
+            ORDER BY l.created_at DESC
+            LIMIT 100
+        ");
+        $stmt->execute([$auth['tenant_id'], $id, $id]);
+        $logs = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+        respond(200, $logs);
     }
 }

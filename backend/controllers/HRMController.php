@@ -85,6 +85,33 @@ class HRMController {
         respond(200, ['success' => true]);
     }
 
+    public function getMyBalance(array $auth): void {
+        $stmt = $this->db->prepare("
+            SELECT annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used 
+            FROM hrm_profiles 
+            WHERE user_id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$auth['user_id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$row) {
+            $row = [
+                'annual_leave_total' => 12.0,
+                'annual_leave_used' => 0.0,
+                'compensatory_leave_total' => 0.0,
+                'compensatory_leave_used' => 0.0
+            ];
+        } else {
+            $row['annual_leave_total'] = (float)$row['annual_leave_total'];
+            $row['annual_leave_used'] = (float)$row['annual_leave_used'];
+            $row['compensatory_leave_total'] = (float)$row['compensatory_leave_total'];
+            $row['compensatory_leave_used'] = (float)$row['compensatory_leave_used'];
+        }
+        
+        respond(200, $row);
+    }
+
     // --- LEAVE REQUESTS ---
 
     public function indexLeaves(array $auth): void {

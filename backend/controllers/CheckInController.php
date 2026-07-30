@@ -529,10 +529,7 @@ class CheckInController {
             }
         }
 
-        // Ensure admin_note column exists
-        try {
-            $this->db->exec("ALTER TABLE check_ins ADD COLUMN admin_note VARCHAR(255) NULL AFTER reason");
-        } catch (\Throwable $e) {}
+
 
         // Update status and admin_note, keeping original Sale reason intact
         $adminNote = (!empty($reason) && trim($reason) !== '') ? trim($reason) : null;

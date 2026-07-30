@@ -684,6 +684,7 @@ switch ($resource) {
         $auth = requireAuth();
         $ctrl = new ActivityController($db);
         if     ($resourceId && $subResource === 'comments' && $method === 'GET')  $ctrl->getComments($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'timeline' && $method === 'GET')  $ctrl->getTimeline($auth, (int)$resourceId);
         elseif ($resourceId && $subResource === 'subtasks-comment-counts' && $method === 'GET') $ctrl->getSubtasksCommentCounts($auth, (int)$resourceId);
         elseif ($resourceId && $subResource === 'comments' && $method === 'POST') $ctrl->addComment($auth, (int)$resourceId);
         elseif ($resourceId === 'comments' && $subResource && $method === 'DELETE') $ctrl->deleteComment($auth, (int)$subResource);
@@ -754,7 +755,8 @@ switch ($resource) {
     case 'hrm':
         $auth = requireAuth();
         $ctrl = new HRMController($db);
-        if     ($resourceId === 'profiles' && $method === 'GET') $ctrl->indexProfiles($auth);
+        if     ($resourceId === 'my-balance' && $method === 'GET') $ctrl->getMyBalance($auth);
+        elseif ($resourceId === 'profiles' && $method === 'GET') $ctrl->indexProfiles($auth);
         elseif ($resourceId === 'profiles' && $method === 'POST') $ctrl->saveProfile($auth);
         elseif ($resourceId === 'leaves' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'GET') $ctrl->getLeaveComments($auth, (int)$subResource);
         elseif ($resourceId === 'leaves' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'POST') $ctrl->addLeaveComment($auth, (int)$subResource);

@@ -146,6 +146,7 @@ CREATE TABLE `activity_comments` (
   `attachments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`attachments`)),
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `parent_id` int(11) DEFAULT NULL,
+  `subtask_id` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `activity_id` (`activity_id`),
   KEY `tenant_id` (`tenant_id`),
@@ -1158,6 +1159,7 @@ CREATE TABLE `expenses` (
   KEY `idx_exp_status` (`status`),
   KEY `fk_exp_approver` (`approver_id`),
   KEY `idx_exp_date` (`tenant_id`,`date`),
+  KEY `idx_expenses_tenant_title` (`tenant_id`,`title`),
   CONSTRAINT `expenses_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `expenses_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_exp_approver` FOREIGN KEY (`approver_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
