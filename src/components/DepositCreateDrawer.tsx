@@ -48,9 +48,21 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
   const [expectedCommission, setExpectedCommission] = useState('');
   const [notes, setNotes] = useState('');
   const [currency, setCurrency] = useState('VND');
+  const [exchangeRate, setExchangeRate] = useState('1');
   const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
     { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
   ]);
+
+  // Automatically calculate Doanh thu dự kiến (price) as sum of milestones converted to VND
+  useEffect(() => {
+    const rate = parseFloat(exchangeRate) || 1;
+    const totalVnd = milestonesInput.reduce((sum, m) => {
+      const amountVal = parseFloat(m.amount) || 0;
+      const converted = currency === 'VND' ? amountVal : amountVal * rate;
+      return sum + converted;
+    }, 0);
+    setPrice(String(Math.round(totalVnd)));
+  }, [milestonesInput, exchangeRate, currency]);
 
   const [depositAccountantId, setDepositAccountantId] = useState('');
   const [depositUncFile, setDepositUncFile] = useState<File | null>(null);
@@ -133,6 +145,8 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
       setSelectedProjectId('');
       setSelectedContactId('');
       setUnitCode('');
+      setCurrency('VND');
+      setExchangeRate('1');
 
       if (defaultContact) {
         if (defaultContact.id) {
@@ -197,7 +211,13 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
     const matchedContact = contacts.find((c: any) => Number(c.id) === cid);
     if (matchedContact) {
       const defaultRevenue = matchedContact.expected_revenue || '';
-      setPrice(String(defaultRevenue));
+      if (defaultRevenue) {
+        const rate = parseFloat(exchangeRate) || 1;
+        const initialAmount = currency === 'VND' ? defaultRevenue : Math.round(Number(defaultRevenue) / rate);
+        setMilestonesInput([
+          { name: milestonesInput[0]?.name || 'Đợt 1 - Thanh toán cọc', amount: String(initialAmount), expected_pay_date: milestonesInput[0]?.expected_pay_date || '' }
+        ]);
+      }
     }
 
     // Load collaborators
@@ -287,11 +307,8 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
       return;
     }
 
-    const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
-    if (totalM > parseFloat(price)) {
-      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Doanh thu dự kiến (${parseFloat(price).toLocaleString()} VND)`, 'error');
-      return;
-    }
+    const rate = parseFloat(exchangeRate) || 1;
+    const totalVnd = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0) * (currency === 'VND' ? 1 : rate), 0);
 
     if (!hasExistingCoop && isCooperation) {
       const sum = Object.values(collaboratorShares).reduce((acc, c) => acc + (c || 0), 0);
@@ -313,10 +330,16 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
           supplier_id: selectedContactId.startsWith('sup_') ? Number(selectedContactId.replace('sup_', '')) : null,
           project_id: selectedProjectId,
           unit_code: unitCode || '—',
-          price: parseFloat(price),
+          price: Math.round(totalVnd),
           expected_commission: parseFloat(expectedCommission) || 0,
           currency: currency,
-          milestones: milestonesInput,
+          exchange_rate: rate,
+          milestones: milestonesInput.map(m => ({
+            name: m.name,
+            expected_pay_date: m.expected_pay_date,
+            amount: currency === 'VND' ? (parseFloat(m.amount) || 0) : Math.round((parseFloat(m.amount) || 0) * rate),
+            original_amount: currency === 'VND' ? null : (parseFloat(m.amount) || 0)
+          })),
           is_cooperation: isCooperation,
           collaborators: isCooperation
             ? Object.entries(collaboratorShares).map(([uid, pct]) => ({
@@ -594,7 +617,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '1rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (currency !== 'VND' ? '1fr 1fr' : '1fr 1.5fr 1.5fr'), gap: '1rem' }}>
                         <div className="form-group" style={{ margin: 0 }}>
                           <label className="form-label">Loại tiền tệ *</label>
                           <CustomSelect
@@ -605,19 +628,39 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                               { value: 'CHF', label: 'CHF' }
                             ]}
                             value={currency}
-                            onChange={val => setCurrency(val)}
+                            onChange={val => {
+                              setCurrency(val);
+                              if (val === 'VND') setExchangeRate('1');
+                              else if (val === 'USD') setExchangeRate('25000');
+                              else if (val === 'EURO') setExchangeRate('27000');
+                              else if (val === 'CHF') setExchangeRate('28000');
+                            }}
                             width="100%"
                           />
                         </div>
 
+                        {currency !== 'VND' && (
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">Tỷ giá dự kiến *</label>
+                            <CurrencyInput
+                              value={exchangeRate}
+                              onChange={val => setExchangeRate(String(val))}
+                              placeholder="Tỷ giá"
+                              showTextHelper={false}
+                              currency="VND"
+                            />
+                          </div>
+                        )}
+
                         <div className="form-group" style={{ margin: 0 }}>
-                          <label className="form-label">Doanh thu dự kiến ({currency}) *</label>
+                          <label className="form-label">Doanh thu dự kiến (VND) *</label>
                           <CurrencyInput
                             value={price}
-                            onChange={val => setPrice(String(val))}
+                            onChange={() => {}}
                             placeholder="0"
                             showTextHelper={false}
-                            currency={currency}
+                            currency="VND"
+                            disabled
                           />
                         </div>
 
@@ -742,6 +785,11 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                                 showTextHelper={false}
                                 currency={currency}
                               />
+                              {currency !== 'VND' && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', paddingLeft: '4px', fontWeight: 600 }}>
+                                  ≈ {String(Math.round((parseFloat(m.amount) || 0) * (parseFloat(exchangeRate) || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} VND
+                                </div>
+                              )}
                             </div>
                             <input
                               type="date"
@@ -1036,92 +1084,90 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                     </div>
 
                     {/* Auto Reminders */}
-                    {milestonesInput.length > 1 && (
-                      <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Bell size={16} color="var(--color-primary)" />
-                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch tự động</span>
-                          </div>
-                          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
-                            <input
-                              type="checkbox"
-                              checked={autoRemind}
-                              onChange={e => setAutoRemind(e.target.checked)}
-                              style={{ opacity: 0, width: 0, height: 0 }}
-                            />
+                    <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Bell size={16} color="var(--color-primary)" />
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch tự động</span>
+                        </div>
+                        <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
+                          <input
+                            type="checkbox"
+                            checked={autoRemind}
+                            onChange={e => setAutoRemind(e.target.checked)}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute',
+                            cursor: 'pointer',
+                            inset: 0,
+                            backgroundColor: autoRemind ? 'var(--color-success)' : '#ccc',
+                            borderRadius: '20px',
+                            transition: '0.3s'
+                          }}>
                             <span style={{
                               position: 'absolute',
-                              cursor: 'pointer',
-                              inset: 0,
-                              backgroundColor: autoRemind ? 'var(--color-success)' : '#ccc',
-                              borderRadius: '20px',
+                              content: '""',
+                              height: '14px',
+                              width: '14px',
+                              left: autoRemind ? '17px' : '3px',
+                              bottom: '3px',
+                              backgroundColor: 'white',
+                              borderRadius: '50%',
                               transition: '0.3s'
-                            }}>
-                              <span style={{
-                                position: 'absolute',
-                                content: '""',
-                                height: '14px',
-                                width: '14px',
-                                left: autoRemind ? '17px' : '3px',
-                                bottom: '3px',
-                                backgroundColor: 'white',
-                                borderRadius: '50%',
-                                transition: '0.3s'
-                              }} />
-                            </span>
-                          </label>
-                        </div>
+                            }} />
+                          </span>
+                        </label>
+                      </div>
 
-                        {autoRemind && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {autoRemind && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
+                            <CustomSelect
+                              options={[
+                                { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
+                                { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                              ]}
+                              value={String(remindTarget)}
+                              onChange={val => setRemindTarget(Number(val))}
+                              placeholder="Chọn đối tượng"
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Đối tượng nhận nhắc nhở</label>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
                               <CustomSelect
                                 options={[
-                                  { value: '1', label: 'Gửi học viên (Fallback về Sale)' },
-                                  { value: '2', label: 'Chỉ gửi nhắc cho Sale chăm sóc' }
+                                  { value: '1', label: 'Trước 1 ngày' },
+                                  { value: '2', label: 'Trước 2 ngày' },
+                                  { value: '3', label: 'Trước 3 ngày' },
+                                  { value: '5', label: 'Trước 5 ngày' },
+                                  { value: '7', label: 'Trước 7 ngày' }
                                 ]}
-                                value={String(remindTarget)}
-                                onChange={val => setRemindTarget(Number(val))}
-                                placeholder="Chọn đối tượng"
+                                value={String(remindDaysBefore)}
+                                onChange={val => setRemindDaysBefore(Number(val))}
+                                placeholder="Chọn số ngày"
                               />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Nhắc trước (ngày)</label>
-                                <CustomSelect
-                                  options={[
-                                    { value: '1', label: 'Trước 1 ngày' },
-                                    { value: '2', label: 'Trước 2 ngày' },
-                                    { value: '3', label: 'Trước 3 ngày' },
-                                    { value: '5', label: 'Trước 5 ngày' },
-                                    { value: '7', label: 'Trước 7 ngày' }
-                                  ]}
-                                  value={String(remindDaysBefore)}
-                                  onChange={val => setRemindDaysBefore(Number(val))}
-                                  placeholder="Chọn số ngày"
-                                />
-                              </div>
-
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi nhắc</label>
-                                <CustomSelect
-                                  options={Array.from({ length: 24 }).map((_, h) => ({
-                                    value: String(h),
-                                    label: `${h}:00`
-                                  }))}
-                                  value={String(remindAtHour)}
-                                  onChange={val => setRemindAtHour(Number(val))}
-                                  placeholder="Giờ gửi"
-                                />
-                              </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>Giờ gửi nhắc</label>
+                              <CustomSelect
+                                options={Array.from({ length: 24 }).map((_, h) => ({
+                                  value: String(h),
+                                  label: `${h}:00`
+                                }))}
+                                value={String(remindAtHour)}
+                                onChange={val => setRemindAtHour(Number(val))}
+                                placeholder="Giờ gửi"
+                              />
                             </div>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </form>

@@ -211,12 +211,14 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   };
 
   const handleAddMilestoneRow = () => {
+    const isForeign = selectedDepForManage && selectedDepForManage.currency !== 'VND';
     setTempMilestones([
       ...tempMilestones,
       {
         tempId: Date.now() + Math.random(),
         milestone_name: `Đợt ${tempMilestones.length + 1}`,
         expected_amount: 0,
+        original_amount: isForeign ? 0 : null,
         status: 'pending'
       }
     ]);
@@ -282,24 +284,54 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
     const m = tempMilestones[index];
     if (!selectedDepForManage || !m.id) return;
     if (actioningMilestoneId !== null) return;
-    setActioningMilestoneId(m.id);
-    setActioningType('approve');
-    try {
-      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/milestones/${m.id}/approve`, { method: 'POST' });
-      if (res.success) {
-        addToast('Phê duyệt đợt tiền thành công!', 'success');
-        const updated = [...tempMilestones];
-        updated[index] = { ...updated[index], status: 'approved' };
-        setTempMilestones(updated);
-        onSaveSuccess();
-      } else {
-        addToast(res.message || 'Lỗi phê duyệt', 'error');
+
+    const performApproval = async (actualAmt?: number) => {
+      setActioningMilestoneId(m.id);
+      setActioningType('approve');
+      try {
+        const body = actualAmt !== undefined ? { actual_amount: actualAmt } : {};
+        const res = await fetchAPI(`deposits/${selectedDepForManage.id}/milestones/${m.id}/approve`, { 
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+        if (res.success) {
+          addToast('Ghi nhận đợt tiền thành công!', 'success');
+          const updated = [...tempMilestones];
+          updated[index] = { ...updated[index], status: 'approved', actual_amount: actualAmt || m.expected_amount };
+          setTempMilestones(updated);
+          onSaveSuccess();
+        } else {
+          addToast(res.message || 'Lỗi ghi nhận', 'error');
+        }
+      } catch (e: any) {
+        addToast(e.message || 'Lỗi kết nối', 'error');
+      } finally {
+        setActioningMilestoneId(null);
+        setActioningType(null);
       }
-    } catch (e: any) {
-      addToast(e.message || 'Lỗi kết nối', 'error');
-    } finally {
-      setActioningMilestoneId(null);
-      setActioningType(null);
+    };
+
+    if (selectedDepForManage.currency && selectedDepForManage.currency !== 'VND') {
+      const expectedVnd = m.expected_amount || 0;
+      showConfirm({
+        title: 'Ghi nhận thanh toán ngoại tệ',
+        message: `Đợt thanh toán này có giá trị ${formatMoney(m.original_amount || 0, selectedDepForManage.currency)} (Quy đổi tạm tính: ${formatMoney(expectedVnd, 'VND')}).\n\nVui lòng nhập đúng số tiền VND thực tế nhận được từ khách hàng:`,
+        confirmText: 'Ghi nhận',
+        cancelText: 'Hủy',
+        requirePromptInput: true,
+        promptPlaceholder: 'Nhập số tiền VND thực nhận (ví dụ: 12500000)...',
+        onConfirm: async (val) => {
+          const cleanVal = (val || '').replace(/[^0-9]/g, '');
+          const numVal = parseFloat(cleanVal);
+          if (isNaN(numVal) || numVal <= 0) {
+            addToast('Số tiền VND thực nhận không hợp lệ. Vui lòng nhập số tiền lớn hơn 0.', 'error');
+            return;
+          }
+          await performApproval(numVal);
+        }
+      });
+    } else {
+      await performApproval();
     }
   };
 
@@ -1138,15 +1170,37 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                 <input
                                   type="text"
                                   placeholder="Số tiền"
-                                  value={formatNumberWithCommas(m.expected_amount)}
+                                  value={formatNumberWithCommas(
+                                    selectedDepForManage.currency !== 'VND'
+                                      ? (m.original_amount !== null && m.original_amount !== undefined ? m.original_amount : m.expected_amount)
+                                      : m.expected_amount
+                                  )}
                                   disabled={isLocked || !canEditMilestones}
                                   onChange={e => {
                                     const rawVal = e.target.value.replace(/[^0-9]/g, '');
-                                    handleUpdateMilestoneField(idx, 'expected_amount', rawVal ? parseInt(rawVal, 10) : 0);
+                                    const numericVal = rawVal ? parseInt(rawVal, 10) : 0;
+                                    if (selectedDepForManage.currency !== 'VND') {
+                                      const rate = parseFloat(selectedDepForManage.exchange_rate) || 1;
+                                      const expectedVnd = Math.round(numericVal * rate);
+                                      const updated = [...tempMilestones];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        original_amount: numericVal,
+                                        expected_amount: expectedVnd
+                                      };
+                                      setTempMilestones(updated);
+                                    } else {
+                                      handleUpdateMilestoneField(idx, 'expected_amount', numericVal);
+                                    }
                                   }}
                                   className="form-input"
                                   style={{ width: '100%', height: '34px', fontSize: '0.775rem', padding: '0 10px', borderRadius: '6px' }}
                                 />
+                                {selectedDepForManage.currency !== 'VND' && (
+                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', paddingLeft: '4px', fontWeight: 600 }}>
+                                    ≈ {formatNumberWithCommas(m.expected_amount)} VND
+                                  </div>
+                                )}
                               </div>
 
                               {/* Status + dates + Remind Bell */}
@@ -1166,9 +1220,16 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                     {m.status === 'approved' ? 'Đã duyệt' : m.status === 'paid' ? 'Chờ duyệt' : m.status === 'failed' ? 'Từ chối' : 'Chờ nộp'}
                                   </span>
                                   {m.approval_date && m.status === 'approved' && (
-                                    <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                      {new Date(m.approval_date).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '')}
-                                    </span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
+                                      <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                        {new Date(m.approval_date).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '')}
+                                      </span>
+                                      {m.actual_amount !== null && m.actual_amount !== undefined && selectedDepForManage.currency !== 'VND' && (
+                                        <span style={{ fontSize: '0.65rem', color: '#059669', fontWeight: 700, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                          Thực nhận: {formatNumberWithCommas(m.actual_amount)} VND
+                                        </span>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                                 {m.id && m.status !== 'approved' && (
@@ -1275,7 +1336,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                               <div style={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
                                 {isAdmin && m.status === 'paid' && m.unc_file_path && m.unc_file_path.trim() !== '' && (
                                   <>
-                                    <button
+    <button
                                       onClick={() => handleApproveFromModal(idx)}
                                       disabled={actioningMilestoneId !== null}
                                       style={{
@@ -1293,12 +1354,12 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                         fontWeight: 700,
                                         opacity: actioningMilestoneId !== null ? 0.6 : 1
                                       }}
-                                      title="Phê duyệt đợt tiền này"
+                                      title="Ghi nhận đợt tiền này"
                                     >
                                       {actioningMilestoneId === m.id && actioningType === 'approve' && (
                                         <Loader2 size={13} className="animate-spin" style={{ marginRight: 4 }} />
                                       )}
-                                      Duyệt
+                                      Ghi nhận
                                     </button>
                                     <button
                                       onClick={() => handleRejectFromModal(idx)}

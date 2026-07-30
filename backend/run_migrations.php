@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 205;
+$targetVersion = 206;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1029,9 +1029,33 @@ try {
         $logMsg("Nâng cấp lên phiên bản 205 hoàn tất.", "success");
     }
 
-    // 12. Update DB version in system_settings
-    $targetVersion = 205;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '205') ON DUPLICATE KEY UPDATE setting_value = '205'");
+    // 12. Upgrade to 206: Add currency, exchange_rate, original_amount, actual_amount columns
+    if ($currentVersion < 206) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 206...", "info");
+        try {
+            $conn->query("ALTER TABLE `deposits` 
+                ADD COLUMN `currency` VARCHAR(10) DEFAULT 'VND' AFTER `notes`,
+                ADD COLUMN `exchange_rate` DECIMAL(15,4) DEFAULT 1.0000 AFTER `currency`");
+            $logMsg("Đã bổ sung cột currency và exchange_rate vào bảng deposits.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột currency/exchange_rate đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+        
+        try {
+            $conn->query("ALTER TABLE `deposit_milestones` 
+                ADD COLUMN `original_amount` DECIMAL(15,2) DEFAULT NULL AFTER `expected_pay_date`,
+                ADD COLUMN `actual_amount` DECIMAL(15,2) DEFAULT NULL AFTER `original_amount`");
+            $logMsg("Đã bổ sung cột original_amount và actual_amount vào bảng deposit_milestones.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Cột original_amount/actual_amount đã tồn tại hoặc lỗi: " . $e->getMessage(), "info");
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 206 hoàn tất.", "success");
+    }
+
+    // 13. Update DB version in system_settings
+    $targetVersion = 206;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '206') ON DUPLICATE KEY UPDATE setting_value = '206'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

@@ -194,12 +194,16 @@ class DepositController {
             }
             $participantIdsStr = !empty($participantIds) ? implode(',', $participantIds) : null;
 
+            $currency = trim($b['currency'] ?? 'VND') ?: 'VND';
+            $exchangeRate = (float)($b['exchange_rate'] ?? 1.0);
+            if ($exchangeRate <= 0) $exchangeRate = 1.0;
+
             // Insert deposit record
             $stmt = $this->db->prepare("
-                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour, notes, accountant_id, participant_ids)
-                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour, notes, accountant_id, participant_ids, currency, exchange_rate)
+                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour, $notes, $accountantId, $participantIdsStr]);
+            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour, $notes, $accountantId, $participantIdsStr, $currency, $exchangeRate]);
             $depositId = $this->db->lastInsertId();
 
             // Grant access to contact for each participant
@@ -294,12 +298,13 @@ class DepositController {
             }
 
             $stmtM = $this->db->prepare("
-                INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, expected_pay_date, status)
-                VALUES (?, ?, ?, ?, 'pending')
+                INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, expected_pay_date, status, original_amount)
+                VALUES (?, ?, ?, ?, 'pending', ?)
             ");
             foreach ($milestones as $m) {
                 $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
-                $stmtM->execute([$depositId, trim($m['name'] ?? $m['milestone_name']), (float)$m['amount'], $payDate]);
+                $originalAmount = isset($m['original_amount']) ? (float)$m['original_amount'] : null;
+                $stmtM->execute([$depositId, trim($m['name'] ?? $m['milestone_name']), (float)$m['amount'], $payDate, $originalAmount]);
             }
 
             // Update contact pipeline stage to deal won status and set temperature to 'hot' (Sôi = xuống tiền)
@@ -558,55 +563,78 @@ class DepositController {
     public function approveMilestone(array $auth, int $id, int $milestoneId): void {
         requireRole($auth, ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'accountant']);
         
+        // Fetch deposit details to link the invoice and notify owner
+        $stmtDep = $this->db->prepare("
+            SELECT d.*, c.company_id, c.first_name, c.last_name, p.name as project_name,
+                   u.email as owner_email, u.full_name as owner_name, u.zalo_chat_id as owner_zalo_chat_id,
+                   c.owner_id as contact_owner_id, c.created_by as contact_created_by
+            FROM deposits d
+            JOIN contacts c ON d.contact_id = c.id
+            LEFT JOIN projects p ON d.project_id = p.id
+            LEFT JOIN users u ON c.owner_id = u.id
+            WHERE d.id = ?
+        ");
+        $stmtDep->execute([$id]);
+        $depositData = $stmtDep->fetch();
+
+        if (!$depositData) {
+            respond(404, null, 'Không tìm thấy phiếu đặt cọc', false);
+            return;
+        }
+
+        $stmtMile = $this->db->prepare("SELECT milestone_name, expected_amount, original_amount FROM deposit_milestones WHERE id = ? AND deposit_id = ?");
+        $stmtMile->execute([$milestoneId, $id]);
+        $mileData = $stmtMile->fetch();
+
+        if (!$mileData) {
+            respond(404, null, 'Không tìm thấy đợt thanh toán', false);
+            return;
+        }
+
+        // Read actual_amount from request body
+        $b = getBody();
+        $actualAmount = isset($b['actual_amount']) ? (float)$b['actual_amount'] : null;
+
+        if (!empty($depositData['currency']) && $depositData['currency'] !== 'VND') {
+            if ($actualAmount === null || $actualAmount <= 0) {
+                respond(400, null, 'Vui lòng cung cấp số tiền thực tế nhận được bằng VND', false);
+                return;
+            }
+        } else {
+            if ($actualAmount === null || $actualAmount <= 0) {
+                $actualAmount = (float)$mileData['expected_amount'];
+            }
+        }
+
         $this->db->beginTransaction();
         try {
-            // Update milestone status
+            // Update milestone status and actual_amount
             $stmt = $this->db->prepare("
                 UPDATE deposit_milestones 
-                SET status = 'approved', approval_date = NOW(), approved_by = ? 
+                SET status = 'approved', approval_date = NOW(), approved_by = ?, actual_amount = ? 
                 WHERE id = ? AND deposit_id = ?
             ");
-            $stmt->execute([$auth['user_id'], $milestoneId, $id]);
+            $stmt->execute([$auth['user_id'], $actualAmount, $milestoneId, $id]);
 
-            // Fetch deposit details to link the invoice and notify owner
-            $stmtDep = $this->db->prepare("
-                SELECT d.*, c.company_id, c.first_name, c.last_name, p.name as project_name,
-                       u.email as owner_email, u.full_name as owner_name, u.zalo_chat_id as owner_zalo_chat_id,
-                       c.owner_id as contact_owner_id, c.created_by as contact_created_by
-                FROM deposits d
-                JOIN contacts c ON d.contact_id = c.id
-                LEFT JOIN projects p ON d.project_id = p.id
-                LEFT JOIN users u ON c.owner_id = u.id
-                WHERE d.id = ?
+            $invoiceNum = 'INV-' . strtoupper(uniqid());
+            $title = "Hóa đơn đợt thanh toán: " . $mileData['milestone_name'] . " - Dự án " . ($depositData['project_name'] ?? 'BĐS');
+            $total = $actualAmount;
+            
+            $stmtInv = $this->db->prepare("
+                INSERT INTO invoices (tenant_id, contact_id, company_id, created_by, invoice_number, title, status, issue_date, due_date, paid_at, subtotal, total, notes)
+                VALUES (?, ?, ?, ?, ?, ?, 'paid', CURDATE(), CURDATE(), NOW(), ?, ?, ?)
             ");
-            $stmtDep->execute([$id]);
-            $depositData = $stmtDep->fetch();
-
-            $stmtMile = $this->db->prepare("SELECT milestone_name, expected_amount FROM deposit_milestones WHERE id = ?");
-            $stmtMile->execute([$milestoneId]);
-            $mileData = $stmtMile->fetch();
-
-            if ($depositData && $mileData) {
-                $invoiceNum = 'INV-' . strtoupper(uniqid());
-                $title = "Hóa đơn đợt thanh toán: " . $mileData['milestone_name'] . " - Dự án " . ($depositData['project_name'] ?? 'BĐS');
-                $total = (float)$mileData['expected_amount'];
-                
-                $stmtInv = $this->db->prepare("
-                    INSERT INTO invoices (tenant_id, contact_id, company_id, created_by, invoice_number, title, status, issue_date, due_date, paid_at, subtotal, total, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, 'paid', CURDATE(), CURDATE(), NOW(), ?, ?, ?)
-                ");
-                $stmtInv->execute([
-                    $auth['tenant_id'],
-                    $depositData['contact_id'],
-                    $depositData['company_id'],
-                    $auth['user_id'],
-                    $invoiceNum,
-                    $title,
-                    $total,
-                    $total,
-                    "Tự động tạo từ đợt UNC đơn hàng được duyệt. Mã đơn hàng: #" . $id
-                ]);
-            }
+            $stmtInv->execute([
+                $auth['tenant_id'],
+                $depositData['contact_id'],
+                $depositData['company_id'],
+                $auth['user_id'],
+                $invoiceNum,
+                $title,
+                $total,
+                $total,
+                "Tự động tạo từ đợt UNC đơn hàng được duyệt. Mã đơn hàng: #" . $id
+            ]);
 
             // Check if all milestones are approved. If so, approve the deposit slip as well
             $stmtCheck = $this->db->prepare("SELECT COUNT(*) FROM deposit_milestones WHERE deposit_id = ? AND status != 'approved'");
@@ -619,58 +647,61 @@ class DepositController {
             }
 
             $this->db->commit();
-            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE_DEPOSIT_MILESTONE', 'deposit_milestone', $milestoneId, "Duyệt đóng tiền đợt ID: $milestoneId");
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE_DEPOSIT_MILESTONE', 'deposit_milestone', $milestoneId, "Duyệt đóng tiền đợt ID: $milestoneId, thực nhận: " . number_format($total, 0, ',', '.') . " VND");
 
             // Notify all related users (owner, creator, co-op sales)
-            if ($depositData && $mileData) {
-                $uIdsToNotify = [];
-                if (!empty($depositData['contact_owner_id'])) $uIdsToNotify[(int)$depositData['contact_owner_id']] = true;
-                if (!empty($depositData['contact_created_by'])) $uIdsToNotify[(int)$depositData['contact_created_by']] = true;
-                if (!empty($depositData['created_by'])) $uIdsToNotify[(int)$depositData['created_by']] = true;
+            $uIdsToNotify = [];
+            if (!empty($depositData['contact_owner_id'])) $uIdsToNotify[(int)$depositData['contact_owner_id']] = true;
+            if (!empty($depositData['contact_created_by'])) $uIdsToNotify[(int)$depositData['contact_created_by']] = true;
+            if (!empty($depositData['created_by'])) $uIdsToNotify[(int)$depositData['created_by']] = true;
 
-                $stmtCoop = $this->db->prepare("
-                    SELECT shares_json 
-                    FROM cooperation_slips 
-                    WHERE deposit_slip_id = ? OR (deposit_slip_id IS NULL AND contact_id = ?) 
-                    LIMIT 1
-                ");
-                $stmtCoop->execute([$id, $depositData['contact_id']]);
-                $coopRow = $stmtCoop->fetch();
-                if ($coopRow && !empty($coopRow['shares_json'])) {
-                    $shares = json_decode($coopRow['shares_json'], true);
-                    if (is_array($shares)) {
-                        foreach ($shares as $uId => $pct) {
-                            $uIdsToNotify[(int)$uId] = true;
-                        }
-                    }
-                }
-
-                $uIdsToNotify = array_keys($uIdsToNotify);
-                if (!empty($uIdsToNotify)) {
-                    $inUsers = implode(',', array_fill(0, count($uIdsToNotify), '?'));
-                    $stmtUsers = $this->db->prepare("SELECT id, full_name, email FROM users WHERE id IN ($inUsers)");
-                    $stmtUsers->execute($uIdsToNotify);
-                    $usersList = $stmtUsers->fetchAll();
-
-                    require_once __DIR__ . '/../NotificationService.php';
-
-                    foreach ($usersList as $u) {
-                        NotificationService::send($this->db, $auth['tenant_id'], 'MY_DEPOSIT_UPDATE', [
-                            'user_id' => (int)$u['id'],
-                            'deposit_id' => $id,
-                            'customer_name' => trim($depositData['first_name'] . ' ' . ($depositData['last_name'] ?? '')),
-                            'status_text' => 'được duyệt đợt thanh toán ' . ($mileData['milestone_name'] ?? ''),
-                            'reason' => 'Đợt thanh toán ' . number_format($total, 0, ',', '.') . ' VND đã được phê duyệt thành công'
-                        ]);
-                    }
+            $stmtCoop = $this->db->prepare("
+                SELECT shares_json 
+                FROM cooperation_slips 
+                WHERE deposit_slip_id = ? OR (deposit_slip_id IS NULL AND contact_id = ?) 
+                LIMIT 1
+            ");
+            $stmtCoop->execute([$id, $depositData['contact_id']]);
+            $coopRow = $stmtCoop->fetch();
+            if ($coopRow && !empty($coopRow['shares_json'])) {
+                $shares = json_decode($coopRow['shares_json'], true);
+                if (is_array($shares)) {
+                     foreach ($shares as $uId => $pct) {
+                         $uIdsToNotify[(int)$uId] = true;
+                     }
                 }
             }
 
+            $uIdsToNotify = array_keys($uIdsToNotify);
+            if (!empty($uIdsToNotify)) {
+                $inUsers = implode(',', array_fill(0, count($uIdsToNotify), '?'));
+                $stmtUsers = $this->db->prepare("SELECT id, full_name, email FROM users WHERE id IN ($inUsers)");
+                $stmtUsers->execute($uIdsToNotify);
+                $usersList = $stmtUsers->fetchAll();
 
+                require_once __DIR__ . '/../NotificationService.php';
+
+                foreach ($usersList as $u) {
+                    NotificationService::send($this->db, $auth['tenant_id'], 'MY_DEPOSIT_UPDATE', [
+                        'user_id' => (int)$u['id'],
+                        'deposit_id' => $id,
+                        'customer_name' => trim($depositData['first_name'] . ' ' . ($depositData['last_name'] ?? '')),
+                        'status_text' => 'được duyệt đợt thanh toán ' . ($mileData['milestone_name'] ?? ''),
+                        'reason' => 'Đợt thanh toán ' . number_format($total, 0, ',', '.') . ' VND đã được phê duyệt thành công'
+                    ]);
+                }
+            }
 
             respond(200, null, 'Phê duyệt đợt thanh toán đơn hàng thành công');
         } catch (Exception $e) {
-            $this->db->rollBack();
+            error_log("Error in approveMilestone: " . $e->getMessage());
+            try {
+                if ($this->db->inTransaction()) {
+                    $this->db->rollBack();
+                }
+            } catch (Throwable $rollbackEx) {
+                error_log("Rollback failed: " . $rollbackEx->getMessage());
+            }
             respond(500, null, 'Lỗi duyệt đợt tiền: ' . $e->getMessage(), false);
         }
     }
@@ -909,7 +940,7 @@ class DepositController {
 
         // 1. Verify deposit ownership/permissions
         $stmtDep = $this->db->prepare("
-            SELECT d.id, d.created_by, c.owner_id, d.contact_id 
+            SELECT d.id, d.created_by, c.owner_id, d.contact_id, d.currency, d.exchange_rate 
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
             WHERE d.id = ? AND c.tenant_id = ?
@@ -1060,11 +1091,27 @@ class DepositController {
             }
 
             // Update or Insert milestones
+            $currency = $dep['currency'] ?? 'VND';
+            $rate = (float)($dep['exchange_rate'] ?? 1);
+            if ($rate <= 0) $rate = 1;
+
             foreach ($milestones as $m) {
                 $mName = trim($m['milestone_name'] ?? $m['name'] ?? '');
                 $mAmount = (float)($m['expected_amount'] ?? $m['amount'] ?? 0);
+                $origAmount = isset($m['original_amount']) ? (float)$m['original_amount'] : null;
                 $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
                 if (empty($mName)) continue;
+
+                if ($currency !== 'VND') {
+                    if ($origAmount === null) {
+                        $origAmount = $mAmount;
+                        $mAmount = round($origAmount * $rate);
+                    } else {
+                        $mAmount = round($origAmount * $rate);
+                    }
+                } else {
+                    $origAmount = null;
+                }
 
                 if (isset($m['id']) && !empty($m['id'])) {
                     $mId = (int)$m['id'];
@@ -1081,13 +1128,13 @@ class DepositController {
                         $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_pay_date = ? WHERE id = ?");
                         $stmtUpd->execute([$mName, $payDate, $mId]);
                     } else {
-                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_amount = ?, expected_pay_date = ? WHERE id = ?");
-                        $stmtUpd->execute([$mName, $mAmount, $payDate, $mId]);
+                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_amount = ?, original_amount = ?, expected_pay_date = ? WHERE id = ?");
+                        $stmtUpd->execute([$mName, $mAmount, $origAmount, $payDate, $mId]);
                     }
                 } else {
                     // Insert new
-                    $stmtIns = $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, expected_pay_date, status) VALUES (?, ?, ?, ?, 'pending')");
-                    $stmtIns->execute([$id, $mName, $mAmount, $payDate]);
+                    $stmtIns = $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, original_amount, expected_pay_date, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+                    $stmtIns->execute([$id, $mName, $mAmount, $origAmount, $payDate]);
                 }
             }
 
