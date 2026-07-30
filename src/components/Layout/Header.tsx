@@ -1745,7 +1745,9 @@ export const Header = ({
             director: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
             accountant: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
             hr: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'NHÂN SỰ', 'CHƯƠNG TRÌNH'],
-            marketing: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG']
+            marketing: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG'],
+            sale_admin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
+            saleadmin: ['QUY TRÌNH & PHÊ DUYỆT', 'TỔNG QUAN', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ']
           };
           const activeRole = role.toLowerCase();
           const groupOrder = GROUP_ORDER_BY_ROLE[activeRole];

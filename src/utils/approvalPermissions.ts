@@ -24,8 +24,15 @@ export function hasModuleApprovalAccess(
 
   const role = (user.role || '').toLowerCase().trim();
 
-  if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin'].includes(role)) {
+  if (['admin', 'superadmin', 'super_admin', 'director'].includes(role)) {
     return true;
+  }
+
+  if (['sale_admin', 'saleadmin'].includes(role)) {
+    if (['expense', 'deposit', 'quote_invoice', 'ticket', 'cooperation'].includes(moduleKey)) {
+      return true;
+    }
+    return false;
   }
 
   // Parse approval matrix config from parameter or localStorage

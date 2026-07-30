@@ -625,6 +625,7 @@ class FinanceController
         $role = $auth['role'] ?? '';
         $uid = (int)($auth['user_id'] ?? 0);
         $isSale = $role === 'sales' || $role === 'sale';
+        $isSaleAdmin = $role === 'sale_admin' || $role === 'saleadmin';
         $isManager = $role === 'manager';
 
         // Load team members if manager
@@ -638,6 +639,18 @@ class FinanceController
 
         if ($isSale) {
             $where[] = 'e.created_by = ?';
+            $params[] = $uid;
+        } else if ($isSaleAdmin) {
+            $where[] = "(
+                e.created_by = ? 
+                OR e.approver_id = ?
+                OR EXISTS (
+                    SELECT 1 FROM expense_entities ee 
+                    JOIN contacts c ON ee.entity_type = 'contact' AND ee.entity_id = c.id
+                    WHERE ee.expense_id = e.id AND c.status = 'customer'
+                )
+            )";
+            $params[] = $uid;
             $params[] = $uid;
         } else if ($isManager) {
             $placeholders = implode(',', array_fill(0, count($userIds), '?'));
@@ -737,6 +750,18 @@ class FinanceController
             if ($isSale) {
                 $prevWhere[] = 'e.created_by = ?';
                 $prevParams[] = $uid;
+            } else if ($isSaleAdmin) {
+                $prevWhere[] = "(
+                    e.created_by = ? 
+                    OR e.approver_id = ?
+                    OR EXISTS (
+                        SELECT 1 FROM expense_entities ee 
+                        JOIN contacts c ON ee.entity_type = 'contact' AND ee.entity_id = c.id
+                        WHERE ee.expense_id = e.id AND c.status = 'customer'
+                    )
+                )";
+                $prevParams[] = $uid;
+                $prevParams[] = $uid;
             } else if ($isManager) {
                 $placeholders = implode(',', array_fill(0, count($userIds), '?'));
                 $prevWhere[] = "e.created_by IN ($placeholders)";
@@ -789,6 +814,18 @@ class FinanceController
         $p = [$id, $auth['tenant_id']];
         if ($auth['role'] === 'sales' || $auth['role'] === 'sale') {
             $sql .= " AND e.created_by=?";
+            $p[] = $auth['user_id'];
+        } else if ($auth['role'] === 'sale_admin' || $auth['role'] === 'saleadmin') {
+            $sql .= " AND (
+                e.created_by = ? 
+                OR e.approver_id = ?
+                OR EXISTS (
+                    SELECT 1 FROM expense_entities ee 
+                    JOIN contacts c ON ee.entity_type = 'contact' AND ee.entity_id = c.id
+                    WHERE ee.expense_id = e.id AND c.status = 'customer'
+                )
+            )";
+            $p[] = $auth['user_id'];
             $p[] = $auth['user_id'];
         } else if ($auth['role'] === 'manager') {
             $sql .= " AND (e.created_by = ? OR e.created_by IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)))";

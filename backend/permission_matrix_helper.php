@@ -11,6 +11,9 @@ if (!function_exists('getModulePermissionScope')) {
         if ($role === 'superadmin' || $role === 'admin' || $role === 'super_admin') {
             return 'all';
         }
+        if ($module === 'users' && $action === 'read') {
+            return 'all';
+        }
         if ($role === 'sale_admin' || $role === 'saleadmin') {
             if (in_array($module, ['settings', 'hrm', 'attendance'], true)) {
                 return 'none';
@@ -113,7 +116,7 @@ if (!function_exists('getActionModuleAndType')) {
             $module = 'hrm';
         } else if (strpos($action, 'attendance') !== false || strpos($action, 'checkin') !== false || strpos($action, 'check_in') !== false || strpos($action, 'shift') !== false) {
             $module = 'attendance';
-        } else if (strpos($action, 'consultant') !== false) {
+        } else if (strpos($action, 'consultant') !== false || strpos($action, 'team') !== false) {
             $module = 'users';
         } else if (strpos($action, 'account') !== false) {
             $module = 'users';
