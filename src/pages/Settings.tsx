@@ -2044,76 +2044,6 @@ const SettingsInner = () => {
     );
   };
 
-  const renderInlineDurationInput = (statusSlug: string) => {
-    const value = securityTimers[statusSlug] || '+3 days';
-    const { num, unit } = parseSecurityTimer(value);
-
-    const onChange = (newVal: string) => {
-      setSecurityTimers(prev => ({
-        ...prev,
-        [statusSlug]: newVal
-      }));
-    };
-
-    return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        border: '1px solid var(--color-border)', 
-        borderRadius: 'var(--radius-md)', 
-        background: 'var(--color-surface)',
-        overflow: 'hidden',
-        height: '32px',
-        width: '180px',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-      }}>
-        <input
-          type="number"
-          min="1"
-          value={num}
-          onChange={e => {
-            const newNum = Math.max(1, parseInt(e.target.value, 10) || 1);
-            onChange(`+${newNum} ${unit}`);
-          }}
-          style={{ 
-            border: 'none', 
-            outline: 'none',
-            padding: '0 8px', 
-            width: '55px', 
-            textAlign: 'center',
-            fontSize: '0.8125rem',
-            background: 'transparent',
-            color: 'var(--color-text)',
-            fontWeight: 600,
-          }}
-        />
-        <div style={{ width: '1px', height: '100%', background: 'var(--color-border)' }} />
-        <select
-          value={unit}
-          onChange={e => {
-            onChange(`+${num} ${e.target.value}`);
-          }}
-          style={{
-            border: 'none',
-            outline: 'none',
-            padding: '0 8px',
-            background: 'transparent',
-            color: 'var(--color-text-muted)',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            flex: 1,
-            height: '100%',
-          }}
-        >
-          <option value="hours">{t('Giờ')}</option>
-          <option value="days">{t('Ngày')}</option>
-          <option value="weeks">{t('Tuần')}</option>
-          <option value="months">{t('Tháng')}</option>
-        </select>
-      </div>
-    );
-  };
 
   const getTabStyle = (tab: string) => ({
     padding: '10px 14px',
@@ -7041,13 +6971,6 @@ function doPost(e) {
                                     {t('Cho phép hợp tác')}
                                   </span>
                                 </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                                    {t('Hạn bảo mật:')}
-                                  </span>
-                                  {renderInlineDurationInput(status)}
-                                </div>
                               </div>
                             </>
                           ) : (
@@ -7127,13 +7050,6 @@ function doPost(e) {
                                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, userSelect: 'none' }}>
                                     {t('Cho phép hợp tác')}
                                   </span>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '24px' }}>
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                                    {t('Hạn bảo mật:')}
-                                  </span>
-                                  {renderInlineDurationInput(status)}
                                 </div>
                               </div>
 
