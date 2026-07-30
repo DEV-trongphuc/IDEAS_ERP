@@ -1269,8 +1269,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   }
 
   return createPortal(
-    <AnimatePresence>
-      {isOpen && (
+    <>
+      <AnimatePresence>
+        {isOpen && (
         <>
           <motion.div
             className="drawer-backdrop"
