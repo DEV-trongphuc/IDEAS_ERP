@@ -2504,7 +2504,7 @@
             },
             {
                 "field": "last_contact",
-                "type": "date",
+                "type": "datetime",
                 "null": "YES",
                 "key": "",
                 "default": null,

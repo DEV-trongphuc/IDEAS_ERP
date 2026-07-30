@@ -674,7 +674,7 @@ CREATE TABLE `contacts` (
   `ward` varchar(100) DEFAULT NULL,
   `expected_revenue` decimal(15,2) DEFAULT 0.00,
   `win_probability` tinyint(3) DEFAULT 50,
-  `last_contact` date DEFAULT NULL,
+  `last_contact` datetime DEFAULT NULL,
   `lead_score` tinyint(3) DEFAULT 0,
   `stage_id` int(11) DEFAULT NULL,
   `ttl1_completed` tinyint(1) DEFAULT 0,

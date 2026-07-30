@@ -592,7 +592,7 @@ class FinanceController
             $invData->execute([$id]);
             $cId = $invData->fetchColumn();
             if ($cId) {
-                $this->db->prepare("UPDATE contacts SET last_contact = CURRENT_DATE WHERE id = ? AND tenant_id = ?")
+                $this->db->prepare("UPDATE contacts SET last_contact = NOW() WHERE id = ? AND tenant_id = ?")
                     ->execute([(int) $cId, $auth['tenant_id']]);
             }
 

@@ -726,6 +726,9 @@ class ContactController {
             }
         }
         if (isset($b['tags'])) { $sets[] = 'tags=?'; $params[] = json_encode($b['tags']); }
+        if (!array_key_exists('last_contact', $b)) {
+            $sets[] = 'last_contact=NOW()';
+        }
         // Duplicate Phone Check (excluding self and other parallel contacts for the same physical Person)
         $phone = $b['phone'] ?? $b['mobile'] ?? null;
         if ($phone) {

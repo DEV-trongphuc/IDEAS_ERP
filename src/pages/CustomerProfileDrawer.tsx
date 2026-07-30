@@ -1402,6 +1402,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
 
   const [pendingPipelineTransition, setPendingPipelineTransition] = useState<{ targetId: string; targetLabel: string; note: string } | null>(null);
+  const pendingPipelineTransitionRef = React.useRef(pendingPipelineTransition);
+  React.useEffect(() => {
+    pendingPipelineTransitionRef.current = pendingPipelineTransition;
+  }, [pendingPipelineTransition]);
   const [depositCoopShares, setDepositCoopShares] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -3225,9 +3229,50 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         fetchData('quotes');
       }
     };
-    const handleDepositCreated = () => {
+    const handleDepositCreated = async () => {
       if (isOpen && contact?.id) {
         fetchData('deals');
+        const transition = pendingPipelineTransitionRef.current;
+        if (transition) {
+          const { targetId, targetLabel, note } = transition;
+          const calculatedStatus = (targetId === 'hoc_vien') ? 'customer' : 'qualified';
+          try {
+            await api.put(`/contacts/${contact.id}`, { 
+              pipeline_status: targetId, 
+              status: calculatedStatus,
+              ttl1_completed: formData.ttl1_completed,
+              ttl1_data: formData.ttl1_data
+            });
+
+            await api.post('/activities', {
+              type: 'note',
+              subject: `Chuyển trạng thái Pipeline → ${targetLabel}`,
+              body: note || null,
+              status: 'done',
+              related_type: 'contact',
+              related_id: contact.id,
+              contact_id: contact.id,
+              user_id: currentUser?.id,
+              due_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+              done_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+            });
+
+            setFormData((prev: any) => ({ 
+              ...prev, 
+              pipeline_status: targetId, 
+              status: calculatedStatus 
+            }));
+
+            addToast(`Đã chuyển trạng thái Pipeline thành ${targetLabel}`, 'success');
+            onUpdate?.({ ...formData, pipeline_status: targetId, status: calculatedStatus });
+            window.dispatchEvent(new CustomEvent('contact-updated'));
+          } catch (e: any) {
+            addToast(e?.response?.data?.message || 'Lỗi khi chuyển trạng thái Pipeline', 'error');
+          } finally {
+            setPendingPipelineTransition(null);
+            pendingPipelineTransitionRef.current = null;
+          }
+        }
       }
     };
     window.addEventListener('quote-updated', handleQuoteUpdate);
@@ -3236,7 +3281,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       window.removeEventListener('quote-updated', handleQuoteUpdate);
       window.removeEventListener('deposit-created', handleDepositCreated);
     };
-  }, [isOpen, contact?.id, fetchData]);
+  }, [isOpen, contact?.id, fetchData, formData, currentUser, onUpdate]);
 
   useEffect(() => {
     if (contact) {
@@ -4754,11 +4799,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
               <div
                 key={st.id}
                 onClick={() => {
-                  if (isCurrent || isBackward) return;
+                  if (isCurrent) return;
                   handleStageTransition(String(st.id), st.name);
                 }}
                 style={{
-                  flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : (isBackward ? 'not-allowed' : 'pointer'),
+                  flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : 'pointer',
                   display: 'flex', alignItems: 'center', transition: 'all 0.3s',
                   opacity: isBackward ? 0.5 : 1
                 }}
@@ -6319,7 +6364,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             </svg>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>LẦN LIÊN HỆ CUỐI</span>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>LẦN TƯƠNG TÁC CUỐI</span>
                             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(100, 116, 139, 0.1)', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               <Clock size={16} />
                             </div>
@@ -6328,7 +6373,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             {formData.last_contact ? formatDateTime(formData.last_contact) : 'Chưa có'}
                           </span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {formData.last_contact ? AGO(formData.last_contact) : 'Cần liên hệ ngay'}
+                            {formData.last_contact ? AGO(formData.last_contact) : 'Cần tương tác ngay'}
                           </span>
                         </div>
                       </div>
@@ -11035,16 +11080,16 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             >
               <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: '0.25rem' }}>Cập nhật trạng thái Pipeline</h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
-                Từ <strong>{pipelineStages.find(x => String(x.id) === String(formData.stage_id || formData.status))?.name || pipelineStages[0]?.name || 'Bước 1'}</strong>
+                Từ <strong>{pipelineStages.find(x => String(x.id) === String(formData.pipeline_status || 'chua_xac_dinh'))?.name || pipelineStages[0]?.name || 'Bước 1'}</strong>
                 <span style={{ margin: '0 4px' }}>→</span>
                 <strong style={{ color: pipelineStages.find(x => String(x.id) === pipelineModal.targetId)?.color || 'var(--color-primary)' }}>{pipelineModal.targetLabel}</strong>
               </p>
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label">Ghi chú Audit Trail <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                <label className="form-label">Ghi chú Audit Trail (Không bắt buộc)</label>
                 <textarea
                   className="form-input"
-                  placeholder="Ghi chú bắt buộc lý do hoặc tóm tắt trước khi chuyển bước..."
+                  placeholder="Nhập ghi chú lý do chuyển bước (nếu có)..."
                   value={pipelineModal.note || ''}
                   onChange={e => setPipelineModal({ ...pipelineModal, note: e.target.value })}
                   style={{ minHeight: '120px', padding: '12px 16px', lineHeight: 1.5, resize: 'vertical' }}
@@ -11056,7 +11101,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                 <button className="btn outline" onClick={() => setPipelineModal({ ...pipelineModal, isOpen: false })}>Hủy</button>
                 <button
                   className="btn primary"
-                  disabled={isSubmitting || !pipelineModal.note.trim()}
+                  disabled={isSubmitting}
                   onClick={async () => {
                     if (isSubmitting) return;
                     setIsSubmitting(true);
@@ -11079,7 +11124,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       setDepositMilestones([{ name: milestoneName, amount: '', expected_pay_date: '' }]);
                       setPipelineModal({ isOpen: false, targetId: '', targetLabel: '', note: '' });
                       setPendingPipelineTransition({ targetId, targetLabel, note });
-                      setShowDealModal(true);
+                      useUIStore.getState().setShowPOS({
+                        ...(contact || formData),
+                        _targetPipelineStatus: targetId
+                      });
                       setIsSubmitting(false);
                       return;
                     }

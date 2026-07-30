@@ -120,7 +120,7 @@ class POSController {
                     SET total_spent = total_spent + ?, 
                         order_count = order_count + 1, 
                         last_order_at = NOW(),
-                        last_contact = CURRENT_DATE,
+                        last_contact = NOW(),
                         status = 'customer'
                     WHERE id = ? AND tenant_id = ?
                 ");

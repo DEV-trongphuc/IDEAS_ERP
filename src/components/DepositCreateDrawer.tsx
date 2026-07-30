@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Building2, ChevronLeft, Plus, Trash2, Upload, X, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Building2, ChevronLeft, Plus, Trash2, Upload, X, AlertCircle, Loader2, Check, UserPlus, Bell } from 'lucide-react';
 import { fetchAPI } from '../utils/api';
 import { compressToWebP } from '../utils/imageCompress';
 import { useAuth } from '../contexts/AuthContext';
@@ -69,6 +69,11 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
   const [existingCoopShares, setExistingCoopShares] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [commissionType, setCommissionType] = useState<'amount' | 'percent'>('amount');
+  const [commissionPercent, setCommissionPercent] = useState('');
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
+
   const isAdmin = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);
 
   // Load lists
@@ -81,9 +86,10 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
         fetchAPI('users?all=1').catch(() => ({ success: false, data: [] })),
         fetchAPI('companies?limit=1000').catch(() => ({ success: false, data: [] })),
         fetchAPI('suppliers').catch(() => ({ success: false, data: [] })),
-        fetchAPI('cooperation-slips').catch(() => ({ success: false, data: [] }))
+        fetchAPI('cooperation-slips').catch(() => ({ success: false, data: [] })),
+        fetchAPI('deposits?limit=5').catch(() => ({ success: false, data: [] }))
       ])
-        .then(([resCont, resProj, resUsr, resComp, resSup, resCoop]) => {
+        .then(([resCont, resProj, resUsr, resComp, resSup, resCoop, resDep]) => {
           if (resCont.success) {
             const allContacts = resCont.data?.items || resCont.data || [];
             const filteredContacts = (user?.role === 'sale')
@@ -96,27 +102,76 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
           if (resComp.success) setCompanies(resComp.data?.items || resComp.data || []);
           if (resSup.success) setSuppliers(resSup.data?.items || resSup.data || []);
           if (resCoop.success) setCoopSlips(resCoop.data || []);
+
+          if (resDep && resDep.success && Array.isArray(resDep.data) && resDep.data.length > 0) {
+            const lastWithAcct = resDep.data.find((d: any) => d.accountant_id);
+            if (lastWithAcct) {
+              setDepositAccountantId(String(lastWithAcct.accountant_id));
+            }
+          } else {
+            const savedAcc = localStorage.getItem('last_selected_accountant_id');
+            if (savedAcc) {
+              setDepositAccountantId(savedAcc);
+            }
+          }
         })
         .catch(() => {})
         .finally(() => setLoadingLists(false));
     }
   }, [isOpen, user]);
 
-  // Set default contact
+  // Set default contact and reset states
   useEffect(() => {
-    if (isOpen && defaultContact) {
-      if (defaultContact.id) {
-        setEntitySubtab('contact');
-        setSelectedContactId(String(defaultContact.id));
-      } else if (defaultContact.entity_type === 'company' || defaultContact.company_id) {
-        setEntitySubtab('partner');
-        setSelectedContactId(`comp_${defaultContact.company_id || defaultContact.entity_id}`);
-      } else if (defaultContact.entity_type === 'supplier' || defaultContact.supplier_id) {
-        setEntitySubtab('partner');
-        setSelectedContactId(`sup_${defaultContact.supplier_id || defaultContact.entity_id}`);
+    if (isOpen) {
+      setCommissionType('amount');
+      setCommissionPercent('');
+      setParticipantIds([]);
+      setShowParticipantDropdown(false);
+      setNotes('');
+      setPrice('');
+      setExpectedCommission('');
+      setSelectedProjectId('');
+      setSelectedContactId('');
+      setUnitCode('');
+
+      if (defaultContact) {
+        if (defaultContact.id) {
+          setEntitySubtab('contact');
+          setSelectedContactId(String(defaultContact.id));
+        } else if (defaultContact.entity_type === 'company' || defaultContact.company_id) {
+          setEntitySubtab('partner');
+          setSelectedContactId(`comp_${defaultContact.company_id || defaultContact.entity_id}`);
+        } else if (defaultContact.entity_type === 'supplier' || defaultContact.supplier_id) {
+          setEntitySubtab('partner');
+          setSelectedContactId(`sup_${defaultContact.supplier_id || defaultContact.entity_id}`);
+        }
+
+        if (defaultContact._targetPipelineStatus === 'dong_le_phi_ho_so') {
+          setMilestonesInput([
+            { name: 'Lệ phí hồ sơ', amount: '', expected_pay_date: '' }
+          ]);
+        } else {
+          setMilestonesInput([
+            { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
+          ]);
+        }
+      } else {
+        setMilestonesInput([
+          { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
+        ]);
       }
     }
   }, [isOpen, defaultContact]);
+
+  // Auto-recalculate expected commission from percentage
+  useEffect(() => {
+    if (commissionType === 'percent' && commissionPercent) {
+      const basePrice = parseFloat(price) || 0;
+      const pctFloat = parseFloat(commissionPercent) || 0;
+      const calculated = (basePrice * pctFloat) / 100;
+      setExpectedCommission(String(calculated));
+    }
+  }, [price, commissionType, commissionPercent]);
 
   // Handle selected contact change
   useEffect(() => {
@@ -218,7 +273,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
   const handleCreateDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedContactId || !selectedProjectId || !price) {
-      addToast('Vui lòng điền đầy đủ thông tin khách hàng, chương trình, giá bán', 'error');
+      addToast('Vui lòng điền đầy đủ thông tin khách hàng, chương trình, doanh thu dự kiến', 'error');
       return;
     }
 
@@ -234,7 +289,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
 
     const totalM = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
     if (totalM > parseFloat(price)) {
-      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Tổng doanh thu dự kiến (${parseFloat(price).toLocaleString()} VND)`, 'error');
+      addToast(`Tổng tiền các đợt thanh toán (${totalM.toLocaleString()} VND) không được lớn hơn Doanh thu dự kiến (${parseFloat(price).toLocaleString()} VND)`, 'error');
       return;
     }
 
@@ -275,7 +330,8 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
           remind_target: remindTarget,
           notes: notes,
           accountant_id: Number(depositAccountantId),
-          unc_file_path: depositProofImgUrl || null
+          unc_file_path: depositProofImgUrl || null,
+          participant_ids: participantIds.join(',')
         })
       });
 
@@ -305,7 +361,9 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
           }
         }
 
+        localStorage.setItem('last_selected_accountant_id', depositAccountantId);
         addToast('Tạo đơn đặt hàng và lịch thanh toán thành công!', 'success');
+        window.dispatchEvent(new CustomEvent('deposit-created', { detail: { contactId: selectedContactId } }));
         onClose();
         if (onSaveSuccess) onSaveSuccess();
       } else {
@@ -425,12 +483,25 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
             </div>
 
             {/* Body */}
-            <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-              <form id="create-deposit-form-drawer" onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'stretch' }}>
+            <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <form id="create-deposit-form-drawer" onSubmit={handleCreateDeposit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: isMobile ? '1.5rem' : '0',
+                  alignItems: 'stretch',
+                  margin: isMobile ? '0' : '-1.5rem',
+                  flex: isMobile ? 'none' : 1
+                }}>
                   
                   {/* Left Pane */}
-                  <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{
+                    flex: isMobile ? 'none' : 7,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.5rem',
+                    padding: isMobile ? '0' : '1.5rem'
+                  }}>
                     
                     {/* General Info */}
                     <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
@@ -438,13 +509,8 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                       
                       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                         <div className="form-group" style={{ margin: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-                            {entitySubtab === 'partner' ? (
-                              <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
-                                Đối tác *
-                              </label>
-                            ) : <div />}
-                            <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)', marginLeft: 'auto' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+                            <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
                               <button
                                 type="button"
                                 onClick={() => { setEntitySubtab('contact'); setSelectedContactId(''); }}
@@ -512,7 +578,9 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                         </div>
 
                         <div className="form-group" style={{ margin: 0 }}>
-                          <label className="form-label">Chương trình / Chiến dịch *</label>
+                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', height: '26px' }}>
+                            <label className="form-label" style={{ margin: 0 }}>Chương trình *</label>
+                          </div>
                           <CustomSelect
                             options={projects.map(p => ({
                               value: String(p.id),
@@ -520,7 +588,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                             }))}
                             value={selectedProjectId}
                             onChange={val => setSelectedProjectId(val.toString())}
-                            placeholder="-- Chọn chương trình/chiến dịch --"
+                            placeholder="-- Chọn chương trình --"
                             searchable
                           />
                         </div>
@@ -543,7 +611,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                         </div>
 
                         <div className="form-group" style={{ margin: 0 }}>
-                          <label className="form-label">Tổng doanh thu ({currency}) *</label>
+                          <label className="form-label">Doanh thu dự kiến ({currency}) *</label>
                           <CurrencyInput
                             value={price}
                             onChange={val => setPrice(String(val))}
@@ -554,26 +622,78 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                         </div>
 
                         <div className="form-group" style={{ margin: 0 }}>
-                          <label className="form-label">Hoa hồng ({currency})</label>
-                          <CurrencyInput
-                            value={expectedCommission}
-                            onChange={val => setExpectedCommission(String(val))}
-                            placeholder="0"
-                            showTextHelper={false}
-                            currency={currency}
-                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label className="form-label" style={{ margin: 0 }}>Hoa hồng dự kiến</label>
+                            <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border-light)' }}>
+                              <button
+                                type="button"
+                                onClick={() => setCommissionType('amount')}
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  border: 'none',
+                                  background: commissionType === 'amount' ? 'var(--color-surface)' : 'transparent',
+                                  color: commissionType === 'amount' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {currency}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCommissionType('percent')}
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  border: 'none',
+                                  background: commissionType === 'percent' ? 'var(--color-surface)' : 'transparent',
+                                  color: commissionType === 'percent' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                % (Dự kiến)
+                              </button>
+                            </div>
+                          </div>
+                          {commissionType === 'amount' ? (
+                            <CurrencyInput
+                              value={expectedCommission}
+                              onChange={val => setExpectedCommission(String(val))}
+                              placeholder="0"
+                              showTextHelper={false}
+                              currency={currency}
+                            />
+                          ) : (
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <input
+                                type="number"
+                                step="any"
+                                className="form-input"
+                                style={{ width: '100%', paddingRight: '40px' }}
+                                placeholder="0"
+                                value={commissionPercent}
+                                onChange={e => {
+                                  const pct = e.target.value;
+                                  setCommissionPercent(pct);
+                                  const basePrice = parseFloat(price) || 0;
+                                  const pctFloat = parseFloat(pct) || 0;
+                                  const calculated = (basePrice * pctFloat) / 100;
+                                  setExpectedCommission(String(calculated));
+                                }}
+                              />
+                              <span style={{ position: 'absolute', right: '12px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>%</span>
+                            </div>
+                          )}
+                          {commissionType === 'percent' && expectedCommission && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                              = {parseFloat(expectedCommission).toLocaleString()} {currency}
+                            </div>
+                          )}
                         </div>
-                      </div>
-
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label">Mã học viên / Mã căn</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="Nhập mã học viên, mã phòng, mã căn..."
-                          value={unitCode}
-                          onChange={e => setUnitCode(e.target.value)}
-                        />
                       </div>
                     </div>
 
@@ -582,7 +702,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Lịch trình thanh toán</h4>
-                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>(Tổng các đợt không vượt quá Tổng doanh thu)</span>
+                          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>(Tổng các đợt không vượt quá Doanh thu dự kiến)</span>
                         </div>
                         <button
                           type="button"
@@ -665,7 +785,15 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                   </div>
 
                   {/* Right Pane */}
-                  <div style={{ flex: isMobile ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div style={{
+                    flex: isMobile ? 'none' : 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.5rem',
+                    background: isMobile ? 'transparent' : 'var(--color-bg)',
+                    borderLeft: isMobile ? 'none' : '1px solid var(--color-border-light)',
+                    padding: isMobile ? '0' : '1.5rem'
+                  }}>
                     
                     {/* Approver & Creator */}
                     <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
@@ -710,6 +838,132 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                           showAvatars
                           searchable
                         />
+                      </div>
+
+                      {/* Người liên quan */}
+                      <div style={{ borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
+                        <label style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          color: 'var(--color-text-muted)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          display: 'block',
+                          marginBottom: '6px'
+                        }}>
+                          Người liên quan
+                        </label>
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                          {/* Selected participant avatars */}
+                          {participantIds.length > 0 && (
+                            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              {participantIds.map((pId, idx) => {
+                                const u = usersList.find((x: any) => String(x.id) === String(pId));
+                                if (!u) return null;
+                                return (
+                                  <div
+                                    key={u.id}
+                                    style={{
+                                      marginLeft: idx === 0 ? 0 : -8,
+                                      border: '1.5px solid var(--color-surface)',
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                      zIndex: 10 - idx,
+                                      boxShadow: 'var(--shadow-sm)',
+                                      display: 'flex'
+                                    }}
+                                    title={u.full_name || u.name}
+                                  >
+                                    <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size="sm" />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Dash add button */}
+                          <button
+                            type="button"
+                            onClick={() => setShowParticipantDropdown(!showParticipantDropdown)}
+                            style={{
+                              border: '1px dashed var(--color-primary)',
+                              background: 'rgba(163, 20, 34, 0.04)',
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0,
+                              transition: 'all 0.15s ease'
+                            }}
+                            className="hover-scale"
+                            title="Thêm người liên quan"
+                          >
+                            <Plus size={14} color="var(--color-primary)" />
+                          </button>
+                          
+                          {/* Dropdown list of users */}
+                          {showParticipantDropdown && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              marginTop: '6px',
+                              zIndex: 9999,
+                              background: 'var(--color-surface)',
+                              border: '1px solid var(--color-border-light)',
+                              borderRadius: '12px',
+                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                              minWidth: '220px',
+                              maxHeight: '230px',
+                              overflowY: 'auto',
+                              padding: '6px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px'
+                            }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                                Chọn người liên quan:
+                              </div>
+                              {usersList.map((u: any) => {
+                                const isSelected = participantIds.includes(String(u.id));
+                                return (
+                                  <div
+                                    key={u.id}
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        setParticipantIds(prev => prev.filter(x => x !== String(u.id)));
+                                      } else {
+                                        setParticipantIds(prev => [...prev, String(u.id)]);
+                                      }
+                                    }}
+                                    style={{
+                                      padding: '6px 8px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.75rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                                      color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                                      fontWeight: isSelected ? 600 : 400
+                                    }}
+                                    className="hover-bg-alt"
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size="sm" />
+                                      <span>{u.full_name || u.name}</span>
+                                    </div>
+                                    {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -785,7 +1039,10 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                     {milestonesInput.length > 1 && (
                       <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch tự động</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Bell size={16} color="var(--color-primary)" />
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>Nhắc lịch tự động</span>
+                          </div>
                           <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '34px', height: '20px', margin: 0 }}>
                             <input
                               type="checkbox"
@@ -797,7 +1054,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                               position: 'absolute',
                               cursor: 'pointer',
                               inset: 0,
-                              backgroundColor: autoRemind ? 'var(--color-primary)' : '#ccc',
+                              backgroundColor: autoRemind ? 'var(--color-success)' : '#ccc',
                               borderRadius: '20px',
                               transition: '0.3s'
                             }}>

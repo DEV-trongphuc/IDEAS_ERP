@@ -28,17 +28,26 @@ class DepositController {
                 OR c.owner_id = ? 
                 OR FIND_IN_SET(?, c.collaborator_ids) 
                 OR d.contact_id IN (SELECT contact_id FROM quyen_truy_cap WHERE user_id = ?)
+                OR FIND_IN_SET(?, d.participant_ids)
             )";
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
             $params[] = (string)$auth['user_id'];
             $params[] = $auth['user_id'];
+            $params[] = (string)$auth['user_id'];
         } else if ($auth['role'] === 'manager') {
-            $sql .= " AND (d.created_by = ? OR c.owner_id = ? OR d.created_by IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)) OR c.owner_id IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)))";
+            $sql .= " AND (
+                d.created_by = ? 
+                OR c.owner_id = ? 
+                OR d.created_by IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)) 
+                OR c.owner_id IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?))
+                OR FIND_IN_SET(?, d.participant_ids)
+            )";
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
+            $params[] = (string)$auth['user_id'];
         }
 
         if (isset($_GET['contact_id'])) {
@@ -175,13 +184,34 @@ class DepositController {
 
             $accountantId = isset($b['accountant_id']) ? (int)$b['accountant_id'] : null;
 
+            $participantIdsRaw = $b['participant_ids'] ?? '';
+            $participantIds = [];
+            if (is_array($participantIdsRaw)) {
+                $participantIds = array_filter(array_map('intval', $participantIdsRaw));
+            } else if (is_string($participantIdsRaw)) {
+                $parts = explode(',', $participantIdsRaw);
+                $participantIds = array_filter(array_map('intval', $parts));
+            }
+            $participantIdsStr = !empty($participantIds) ? implode(',', $participantIds) : null;
+
             // Insert deposit record
             $stmt = $this->db->prepare("
-                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour, notes, accountant_id)
-                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?, ?, ?)
+                INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, auto_remind, remind_days_before, remind_at_hour, notes, accountant_id, participant_ids)
+                VALUES (?, ?, ?, ?, ?, 'pending_admin', ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour, $notes, $accountantId]);
+            $stmt->execute([$contactId, $projectId, $unitCode, $price, $expectedCommission, $auth['user_id'], $autoRemind, $remindDaysBefore, $remindAtHour, $notes, $accountantId, $participantIdsStr]);
             $depositId = $this->db->lastInsertId();
+
+            // Grant access to contact for each participant
+            if (!empty($participantIds)) {
+                $stmtGrant = $this->db->prepare("
+                    INSERT IGNORE INTO quyen_truy_cap (contact_id, user_id, invited_by)
+                    VALUES (?, ?, ?)
+                ");
+                foreach ($participantIds as $pId) {
+                    $stmtGrant->execute([$contactId, $pId, $auth['user_id']]);
+                }
+            }
 
             // Tag accountant & create notification if assigned
             if ($accountantId > 0) {
@@ -229,6 +259,32 @@ class DepositController {
                 } catch (Throwable $notifErr) {
                     // Suppress notification errors to avoid failing the deposit creation
                     error_log("Failed to send accountant notification: " . $notifErr->getMessage());
+                }
+            }
+
+            // Tag participants & send notification
+            if (!empty($participantIds)) {
+                try {
+                    $stmtU = $this->db->prepare("SELECT full_name FROM users WHERE id = ?");
+                    $stmtU->execute([$auth['user_id']]);
+                    $creatorName = $stmtU->fetchColumn() ?: 'Nhân viên';
+
+                    $stmtNotif = $this->db->prepare("
+                        INSERT INTO notifications (user_id, tenant_id, title, body, type, link)
+                        VALUES (?, ?, 'Bạn được gắn thẻ liên quan trong phiếu thanh toán', ?, 'mention', ?)
+                    ");
+                    foreach ($participantIds as $pId) {
+                        if ($pId !== (int)$auth['user_id']) {
+                            $stmtNotif->execute([
+                                $pId,
+                                $auth['tenant_id'],
+                                "Nhân viên $creatorName đã thêm bạn làm người liên quan trong phiếu thanh toán mới.",
+                                "/contacts/$contactId"
+                            ]);
+                        }
+                    }
+                } catch (Throwable $notifErr) {
+                    error_log("Failed to send participant notifications: " . $notifErr->getMessage());
                 }
             }
 
@@ -386,7 +442,7 @@ class DepositController {
 
         // Check ownership of deposit
         $stmtDep = $this->db->prepare("
-            SELECT d.id, d.contact_id, c.tenant_id, c.owner_id 
+            SELECT d.id, d.contact_id, d.created_by, c.tenant_id, c.owner_id 
             FROM deposits d 
             JOIN contacts c ON d.contact_id = c.id 
             WHERE d.id = ? AND c.tenant_id = ?
@@ -396,7 +452,23 @@ class DepositController {
         if (!$dep) respond(404, null, 'Đơn hàng không tồn tại', false);
 
         if ($auth['role'] === 'sales' || $auth['role'] === 'sale') {
-            if ($dep['owner_id'] != $auth['user_id']) {
+            $stmtCoop = $this->db->prepare("
+                SELECT COUNT(*) 
+                FROM quyen_truy_cap 
+                WHERE contact_id = ? AND user_id = ?
+            ");
+            $stmtCoop->execute([$dep['contact_id'], $auth['user_id']]);
+            $isCollaborator = ((int)$stmtCoop->fetchColumn()) > 0;
+
+            $stmtParticipant = $this->db->prepare("
+                SELECT COUNT(*)
+                FROM deposits
+                WHERE id = ? AND FIND_IN_SET(?, participant_ids)
+            ");
+            $stmtParticipant->execute([$id, (string)$auth['user_id']]);
+            $isParticipant = ((int)$stmtParticipant->fetchColumn()) > 0;
+
+            if ($dep['owner_id'] != $auth['user_id'] && $dep['created_by'] != $auth['user_id'] && !$isCollaborator && !$isParticipant) {
                 respond(403, null, 'Bạn không có quyền cập nhật đơn hàng của người khác', false);
             }
         } else if ($auth['role'] === 'manager') {
@@ -409,7 +481,17 @@ class DepositController {
             $isTeamMember = $stmtLead->fetch();
 
             if ($dep['owner_id'] != $auth['user_id'] && !$isTeamMember) {
-                respond(403, null, 'Bạn không có quyền cập nhật đơn hàng thuộc quản lý của nhóm khác', false);
+                $stmtCreatorTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
+                $stmtCreatorTeam->execute([$dep['created_by']]);
+                $creatorTeamId = $stmtCreatorTeam->fetchColumn();
+
+                $stmtLeadCreator = $this->db->prepare("SELECT 1 FROM teams WHERE id = ? AND leader_id = ?");
+                $stmtLeadCreator->execute([$creatorTeamId, $auth['user_id']]);
+                $isCreatorTeamMember = $stmtLeadCreator->fetch();
+
+                if (!$isCreatorTeamMember) {
+                    respond(403, null, 'Bạn không có quyền cập nhật đơn hàng thuộc quản lý của nhóm khác', false);
+                }
             }
         }
 

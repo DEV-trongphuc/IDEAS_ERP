@@ -163,7 +163,7 @@ class NoteController {
                 $stmtStatus->execute([$entityId]);
                 $currStatus = $stmtStatus->fetchColumn() ?: 'chua_xac_dinh';
                 $securityExpires = $this->getSecurityExpiration($currStatus);
-                $this->db->prepare("UPDATE contacts SET last_contact = CURRENT_DATE, security_expires_at = ? WHERE id = ?")
+                $this->db->prepare("UPDATE contacts SET last_contact = NOW(), security_expires_at = ? WHERE id = ?")
                      ->execute([$securityExpires, $entityId]);
             }
 
@@ -201,7 +201,7 @@ class NoteController {
             $currStatus = $stmtStatus->fetchColumn() ?: 'chua_xac_dinh';
             $securityExpires = $this->getSecurityExpiration($currStatus);
 
-            $updateSql = "UPDATE contacts SET last_contact = CURRENT_DATE, security_expires_at = ?";
+            $updateSql = "UPDATE contacts SET last_contact = NOW(), security_expires_at = ?";
             $updateParams = [$securityExpires];
             if (!empty($b['sale_temperature'])) {
                 $updateSql .= ", temperature = ?";
@@ -311,7 +311,7 @@ class NoteController {
             $currStatus = $stmtStatus->fetchColumn() ?: 'chua_xac_dinh';
             $securityExpires = $this->getSecurityExpiration($currStatus);
 
-            $this->db->prepare("UPDATE contacts SET last_contact = CURRENT_DATE, security_expires_at = ? WHERE id = ? AND tenant_id = ?")
+            $this->db->prepare("UPDATE contacts SET last_contact = NOW(), security_expires_at = ? WHERE id = ? AND tenant_id = ?")
                  ->execute([$securityExpires, $cid, $auth['tenant_id']]);
         }
 
@@ -345,9 +345,9 @@ class NoteController {
                 $cid = (int)$noteRow['entity_id'];
                 $stmtMax = $this->db->prepare("
                     SELECT MAX(max_date) FROM (
-                        SELECT DATE(created_at) as max_date FROM notes WHERE entity_type = 'contact' AND entity_id = ?
+                        SELECT created_at as max_date FROM notes WHERE entity_type = 'contact' AND entity_id = ?
                         UNION
-                        SELECT DATE(created_at) as max_date FROM activities WHERE related_type = 'contact' AND related_id = ? AND deleted_at IS NULL
+                        SELECT created_at as max_date FROM activities WHERE related_type = 'contact' AND related_id = ? AND deleted_at IS NULL
                     ) t
                 ");
                 $stmtMax->execute([$cid, $cid]);
