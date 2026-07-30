@@ -9916,81 +9916,71 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           } : undefined}
                         />
                       ) : visibleDocs.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', background: 'var(--color-surface)', border: '1px dashed var(--color-border)', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                          <Folder size={40} style={{ color: 'var(--color-text-muted)', opacity: 0.5, marginBottom: '0.75rem' }} />
-                          <h4 style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)', marginBottom: '4px' }}>Thư mục trống</h4>
-                          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>Chưa có tài liệu nào trong thư mục này.</p>
-                          {isOwnerOrAdmin && (
-                            <label
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 14px',
-                                borderRadius: '8px',
-                                background: 'rgba(100, 116, 139, 0.08)',
-                                color: 'var(--color-text-light)',
-                                border: '1px solid var(--color-border-light)',
-                                fontSize: '0.8rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                height: '32px'
-                              }}
-                              className="hover-lift"
-                            >
-                              <input type="file" style={{ display: 'none' }} onChange={async (e) => {
-                                if (e.target.files?.[0]) {
-                                  const file = e.target.files[0];
-                                  const originalName = file.name;
-                                  const defaultName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
-                                  let ext = originalName.substring(originalName.lastIndexOf('.'));
+                        <div style={{ width: '100%' }}>
+                          <input
+                            type="file"
+                            id="empty-folder-upload-input"
+                            style={{ display: 'none' }}
+                            onChange={async (e) => {
+                              if (e.target.files?.[0]) {
+                                const file = e.target.files[0];
+                                const originalName = file.name;
+                                const defaultName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+                                let ext = originalName.substring(originalName.lastIndexOf('.'));
 
-                                  let fileToUpload = file;
-                                  if (file.type && file.type.startsWith('image/')) {
-                                    try {
-                                      fileToUpload = await compressToWebP(file);
-                                      ext = '.webp';
-                                    } catch (e) {}
-                                  }
-                                  const finalName = defaultName + ext;
-                                  const renamedFile = new File([fileToUpload], finalName, { type: fileToUpload.type });
-                                  const fData = new FormData();
-                                  fData.append('file', renamedFile);
-                                  fData.append('name', finalName);
-                                  fData.append('contact_id', String(contact.id));
-                                  fData.append('category', currentFolder || 'general');
-                                  fData.append('visibility', 'shared');
-
-                                  setUploadingFileObj({
-                                    name: finalName,
-                                    size: (renamedFile.size / 1024 / 1024).toFixed(1) + ' MB',
-                                    previewUrl: renamedFile.type.startsWith('image/') ? URL.createObjectURL(renamedFile) : '',
-                                    isImage: renamedFile.type.startsWith('image/')
-                                  });
-                                  setUploadProgress(0);
-
+                                let fileToUpload = file;
+                                if (file.type && file.type.startsWith('image/')) {
                                   try {
-                                    await api.post('/cloud-files', fData, {
-                                      headers: { 'Content-Type': 'multipart/form-data' },
-                                      onUploadProgress: (progressEvent) => {
-                                        setUploadProgress(Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1)));
-                                      }
-                                    });
-                                    setUploadProgress(null);
-                                    setUploadingFileObj(null);
-                                    fetchData();
-                                    addToast('Đã tải lên tài liệu mới thành công.', 'success');
-                                  } catch (err: any) {
-                                    setUploadProgress(null);
-                                    setUploadingFileObj(null);
-                                    addToast('Lỗi khi tải tài liệu lên server', 'error');
-                                  }
+                                    fileToUpload = await compressToWebP(file);
+                                    ext = '.webp';
+                                  } catch (e) {}
                                 }
-                              }} />
-                              <Plus size={14} /> Upload file ngay
-                            </label>
-                          )}
+                                const finalName = defaultName + ext;
+                                const renamedFile = new File([fileToUpload], finalName, { type: fileToUpload.type });
+                                const fData = new FormData();
+                                fData.append('file', renamedFile);
+                                fData.append('name', finalName);
+                                fData.append('contact_id', String(contact.id));
+                                fData.append('category', currentFolder || 'general');
+                                fData.append('visibility', 'shared');
+
+                                setUploadingFileObj({
+                                  name: finalName,
+                                  size: (renamedFile.size / 1024 / 1024).toFixed(1) + ' MB',
+                                  previewUrl: renamedFile.type.startsWith('image/') ? URL.createObjectURL(renamedFile) : '',
+                                  isImage: renamedFile.type.startsWith('image/')
+                                });
+                                setUploadProgress(0);
+
+                                try {
+                                  await api.post('/cloud-files', fData, {
+                                    headers: { 'Content-Type': 'multipart/form-data' },
+                                    onUploadProgress: (progressEvent) => {
+                                      setUploadProgress(Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1)));
+                                    }
+                                  });
+                                  setUploadProgress(null);
+                                  setUploadingFileObj(null);
+                                  fetchData();
+                                  addToast('Đã tải lên tài liệu mới thành công.', 'success');
+                                } catch (err: any) {
+                                  setUploadProgress(null);
+                                  setUploadingFileObj(null);
+                                  addToast('Lỗi khi tải tài liệu lên server', 'error');
+                                }
+                              }
+                            }}
+                          />
+                          <EmptyCard
+                            icon={<Folder size={40} style={{ color: 'var(--color-text-muted)', opacity: 0.5 }} />}
+                            title="Thư mục trống"
+                            description="Chưa có tài liệu nào trong thư mục này."
+                            actionText={isOwnerOrAdmin ? "Upload file" : undefined}
+                            onAction={isOwnerOrAdmin ? () => {
+                              const input = document.getElementById('empty-folder-upload-input');
+                              if (input) (input as HTMLInputElement).click();
+                            } : undefined}
+                          />
                         </div>
                       ) : (
                         /* Files List View */
