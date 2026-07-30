@@ -274,60 +274,69 @@ const formatNumberWithDots = (val: string | number) => {
 
 function docSoTiengViet(num: number): string {
   if (num === 0) return 'Không đồng';
-  
-  const docBlock = (n: number, showZero: boolean): string => {
-    const chuSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
-    let str = '';
-    const tram = Math.floor(n / 100);
-    const chuc = Math.floor((n % 100) / 10);
-    const donvi = n % 10;
-    
-    if (tram > 0 || showZero) {
-      str += chuSo[tram] + ' trăm ';
+  if (num < 0) return 'Âm ' + docSoTiengViet(Math.abs(num)).toLowerCase();
+
+  const units = ['', ' nghìn', ' triệu', ' tỷ', ' nghìn tỷ', ' triệu tỷ'];
+  const digits = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+
+  const readThreeDigits = (n: number, isFirst: boolean): string => {
+    let hundred = Math.floor(n / 100);
+    let ten = Math.floor((n % 100) / 10);
+    let single = n % 10;
+    let res = '';
+
+    if (hundred > 0 || !isFirst) {
+      res += digits[hundred] + ' trăm ';
     }
-    
-    if (chuc > 1) {
-      str += chuSo[chuc] + ' mươi ';
-    } else if (chuc === 1) {
-      str += 'mười ';
-    } else if (tram > 0 && donvi > 0) {
-      str += 'lẻ ';
-    }
-    
-    if (donvi > 0) {
-      if (donvi === 1 && chuc > 1) {
-        str += 'mốt';
-      } else if (donvi === 5 && chuc > 0) {
-        str += 'lăm';
-      } else if (donvi === 4 && chuc > 1) {
-        str += 'tư';
+
+    if (ten > 0) {
+      if (ten === 1) {
+        res += 'mười ';
       } else {
-        str += chuSo[donvi];
+        res += digits[ten] + ' mươi ';
+      }
+    } else if (hundred > 0 && single > 0) {
+      res += 'lẻ ';
+    }
+
+    if (single > 0) {
+      if (single === 1 && ten > 1) {
+        res += 'mốt';
+      } else if (single === 5 && ten > 0) {
+        res += 'lăm';
+      } else if (single === 4 && ten > 1) {
+        res += 'tư';
+      } else {
+        res += digits[single];
       }
     }
-    
-    return str.trim();
+
+    return res.trim();
   };
 
-  const donViNhom = ['', ' nghìn', ' triệu', ' tỷ', ' nghìn tỷ', ' triệu tỷ'];
-  let str = '';
-  let temp = num;
-  let nhom = 0;
-  
-  while (temp > 0) {
-    const sub = temp % 1000;
-    if (sub > 0) {
-      const subStr = docBlock(sub, nhom > 0);
-      str = subStr + donViNhom[nhom] + ' ' + str;
-    }
-    temp = Math.floor(temp / 1000);
-    nhom++;
+  let cleanNum = Math.floor(num);
+  let groups = [];
+  while (cleanNum > 0) {
+    groups.push(cleanNum % 1000);
+    cleanNum = Math.floor(cleanNum / 1000);
   }
+
+  let result = '';
+  for (let i = groups.length - 1; i >= 0; i--) {
+    let groupVal = groups[i];
+    if (groupVal === 0) {
+      continue;
+    }
+    
+    let isFirst = (i === groups.length - 1);
+    let groupStr = readThreeDigits(groupVal, isFirst);
+    result += groupStr + units[i] + ' ';
+  }
+
+  result = result.trim();
+  if (!result) return 'Không đồng';
   
-  str = str.trim();
-  if (!str) return 'Không đồng';
-  
-  return str.charAt(0).toUpperCase() + str.slice(1) + ' đồng';
+  return result.charAt(0).toUpperCase() + result.slice(1) + ' đồng';
 }
 
 export default function Approvals() {
@@ -3252,45 +3261,47 @@ export default function Approvals() {
                           </div>
                         )}
 
-                        {/* 2. Recurring settings (for all workflows) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
-                           <GreenToggle
-                             id="isRecurring"
-                             checked={isRecurring}
-                             onChange={setIsRecurring}
-                             label={t('Thiết lập lặp lại tự động (Recurring Proposal)')}
-                           />
+                        {/* 2. Recurring settings (only for payment and recurring_payment workflows) */}
+                        {(selectedWorkflowDef?.id === 'payment' || selectedWorkflowDef?.id === 'recurring_payment') && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px dashed var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
+                             <GreenToggle
+                               id="isRecurring"
+                               checked={isRecurring}
+                               onChange={setIsRecurring}
+                               label={t('Thiết lập lặp lại tự động (Recurring Proposal)')}
+                             />
 
-                          {isRecurring && (
-                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginTop: '8px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Tần suất lặp lại')}</label>
-                                <CustomSelect
-                                  value={recurringFrequency}
-                                  onChange={val => setRecurringFrequency(val)}
-                                  options={[
-                                    { value: 'daily', label: t('Hàng ngày') },
-                                    { value: 'weekly', label: t('Hàng tuần') },
-                                    { value: 'monthly', label: t('Hàng tháng') },
-                                    { value: 'quarterly', label: t('Hàng quý') },
-                                    { value: 'yearly', label: t('Hàng năm') }
-                                  ]}
-                                  width="100%"
-                                />
+                            {isRecurring && (
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginTop: '8px', padding: '1rem', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-bg-secondary)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Tần suất lặp lại')}</label>
+                                  <CustomSelect
+                                    value={recurringFrequency}
+                                    onChange={val => setRecurringFrequency(val)}
+                                    options={[
+                                      { value: 'daily', label: t('Hàng ngày') },
+                                      { value: 'weekly', label: t('Hàng tuần') },
+                                      { value: 'monthly', label: t('Hàng tháng') },
+                                      { value: 'quarterly', label: t('Hàng quý') },
+                                      { value: 'yearly', label: t('Hàng năm') }
+                                    ]}
+                                    width="100%"
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày kết thúc lặp lại')}</label>
+                                  <input
+                                    type="date"
+                                    className="form-input"
+                                    value={recurringEndDate}
+                                    onChange={e => setRecurringEndDate(e.target.value)}
+                                    style={{ height: '32px', fontSize: '0.75rem' }}
+                                  />
+                                </div>
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày kết thúc lặp lại')}</label>
-                                <input
-                                  type="date"
-                                  className="form-input"
-                                  value={recurringEndDate}
-                                  onChange={e => setRecurringEndDate(e.target.value)}
-                                  style={{ height: '32px', fontSize: '0.75rem' }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Card 3: Bảng chi tiết thanh toán (only for expense/payment) */}
