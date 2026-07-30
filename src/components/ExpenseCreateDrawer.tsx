@@ -565,8 +565,8 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr', gap: '1rem' }}>
-                  <div className="form-group">
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.8fr 1.1fr 1.1fr', gap: '1rem' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label" style={{ fontWeight: 600 }}>Số tiền ({form.currency || 'VND'}) *</label>
                     <div style={{ position: 'relative' }}>
                       <input className="form-input" type="number" min="0" style={{ paddingRight: '2.5rem', fontWeight: 800, color: 'var(--color-danger)', fontSize: '1.1rem' }} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
@@ -581,7 +581,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                       </motion.div>
                     )}
                   </div>
-                  <div className="form-group">
+                  <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label" style={{ fontWeight: 600 }}>Loại tiền tệ</label>
                     <CustomSelect
                       options={[
@@ -593,6 +593,17 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                       value={form.currency || 'VND'}
                       onChange={val => setForm({ ...form, currency: val })}
                       width="100%"
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Ngày chi *</label>
+                    <input 
+                      className="form-input" 
+                      type="date" 
+                      value={form.date} 
+                      onChange={e => setForm({ ...form, date: e.target.value })} 
+                      style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
+                      required
                     />
                   </div>
                 </div>
@@ -1054,19 +1065,6 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                       placeholder="Chọn người duyệt..."
                       searchable
                       showAvatars
-                    />
-                  </div>
-
-                  {/* Date (Ngày chi) */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Ngày chi *</label>
-                    <input 
-                      className="form-input" 
-                      type="date" 
-                      value={form.date} 
-                      onChange={e => setForm({ ...form, date: e.target.value })} 
-                      style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
-                      required
                     />
                   </div>
                 </div>
