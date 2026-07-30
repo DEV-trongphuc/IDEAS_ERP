@@ -274,12 +274,31 @@ class HRMController {
             $type = $leaveRow['leave_type'];
             $userId = (int)$leaveRow['user_id'];
             
-            if ($type === 'annual') {
-                $updStmt = $this->db->prepare("UPDATE hrm_profiles SET annual_leave_used = annual_leave_used + ? WHERE user_id = ?");
-                $updStmt->execute([$days, $userId]);
-            } elseif ($type === 'compensatory') {
-                $updStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ? WHERE user_id = ?");
-                $updStmt->execute([$days, $userId]);
+            if ($type === 'annual' || $type === 'compensatory') {
+                $profStmt = $this->db->prepare("SELECT annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used FROM hrm_profiles WHERE user_id = ? LIMIT 1");
+                $profStmt->execute([$userId]);
+                $profile = $profStmt->fetch(PDO::FETCH_ASSOC);
+                
+                $remComp = 0.0;
+                if ($profile) {
+                    $remComp = max(0.0, (float)$profile['compensatory_leave_total'] - (float)$profile['compensatory_leave_used']);
+                }
+                
+                $deductComp = min($days, $remComp);
+                $deductAnnual = max(0.0, $days - $deductComp);
+                
+                if ($deductComp > 0) {
+                    $updStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ? WHERE user_id = ?");
+                    $updStmt->execute([$deductComp, $userId]);
+                }
+                if ($deductAnnual > 0) {
+                    $updStmt = $this->db->prepare("UPDATE hrm_profiles SET annual_leave_used = annual_leave_used + ? WHERE user_id = ?");
+                    $updStmt->execute([$deductAnnual, $userId]);
+                }
+                
+                $deductionLog = " [Khấu trừ thực tế: -" . $deductComp . " ngày phép bù, -" . $deductAnnual . " ngày phép năm]";
+                $updReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?) WHERE id = ?");
+                $updReason->execute([$deductionLog, (int)$leaveRow['id']]);
             }
 
             // Sync to consultant_leaves so the lead assignment / check-in rotation excludes this user when on leave

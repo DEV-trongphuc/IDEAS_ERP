@@ -2242,17 +2242,11 @@ export default function Approvals() {
                               }
 
                               if (myBalance) {
-                                if (leaveType === 'annual') {
-                                  const remainingAnnual = myBalance.annual_leave_total - myBalance.annual_leave_used;
-                                  if (daysVal > remainingAnnual) {
-                                    toast.error(t('Bạn không đủ số ngày phép năm còn lại! Vui lòng chọn "Nghỉ việc riêng (không lương)".'));
-                                    setSubmitting(false);
-                                    return;
-                                  }
-                                } else if (leaveType === 'compensatory') {
-                                  const remainingComp = myBalance.compensatory_leave_total - myBalance.compensatory_leave_used;
-                                  if (daysVal > remainingComp) {
-                                    toast.error(t('Bạn không đủ số ngày phép bù còn lại! Vui lòng chọn "Nghỉ việc riêng (không lương)".'));
+                                if (leaveType === 'annual' || leaveType === 'compensatory') {
+                                  const remComp = Math.max(0, myBalance.compensatory_leave_total - myBalance.compensatory_leave_used);
+                                  const remAnnual = Math.max(0, myBalance.annual_leave_total - myBalance.annual_leave_used);
+                                  if (daysVal > (remComp + remAnnual)) {
+                                    toast.error(t('Bạn không đủ tổng số ngày phép còn lại! Vui lòng chọn "Nghỉ việc riêng (không lương)".'));
                                     setSubmitting(false);
                                     return;
                                   }
@@ -2710,19 +2704,23 @@ export default function Approvals() {
                               const requestedDays = calculateWorkingDays(leaveFrom, leaveTo, leaveSession);
                               let isInsufficient = false;
                               let errorMsg = '';
+                              let deductComp = 0;
+                              let deductAnnual = 0;
                               
                               if (myBalance) {
-                                if (leaveType === 'annual') {
-                                  const remainingAnnual = myBalance.annual_leave_total - myBalance.annual_leave_used;
-                                  if (requestedDays > remainingAnnual) {
+                                const remComp = Math.max(0, myBalance.compensatory_leave_total - myBalance.compensatory_leave_used);
+                                const remAnnual = Math.max(0, myBalance.annual_leave_total - myBalance.annual_leave_used);
+                                
+                                if (leaveType === 'annual' || leaveType === 'compensatory') {
+                                  deductComp = Math.min(requestedDays, remComp);
+                                  deductAnnual = Math.max(0, requestedDays - deductComp);
+                                  
+                                  if (requestedDays > (remComp + remAnnual)) {
                                     isInsufficient = true;
-                                    errorMsg = t('Bạn không đủ số ngày phép năm còn lại (cần {req} ngày, còn {rem} ngày). Vui lòng chuyển loại nghỉ sang "Nghỉ việc riêng (không lương)".').replace('{req}', String(requestedDays)).replace('{rem}', String(Number(remainingAnnual.toFixed(2))));
-                                  }
-                                } else if (leaveType === 'compensatory') {
-                                  const remainingComp = myBalance.compensatory_leave_total - myBalance.compensatory_leave_used;
-                                  if (requestedDays > remainingComp) {
-                                    isInsufficient = true;
-                                    errorMsg = t('Bạn không đủ số ngày phép bù còn lại (cần {req} ngày, còn {rem} ngày). Vui lòng chuyển loại nghỉ sang "Nghỉ việc riêng (không lương)".').replace('{req}', String(requestedDays)).replace('{rem}', String(Number(remainingComp.toFixed(2))));
+                                    errorMsg = t('Bạn không đủ tổng số ngày phép còn lại (cần {req} ngày, còn {remComp} ngày phép bù + {remAnnual} ngày phép năm). Vui lòng chọn "Nghỉ việc riêng (không lương)".')
+                                      .replace('{req}', String(requestedDays))
+                                      .replace('{remComp}', String(Number(remComp.toFixed(2))))
+                                      .replace('{remAnnual}', String(Number(remAnnual.toFixed(2))));
                                   }
                                 }
                               }
@@ -2737,14 +2735,27 @@ export default function Approvals() {
                                     borderRadius: '8px', 
                                     fontSize: '0.8rem', 
                                     display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'space-between',
+                                    flexDirection: 'column',
+                                    gap: '4px',
                                     color: 'var(--color-text)'
                                   }}>
-                                    <span><strong>{t('Thời gian quy đổi:')}</strong></span>
-                                    <strong style={{ color: 'var(--color-primary)' }}>
-                                      {requestedDays} {t('ngày công')}
-                                    </strong>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span><strong>{t('Thời gian quy đổi:')}</strong></span>
+                                      <strong style={{ color: 'var(--color-primary)' }}>
+                                        {requestedDays} {t('ngày công')}
+                                      </strong>
+                                    </div>
+                                    {(deductComp > 0 || deductAnnual > 0) && (
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '4px', marginTop: '2px' }}>
+                                        <span>{t('Khấu trừ dự kiến:')}</span>
+                                        <span style={{ fontWeight: 600, color: 'var(--color-danger)' }}>
+                                          {[
+                                            deductComp > 0 ? `-${Number(deductComp.toFixed(2))} ${t('ngày phép bù')}` : null,
+                                            deductAnnual > 0 ? `-${Number(deductAnnual.toFixed(2))} ${t('ngày phép năm')}` : null
+                                          ].filter(Boolean).join(', ')}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
 
                                   {isInsufficient && (
