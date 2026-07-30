@@ -56,6 +56,7 @@ interface Deposit {
   remind_target?: number;
   currency?: string;
   exchange_rate?: string | number;
+  pipeline_status?: string;
 }
 
 interface Milestone {
@@ -143,6 +144,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     return [
       { value: '', label: t("Tất cả trạng thái") },
       { value: 'pending_admin', label: t("Đang giao dịch") },
+      { value: 'pending_student_reserved', label: t("SO Bảo lưu") },
       { value: 'approved', label: t("Hoàn tất") },
       { value: 'cancelled', label: t("Đã hủy") }
     ];
@@ -167,7 +169,9 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
         (d.unit_code && d.unit_code.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesProject = !filterProjectId ? true : String(d.project_id) === filterProjectId;
-      const matchesStatus = !filterStatus ? true : d.status === filterStatus;
+      const matchesStatus = !filterStatus ? true : 
+        filterStatus === 'pending_student_reserved' ? (d.status !== 'approved' && d.status !== 'cancelled' && d.pipeline_status === 'pending') :
+        d.status === filterStatus;
 
       return matchesSearch && matchesProject && matchesStatus;
     });
@@ -996,6 +1000,9 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     const map: Record<string, { date: string; totalAmount: number; milestones: any[] }> = {};
 
     deposits.forEach(d => {
+      // Exclude milestones of pending/reserved students (học viên bảo lưu)
+      if (d.pipeline_status === 'pending') return;
+
       if (d.milestones && d.milestones.length > 0) {
         d.milestones.forEach(m => {
           if (m.status !== 'approved' && m.expected_pay_date) {
@@ -1204,6 +1211,8 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
             approvedMilestoneAmount += amt;
             approvedCount++;
           } else {
+            // Exclude from projected receivables if student is pending (bảo lưu)
+            if (d.pipeline_status === 'pending') return;
             pendingMilestoneAmount += amt;
             pendingCount++;
           }

@@ -13,7 +13,7 @@ class DepositController {
 
         $sql = "
             SELECT d.*, c.first_name, c.last_name, c.phone, c.avatar_url, c.email, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
-                   c.owner_id as contact_owner_id
+                   c.owner_id as contact_owner_id, c.pipeline_status
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
             JOIN projects p ON d.project_id = p.id

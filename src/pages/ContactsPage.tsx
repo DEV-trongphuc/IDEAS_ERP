@@ -1845,9 +1845,9 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                               <span 
                                 className="badge" 
                                 style={{ 
-                                  backgroundColor: `${c.stage_color}1a`, 
-                                  color: c.stage_color || 'var(--color-primary)', 
-                                  border: `1px solid ${c.stage_color}33`
+                                  backgroundColor: `${c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên' ? '#ec4899' : (c.stage_color || '#3b82f6')}1a`, 
+                                  color: c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên' ? '#ec4899' : (c.stage_color || 'var(--color-primary)'), 
+                                  border: `1px solid ${c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên' ? '#ec4899' : (c.stage_color || '#3b82f6')}33`
                                 }}
                               >
                                 {c.stage_name}
@@ -2111,12 +2111,12 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                             left: 0,
                             right: 0,
                             height: '4px',
-                            background: c.stage_color || (
+                            background: (c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên') ? '#ec4899' : (c.stage_color || (
                                         c.status === 'lead' ? 'var(--color-primary)' :
                                         c.status === 'qualified' ? 'var(--color-warning)' :
                                         c.status === 'customer' ? 'var(--color-success)' :
                                         'var(--color-text-muted)'
-                                        )
+                                        ))
                           }} />
 
                           {/* Header Section */}
@@ -2193,9 +2193,9 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                     padding: '4px 8px', 
                                     fontSize: '0.72rem', 
                                     fontWeight: 700,
-                                    backgroundColor: `${c.stage_color}1a`, 
-                                    color: c.stage_color || 'var(--color-primary)', 
-                                    border: `1px solid ${c.stage_color}33`
+                                    backgroundColor: `${c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên' ? '#ec4899' : (c.stage_color || '#3b82f6')}1a`, 
+                                    color: c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên' ? '#ec4899' : (c.stage_color || 'var(--color-primary)'), 
+                                    border: `1px solid ${c.pipeline_status === 'hoc_vien' || c.stage_name === 'Học viên' ? '#ec4899' : (c.stage_color || '#3b82f6')}33`
                                   }}
                                 >
                                   {c.stage_name}
