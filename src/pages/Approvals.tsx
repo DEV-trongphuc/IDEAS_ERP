@@ -3149,45 +3149,6 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     }
   };
 
-  const getSystemComments = () => {
-    const createdAtVal = detail?.created_at || item.created_at;
-    const initialComments = [
-      { 
-        id: 'sys-1', 
-        author: t('Hệ thống quy trình IDEAS'), 
-        time: new Date(createdAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
-        text: `${t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình lúc')} ${new Date(createdAtVal).toLocaleString('vi-VN')}.`, 
-        attachments: [],
-        timestamp: new Date(createdAtVal).getTime()
-      }
-    ];
-
-    const overall = (item.status || detail?.status || 'pending').toLowerCase();
-    if (overall === 'approved') {
-      const approvedAtVal = detail?.approved_at || detail?.updated_at || (item as any).updated_at || new Date().toISOString();
-      initialComments.push({
-        id: 'sys-2',
-        author: t('Hệ thống quy trình IDEAS'),
-        time: new Date(approvedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        text: `✅ ${t('Yêu cầu đã được phê duyệt thành công lúc')} ${new Date(approvedAtVal).toLocaleString('vi-VN')}.`,
-        attachments: [],
-        timestamp: new Date(approvedAtVal).getTime()
-      });
-    } else if (overall === 'rejected') {
-      const rejectedAtVal = detail?.updated_at || (item as any).updated_at || new Date().toISOString();
-      const reasonStr = detail?.reason || detail?.reject_reason || '';
-      initialComments.push({
-        id: 'sys-2',
-        author: t('Hệ thống quy trình IDEAS'),
-        time: new Date(rejectedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        text: `❌ ${t('Yêu cầu bị từ chối lúc')} ${new Date(rejectedAtVal).toLocaleString('vi-VN')}.${reasonStr ? ` Lý do: ${reasonStr}` : ''}`,
-        attachments: [],
-        timestamp: new Date(rejectedAtVal).getTime()
-      });
-    }
-    return initialComments;
-  };
-
   const fetchComments = async () => {
     const endpoint = getCommentsEndpoint(item.type, item.id);
     if (!endpoint) return;
@@ -3203,9 +3164,49 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
         attachments: c.attachments || [],
         timestamp: new Date(c.created_at).getTime()
       }));
-      const systemComments = getSystemComments();
-      const combined = [...systemComments, ...mapped];
-      combined.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Sort user comments descending (newest first)
+      mapped.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Build birth system log (ALWAYS at the bottom)
+      const createdAtVal = detail?.created_at || item.created_at;
+      const sys1 = { 
+        id: 'sys-1', 
+        author: t('Hệ thống quy trình IDEAS'), 
+        time: new Date(createdAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
+        text: `${t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình lúc')} ${new Date(createdAtVal).toLocaleString('vi-VN')}.`, 
+        attachments: []
+      };
+
+      const combined: any[] = [];
+      const overall = (item.status || detail?.status || 'pending').toLowerCase();
+      if (overall === 'approved') {
+        const approvedAtVal = detail?.approved_at || detail?.updated_at || (item as any).updated_at || new Date().toISOString();
+        combined.push({
+          id: 'sys-2',
+          author: t('Hệ thống quy trình IDEAS'),
+          time: new Date(approvedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          text: `✅ ${t('Yêu cầu đã được phê duyệt thành công lúc')} ${new Date(approvedAtVal).toLocaleString('vi-VN')}.`,
+          attachments: []
+        });
+      } else if (overall === 'rejected') {
+        const rejectedAtVal = detail?.updated_at || (item as any).updated_at || new Date().toISOString();
+        const reasonStr = detail?.reason || detail?.reject_reason || '';
+        combined.push({
+          id: 'sys-2',
+          author: t('Hệ thống quy trình IDEAS'),
+          time: new Date(rejectedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          text: `❌ ${t('Yêu cầu bị từ chối lúc')} ${new Date(rejectedAtVal).toLocaleString('vi-VN')}.${reasonStr ? ` Lý do: ${reasonStr}` : ''}`,
+          attachments: []
+        });
+      }
+
+      // Add user comments (newest first)
+      combined.push(...mapped);
+
+      // Place birth system log at the very end
+      combined.push(sys1);
+
       setLocalComments(combined);
     } catch (e) {
       console.error('Error fetching comments:', e);
