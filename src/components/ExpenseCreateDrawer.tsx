@@ -9,6 +9,7 @@ import { Avatar } from './ui/Avatar';
 import { ToggleSwitch } from './ui/ToggleSwitch';
 import { compressToWebP } from '../utils/imageCompress';
 import { numberToVietnameseText } from '../utils/numberToText';
+import { PasteDropzoneArea } from './ui/PasteDropzoneArea';
 
 const CATEGORIES = [
   { label: 'Di chuyển', icon: Truck, color: '#3b82f6' },
@@ -419,7 +420,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           >
             {/* Header with Cancel and Save buttons at the top right */}
             <div className="modal-header" style={{
-              padding: '1.25rem 1.5rem',
+              padding: '0.75rem 1.5rem',
               background: 'linear-gradient(to right, var(--color-bg), var(--color-surface))',
               borderBottom: '1px solid var(--color-border)',
               flexShrink: 0,
@@ -451,10 +452,10 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                 </button>
 
                 <div style={{ minWidth: 0 }}>
-                  <h3 style={{ fontWeight: 800, fontSize: '1.25rem', margin: 0 }}>
+                  <h3 style={{ fontWeight: 800, fontSize: '1.15rem', margin: 0 }}>
                     {editItem ? 'Cập nhật khoản chi' : 'Nhập chi phí mới'}
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4, marginBottom: 0 }}>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', marginTop: 2, marginBottom: 0 }}>
                     Vui lòng điền thông tin chi tiết và người phê duyệt.
                   </p>
                 </div>
@@ -467,7 +468,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   className="btn outline"
                   onClick={onClose}
                   disabled={saving}
-                  style={{ height: '38px', minWidth: '90px', fontSize: '0.9rem', fontWeight: 700, borderRadius: '10px' }}
+                  style={{ height: '34px', minWidth: '90px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '10px' }}
                 >
                   Hủy
                 </button>
@@ -477,9 +478,9 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   onClick={handleSave}
                   disabled={saving}
                   style={{
-                    height: '38px',
+                    height: '34px',
                     minWidth: '150px',
-                    fontSize: '0.9rem',
+                    fontSize: '0.85rem',
                     fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
@@ -497,7 +498,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
 
             <div className="modal-body custom-scrollbar" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', padding: '1.5rem', flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
               {/* Left Column: Main form details */}
-              <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderRight: isMobile ? 'none' : '1px solid var(--color-border-light)', paddingRight: isMobile ? '0' : '1.5rem' }}>
                 <div className="form-group">
                   <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
                   <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
@@ -778,103 +779,81 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                 </div>
 
                 {/* Đính kèm hóa đơn / chứng từ */}
-                <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--color-surface)', marginTop: '1.25rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Đính kèm hóa đơn / chứng từ</h4>
-                  <div style={{
-                    border: '2px dashed var(--color-border)', borderRadius: '12px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    padding: '1.5rem', position: 'relative', cursor: 'pointer', background: 'var(--color-bg)',
-                    overflow: 'hidden', minHeight: '120px', transition: 'border-color 0.2s'
-                  }}
-                    onDragOver={e => e.preventDefault()}
-                    onClick={() => document.getElementById('drawer-expense-image-upload')?.click()}
-                  >
-                    {uploadingImg ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="spinner sm"></div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Đang nén & tải lên...</span>
-                      </div>
-                    ) : form.image_url ? (
-                      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img
-                          src={form.image_url.startsWith('http') ? form.image_url : `${import.meta.env.VITE_API_URL || '/backend'}${form.image_url}`}
-                          alt="Hóa đơn"
-                          style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '6px' }}
-                        />
-                        <button
-                          type="button"
-                          style={{
-                            position: 'absolute', top: 4, right: 4, background: 'rgba(239, 68, 68, 0.9)',
-                            color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setForm({ ...form, image_url: '' });
-                          }}
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-center" style={{ padding: '8px' }}>
-                        <Upload size={24} className="text-light" />
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chọn hoặc kéo thả ảnh</span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>WEBP, PNG, JPG (tối đa 5MB)</span>
-                      </div>
-                    )}
-                    <input
-                        type="file"
-                        id="drawer-expense-image-upload"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          setUploadingImg(true);
-                          try {
-                            const compressedFile = await compressToWebP(file);
-                            const uploadData = new FormData();
-                            uploadData.append('file', compressedFile);
-                            if (form.image_url) {
-                              uploadData.append('previous_url', form.image_url);
-                            }
-                            const res = await api.post('/upload', uploadData, {
-                              headers: { 'Content-Type': 'multipart/form-data' }
-                            });
-                            if (res.data && res.data.success && res.data.data?.url) {
-                              setForm({ ...form, image_url: res.data.data.url });
-                              addToast('Tải lên và nén ảnh hóa đơn thành công!', 'success');
-                            } else {
-                              addToast('Tải ảnh thất bại', 'error');
-                            }
-                          } catch (err: any) {
-                            addToast('Lỗi khi nén & tải ảnh: ' + (err.message || err), 'error');
-                          } finally {
-                            setUploadingImg(false);
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Đính kèm hóa đơn / chứng từ</label>
+                  <PasteDropzoneArea
+                    compact={true}
+                    placeholder="Chọn/kéo thả hoặc Ctrl+V để dán ảnh hóa đơn"
+                    subtext="Nén WEBP tự động (Max 5MB)"
+                    onConfirmUpload={async (item) => {
+                      if (item.file) {
+                        setUploadingImg(true);
+                        try {
+                          const webpBlob = await compressToWebP(item.file);
+                          const compFile = new File([webpBlob], 'expense_proof.webp', { type: 'image/webp' });
+                          const fd = new FormData();
+                          fd.append('file', compFile);
+                          if (form.image_url) {
+                            fd.append('previous_url', form.image_url);
                           }
-                        }}
-                      />
+                          const res = await api.post('/upload', fd, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          if (res.data && res.data.success && res.data.data?.url) {
+                            setForm({ ...form, image_url: res.data.data.url });
+                            addToast('Tải lên và nén ảnh hóa đơn thành công!', 'success');
+                          } else {
+                            addToast('Tải ảnh thất bại', 'error');
+                          }
+                        } catch (err: any) {
+                          addToast('Lỗi khi nén & tải ảnh: ' + (err.message || err), 'error');
+                        } finally {
+                          setUploadingImg(false);
+                        }
+                      }
+                    }}
+                  />
+                  {uploadingImg && (
+                    <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="spinner sm"></div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Đang nén & tải lên...</span>
                     </div>
-                  </div>
+                  )}
+                  {form.image_url && !uploadingImg && (
+                    <div style={{ marginTop: '8px', position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)', display: 'flex' }}>
+                      <img
+                        src={form.image_url.startsWith('http') ? form.image_url : `${import.meta.env.VITE_API_URL || '/backend'}${form.image_url}`}
+                        alt="Hóa đơn"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, image_url: '' })}
+                        style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Ghi chú chi tiết */}
-                  <div className="card" style={{ padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--color-surface)', marginTop: '1.25rem', marginBottom: '1.25rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>Ghi chú chi tiết</h4>
-                    <textarea
-                      className="form-input"
-                      rows={3}
-                      value={form.notes}
-                      onChange={e => setForm({ ...form, notes: e.target.value })}
-                      placeholder="Mô tả thêm nếu cần..."
-                      style={{ resize: 'vertical' }}
-                    />
-                  </div>
+                {/* Ghi chú chi tiết */}
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Ghi chú chi tiết</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={form.notes}
+                    onChange={e => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Mô tả thêm nếu cần..."
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
 
               </div>
 
               {/* Right Column: Sidebar (Phê duyệt & Vận hành) */}
-              <div style={{ flex: isMobile ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderLeft: isMobile ? 'none' : '1px solid var(--color-border-light)', paddingLeft: isMobile ? '0' : '1.5rem' }}>
+              <div style={{ flex: isMobile ? 'none' : 3, display: 'flex', flexDirection: 'column', gap: '1.25rem', position: isMobile ? 'static' : 'sticky', top: 0, alignSelf: 'flex-start' }}>
                 
                 {/* Áp dụng cho (Chia bill) */}
                 <div style={{ 
