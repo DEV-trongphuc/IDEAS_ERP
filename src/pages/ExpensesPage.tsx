@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   DollarSign, Plus, Search, Download, Truck, Coffee, Home,
   Briefcase, CreditCard, Tag, Eye, Pencil, Trash2, Loader2,
-  CheckCircle2, Clock, TrendingDown, X, ArrowUpRight, ArrowDownRight, ChevronDown, Building2, Wallet, User,
+  CheckCircle2, Clock, Activity, TrendingDown, X, ArrowUpRight, ArrowDownRight, ChevronDown, Building2, Wallet, User,
   Upload, Paperclip, XCircle, Send, MessageSquare, Copy, Calendar
 } from 'lucide-react';
 import { compressToWebP } from '../utils/imageCompress';
@@ -110,7 +110,7 @@ export const ExpensesPage: React.FC = () => {
   const [uploadingRefund, setUploadingRefund] = useState(false);
   const [submittingRefund, setSubmittingRefund] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'comments' | 'history'>('history');
+  const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [comments, setComments] = useState<any[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -1391,28 +1391,6 @@ export const ExpensesPage: React.FC = () => {
                     {/* Tabs */}
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-light)', padding: '0 8px', flexShrink: 0 }}>
                       <button
-                        onClick={() => setActiveTab('history')}
-                        style={{
-                          flex: 1,
-                          padding: '14px 10px',
-                          border: 'none',
-                          background: 'none',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          color: activeTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                          borderBottom: activeTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <Clock size={14} />
-                        Lịch sử ({historyLogs.length})
-                      </button>
-                      <button
                         onClick={() => setActiveTab('comments')}
                         style={{
                           flex: 1,
@@ -1433,6 +1411,28 @@ export const ExpensesPage: React.FC = () => {
                       >
                         <MessageSquare size={14} />
                         Thảo luận ({comments.length})
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('history')}
+                        style={{
+                          flex: 1,
+                          padding: '14px 10px',
+                          border: 'none',
+                          background: 'none',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          color: activeTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                          borderBottom: activeTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Activity size={14} />
+                        Hoạt động ({historyLogs.length})
                       </button>
                     </div>
 
