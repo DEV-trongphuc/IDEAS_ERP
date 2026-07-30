@@ -3897,6 +3897,7 @@ textarea, .form-textarea, textarea.form-input, textarea.form-control {
 
 /* Mobile Header / Sidebar alignment */
 header, .navbar {
+  position: relative;
   z-index: 90 !important; /* Lower than drawer backdrop */
 }
 
