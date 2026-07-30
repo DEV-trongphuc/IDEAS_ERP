@@ -436,6 +436,7 @@ require_once __DIR__ . '/controllers/CapiController.php';
 require_once __DIR__ . '/controllers/CheckInController.php';
 require_once __DIR__ . '/controllers/TeamController.php';
 require_once __DIR__ . '/controllers/WorkflowTaskTemplateController.php';
+require_once __DIR__ . '/controllers/PostController.php';
 
 // ── Parse route ───────────────────────────────────────────────
 $requestUri = strtok($_SERVER['REQUEST_URI'], '?');
@@ -637,6 +638,25 @@ switch ($resource) {
         else respond(404, null, 'Route không tồn tại', false);
         break;
 
+    // ENTERPRISE SOCIAL MEDIA FEED
+    case 'posts':
+        $auth = requireAuth();
+        $ctrl = new PostController($db);
+        if     ($resourceId === 'seed-samples' && $method === 'POST') $ctrl->seedSamples($auth);
+        elseif ($resourceId === 'honors' && !$subResource && $method === 'GET') $ctrl->getHonors($auth);
+        elseif ($resourceId === 'honors' && !$subResource && $method === 'POST') $ctrl->saveHonors($auth);
+        elseif ($resourceId === 'honors' && $subResource && $method === 'POST') $ctrl->heartHonor($auth, (int)$subResource);
+        elseif (!$resourceId && $method === 'GET')    $ctrl->index($auth);
+        elseif (!$resourceId && $method === 'POST')   $ctrl->store($auth);
+        elseif ($resourceId  && $method === 'DELETE') $ctrl->destroyPost($auth, (int)$resourceId);
+        elseif ($resourceId  && $subResource === 'react' && $method === 'POST') $ctrl->react($auth, (int)$resourceId);
+        elseif ($resourceId  && $subResource === 'reactions' && $method === 'GET') $ctrl->getReactions($auth, (int)$resourceId);
+        elseif ($resourceId  && $subResource === 'comments' && $method === 'GET') $ctrl->getComments($auth, (int)$resourceId);
+        elseif ($resourceId  && $subResource === 'comments' && $method === 'POST') $ctrl->addComment($auth, (int)$resourceId);
+        elseif ($resourceId === 'comments' && $subResource && $method === 'DELETE') $ctrl->deleteComment($auth, (int)$subResource);
+        else respond(404, null, 'Route không tồn tại', false);
+        break;
+
     // WORKFLOW TASK TEMPLATES
     case 'workflow-task-templates':
         $auth = requireAuth();
@@ -736,13 +756,13 @@ switch ($resource) {
         $ctrl = new HRMController($db);
         if     ($resourceId === 'profiles' && $method === 'GET') $ctrl->indexProfiles($auth);
         elseif ($resourceId === 'profiles' && $method === 'POST') $ctrl->saveProfile($auth);
-        elseif ($resourceId === 'leaves' && $method === 'GET') $ctrl->indexLeaves($auth);
-        elseif ($resourceId === 'leaves' && $method === 'POST') $ctrl->createLeave($auth);
-        elseif ($resourceId === 'leaves' && $method === 'PUT') $ctrl->approveLeave($auth);
         elseif ($resourceId === 'leaves' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'GET') $ctrl->getLeaveComments($auth, (int)$subResource);
         elseif ($resourceId === 'leaves' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'POST') $ctrl->addLeaveComment($auth, (int)$subResource);
         elseif ($resourceId === 'advances' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'GET') $ctrl->getAdvanceComments($auth, (int)$subResource);
         elseif ($resourceId === 'advances' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'POST') $ctrl->addAdvanceComment($auth, (int)$subResource);
+        elseif ($resourceId === 'leaves' && $method === 'GET') $ctrl->indexLeaves($auth);
+        elseif ($resourceId === 'leaves' && $method === 'POST') $ctrl->createLeave($auth);
+        elseif ($resourceId === 'leaves' && $method === 'PUT') $ctrl->approveLeave($auth);
         elseif ($resourceId === 'leaves' && $method === 'DELETE' && $subResource) $ctrl->deleteLeave($auth, (int)$subResource);
         elseif ($resourceId === 'advances' && $method === 'GET') $ctrl->indexAdvances($auth);
         elseif ($resourceId === 'advances' && $method === 'POST') $ctrl->createAdvance($auth);

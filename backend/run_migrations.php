@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 200;
+$targetVersion = 205;
 $currentVersion = 186;
 
 // Query current DB version
@@ -911,7 +911,13 @@ try {
             "ALTER TABLE purchase_orders ADD INDEX idx_po_tenant_supplier (tenant_id, supplier_id)",
             "ALTER TABLE invoices ADD INDEX idx_inv_tenant_status_due (tenant_id, status, due_date)",
             "ALTER TABLE expenses ADD INDEX idx_exp_tenant_status_date (tenant_id, status, expense_date)",
-            "ALTER TABLE cooperation_slips ADD INDEX idx_slip_status_created (status, created_at)"
+            "ALTER TABLE cooperation_slips ADD INDEX idx_slip_status_created (status, created_at)",
+            "ALTER TABLE activities ADD INDEX idx_activities_active_user (tenant_id, deleted_at, user_id, status, due_date)",
+            "ALTER TABLE activities ADD INDEX idx_activities_active_created (tenant_id, deleted_at, created_by)",
+            "ALTER TABLE activities ADD INDEX idx_activities_active_approver (tenant_id, deleted_at, approver_id)",
+            "ALTER TABLE hrm_leave_requests ADD INDEX idx_hrm_leave_requests_perf (user_id, status, leave_type, start_date)",
+            "ALTER TABLE check_ins ADD INDEX idx_check_ins_perf (user_id, status, check_in_date, late_minutes)",
+            "ALTER TABLE hrm_salary_advances ADD INDEX idx_hrm_salary_advances_perf (user_id, status)"
         ];
 
         foreach ($indexes as $sqlIdx) {
@@ -922,12 +928,110 @@ try {
             }
         }
 
-        $logMsg("Nâng cấp lên phiên bản 202 hoàn tất.", "success");
+        // 9b. Create Enterprise Social Feed tables
+        try {
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `enterprise_posts` (
+                  `id` INT AUTO_INCREMENT PRIMARY KEY,
+                  `tenant_id` INT NOT NULL,
+                  `user_id` INT NOT NULL,
+                  `content` TEXT NOT NULL,
+                  `attachments_json` LONGTEXT NULL COMMENT 'JSON array of media files (URLs, type: image/video/file)',
+                  `visibility` VARCHAR(50) DEFAULT 'global',
+                  `tags_json` VARCHAR(255) DEFAULT '[]' COMMENT 'JSON array of hashtags',
+                  `link_metadata_json` LONGTEXT NULL COMMENT 'Parsed URL metadata (url, title, desc, image)',
+                  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                  KEY `idx_post_tenant_user` (`tenant_id`, `deleted_at`, `user_id`),
+                  KEY `idx_post_created` (`created_at`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `enterprise_comments` (
+                  `id` INT AUTO_INCREMENT PRIMARY KEY,
+                  `tenant_id` INT NOT NULL,
+                  `post_id` INT NOT NULL,
+                  `user_id` INT NOT NULL,
+                  `parent_id` INT NULL DEFAULT NULL COMMENT 'ID of parent comment for nested replies',
+                  `content` TEXT NOT NULL,
+                  `attachments_json` LONGTEXT NULL,
+                  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+                  KEY `idx_comment_post` (`post_id`, `parent_id`),
+                  KEY `idx_comment_user` (`user_id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `enterprise_reactions` (
+                  `id` INT AUTO_INCREMENT PRIMARY KEY,
+                  `tenant_id` INT NOT NULL,
+                  `ref_type` VARCHAR(20) NOT NULL COMMENT 'post or comment',
+                  `ref_id` INT NOT NULL,
+                  `user_id` INT NOT NULL,
+                  `reaction_type` VARCHAR(20) NOT NULL COMMENT 'like, love, haha, wow, sad, angry',
+                  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE KEY `uniq_user_reaction` (`ref_type`, `ref_id`, `user_id`),
+                  KEY `idx_reaction_lookup` (`ref_type`, `ref_id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $logMsg("Đã tạo thành công các bảng cho mạng xã hội nội bộ (enterprise_posts, enterprise_comments, enterprise_reactions).", "success");
+        } catch (Throwable $e) {
+            $logMsg("Lỗi tạo bảng mạng xã hội: " . $e->getMessage(), "error");
+        }
+
+        $logMsg("Nâng cấp lên phiên bản 203 hoàn tất.", "success");
     }
 
-    // 10. Update DB version in system_settings
-    $targetVersion = 202;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '202') ON DUPLICATE KEY UPDATE setting_value = '202'");
+    // 10. Upgrade to 204: Create enterprise_honors table
+    if ($currentVersion < 204) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 204...", "info");
+        try {
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `enterprise_honors` (
+                  `id` INT AUTO_INCREMENT PRIMARY KEY,
+                  `tenant_id` INT NOT NULL,
+                  `user_id` INT NOT NULL,
+                  `title` VARCHAR(255) NOT NULL,
+                  `badge` VARCHAR(255) NOT NULL,
+                  `reason` TEXT NOT NULL,
+                  `hearts_count` INT DEFAULT 0,
+                  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  KEY `idx_honors_tenant_user` (`tenant_id`, `user_id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $logMsg("Đã tạo thành công bảng enterprise_honors.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Lỗi tạo bảng enterprise_honors: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 204 hoàn tất.", "success");
+    }
+
+    // 11. Upgrade to 205: Create enterprise_honors_reactions table to cap hearts to 10 per user per card
+    if ($currentVersion < 205) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 205...", "info");
+        try {
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS `enterprise_honors_reactions` (
+                  `id` INT AUTO_INCREMENT PRIMARY KEY,
+                  `honor_id` INT NOT NULL,
+                  `user_id` INT NOT NULL,
+                  `reaction_count` INT DEFAULT 0,
+                  UNIQUE KEY `uniq_honor_user` (`honor_id`, `user_id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $logMsg("Đã tạo thành công bảng enterprise_honors_reactions.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Lỗi tạo bảng enterprise_honors_reactions: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 205 hoàn tất.", "success");
+    }
+
+    // 12. Update DB version in system_settings
+    $targetVersion = 205;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '205') ON DUPLICATE KEY UPDATE setting_value = '205'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

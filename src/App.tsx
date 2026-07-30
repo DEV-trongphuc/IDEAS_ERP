@@ -15,7 +15,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { hasModuleApprovalAccess } from './utils/approvalPermissions';
 
 
-// Lazy load all pages for Code Splitting
+// Lazy load all pages for Code Splitting (including Enterprise Social Feed)
 const Dashboard = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const Consultants = lazy(() => import('./pages/Consultants').then(module => ({ default: module.Consultants })));
 const Rounds = lazy(() => import('./pages/Rounds').then(module => ({ default: module.Rounds })));
@@ -54,6 +54,7 @@ const AITrainingPage = lazy(() => import('./pages/AITrainingPage').then(module =
 const HRM = lazy(() => import('./pages/HRM'));
 const MyPayslips = lazy(() => import('./pages/MyPayslips'));
 const Approvals = lazy(() => import('./pages/Approvals'));
+const EnterpriseFeed = lazy(() => import('./pages/EnterpriseFeed').then(module => ({ default: module.EnterpriseFeed })));
 
 // Loading spinner fallback
 const PageLoader = () => (
@@ -85,7 +86,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training', '/hrm'];
-  const userPaths = ['/', '/workspace', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard'];
+  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/contacts', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -160,16 +161,16 @@ const AppTabs = () => {
   const renderPageComponent = () => {
     switch (currentPath) {
       case '/':
-        return ((user?.role as any) === 'sale' || (user?.role as any) === 'sales') 
-          ? <SalePortal embedMode={true} activeTabProp="dashboard" key="dashboard" /> 
+        return ((user?.role as any) === 'sale' || (user?.role as any) === 'sales')
+          ? <SalePortal embedMode={true} activeTabProp="dashboard" key="dashboard" />
           : <Dashboard key="dashboard" />;
       case '/workspace':
         return <SalePortal embedMode={true} activeTabProp="workspace" key="workspace" />;
       case '/account':
         return <SalePortal embedMode={true} activeTabProp="schedule" key="schedule" />;
       case '/data':
-        return user?.role === 'sale' 
-          ? <Navigate to={`/contacts${location.search}`} replace /> 
+        return user?.role === 'sale'
+          ? <Navigate to={`/contacts${location.search}`} replace />
           : <DataList key="data" />;
       case '/calendar':
         return user?.role === 'sale' ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" /> : <DataList key="calendar" />;
@@ -183,6 +184,8 @@ const AppTabs = () => {
         return <Navigate to="/" replace />;
       case '/activities':
         return <Navigate to="/" replace />;
+      case '/feed':
+        return <EnterpriseFeed key="feed" />;
       case '/products':
         return <Navigate to="/" replace />;
       case '/expenses':
@@ -526,7 +529,7 @@ export default function App() {
                   <Route path="/report-data" element={<ReportData />} />
                   <Route path="/demo" element={<DemoEntry />} />
                   <Route path="/download" element={<DownloadPage />} />
-                  
+
                   {/* All authenticated users (sharing a single persistent AppTabs instance) */}
                   <Route element={<ProtectedRoute />}>
                     <Route path="/*" element={<AppTabs />} />

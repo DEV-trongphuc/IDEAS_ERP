@@ -538,6 +538,30 @@ class HRMController {
 
         $results = [];
 
+        // Pre-fetch all approved deposit milestones for YYYY-MM and their associated cooperation slips
+        $milestonesList = [];
+        $coopSlipsMap = [];
+        if (!$isSpecialPeriod) {
+            $milestonesStmt = $this->db->prepare("
+                SELECT m.expected_amount, d.contact_id, d.created_by
+                FROM deposit_milestones m
+                JOIN deposits d ON m.deposit_id = d.id
+                WHERE m.status = 'approved' AND DATE_FORMAT(m.approval_date, '%Y-%m') = ?
+            ");
+            $milestonesStmt->execute([$monthYear]);
+            $milestonesList = $milestonesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $contactIds = array_unique(array_filter(array_column($milestonesList, 'contact_id')));
+            if (!empty($contactIds)) {
+                $inContacts = implode(',', array_fill(0, count($contactIds), '?'));
+                $csStmt = $this->db->prepare("SELECT contact_id, shares_json FROM cooperation_slips WHERE contact_id IN ($inContacts)");
+                $csStmt->execute($contactIds);
+                while ($row = $csStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $coopSlipsMap[(int)$row['contact_id']] = json_decode($row['shares_json'] ?? '[]', true) ?: [];
+                }
+            }
+        }
+
         foreach ($employees as $emp) {
             $userId = (int)$emp['id'];
 
@@ -639,28 +663,15 @@ class HRMController {
             $revenueCollected = 0.0;
 
             if (!$isSpecialPeriod) {
-                // Fetch all approved deposit milestones in the selected month
-                $milestonesStmt = $this->db->prepare("
-                    SELECT m.expected_amount, d.contact_id, d.created_by
-                    FROM deposit_milestones m
-                    JOIN deposits d ON m.deposit_id = d.id
-                    WHERE m.status = 'approved' AND DATE_FORMAT(m.approval_date, '%Y-%m') = ?
-                ");
-                $milestonesStmt->execute([$monthYear]);
-                $milestonesList = $milestonesStmt->fetchAll(PDO::FETCH_ASSOC);
-
                 foreach ($milestonesList as $mRow) {
                     $contactId = (int)$mRow['contact_id'];
                     $depositCreator = (int)$mRow['created_by'];
                     $amount = (float)$mRow['expected_amount'];
 
-                    // Check if this contact has a cooperation slip for commission splitting
-                    $csStmt = $this->db->prepare("SELECT shares_json FROM cooperation_slips WHERE contact_id = ? LIMIT 1");
-                    $csStmt->execute([$contactId]);
-                    $csRow = $csStmt->fetch(PDO::FETCH_ASSOC);
+                    // Check if this contact has a cooperation slip for commission splitting in memory
+                    $shares = isset($coopSlipsMap[$contactId]) ? $coopSlipsMap[$contactId] : null;
 
-                    if ($csRow) {
-                        $shares = json_decode($csRow['shares_json'] ?? '[]', true) ?: [];
+                    if ($shares !== null) {
                         if (isset($shares[$userId])) {
                             $percent = (float)$shares[$userId];
                             $revenueCollected += $amount * ($percent / 100.0);

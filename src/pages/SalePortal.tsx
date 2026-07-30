@@ -1145,6 +1145,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     let dueToday = 0;
     let upcoming = 0;
     let pendingApproval = 0;
+    let assignedToMe = 0;
+    let collaborator = 0;
 
     tabTasks.forEach(task => {
       // Pending approval
@@ -1153,6 +1155,17 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       }
 
       if (task.status === 'done') return;
+
+      // Assigned to me
+      if (Number(task.user_id) === Number(currentUser?.id)) {
+        assignedToMe++;
+      }
+
+      // Related / Collaborator
+      const pIds = task.participant_ids ? task.participant_ids.split(',').map(Number).filter(Boolean) : [];
+      if (pIds.includes(Number(currentUser?.id))) {
+        collaborator++;
+      }
 
       if (task.due_date) {
         const dt = task.due_date.slice(0, 10);
@@ -1171,7 +1184,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       }
     });
 
-    return { overdue, dueToday, upcoming, pendingApproval };
+    return { overdue, dueToday, upcoming, pendingApproval, assignedToMe, collaborator };
   }, [wsTasks, wsSubTab, currentUser]);
 
   const paginatedWsTasks = useMemo(() => {
@@ -4692,7 +4705,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     ];
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: wsViewMode === 'focus' ? '0' : '1.25rem', paddingBottom: isMobile ? '300px' : '200px' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: wsViewMode === 'focus' ? '0' : '1.25rem', 
+        paddingBottom: wsViewMode === 'focus' ? '0' : (isMobile ? '300px' : '200px'),
+        height: wsViewMode === 'focus' ? 'calc(100vh - 120px)' : 'auto',
+        overflow: wsViewMode === 'focus' ? 'hidden' : 'visible'
+      }}>
         {wsViewMode !== 'focus' && (
           <>
             {/* Workspace Header */}
@@ -4983,70 +5003,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           );
         })()}
 
-        {/* Main Subtabs Selection */}
-        {isMobile ? (
+        {/* Main Subtabs Selection - Removed in favor of 6 main status pills. Only keep mobile task creation button. */}
+        {isMobile && (
           <div style={{ 
             display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            gap: '0.75rem', 
+            justifyContent: 'flex-end',
             marginBottom: '1rem',
             width: '100%'
           }}>
-            {/* Dropdown filter on the left */}
-            <div style={{ position: 'relative', flex: 1 }}>
-              <select
-                value={wsSubTab}
-                onChange={(e) => {
-                  setWsSubTab(e.target.value as any);
-                  setWsTeamSubFilter('all');
-                }}
-                style={{
-                  width: '100%',
-                  height: '38px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-text)',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  padding: '0 2.25rem 0 0.75rem',
-                  appearance: 'none',
-                  outline: 'none',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-              >
-                {[
-                  { id: 'all', label: `${t('Tất cả')} (${wsTasks.length})` },
-                  { id: 'customer', label: `${t('Công việc khách hàng')} (${wsTasks.filter(task => task.related_type && ['contact', 'deal', 'company'].includes(task.related_type)).length})` },
-                  { id: 'team', label: `${t('Công việc nội bộ team')} (${wsTasks.filter(task => {
-                      const isClient = task.related_type && ['contact', 'deal', 'company'].includes(task.related_type);
-                      const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-                      return !isClient && !tagsList.includes('personal_task');
-                    }).length})` },
-                  { id: 'personal', label: `${t('Công việc cá nhân')} (${wsTasks.filter(task => {
-                      const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-                      return tagsList.includes('personal_task');
-                    }).length})` }
-                ].map(opt => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                right: '0.75rem',
-                transform: 'translateY(-50%)',
-                color: 'var(--color-text-muted)',
-                pointerEvents: 'none',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <ChevronDown size={14} />
-              </div>
-            </div>
-
-            {/* Tạo công việc button on the right */}
             <button 
               className="btn primary sm" 
               onClick={() => {
@@ -5061,9 +5025,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   progress: 0,
                   require_approval: 0,
                   approver_id: '',
-                  tags: wsSubTab === 'personal' ? 'personal_task' : '',
-                  internal_type: wsSubTab === 'team' ? 'task' : '',
-                  scope: wsSubTab === 'team' ? 'team' : '',
+                  tags: '',
+                  internal_type: '',
+                  scope: '',
                   participant_ids: '',
                   related_contact_ids: [],
                   checklist: [],
@@ -5088,157 +5052,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             >
               <Plus size={14} /> {t('Tạo công việc')}
             </button>
-          </div>
-        ) : (
-          <div className="segmented-control-wrapper" style={{ marginBottom: '1rem' }}>
-            <div style={{
-              display: 'flex',
-              background: 'var(--color-border-light)',
-              border: '1px solid var(--color-border)',
-              padding: '2px',
-              borderRadius: '8px',
-              gap: '2px',
-              width: 'fit-content',
-              position: 'relative'
-            }}>
-              {[
-                { id: 'all', label: t('Tất cả'), icon: <Layers size={14} />, count: wsTasks.length },
-                { id: 'customer', label: t('Công việc khách hàng'), icon: <Users size={14} />, count: wsTasks.filter(task => task.related_type && ['contact', 'deal', 'company'].includes(task.related_type)).length },
-                { id: 'team', label: t('Công việc nội bộ team'), icon: <CheckSquare size={14} />, count: wsTasks.filter(task => {
-                    const isClient = task.related_type && ['contact', 'deal', 'company'].includes(task.related_type);
-                    const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-                    return !isClient && !tagsList.includes('personal_task');
-                  }).length
-                },
-                { id: 'personal', label: t('Công việc cá nhân'), icon: <User size={14} />, count: wsTasks.filter(task => {
-                    const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-                    return tagsList.includes('personal_task');
-                  }).length
-                }
-              ].map(tab => {
-                const isSelected = wsSubTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setWsSubTab(tab.id as any);
-                      setWsTeamSubFilter('all');
-                    }}
-                    style={{
-                      padding: '6px 16px',
-                      height: '34px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      background: 'transparent',
-                      color: isSelected ? 'var(--color-text)' : 'var(--color-text-light)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      position: 'relative',
-                      outline: 'none',
-                      boxShadow: 'none',
-                      flexShrink: 0,
-                      zIndex: 2,
-                      transition: 'color 0.2s ease'
-                    }}
-                  >
-                    {isSelected && (
-                      <motion.div 
-                        layoutId="activeWsSubTabIndicator"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: 'var(--color-surface)',
-                          borderRadius: '6px',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                          zIndex: 1
-                        }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                      />
-                    )}
-                    
-                    <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {tab.icon}
-                      <span>{tab.label}</span>
-                    </span>
-                    
-                    <span style={{
-                      position: 'relative',
-                      zIndex: 2,
-                      fontSize: '0.75rem',
-                      padding: '2px 6px',
-                      borderRadius: '10px',
-                      background: isSelected ? 'var(--color-border-light)' : 'rgba(0, 0, 0, 0.04)',
-                      color: isSelected ? 'var(--color-text)' : 'var(--color-text-muted)',
-                      fontWeight: 800,
-                      transition: 'background 0.2s ease, color 0.2s ease'
-                    }}>
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Team sub-filters */}
-        {wsSubTab === 'team' && (
-          <div className="no-scrollbar" style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            padding: isMobile ? '4px 0' : '8px 12px',
-            background: isMobile ? 'transparent' : 'var(--color-surface)',
-            border: isMobile ? 'none' : '1px solid var(--color-border-light)',
-            borderRadius: '12px',
-            width: '100%',
-            marginBottom: '0.75rem'
-          }}>
-            {!isMobile && (
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text-muted)', marginRight: '6px', whiteSpace: 'nowrap' }}>
-                {t('Phân loại nội bộ:')}
-              </span>
-            )}
-            {[
-              { id: 'all', label: t('Tất cả'), color: 'var(--color-text-light)' },
-              { id: 'task', label: t('Nhiệm vụ'), color: 'var(--color-success)' },
-              { id: 'announcement', label: t('Thông báo'), color: 'var(--color-primary)' },
-              { id: 'campaign', label: t('Chiến dịch'), color: '#db2777' },
-              { id: 'policy', label: t('Chính sách'), color: '#ea580c' }
-            ].map(sub => {
-              const isSelected = wsTeamSubFilter === sub.id;
-              return (
-                <button
-                  key={sub.id}
-                  onClick={() => setWsTeamSubFilter(sub.id as any)}
-                  style={{
-                    padding: '5px 14px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    background: isSelected ? sub.color : 'rgba(128, 128, 128, 0.12)',
-                    color: isSelected ? 'white' : 'var(--color-text-light)',
-                    whiteSpace: 'nowrap'
-                  }}
-                  className="hover-lift"
-                >
-                  {sub.label}
-                </button>
-              );
-            })}
           </div>
         )}
 
@@ -5357,7 +5170,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               {/* Alert Items Stack */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {/* 1. Uncontacted leads alert */}
-                {hasUncontacted && (
+                {hasUncontacted && ['sale', 'sales'].includes(String(user?.role || displayUser?.role || '').toLowerCase()) && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap', padding: '4px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -5491,12 +5304,44 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             width: '100%',
             paddingBottom: isMobile ? '2px' : '0'
           }} className="custom-scrollbar-hidden">
+            {/* Tất cả Pill */}
+            <div 
+              onClick={() => {
+                setWsDatePreset('all');
+                setWsStatus('planned');
+                setWsTaskFilter('all');
+                if (!wsTeamId) setWsTeamId('all_teams_bypass');
+              }}
+              style={{
+                padding: isMobile ? '4px 10px' : '5px 12px',
+                borderRadius: '20px',
+                border: wsDatePreset === 'all' && wsTaskFilter === 'all' ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
+                background: wsDatePreset === 'all' && wsTaskFilter === 'all' ? 'rgba(189, 29, 45, 0.08)' : 'transparent',
+                color: wsDatePreset === 'all' && wsTaskFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: isMobile ? '0.725rem' : '0.78rem',
+                fontWeight: 700,
+                flexShrink: 0,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>{t('Tất cả')}</span>
+            </div>
+
             {/* Overdue Pill */}
             <div 
               onClick={() => {
-                setWsDatePreset('overdue');
-                setWsStatus('planned');
-                setWsTaskFilter('all');
+                if (wsDatePreset === 'overdue') {
+                  setWsDatePreset('all');
+                } else {
+                  setWsDatePreset('overdue');
+                  setWsStatus('planned');
+                  setWsTaskFilter('all');
+                }
+                if (!wsTeamId) setWsTeamId('all_teams_bypass');
               }}
               style={{
                 padding: isMobile ? '4px 10px' : '5px 12px',
@@ -5524,9 +5369,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             {/* Due Today Pill */}
             <div 
               onClick={() => {
-                setWsDatePreset('today');
-                setWsStatus('planned');
-                setWsTaskFilter('all');
+                if (wsDatePreset === 'today') {
+                  setWsDatePreset('all');
+                } else {
+                  setWsDatePreset('today');
+                  setWsStatus('planned');
+                  setWsTaskFilter('all');
+                }
+                if (!wsTeamId) setWsTeamId('all_teams_bypass');
               }}
               style={{
                 padding: isMobile ? '4px 10px' : '5px 12px',
@@ -5551,42 +5401,17 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               </span>
             </div>
 
-            {/* Upcoming Pill */}
-            <div 
-              onClick={() => {
-                setWsDatePreset('tomorrow');
-                setWsStatus('planned');
-                setWsTaskFilter('all');
-              }}
-              style={{
-                padding: isMobile ? '4px 10px' : '5px 12px',
-                borderRadius: '20px',
-                border: wsDatePreset === 'tomorrow' ? '1.5px solid var(--color-info)' : '1px solid var(--color-border)',
-                background: wsDatePreset === 'tomorrow' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                color: 'var(--color-info)',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: isMobile ? '0.725rem' : '0.78rem',
-                fontWeight: 700,
-                flexShrink: 0,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <ArrowUpRight size={isMobile ? 12 : 13} />
-              <span>{t('Sắp đến hạn')}</span>
-              <span style={{ background: 'var(--color-info)', color: '#fff', borderRadius: '10px', padding: '1px 5px', fontSize: '0.675rem', fontWeight: 800 }}>
-                {workspaceStats.upcoming}
-              </span>
-            </div>
-
             {/* Waiting Approval Pill */}
             <div 
               onClick={() => {
-                setWsTaskFilter('approve_by_me');
-                setWsStatus('all');
-                setWsDatePreset('all');
+                if (wsTaskFilter === 'approve_by_me') {
+                  setWsTaskFilter('all');
+                } else {
+                  setWsTaskFilter('approve_by_me');
+                  setWsStatus('all');
+                  setWsDatePreset('all');
+                }
+                if (!wsTeamId) setWsTeamId('all_teams_bypass');
               }}
               style={{
                 padding: isMobile ? '4px 10px' : '5px 12px',
@@ -5608,6 +5433,76 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               <span>{t('Chờ tôi duyệt')}</span>
               <span style={{ background: '#8b5cf6', color: '#fff', borderRadius: '10px', padding: '1px 5px', fontSize: '0.675rem', fontWeight: 800 }}>
                 {workspaceStats.pendingApproval}
+              </span>
+            </div>
+
+            {/* Assigned to me Pill */}
+            <div 
+              onClick={() => {
+                if (wsTaskFilter === 'assigned_to_me') {
+                  setWsTaskFilter('all');
+                } else {
+                  setWsTaskFilter('assigned_to_me');
+                  setWsStatus('all');
+                  setWsDatePreset('all');
+                }
+                if (!wsTeamId) setWsTeamId('all_teams_bypass');
+              }}
+              style={{
+                padding: isMobile ? '4px 10px' : '5px 12px',
+                borderRadius: '20px',
+                border: wsTaskFilter === 'assigned_to_me' ? '1.5px solid #2563eb' : '1px solid var(--color-border)',
+                background: wsTaskFilter === 'assigned_to_me' ? 'rgba(37, 99, 235, 0.1)' : 'transparent',
+                color: '#2563eb',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: isMobile ? '0.725rem' : '0.78rem',
+                fontWeight: 700,
+                flexShrink: 0,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <User size={isMobile ? 12 : 13} />
+              <span>{t('Tôi thực hiện')}</span>
+              <span style={{ background: '#2563eb', color: '#fff', borderRadius: '10px', padding: '1px 5px', fontSize: '0.675rem', fontWeight: 800 }}>
+                {workspaceStats.assignedToMe || 0}
+              </span>
+            </div>
+
+            {/* Collaborator / Related Pill */}
+            <div 
+              onClick={() => {
+                if (wsTaskFilter === 'collaborator') {
+                  setWsTaskFilter('all');
+                } else {
+                  setWsTaskFilter('collaborator');
+                  setWsStatus('all');
+                  setWsDatePreset('all');
+                }
+                if (!wsTeamId) setWsTeamId('all_teams_bypass');
+              }}
+              style={{
+                padding: isMobile ? '4px 10px' : '5px 12px',
+                borderRadius: '20px',
+                border: wsTaskFilter === 'collaborator' ? '1.5px solid #475569' : '1px solid var(--color-border)',
+                background: wsTaskFilter === 'collaborator' ? 'rgba(71, 85, 105, 0.1)' : 'transparent',
+                color: '#475569',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: isMobile ? '0.725rem' : '0.78rem',
+                fontWeight: 700,
+                flexShrink: 0,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Users size={isMobile ? 12 : 13} />
+              <span>{t('Tôi liên quan')}</span>
+              <span style={{ background: '#475569', color: '#fff', borderRadius: '10px', padding: '1px 5px', fontSize: '0.675rem', fontWeight: 800 }}>
+                {workspaceStats.collaborator || 0}
               </span>
             </div>
 
@@ -5684,47 +5579,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               </button>
             </div>
 
-            {/* Segmented Control & View Mode Switcher */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', width: isMobile ? '100%' : 'auto', justifyContent: 'space-between' }}>
-              <div className="segmented-control-wrapper" style={{ flex: isMobile ? 1 : 'none' }}>
-                <div style={{ display: 'flex', gap: '2px', background: 'var(--color-border-light)', border: '1px solid var(--color-border)', padding: '2px', borderRadius: '8px', width: isMobile ? '100%' : 'fit-content', position: 'relative' }}>
-                  {[
-                    { value: 'all', label: t('Tất cả') },
-                    { value: 'assigned_to_me', label: isMobile ? t('Tôi làm') : t('Tôi thực hiện') },
-                    { value: 'collaborator', label: isMobile ? t('Liên quan') : t('Tôi liên quan') }
-                  ].filter((tab): tab is { value: string; label: string } => !!tab).map(tab => {
-                    const isSelected = wsTaskFilter === tab.value;
-                    return (
-                      <button
-                        key={tab.value}
-                        onClick={() => setWsTaskFilter(tab.value as any)}
-                        style={{
-                          flex: isMobile ? 1 : 'none',
-                          width: isMobile ? 'auto' : '110px',
-                          height: isMobile ? '26px' : '28px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          fontSize: isMobile ? '0.725rem' : '0.78rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          background: isSelected ? 'var(--color-surface)' : 'transparent',
-                          color: isSelected ? 'var(--color-text)' : 'var(--color-text-light)',
-                          boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          outline: 'none',
-                          padding: isMobile ? '0 4px' : '0 8px',
-                          whiteSpace: 'nowrap',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* View Mode Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', width: isMobile ? '100%' : 'auto', justifyContent: 'flex-end' }}>
 
               {!isMobile && (
                 <div style={{
@@ -6958,7 +6814,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             gridTemplateColumns: isMobile ? '1fr' : '360px minmax(0, 1fr)',
             overflow: 'hidden',
             height: isMobile ? 'auto' : 'calc(100vh - 120px)',
-            minHeight: '600px',
+            minHeight: isMobile ? '600px' : '0',
             width: '100%'
           }}>
             {/* Left Column: Tasks List */}
@@ -6977,36 +6833,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 flexDirection: 'column', 
                 gap: '8px' 
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <button
-                      onClick={() => {
-                        setWsViewMode('grid');
-                        setSelectedTaskForDetails(null);
-                        setIsFocusSessionActive(false);
-                      }}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--color-text-light)',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '6px',
-                        transition: 'background 0.2s'
-                      }}
-                      className="hover-bg-light"
-                      title={t('Quay lại')}
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                      {t('CHẾ ĐỘ TẬP TRUNG')}
-                    </span>
-                  </div>
-                  <button 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
                     onClick={() => {
                       setWsViewMode('grid');
                       setSelectedTaskForDetails(null);
@@ -7014,224 +6842,103 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                     }}
                     style={{
                       border: 'none',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      color: 'var(--color-danger)',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
+                      background: 'transparent',
+                      color: 'var(--color-text-light)',
                       cursor: 'pointer',
+                      padding: '4px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px'
+                      justifyContent: 'center',
+                      borderRadius: '6px',
+                      transition: 'background 0.2s'
                     }}
-                    className="hover-lift"
+                    className="hover-bg-light"
+                    title={t('Quay lại')}
                   >
-                    <X size={12} />
-                    {t('Thoát')}
+                    <ChevronLeft size={16} />
                   </button>
+                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                    {t('CHẾ ĐỘ TẬP TRUNG')}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                   <span>{t('DANH SÁCH CÔNG VIỆC')} ({filteredWsTasks.length})</span>
                 </div>
               </div>
 
-              {/* Filter Ribbon Pills inside Focus Mode Left Panel */}
+              {/* Filter Dropdown Select inside Focus Mode Left Panel */}
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                overflowX: 'auto',
-                padding: '8px 10px',
+                padding: '8px 12px',
                 borderBottom: '1px solid var(--color-border-light)',
-                background: 'var(--color-bg-light)',
-                scrollbarWidth: 'none'
+                background: 'var(--color-bg-light)'
               }}>
-                <button
-                  type="button"
-                  onClick={() => { setWsDatePreset('all'); setWsStatus('planned'); setWsTaskFilter('all'); }}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '16px',
-                    border: wsDatePreset === 'all' && wsTaskFilter === 'all' ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    background: wsDatePreset === 'all' && wsTaskFilter === 'all' ? 'rgba(189, 29, 45, 0.08)' : 'var(--color-surface)',
-                    color: wsDatePreset === 'all' && wsTaskFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
+                <CustomSelect
+                  value={(() => {
+                    if (wsDatePreset === 'overdue') return 'overdue';
+                    if (wsDatePreset === 'today') return 'today';
+                    if (wsTaskFilter === 'approve_by_me') return 'approve_by_me';
+                    if (wsTaskFilter === 'assigned_to_me') return 'assigned_to_me';
+                    if (wsTaskFilter === 'collaborator') return 'collaborator';
+                    return 'all';
+                  })()}
+                  onChange={(val) => {
+                    if (val === 'all') {
+                      setWsDatePreset('all');
+                      setWsStatus('planned');
+                      setWsTaskFilter('all');
+                    } else if (val === 'overdue') {
+                      setWsDatePreset('overdue');
+                      setWsStatus('planned');
+                      setWsTaskFilter('all');
+                    } else if (val === 'today') {
+                      setWsDatePreset('today');
+                      setWsStatus('planned');
+                      setWsTaskFilter('all');
+                    } else if (val === 'approve_by_me') {
+                      setWsTaskFilter('approve_by_me');
+                      setWsStatus('all');
+                      setWsDatePreset('all');
+                    } else if (val === 'assigned_to_me') {
+                      setWsTaskFilter('assigned_to_me');
+                      setWsStatus('all');
+                      setWsDatePreset('all');
+                    } else if (val === 'collaborator') {
+                      setWsTaskFilter('collaborator');
+                      setWsStatus('all');
+                      setWsDatePreset('all');
+                    }
                   }}
-                >
-                  <span>{t('Tất cả')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setWsDatePreset('overdue'); setWsStatus('planned'); setWsTaskFilter('all'); }}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '16px',
-                    border: wsDatePreset === 'overdue' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)',
-                    background: wsDatePreset === 'overdue' ? 'var(--color-danger-light)' : 'var(--color-surface)',
-                    color: 'var(--color-danger)',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  <Clock size={11} />
-                  <span>{t('Quá hạn')}</span>
-                  <span style={{ background: 'var(--color-danger)', color: '#fff', borderRadius: '10px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 800 }}>
-                    {workspaceStats.overdue}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setWsDatePreset('today'); setWsStatus('planned'); setWsTaskFilter('all'); }}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '16px',
-                    border: wsDatePreset === 'today' ? '1.5px solid var(--color-warning)' : '1px solid var(--color-border)',
-                    background: wsDatePreset === 'today' ? 'rgba(245, 158, 11, 0.1)' : 'var(--color-surface)',
-                    color: 'var(--color-warning)',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  <Calendar size={11} />
-                  <span>{t('Đến hạn')}</span>
-                  <span style={{ background: 'var(--color-warning)', color: '#fff', borderRadius: '10px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 800 }}>
-                    {workspaceStats.dueToday}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setWsDatePreset('tomorrow'); setWsStatus('planned'); setWsTaskFilter('all'); }}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '16px',
-                    border: wsDatePreset === 'tomorrow' ? '1.5px solid var(--color-info)' : '1px solid var(--color-border)',
-                    background: wsDatePreset === 'tomorrow' ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-surface)',
-                    color: 'var(--color-info)',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  <ArrowUpRight size={11} />
-                  <span>{t('Sắp đến hạn')}</span>
-                  <span style={{ background: 'var(--color-info)', color: '#fff', borderRadius: '10px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 800 }}>
-                    {workspaceStats.upcoming}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setWsTaskFilter('approve_by_me'); setWsStatus('all'); setWsDatePreset('all'); }}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '16px',
-                    border: wsTaskFilter === 'approve_by_me' ? '1.5px solid #8b5cf6' : '1px solid var(--color-border)',
-                    background: wsTaskFilter === 'approve_by_me' ? 'rgba(139, 92, 246, 0.1)' : 'var(--color-surface)',
-                    color: '#8b5cf6',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  <UserCheck size={11} />
-                  <span>{t('Chờ tôi duyệt')}</span>
-                  <span style={{ background: '#8b5cf6', color: '#fff', borderRadius: '10px', padding: '0 5px', fontSize: '0.65rem', fontWeight: 800 }}>
-                    {workspaceStats.pendingApproval}
-                  </span>
-                </button>
+                  options={[
+                    { value: 'all', label: t('Tất cả công việc') },
+                    { value: 'overdue', label: t('Công việc Quá hạn'), badge: { count: workspaceStats.overdue, color: 'var(--color-danger)' } },
+                    { value: 'today', label: t('Công việc Đến hạn hôm nay'), badge: { count: workspaceStats.dueToday, color: 'var(--color-warning)' } },
+                    { value: 'approve_by_me', label: t('Chờ tôi duyệt'), badge: { count: workspaceStats.pendingApproval, color: '#8b5cf6' } },
+                    { value: 'assigned_to_me', label: t('Tôi thực hiện'), badge: { count: workspaceStats.assignedToMe || 0, color: '#2563eb' } },
+                    { value: 'collaborator', label: t('Tôi liên quan'), badge: { count: workspaceStats.collaborator || 0, color: '#475569' } }
+                  ]}
+                  width="100%"
+                  size="sm"
+                />
               </div>
               {/* Gamification Progress Bar */}
-              {(filteredWsTasks.length > 0 || completedCallsCount > 0) && (
+              {filteredWsTasks.length > 0 && (
                 <div style={{ padding: '0.65rem 1rem 0.8rem', borderBottom: '1px solid var(--color-border-light)', background: 'var(--color-bg-light)' }}>
-                  {filteredWsTasks.length > 0 && (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                        <span>{t('Tiến độ công việc')}</span>
-                        <span>
-                          {filteredWsTasks.filter(t => t.status === 'done').length}/{filteredWsTasks.length} ({
-                            Math.round((filteredWsTasks.filter(t => t.status === 'done').length / filteredWsTasks.length) * 100)
-                          }%)
-                        </span>
-                      </div>
-                      <div style={{ width: '100%', height: '6px', background: 'var(--color-border-light)', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' }}>
-                        <div style={{
-                          width: `${(filteredWsTasks.filter(t => t.status === 'done').length / filteredWsTasks.length) * 100}%`,
-                          height: '100%',
-                          background: 'var(--color-success)',
-                          borderRadius: '3px',
-                          transition: 'width 0.4s ease-in-out'
-                        }} />
-                      </div>
-                    </>
-                  )}
-                  {/* Call Stats with dynamic preset label */}
-                  <div 
-                    onClick={handleOpenCallsModal}
-                    className="hover-lift"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '0.72rem',
-                      color: 'var(--color-text-muted)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      background: 'rgba(16, 185, 129, 0.06)',
-                      padding: '5px 10px',
-                      borderRadius: '8px',
-                      marginTop: '2px',
-                      border: '1px solid rgba(16, 185, 129, 0.12)'
-                    }}
-                  >
-                    <Phone size={12} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                    <span>{t('Tiến độ công việc')}</span>
                     <span>
-                      {t('Đã thực hiện:')} <strong style={{ color: 'var(--color-success)', fontSize: '0.8rem' }}>{completedCallsCount}</strong> {t('cuộc gọi')} {
-                        wsDatePreset === 'today' ? t('hôm nay') :
-                        wsDatePreset === 'yesterday' ? t('hôm qua') :
-                        wsDatePreset === 'week' ? t('tuần này') :
-                        wsDatePreset === '7_days' ? t('7 ngày qua') :
-                        wsDatePreset === '30_days' ? t('30 ngày qua') :
-                        wsDatePreset === 'this_month' ? t('tháng này') :
-                        wsDatePreset === 'last_month' ? t('tháng trước') :
-                        wsDatePreset === 'tomorrow' ? t('ngày mai') :
-                        wsDatePreset === 'overdue' ? t('quá hạn') :
-                        t('từ trước tới nay')
-                      }
+                      {filteredWsTasks.filter(t => t.status === 'done').length}/{filteredWsTasks.length} ({
+                        Math.round((filteredWsTasks.filter(t => t.status === 'done').length / filteredWsTasks.length) * 100)
+                      }%)
                     </span>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'var(--color-border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${(filteredWsTasks.filter(t => t.status === 'done').length / filteredWsTasks.length) * 100}%`,
+                      height: '100%',
+                      background: 'var(--color-success)',
+                      borderRadius: '3px',
+                      transition: 'width 0.4s ease-in-out'
+                    }} />
                   </div>
                 </div>
               )}

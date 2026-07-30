@@ -36,7 +36,8 @@ const workflowList = [
   { id: 'purchase_request', name: 'Mua sắm trang thiết bị', description: 'Đề xuất mua sắm công cụ dụng cụ, thiết bị văn phòng.', category: 'admin', icon: ShoppingCart, bg: 'rgba(168, 85, 247, 0.08)', color: '#a855f7' },
   { id: 'it_request', name: 'Cấp thiết bị IT', description: 'Yêu cầu cấp phát laptop, màn hình, tài khoản phần mềm.', category: 'admin', icon: Server, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
   { id: 'meeting_room', name: 'Sử dụng phòng họp', description: 'Đăng ký phòng họp lớn, họp trực tuyến.', category: 'admin', icon: Users, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'stationery', name: 'Đề xuất văn phòng phẩm', description: 'Yêu cầu cung cấp giấy in, bút, tài liệu văn phòng.', category: 'admin', icon: FileText, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }
+  { id: 'stationery', name: 'Đề xuất văn phòng phẩm', description: 'Yêu cầu cung cấp giấy in, bút, tài liệu văn phòng.', category: 'admin', icon: FileText, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
+  { id: 'document_approval', name: 'Phê duyệt văn bản', description: 'Đề xuất duyệt hợp đồng, quy chế, quyết định hoặc tài liệu nội bộ.', category: 'admin', icon: FileCheck, bg: 'rgba(99, 102, 241, 0.08)', color: '#6366f1' }
 ];
 
 const getWorkflowColor = (colorHex: string) => {
@@ -1102,12 +1103,66 @@ export default function Approvals() {
 
                         <td style={{ padding: '14px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                            <button onClick={() => openRejectModal(item)} className="btn secondary" style={{ color: '#ef4444', borderColor: '#ef4444', padding: '4px 10px', fontSize: '0.75rem', height: '28px', borderRadius: '6px' }}>
-                              <XCircle size={12} style={{ marginRight: 2 }} />
+                            <button 
+                              onClick={() => openRejectModal(item)} 
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: '#b91c1c',
+                                border: 'none',
+                                color: '#ffffff', 
+                                padding: '4px 10px', 
+                                fontSize: '0.75rem', 
+                                height: '28px', 
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease-in-out'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = '#991b1b';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(185, 28, 28, 0.2)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = '#b91c1c';
+                                e.currentTarget.style.transform = 'none';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <XCircle size={12} />
                               {t('Từ chối')}
                             </button>
-                            <button onClick={() => handleApprove(item)} className="btn primary" style={{ background: '#10b981', borderColor: '#10b981', color: '#ffffff', padding: '4px 12px', fontSize: '0.75rem', height: '28px', borderRadius: '6px' }}>
-                              <CheckCircle2 size={12} style={{ marginRight: 2 }} />
+                            <button 
+                              onClick={() => handleApprove(item)} 
+                              style={{ 
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: '#10b981',
+                                border: 'none',
+                                color: '#ffffff', 
+                                padding: '4px 12px', 
+                                fontSize: '0.75rem', 
+                                height: '28px', 
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease-in-out'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = '#059669';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.2)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = '#10b981';
+                                e.currentTarget.style.transform = 'none';
+                                e.currentTarget.style.boxShadow = 'none';
+                              }}
+                            >
+                              <CheckCircle2 size={12} />
                               {t('Duyệt')}
                             </button>
                           </div>
@@ -2642,13 +2697,15 @@ export default function Approvals() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Tiêu đề đề xuất')}</label>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                  {selectedWorkflowDef?.id === 'document_approval' ? t('Tên văn bản / Quyết định') : t('Tiêu đề đề xuất')}
+                                </label>
                                 <input
                                   type="text"
                                   className="form-input"
                                   value={expenseTitle}
                                   onChange={e => setExpenseTitle(e.target.value)}
-                                  placeholder={t('Ví dụ: Giải trình chấm công ngày 25/07')}
+                                  placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Ví dụ: Quy chế hoạt động phòng kinh doanh') : t('Ví dụ: Giải trình chấm công ngày 25/07')}
                                   style={{ height: '36px', fontSize: '0.8rem' }}
                                   required
                                 />
@@ -2707,25 +2764,29 @@ export default function Approvals() {
                             )}
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Nội dung đề xuất / Giải trình chi tiết')}</label>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                {selectedWorkflowDef?.id === 'document_approval' ? t('Nội dung tóm tắt văn bản') : t('Nội dung đề xuất / Giải trình chi tiết')}
+                              </label>
                               <textarea
                                 className="form-input"
                                 value={paymentDetails}
                                 onChange={e => setPaymentDetails(e.target.value)}
-                                placeholder={t('Nhập nội dung giải trình hoặc đề xuất chi tiết...')}
+                                placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Tóm tắt các điểm chính hoặc nội dung cần phê duyệt của văn bản...') : t('Nhập nội dung giải trình hoặc đề xuất chi tiết...')}
                                 style={{ minHeight: '100px', fontSize: '0.8rem', padding: '8px', resize: 'vertical' }}
                                 required
                               />
                             </div>
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Lý do & Ý kiến đề xuất')}</label>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                {selectedWorkflowDef?.id === 'document_approval' ? t('Lý do trình ký / Căn cứ phê duyệt') : t('Lý do & Ý kiến đề xuất')}
+                              </label>
                               <input
                                 type="text"
                                 className="form-input"
                                 value={leaveReason}
                                 onChange={e => setLeaveReason(e.target.value)}
-                                placeholder={t('Lý do đề xuất (nếu có)...')}
+                                placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Ví dụ: Theo nghị quyết Đại hội đồng cổ đông...') : t('Lý do đề xuất (nếu có)...')}
                                 style={{ height: '36px', fontSize: '0.8rem' }}
                               />
                             </div>
@@ -3778,9 +3839,13 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
         setCommentAttachments([]);
         fetchComments();
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error adding comment:', e);
-      toast.error(t('Lỗi khi đăng bình luận.'));
+      if (e.response && e.response.data && e.response.data.message) {
+        toast.error(e.response.data.message);
+      } else {
+        toast.error(t('Lỗi khi đăng bình luận.'));
+      }
     }
   };
 
@@ -4763,19 +4828,32 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {isMyTurnToApprove() && (
               <>
-                <button
+                 <button
                   onClick={() => onReject(item)}
-                  className="btn secondary"
                   style={{
                     height: '36px',
-                    padding: '0 12px',
+                    padding: '0 16px',
                     fontSize: '0.8rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
                     borderRadius: '8px',
-                    color: '#ef4444',
-                    borderColor: '#ef4444'
+                    background: '#b91c1c',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease-in-out'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#991b1b';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(185, 28, 28, 0.2)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#b91c1c';
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   <XCircle size={14} />
@@ -4786,18 +4864,30 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
                     await onApprove(item);
                     onClose();
                   }}
-                  className="btn primary"
                   style={{
                     height: '36px',
-                    padding: '0 12px',
+                    padding: '0 18px',
                     fontSize: '0.8rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
                     borderRadius: '8px',
                     background: '#10b981',
-                    borderColor: '#10b981',
-                    color: '#ffffff'
+                    border: 'none',
+                    color: '#ffffff',
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease-in-out'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#059669';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.2)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#10b981';
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   <CheckCircle2 size={14} />
