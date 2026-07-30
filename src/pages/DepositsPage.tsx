@@ -55,6 +55,7 @@ interface Deposit {
   remind_at_hour?: number;
   remind_target?: number;
   currency?: string;
+  exchange_rate?: string | number;
 }
 
 interface Milestone {
@@ -1528,7 +1529,16 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                       {/* Value */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                         <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>
-                          {formatMoney(dep.price, dep.currency)}
+                          {dep.currency !== 'VND' ? (
+                            <div>
+                               <div>{formatMoney(dep.price / (parseFloat(String(dep.exchange_rate)) || 1), dep.currency)}</div>
+                              <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '2px', fontWeight: 500 }}>
+                                ≈ {formatMoney(dep.price, 'VND')}
+                              </div>
+                            </div>
+                          ) : (
+                            formatMoney(dep.price, 'VND')
+                          )}
                         </div>
                       </td>
 
@@ -2136,7 +2146,9 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
           const payDateStr = previewReminderMilestone.expected_pay_date 
             ? new Date(previewReminderMilestone.expected_pay_date).toLocaleDateString('vi-VN') 
             : 'Chưa thiết lập';
-          const amountStr = formatMoney(previewReminderMilestone.expected_amount, selectedDepForManage.currency);
+          const amountStr = (selectedDepForManage.currency !== 'VND' && previewReminderMilestone.original_amount !== null && previewReminderMilestone.original_amount !== undefined)
+            ? `${formatMoney(previewReminderMilestone.original_amount, selectedDepForManage.currency)} (≈ ${formatMoney(previewReminderMilestone.expected_amount, 'VND')})`
+            : formatMoney(previewReminderMilestone.expected_amount, 'VND');
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.25rem 0' }}>

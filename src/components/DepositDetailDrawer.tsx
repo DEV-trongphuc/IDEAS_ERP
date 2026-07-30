@@ -512,6 +512,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
     .filter(m => m.status === 'approved')
     .reduce((sum, m) => sum + (m.expected_amount || 0), 0);
 
+  const totalApprovedMilestonesOriginal = tempMilestones
+    .filter(m => m.status === 'approved')
+    .reduce((sum, m) => {
+      const amt = m.original_amount !== null && m.original_amount !== undefined ? m.original_amount : m.expected_amount;
+      return sum + (amt || 0);
+    }, 0);
+
   const totalCount = tempMilestones.length;
   const approvedCount = tempMilestones.filter(m => m.status === 'approved').length;
 
@@ -840,12 +847,32 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
                             <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
-                              {formatMoney(selectedDepForManage.price, selectedDepForManage.currency)}
+                              {selectedDepForManage.currency !== 'VND' ? (
+                                <div>
+                                  <div>{formatMoney(selectedDepForManage.price / (parseFloat(selectedDepForManage.exchange_rate) || 1), selectedDepForManage.currency)}</div>
+                                  <div style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '4px', fontWeight: 500 }}>
+                                    ≈ {formatMoney(selectedDepForManage.price, 'VND')}
+                                  </div>
+                                </div>
+                              ) : (
+                                formatMoney(selectedDepForManage.price, 'VND')
+                              )}
                             </div>
                             <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', display: 'inline-block' }} />
-                                Thực thu: <strong style={{ color: '#2563eb' }}>{formatMoney(totalApprovedMilestones, selectedDepForManage.currency)}</strong> ({approvedCount}/{totalCount} đợt)
+                                Thực thu: <strong style={{ color: '#2563eb' }}>
+                                  {formatMoney(
+                                    selectedDepForManage.currency !== 'VND' ? totalApprovedMilestonesOriginal : totalApprovedMilestones,
+                                    selectedDepForManage.currency
+                                  )}
+                                </strong>{' '}
+                                {selectedDepForManage.currency !== 'VND' && (
+                                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                                    (≈ {formatMoney(totalApprovedMilestones, 'VND')})
+                                  </span>
+                                )}{' '}
+                                ({approvedCount}/{totalCount} đợt)
                               </span>
                             </div>
                           </div>
@@ -940,13 +967,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                               </div>
                             ) : (
                               <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
-                                {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission, selectedDepForManage.currency)}
+                                {formatMoney(tempExpectedCommission !== undefined ? tempExpectedCommission : selectedDepForManage.expected_commission, 'VND')}
                               </div>
                             )}
                             <div style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: 4, fontWeight: 500 }}>
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                                Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission, selectedDepForManage.currency)}</strong>
+                                Thực tế: <strong style={{ color: 'var(--color-text)' }}>{formatMoney(actualCommission, 'VND')}</strong>
                               </span>
                             </div>
                           </div>
@@ -1696,7 +1723,9 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
           const sendToCaretaker = remindTargetManage === 2 || !selectedDepForManage.email;
           const caretakerUser = sharesData && sharesData.length > 0 ? sharesData[0] : null;
           const recipientName = sendToCaretaker ? (caretakerUser?.name || 'Sale chăm sóc') : `${selectedDepForManage.last_name || ''} ${selectedDepForManage.first_name || ''}`;
-          const amountStr = formatMoney(previewReminderMilestone.expected_amount, selectedDepForManage.currency);
+          const amountStr = (selectedDepForManage.currency !== 'VND' && previewReminderMilestone.original_amount !== null && previewReminderMilestone.original_amount !== undefined)
+            ? `${formatMoney(previewReminderMilestone.original_amount, selectedDepForManage.currency)} (≈ ${formatMoney(previewReminderMilestone.expected_amount, 'VND')})`
+            : formatMoney(previewReminderMilestone.expected_amount, 'VND');
           const payDateStr = previewReminderMilestone.expected_pay_date ? new Date(previewReminderMilestone.expected_pay_date).toLocaleDateString('vi-VN') : '—';
           const custName = `${selectedDepForManage.last_name || ''} ${selectedDepForManage.first_name || ''}`;
           const subject = sendToCaretaker ? `[Nhắc lịch thanh toán] Khách hàng ${custName} - ${selectedDepForManage.project_name}` : `[Thông báo thanh toán] Căn hộ ${selectedDepForManage.unit_code} - ${selectedDepForManage.project_name}`;
