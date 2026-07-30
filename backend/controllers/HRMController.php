@@ -254,6 +254,20 @@ class HRMController {
                 $updStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ? WHERE user_id = ?");
                 $updStmt->execute([$days, $userId]);
             }
+
+            // Sync to consultant_leaves so the lead assignment / check-in rotation excludes this user when on leave
+            if (in_array($type, ['annual', 'sick', 'compensatory', 'unpaid'])) {
+                try {
+                    $cLeaveStmt = $this->db->prepare("INSERT IGNORE INTO consultant_leaves (consultant_id, start_date, end_date) VALUES (?, ?, ?)");
+                    $startDateOnly = explode('T', explode(' ', $leaveRow['start_date'])[0])[0];
+                    $endDateOnly = explode('T', explode(' ', $leaveRow['end_date'])[0])[0];
+                    $cLeaveStmt->execute([$userId, $startDateOnly, $endDateOnly]);
+
+                    // Sync leave dates to users table for live lead check
+                    $upUserStmt = $this->db->prepare("UPDATE users SET leave_start = ?, leave_end = ? WHERE id = ?");
+                    $upUserStmt->execute([$startDateOnly, $endDateOnly, $userId]);
+                } catch (\Throwable $e) {}
+            }
         }
 
         // Fetch remaining leave balance for notifications
@@ -569,7 +583,7 @@ class HRMController {
                 $lvStmt = $this->db->prepare("
                     SELECT SUM(total_days) as paid_days
                     FROM hrm_leave_requests
-                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory')
+                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'remote_work')
                       AND DATE_FORMAT(start_date, '%Y-%m') = ?
                 ");
                 $lvStmt->execute([$userId, $monthYear]);
