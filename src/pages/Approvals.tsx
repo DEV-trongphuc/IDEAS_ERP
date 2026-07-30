@@ -1327,72 +1327,7 @@ export default function Approvals() {
                   }}>
                     
                     
-                    {/* Category: QUY TRÌNH GẦN ĐÂY */}
-                    {recentWorkflows.length > 0 && (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
-                            ⚡ {t('Quy trình gần đây')}
-                          </span>
-                          <div style={{ flex: 1, height: '1px', background: 'var(--color-primary-light, rgba(163, 20, 34, 0.1))' }} />
-                        </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px 24px' }}>
-                          {recentWorkflows.map(item => {
-                            const IconComp = item.icon;
-                            const colors = getWorkflowColor(item.color);
-                            return (
-                              <div
-                                key={`recent-${item.id}`}
-                                onClick={() => {
-                                  setSelectedWorkflowDef(item);
-                                  if (item.id === 'leave_late') setFormType('leave');
-                                  else if (item.id === 'advance_money') setFormType('advance');
-                                  else setFormType('general');
-                                  setExpenseTitle(item.name);
-                                  handleSelectWorkflow(item.id);
-                                }}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '12px',
-                                  padding: '8px 12px',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease-in-out',
-                                  background: 'transparent',
-                                  border: 'none'
-                                }}
-                                onMouseEnter={e => {
-                                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
-                                }}
-                                onMouseLeave={e => {
-                                  e.currentTarget.style.background = 'transparent';
-                                }}
-                              >
-                                <div style={{
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '50%',
-                                  background: colors.bg,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0,
-                                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                                }}>
-                                  <IconComp size={16} color={colors.color} strokeWidth={2} />
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
-                                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
 
                     {/* Category: TÀI CHÍNH & KẾ TOÁN */}
                     <div>
