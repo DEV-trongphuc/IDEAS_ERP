@@ -1099,29 +1099,35 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
 
   if (isAddMode) {
     return createPortal(
-      <div
-        className="drawer-backdrop"
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.4)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1.5rem',
-          zIndex: 10500
-        }}
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="drawer-backdrop"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.4)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.5rem',
+              zIndex: 10500
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
           onClick={e => e.stopPropagation()}
           style={{
             width: '100%',
@@ -1261,34 +1267,45 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
   }
 
   return createPortal(
-    <>
-      <div
-        className="drawer-backdrop"
-        onClick={onClose}
-        style={{
-          zIndex: 10500
-        }}
-      />
-      <motion.div
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
-        transition={{ type: 'tween', duration: 0.3 }}
-        onClick={e => e.stopPropagation()}
-        className="drawer-sheet"
-        style={{
-          position: 'fixed',
-          top: 0,
-          bottom: 0,
-          left: 'var(--sidebar-width, 220px)',
-          right: 0,
-          zIndex: 10600,
-          backgroundColor: 'var(--color-surface)',
-          boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            className="drawer-backdrop"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{
+              zIndex: 10500,
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(8px)',
+              position: 'fixed',
+              inset: 0,
+              cursor: 'pointer'
+            }}
+          />
+          <motion.div
+            initial={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, x: '250px' }}
+            animate={{ y: 0, x: 0, opacity: 1 }}
+            exit={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, x: '250px' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
+            onClick={e => e.stopPropagation()}
+            className="drawer-sheet"
+            style={{
+              position: 'fixed',
+              top: 0,
+              bottom: 0,
+              left: window.innerWidth <= 768 ? 0 : 'var(--sidebar-width, 220px)',
+              right: 0,
+              zIndex: 10600,
+              backgroundColor: 'var(--color-surface)',
+              boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.15)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
         {/* Header */}
         <div style={{
           padding: '0.75rem 1rem',
@@ -4431,7 +4448,10 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
           </>
         )}
       </div>
-      </motion.div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
 
       {/* Detailed Permission Modal */}
       <AnimatePresence>
