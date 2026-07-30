@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Users, Phone, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2 } from 'lucide-react';
@@ -1800,6 +1800,29 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   }
 
   const [pipelineStages, setPipelineStages] = useState<any[]>(DEFAULT_PIPELINE_STAGES);
+  const [showScrollArrows, setShowScrollArrows] = useState(false);
+  const pipelineContainerRef = useRef<HTMLDivElement>(null);
+
+  const checkScrollable = () => {
+    if (pipelineContainerRef.current) {
+      const { scrollWidth, clientWidth } = pipelineContainerRef.current;
+      setShowScrollArrows(scrollWidth > clientWidth);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(checkScrollable, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [pipelineStages, isOpen, formData.pipeline_status]);
+
+  useEffect(() => {
+    if (isOpen) {
+      window.addEventListener('resize', checkScrollable);
+      return () => window.removeEventListener('resize', checkScrollable);
+    }
+  }, [isOpen]);
   const [contacts, setContacts] = useState<any[]>([]);
   const [ttl1Data, setTtl1Data] = useState<{
     group1: boolean;
@@ -4778,13 +4801,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
   const pipelineStepperBar = (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border-light)', overflow: 'hidden', width: '100%', flexShrink: 0 }}>
-      {!isMobileOrTablet && (
-        <button className="btn outline sm" style={{ padding: '4px', height: 26, width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '50%', position: 'absolute', left: '0.75rem', zIndex: 10, background: 'var(--color-surface)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} onClick={() => document.getElementById('pipeline-scroll-container')?.scrollBy({ left: -250, behavior: 'smooth' })}>
+      {!isMobileOrTablet && showScrollArrows && (
+        <button className="btn outline sm" style={{ padding: '4px', height: 26, width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '50%', position: 'absolute', left: '0.75rem', zIndex: 10, background: 'var(--color-surface)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} onClick={() => pipelineContainerRef.current?.scrollBy({ left: -250, behavior: 'smooth' })}>
           <ChevronLeft size={14} />
         </button>
       )}
 
-      <div id="pipeline-scroll-container" className="no-scrollbar" style={{ display: 'flex', padding: isMobileOrTablet ? '0.625rem 1rem' : '0.625rem 3rem', gap: '12px', overflowX: 'auto', flex: 1, scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', position: 'relative' }}>
+      <div ref={pipelineContainerRef} id="pipeline-scroll-container" className="no-scrollbar" style={{ display: 'flex', padding: isMobileOrTablet ? '0.625rem 1rem' : (showScrollArrows ? '0.625rem 3rem' : '0.625rem 1.5rem'), gap: '12px', overflowX: 'auto', flex: 1, scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', position: 'relative', justifyContent: showScrollArrows ? 'flex-start' : 'center' }}>
         <style dangerouslySetInnerHTML={{ __html: `#pipeline-scroll-container::-webkit-scrollbar { display: none; }` }} />
         {(() => {
           const currentIdx = pipelineStages.findIndex(s => String(s.id) === String(formData.pipeline_status || 'chua_xac_dinh'));
@@ -4796,47 +4819,51 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             const isBackward = i < safeIndex;
             const stColor = overridePurpleColor(st.color);
             return (
-              <div
-                key={st.id}
-                onClick={() => {
-                  if (isCurrent) return;
-                  handleStageTransition(String(st.id), st.name);
-                }}
-                style={{
-                  flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : 'pointer',
-                  display: 'flex', alignItems: 'center', transition: 'all 0.3s',
-                  opacity: isBackward ? 0.5 : 1
-                }}
-              >
-                <div style={{
-                  position: 'absolute', left: 0, right: 0, height: '4px',
-                  background: isActive ? stColor : 'var(--color-border-light)',
-                  borderRadius: '2px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                }} />
-
-                <div style={{
-                  position: 'relative', zIndex: 2, flex: 1,
-                  background: isCurrent ? 'var(--color-primary)' : 'var(--color-surface)',
-                  color: isCurrent ? '#fff' : 'var(--color-text-muted)',
-                  border: isCurrent ? '2px solid var(--color-primary)' : '1px solid var(--color-border-light)',
-                  padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                  whiteSpace: 'nowrap',
-                  boxShadow: isCurrent ? '0 4px 12px rgba(189, 29, 45, 0.2)' : 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}>
-                  {isCurrent && <UserCheck size={12} />}
-                  {st.name}
+              <React.Fragment key={st.id}>
+                {i > 0 && (
+                  <div style={{
+                    width: '12px',
+                    height: '2px',
+                    background: isActive ? stColor : 'var(--color-border-light)',
+                    alignSelf: 'center',
+                    flexShrink: 0,
+                    transition: 'all 0.3s'
+                  }} />
+                )}
+                <div
+                  onClick={() => {
+                    if (isCurrent) return;
+                    handleStageTransition(String(st.id), st.name);
+                  }}
+                  style={{
+                    flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : 'pointer',
+                    display: 'flex', alignItems: 'center', transition: 'all 0.3s',
+                    opacity: isBackward ? 0.75 : 1
+                  }}
+                >
+                  <div style={{
+                    position: 'relative', zIndex: 2, flex: 1,
+                    background: isCurrent ? 'var(--color-primary)' : (isBackward ? 'rgba(163, 20, 34, 0.03)' : 'var(--color-surface)'),
+                    color: isCurrent ? '#fff' : (isBackward ? 'rgba(163, 20, 34, 0.65)' : 'var(--color-text-muted)'),
+                    border: isCurrent ? '2px solid var(--color-primary)' : (isBackward ? '1px solid rgba(163, 20, 34, 0.25)' : '1px solid var(--color-border-light)'),
+                    padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    whiteSpace: 'nowrap',
+                    boxShadow: isCurrent ? '0 4px 12px rgba(189, 29, 45, 0.2)' : 'none',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}>
+                    {isCurrent && <UserCheck size={12} />}
+                    {st.name}
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           });
         })()}
       </div>
 
-      {!isMobileOrTablet && (
-        <button className="btn outline sm" style={{ padding: '4px', height: 26, width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '50%', position: 'absolute', right: '0.75rem', zIndex: 10, background: 'var(--color-surface)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} onClick={() => document.getElementById('pipeline-scroll-container')?.scrollBy({ left: 250, behavior: 'smooth' })}>
+      {!isMobileOrTablet && showScrollArrows && (
+        <button className="btn outline sm" style={{ padding: '4px', height: 26, width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '50%', position: 'absolute', right: '0.75rem', zIndex: 10, background: 'var(--color-surface)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} onClick={() => pipelineContainerRef.current?.scrollBy({ left: 250, behavior: 'smooth' })}>
           <ChevronRight size={14} />
         </button>
       )}
