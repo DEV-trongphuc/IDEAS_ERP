@@ -42,14 +42,68 @@ const workflowList = [
 
 const getWorkflowColor = (colorHex: string) => {
   const lowercase = String(colorHex).toLowerCase();
-  if (lowercase === '#10b981') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
-  if (lowercase === '#f59e0b') return { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff' };
-  if (lowercase === '#3b82f6') return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
-  if (lowercase === '#ec4899') return { bg: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#ffffff' };
-  if (lowercase === '#8b5cf6') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
-  if (lowercase === '#06b6d4') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
-  if (lowercase === '#eab308') return { bg: 'linear-gradient(135deg, #eab308, #a16207)', color: '#ffffff' };
-  return { bg: `linear-gradient(135deg, ${colorHex}, ${colorHex})`, color: '#ffffff' };
+  if (lowercase === '#10b981') {
+    return {
+      bg: 'linear-gradient(135deg, #34d399, #059669)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+      hoverBg: 'rgba(5, 150, 105, 0.06)'
+    };
+  }
+  if (lowercase === '#f59e0b') {
+    return {
+      bg: 'linear-gradient(135deg, #fb923c, #d97706)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
+      hoverBg: 'rgba(217, 119, 6, 0.06)'
+    };
+  }
+  if (lowercase === '#3b82f6') {
+    return {
+      bg: 'linear-gradient(135deg, #60a5fa, #1d4ed8)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(29, 78, 216, 0.3)',
+      hoverBg: 'rgba(29, 78, 216, 0.06)'
+    };
+  }
+  if (lowercase === '#ec4899') {
+    return {
+      bg: 'linear-gradient(135deg, #f472b6, #db2777)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(219, 39, 119, 0.3)',
+      hoverBg: 'rgba(219, 39, 119, 0.06)'
+    };
+  }
+  if (lowercase === '#8b5cf6') {
+    return {
+      bg: 'linear-gradient(135deg, #a78bfa, #6d28d9)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(109, 40, 217, 0.3)',
+      hoverBg: 'rgba(109, 40, 217, 0.06)'
+    };
+  }
+  if (lowercase === '#06b6d4') {
+    return {
+      bg: 'linear-gradient(135deg, #22d3ee, #0891b2)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(8, 145, 178, 0.3)',
+      hoverBg: 'rgba(8, 145, 178, 0.06)'
+    };
+  }
+  if (lowercase === '#eab308') {
+    return {
+      bg: 'linear-gradient(135deg, #fbbf24, #b45309)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(180, 83, 9, 0.3)',
+      hoverBg: 'rgba(180, 83, 9, 0.06)'
+    };
+  }
+  return {
+    bg: `linear-gradient(135deg, ${colorHex}, ${colorHex})`,
+    color: '#ffffff',
+    shadow: '0 4px 12px rgba(0,0,0,0.1)',
+    hoverBg: 'rgba(0, 0, 0, 0.03)'
+  };
 };const calculateWorkingDays = (fromStr: string, toStr: string, session: string) => {
   if (!fromStr) return 0;
   if (session === 'morning' || session === 'afternoon') {
@@ -1370,8 +1424,9 @@ export default function Approvals() {
 
                     {/* Category: TÀI CHÍNH & KẾ TOÁN */}
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
+                        <div style={{ width: '4px', height: '14px', background: '#10b981', borderRadius: '2px' }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Tài chính & Kế toán')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
@@ -1395,31 +1450,45 @@ export default function Approvals() {
                                 alignItems: 'center',
                                 gap: '12px',
                                 padding: '8px 12px',
-                                borderRadius: '8px',
+                                borderRadius: '12px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s ease-in-out',
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 border: 'none',
                                 background: 'transparent'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
+                                e.currentTarget.style.background = colors.hoverBg || 'rgba(0, 0, 0, 0.03)';
+                                const iconEl = e.currentTarget.querySelector('.workflow-icon-circle') as HTMLElement;
+                                if (iconEl) {
+                                  iconEl.style.transform = 'scale(1.1)';
+                                  iconEl.style.boxShadow = colors.shadow || '0 4px 12px rgba(0,0,0,0.15)';
+                                }
                               }}
                               onMouseLeave={e => {
                                 e.currentTarget.style.background = 'transparent';
+                                const iconEl = e.currentTarget.querySelector('.workflow-icon-circle') as HTMLElement;
+                                if (iconEl) {
+                                  iconEl.style.transform = 'scale(1)';
+                                  iconEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
+                                }
                               }}
                             >
-                              <div style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: colors.bg,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                              }}>
-                                <IconComp size={16} color={colors.color} strokeWidth={2} />
+                              <div 
+                                className="workflow-icon-circle"
+                                style={{
+                                  width: '34px',
+                                  height: '34px',
+                                  borderRadius: '50%',
+                                  background: colors.bg,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}
+                              >
+                                <IconComp size={16} color={colors.color} strokeWidth={2.5} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
                                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
@@ -1433,8 +1502,9 @@ export default function Approvals() {
 
                     {/* Category: NHÂN SỰ & QUY TRÌNH */}
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
+                        <div style={{ width: '4px', height: '14px', background: '#3b82f6', borderRadius: '2px' }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Nhân sự & Quy trình')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
@@ -1459,35 +1529,49 @@ export default function Approvals() {
                                 handleSelectWorkflow(item.id);
                               }}
                               style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '12px',
-                                  padding: '8px 12px',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease-in-out',
-                                  border: 'none',
-                                  background: 'transparent'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '8px 12px',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                border: 'none',
+                                background: 'transparent'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
+                                e.currentTarget.style.background = colors.hoverBg || 'rgba(0, 0, 0, 0.03)';
+                                const iconEl = e.currentTarget.querySelector('.workflow-icon-circle') as HTMLElement;
+                                if (iconEl) {
+                                  iconEl.style.transform = 'scale(1.1)';
+                                  iconEl.style.boxShadow = colors.shadow || '0 4px 12px rgba(0,0,0,0.15)';
+                                }
                               }}
                               onMouseLeave={e => {
                                 e.currentTarget.style.background = 'transparent';
+                                const iconEl = e.currentTarget.querySelector('.workflow-icon-circle') as HTMLElement;
+                                if (iconEl) {
+                                  iconEl.style.transform = 'scale(1)';
+                                  iconEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
+                                }
                               }}
                             >
-                              <div style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: colors.bg,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                              }}>
-                                <IconComp size={16} color={colors.color} strokeWidth={2} />
+                              <div 
+                                className="workflow-icon-circle"
+                                style={{
+                                  width: '34px',
+                                  height: '34px',
+                                  borderRadius: '50%',
+                                  background: colors.bg,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}
+                              >
+                                <IconComp size={16} color={colors.color} strokeWidth={2.5} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
                                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
@@ -1501,8 +1585,9 @@ export default function Approvals() {
 
                     {/* Category: HÀNH CHÍNH & TÀI SẢN */}
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
+                        <div style={{ width: '4px', height: '14px', background: '#06b6d4', borderRadius: '2px' }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Hành chính & Thiết bị')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
@@ -1526,31 +1611,45 @@ export default function Approvals() {
                                 alignItems: 'center',
                                 gap: '12px',
                                 padding: '8px 12px',
-                                borderRadius: '8px',
+                                borderRadius: '12px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s ease-in-out',
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 border: 'none',
                                 background: 'transparent'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.03)';
+                                e.currentTarget.style.background = colors.hoverBg || 'rgba(0, 0, 0, 0.03)';
+                                const iconEl = e.currentTarget.querySelector('.workflow-icon-circle') as HTMLElement;
+                                if (iconEl) {
+                                  iconEl.style.transform = 'scale(1.1)';
+                                  iconEl.style.boxShadow = colors.shadow || '0 4px 12px rgba(0,0,0,0.15)';
+                                }
                               }}
                               onMouseLeave={e => {
                                 e.currentTarget.style.background = 'transparent';
+                                const iconEl = e.currentTarget.querySelector('.workflow-icon-circle') as HTMLElement;
+                                if (iconEl) {
+                                  iconEl.style.transform = 'scale(1)';
+                                  iconEl.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
+                                }
                               }}
                             >
-                              <div style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: colors.bg,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
-                              }}>
-                                <IconComp size={16} color={colors.color} strokeWidth={2} />
+                              <div 
+                                className="workflow-icon-circle"
+                                style={{
+                                  width: '34px',
+                                  height: '34px',
+                                  borderRadius: '50%',
+                                  background: colors.bg,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}
+                              >
+                                <IconComp size={16} color={colors.color} strokeWidth={2.5} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
                                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
