@@ -197,6 +197,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [editingChecklistTitle, setEditingChecklistTitle] = useState<string>('');
   const [activeAssigneeDropdownId, setActiveAssigneeDropdownId] = useState<string | null>(null);
   const [deleteSubtaskTarget, setDeleteSubtaskTarget] = useState<{ id: string; title: string } | null>(null);
+  const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
 
   const [allowedProjects, setAllowedProjects] = useState<any[]>([]);
   const [allowedCampaigns, setAllowedCampaigns] = useState<any[]>([]);
@@ -1203,10 +1204,17 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     });
 
     if (newAssigneeId) {
+      const newAssignees = String(newAssigneeId).split(',').map(id => id.trim()).filter(Boolean);
       const current = getParticipantIds(formData.participant_ids);
-      if (!current.includes(String(newAssigneeId))) {
-        const next = [...current, String(newAssigneeId)];
-        const nextString = next.join(',');
+      let changed = false;
+      newAssignees.forEach(id => {
+        if (!current.includes(id)) {
+          current.push(id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        const nextString = current.join(',');
         setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
         handleUpdateField('participant_ids', nextString);
       }
@@ -1545,12 +1553,30 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   const handleToggleParticipant = (userId: number) => {
     const current = getParticipantIds(formData.participant_ids);
-    const next = current.includes(String(userId))
-      ? current.filter(id => id !== String(userId))
-      : [...current, String(userId)];
-    const nextString = next.join(',');
-    setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
-    handleUpdateField('participant_ids', nextString);
+    const isSelected = current.includes(String(userId));
+    
+    if (isSelected) {
+      // Check if user is currently assigned to any subtask
+      const isAssignedToSubtask = erpMeta.checklist?.some((item: any) => {
+        const assignedIds = item.assignee_id ? String(item.assignee_id).split(',').map(id => id.trim()).filter(Boolean) : [];
+        return assignedIds.includes(String(userId));
+      });
+      
+      if (isAssignedToSubtask) {
+        toast.error(t('Người này hiện đang thực hiện công việc con'));
+        return;
+      }
+      
+      const next = current.filter(id => id !== String(userId));
+      const nextString = next.join(',');
+      setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
+      handleUpdateField('participant_ids', nextString);
+    } else {
+      const next = [...current, String(userId)];
+      const nextString = next.join(',');
+      setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
+      handleUpdateField('participant_ids', nextString);
+    }
   };
 
   // Document body overflow handling
@@ -3931,24 +3957,108 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               <label style={cardLabelStyle}>
                 {t('Người liên quan')}
               </label>
-              <CustomSelect
-                multiple
-                searchable
-                showAvatars
-                avatarsOnly
-                options={users.map(u => ({
-                  value: String(u.id),
-                  label: u.full_name,
-                  avatar: u.avatar || u.avatar_url
-                }))}
-                value={getParticipantIds(formData.participant_ids)}
-                onChange={(vals) => {
-                  const nextString = vals.join(',');
-                  setFormData((prev: any) => ({ ...prev, participant_ids: nextString }));
-                  handleUpdateField('participant_ids', nextString);
-                }}
-                placeholder={t('Chọn người liên quan...')}
-              />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                {/* Selected participant avatars */}
+                {participants.length > 0 && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    {participants.map((u, idx) => (
+                      <div
+                        key={u.id}
+                        style={{
+                          marginLeft: idx === 0 ? 0 : -8,
+                          border: '1.5px solid var(--color-surface)',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          zIndex: 10 - idx,
+                          boxShadow: 'var(--shadow-sm)',
+                          display: 'flex'
+                        }}
+                        title={u.full_name || u.name}
+                      >
+                        <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={28} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Dash add button */}
+                <button
+                  type="button"
+                  onClick={() => setShowParticipantDropdown(!showParticipantDropdown)}
+                  disabled={currentUser?.role === 'viewer'}
+                  style={{
+                    border: '1px dashed var(--color-primary)',
+                    background: 'rgba(163, 20, 34, 0.04)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: currentUser?.role === 'viewer' ? 'default' : 'pointer',
+                    padding: 0,
+                    transition: 'all 0.15s ease'
+                  }}
+                  className="hover-scale"
+                  title={t('Thêm người liên quan')}
+                >
+                  <UserPlus size={14} color="var(--color-primary)" />
+                </button>
+                
+                {/* Dropdown list of users */}
+                {showParticipantDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: '6px',
+                    zIndex: 9999,
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                    minWidth: '220px',
+                    maxHeight: '230px',
+                    overflowY: 'auto',
+                    padding: '6px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px'
+                  }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                      {t('Chọn người liên quan:')}
+                    </div>
+                    {users.map((u: any) => {
+                      const isSelected = participantIds.includes(Number(u.id));
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => handleToggleParticipant(Number(u.id))}
+                          style={{
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                            color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                            fontWeight: isSelected ? 600 : 400
+                          }}
+                          className="hover-bg-alt"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
+                            <span>{u.full_name || u.name}</span>
+                          </div>
+                          {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Lặp lại định kỳ */}
