@@ -87,20 +87,20 @@ class ReportController
 
         $resWon = $this->db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'deal_won_status' LIMIT 1");
         $resWon->execute();
-        $wonStatus = $resWon->fetchColumn() ?: 'dong_deal';
+        $wonStatus = $resWon->fetchColumn() ?: 'hoc_vien';
 
         $resHier = $this->db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'pipeline_status_hierarchy' LIMIT 1");
         $resHier->execute();
         $hierJson = $resHier->fetchColumn();
-        $hierarchy = $hierJson ? json_decode($hierJson, true) : ['chua_xac_dinh', 'quan_tam', 'dong_y_gap', 'da_gap', 'booking', 'dat_coc', 'dong_deal'];
+        $hierarchy = $hierJson ? json_decode($hierJson, true) : ['chua_xac_dinh', 'co_hoi', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
         if (!is_array($hierarchy)) {
-            $hierarchy = ['chua_xac_dinh', 'quan_tam', 'dong_y_gap', 'da_gap', 'booking', 'dat_coc', 'dong_deal'];
+            $hierarchy = ['chua_xac_dinh', 'co_hoi', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
         }
 
         // Find opportunity stages from $oppStatus onwards in hierarchy
         $oppIdx = array_search($oppStatus, $hierarchy);
         if ($oppIdx === false) {
-            $oppIdx = array_search('booking', $hierarchy);
+            $oppIdx = array_search('dong_le_phi_ho_so', $hierarchy);
             if ($oppIdx === false) {
                 $oppIdx = 0;
             }

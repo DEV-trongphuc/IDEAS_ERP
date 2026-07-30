@@ -60,14 +60,14 @@ try {
 
     // 0. Pipeline Stages
     $conn->query("INSERT INTO pipeline_stages (id, tenant_id, name, system_slug, order_index, is_won, is_lost) VALUES 
-        (1, 1, 'Chưa xác định', 'chua_xac_dinh', 10, 0, 0),
-        (2, 1, 'Quan tâm', 'quan_tam', 20, 0, 0),
-        (3, 1, 'Đồng ý gặp', 'dong_y_gap', 30, 0, 0),
-        (4, 1, 'Đã gặp', 'da_gap', 40, 0, 0),
-        (5, 1, 'Booking', 'booking', 50, 0, 0),
-        (6, 1, 'Đặt cọc', 'dat_coc', 60, 0, 0),
-        (7, 1, 'Đóng deal', 'dong_deal', 70, 1, 0)
-    ON DUPLICATE KEY UPDATE name=VALUES(name)");
+        (1, 1, 'Chưa xác định', 'chua_xac_dinh', 0, 0, 0),
+        (2, 1, 'Cơ hội', 'co_hoi', 1, 0, 0),
+        (3, 1, 'Đang tư vấn', 'dang_tu_van', 2, 0, 0),
+        (4, 1, 'Nộp hồ sơ', 'nop_ho_so', 3, 0, 0),
+        (5, 1, 'Đóng lệ phí hồ sơ', 'dong_le_phi_ho_so', 4, 0, 0),
+        (6, 1, 'Học viên', 'hoc_vien', 5, 1, 0),
+        (7, 1, 'Pending', 'pending', 6, 0, 0)
+    ON DUPLICATE KEY UPDATE name=VALUES(name), system_slug=VALUES(system_slug), order_index=VALUES(order_index), is_won=VALUES(is_won), is_lost=VALUES(is_lost)");
 
     // 1. Projects
     $conn->query("INSERT INTO projects (id, tenant_id, name, code, status, description) VALUES 
@@ -78,11 +78,11 @@ try {
 
     // 2. Contacts
     $conn->query("INSERT INTO contacts (id, tenant_id, first_name, last_name, email, phone, status, pipeline_status, owner_id, created_by, project_id) VALUES 
-        (101, 1, 'Văn A', 'Nguyễn', 'client.a@gmail.test', '0912345678', 'customer', 'dat_coc', 100012, 100012, 1),
-        (102, 1, 'Thị B', 'Trần', 'client.b@gmail.test', '0987654321', 'lead', 'booking', 100012, 100012, 2),
-        (103, 1, 'Văn C', 'Phạm', 'client.c@gmail.test', '0905123456', 'lead', 'da_gap', 100012, 100012, 3),
-        (104, 1, 'Văn D', 'Lê', 'client.d@gmail.test', '0934123456', 'lead', 'quan_tam', 100015, 100015, 1),
-        (105, 1, 'Thị E', 'Hoàng', 'client.e@gmail.test', '0978123456', 'lead', 'booking', 100015, 100015, 2)
+        (101, 1, 'Văn A', 'Nguyễn', 'client.a@gmail.test', '0912345678', 'customer', 'hoc_vien', 100012, 100012, 1),
+        (102, 1, 'Thị B', 'Trần', 'client.b@gmail.test', '0987654321', 'lead', 'dong_le_phi_ho_so', 100012, 100012, 2),
+        (103, 1, 'Văn C', 'Phạm', 'client.c@gmail.test', '0905123456', 'lead', 'nop_ho_so', 100012, 100012, 3),
+        (104, 1, 'Văn D', 'Lê', 'client.d@gmail.test', '0934123456', 'lead', 'co_hoi', 100015, 100015, 1),
+        (105, 1, 'Thị E', 'Hoàng', 'client.e@gmail.test', '0978123456', 'lead', 'dong_le_phi_ho_so', 100015, 100015, 2)
     ON DUPLICATE KEY UPDATE first_name=VALUES(first_name), last_name=VALUES(last_name)");
 
     // 3. Deals

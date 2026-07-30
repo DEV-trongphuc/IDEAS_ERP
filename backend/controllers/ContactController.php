@@ -49,7 +49,21 @@ class ContactController {
         $params = [$tid];
         $role = strtolower($auth['role'] ?? '');
         if ($role === 'sale_admin' || $role === 'saleadmin') {
-            $where[] = "c.status = 'customer'";
+            $stmtStage = $this->db->prepare("SELECT order_index FROM pipeline_stages WHERE tenant_id = ? AND system_slug = 'nop_ho_so' LIMIT 1");
+            $stmtStage->execute([$tid]);
+            $minOrderIndex = $stmtStage->fetchColumn();
+            if ($minOrderIndex === false) {
+                $minOrderIndex = 3;
+            }
+            $where[] = "EXISTS (SELECT 1 FROM pipeline_stages ps WHERE ps.id = c.stage_id AND ps.order_index >= " . (int)$minOrderIndex . ")";
+        } elseif ($role === 'accountant') {
+            $stmtStage = $this->db->prepare("SELECT order_index FROM pipeline_stages WHERE tenant_id = ? AND system_slug = 'dong_le_phi_ho_so' LIMIT 1");
+            $stmtStage->execute([$tid]);
+            $minOrderIndex = $stmtStage->fetchColumn();
+            if ($minOrderIndex === false) {
+                $minOrderIndex = 4;
+            }
+            $where[] = "EXISTS (SELECT 1 FROM pipeline_stages ps WHERE ps.id = c.stage_id AND ps.order_index >= " . (int)$minOrderIndex . ")";
         }
 
         // Validating sort fields
@@ -555,7 +569,7 @@ class ContactController {
         }
 
         if (empty($hierarchyList)) {
-            $hierarchyList = ['chua_xac_dinh', 'quan_tam', 'dong_y_gap', 'da_gap', 'booking', 'dat_coc', 'dong_deal'];
+            $hierarchyList = ['chua_xac_dinh', 'co_hoi', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
         }
 
         $statusHierarchy = [];
