@@ -10,7 +10,7 @@ class TeamController
     public function index(array $auth): void
     {
         // Allow all system roles to view the full team list
-        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales', 'hr', 'accountant', 'marketing', 'assistant', 'viewer'], true)) {
+        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales', 'hr', 'accountant', 'marketing', 'assistant', 'viewer', 'sale_admin', 'saleadmin'], true)) {
             respond(403, null, 'Quyền truy cập bị từ chối', false);
         }
 
@@ -120,7 +120,7 @@ class TeamController
 
     public function show(array $auth, int $id): void
     {
-        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales', 'hr'], true)) {
+        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'sale', 'sales', 'hr', 'sale_admin', 'saleadmin'], true)) {
             respond(403, null, 'Quyền quản trị là bắt buộc', false);
         }
 
