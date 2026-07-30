@@ -438,11 +438,13 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                       
                       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                         <div className="form-group" style={{ margin: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyItems: 'space-between', marginBottom: '6px', gap: '8px', flexWrap: 'wrap' }}>
-                            <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
-                              {entitySubtab === 'contact' ? 'Khách hàng cá nhân *' : 'Đối tác / Công ty / Giảng viên *'}
-                            </label>
-                            <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+                            {entitySubtab === 'partner' ? (
+                              <label className="form-label" style={{ margin: 0, fontWeight: 700 }}>
+                                Đối tác *
+                              </label>
+                            ) : <div />}
+                            <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--color-border-light)', marginLeft: 'auto' }}>
                               <button
                                 type="button"
                                 onClick={() => { setEntitySubtab('contact'); setSelectedContactId(''); }}
@@ -481,7 +483,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                                   gap: '4px'
                                 }}
                               >
-                                <Building2 size={13} /> Đối tác / Công ty
+                                <Building2 size={13} /> Đối tác
                               </button>
                             </div>
                           </div>
@@ -503,7 +505,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                             ]}
                             value={selectedContactId}
                             onChange={val => setSelectedContactId(val.toString())}
-                            placeholder={entitySubtab === 'contact' ? "-- Chọn khách hàng cá nhân --" : "-- Chọn đối tác / công ty / giảng viên --"}
+                            placeholder={entitySubtab === 'contact' ? "-- Chọn khách hàng --" : "-- Chọn đối tác --"}
                             showAvatars={entitySubtab === 'contact'}
                             searchable
                           />
