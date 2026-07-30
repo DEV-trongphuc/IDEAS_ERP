@@ -1633,6 +1633,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [editingDealId, setEditingDealId] = useState<number | null>(null);
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [companiesList, setCompaniesList] = useState<any[]>([]);
+  const [isPartnerSource, setIsPartnerSource] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
@@ -3260,6 +3261,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       }
 
       setFormData(contact);
+      setIsPartnerSource(!!contact.company_id);
       setTags(contact.tags || []);
       setBaseData(contact);
       setBaseTags(contact.tags || []);
@@ -6909,39 +6911,167 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               <span>100%</span>
                             </div>
                           </div>
-                          <div className="form-group">
-                            <label className="form-label">Người đang chăm sóc (Sale)</label>
-                            {currentUser?.role === 'sale' ? (
-                              <div 
-                                style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-                                onClick={() => {
-                                  const ownerName = formData.owner_name || contact?.owner_name || contact?.consultant_name || 'chủ sở hữu';
-                                  addToast(`Chặn thao tác: Chỉ chủ sở hữu (${ownerName}) hoặc Admin mới có quyền chuyển nhượng người chăm sóc!`, 'error');
+                          
+                          {/* Toggle Nguồn khách đối tác */}
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between', 
+                            background: 'var(--color-bg-light, #f8fafc)', 
+                            padding: '10px 14px', 
+                            borderRadius: '12px', 
+                            border: '1px solid var(--color-border-light)',
+                            marginBottom: '14px'
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                {t('Nguồn khách đối tác')}
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                {t('Khách hàng đến từ CTV hoặc Đại lý đối tác')}
+                              </span>
+                            </div>
+                            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={isPartnerSource}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setIsPartnerSource(checked);
+                                  if (!checked) {
+                                    setFormData((prev: any) => ({
+                                      ...prev,
+                                      company_id: null,
+                                      company_name: ''
+                                    }));
+                                  } else {
+                                    setFormData((prev: any) => ({
+                                      ...prev,
+                                      company_id: '',
+                                      company_name: ''
+                                    }));
+                                  }
                                 }}
-                                title="Chỉ Owner hoặc Admin mới có quyền chuyển nhượng người chăm sóc"
-                              >
-                                <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
-                                <span>{formData.owner_name || 'Chưa giao'}</span>
-                              </div>
-                            ) : (
-                              <CustomSelect
-                                options={users.map(u => ({
-                                  value: u.id,
-                                  label: u.full_name,
-                                  avatar: u.avatar_url,
-                                  sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                                }))}
-                                value={formData.owner_id || ''}
-                                onChange={val => {
-                                  const u = users.find(x => x.id === Number(val));
-                                  setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
-                                }}
-                                placeholder="Chọn sale phụ trách..."
-                                searchable
-                                showAvatars
+                                style={{ opacity: 0, width: 0, height: 0 }}
                               />
+                              <span 
+                                className="slider round" 
+                                style={{
+                                  position: 'absolute',
+                                  cursor: 'pointer',
+                                  top: 0, left: 0, right: 0, bottom: 0,
+                                  backgroundColor: isPartnerSource ? '#10b981' : '#cbd5e1',
+                                  transition: '0.3s',
+                                  borderRadius: '20px'
+                                }}
+                              >
+                                <span 
+                                  style={{
+                                    position: 'absolute',
+                                    content: '""',
+                                    height: '14px', width: '14px',
+                                    left: isPartnerSource ? '19px' : '3px',
+                                    bottom: '3px',
+                                    backgroundColor: 'white',
+                                    transition: '0.3s',
+                                    borderRadius: '50%'
+                                  }}
+                                />
+                              </span>
+                            </label>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">
+                              {isPartnerSource ? t('Đối tác / CTV chăm sóc (Nguồn đối tác)') : t('Người đang chăm sóc (Sale)')}
+                            </label>
+                            {isPartnerSource ? (
+                              currentUser?.role === 'sale' ? (
+                                <div 
+                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                  <span>{formData.company_name || t('Chưa liên kết đối tác')}</span>
+                                </div>
+                              ) : (
+                                <CustomSelect
+                                  options={companiesList.map(c => ({
+                                    value: c.id,
+                                    label: c.name,
+                                    sublabel: [c.phone, c.email, c.tier ? `Cấp: ${c.tier.toUpperCase()}` : ''].filter(Boolean).join(' - ')
+                                  }))}
+                                  value={formData.company_id || ''}
+                                  onChange={val => {
+                                    const comp = companiesList.find(x => Number(x.id) === Number(val));
+                                    setFormData({ ...formData, company_id: val, company_name: comp?.name || '' });
+                                  }}
+                                  placeholder={t('Chọn đối tác / CTV phụ trách...')}
+                                  searchable
+                                />
+                              )
+                            ) : (
+                              currentUser?.role === 'sale' ? (
+                                <div 
+                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                                  onClick={() => {
+                                    const ownerName = formData.owner_name || contact?.owner_name || contact?.consultant_name || 'chủ sở hữu';
+                                    addToast(`Chặn thao tác: Chỉ chủ sở hữu (${ownerName}) hoặc Admin mới có quyền chuyển nhượng người chăm sóc!`, 'error');
+                                  }}
+                                  title="Chỉ Owner hoặc Admin mới có quyền chuyển nhượng người chăm sóc"
+                                >
+                                  <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
+                                  <span>{formData.owner_name || 'Chưa giao'}</span>
+                                </div>
+                              ) : (
+                                <CustomSelect
+                                  options={users.map(u => ({
+                                    value: u.id,
+                                    label: u.full_name,
+                                    avatar: u.avatar_url,
+                                    sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                                  }))}
+                                  value={formData.owner_id || ''}
+                                  onChange={val => {
+                                    const u = users.find(x => x.id === Number(val));
+                                    setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
+                                  }}
+                                  placeholder="Chọn sale phụ trách..."
+                                  searchable
+                                  showAvatars
+                                />
+                              )
                             )}
                           </div>
+
+                          {isPartnerSource && (
+                            <div className="form-group" style={{ marginTop: '10px' }}>
+                              <label className="form-label">{t('Sale hỗ trợ nội bộ')}</label>
+                              {currentUser?.role === 'sale' ? (
+                                <div 
+                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                  <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
+                                  <span>{formData.owner_name || t('Chưa giao')}</span>
+                                </div>
+                              ) : (
+                                <CustomSelect
+                                  options={users.map(u => ({
+                                    value: u.id,
+                                    label: u.full_name,
+                                    avatar: u.avatar_url,
+                                    sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                                  }))}
+                                  value={formData.owner_id || ''}
+                                  onChange={val => {
+                                    const u = users.find(x => x.id === Number(val));
+                                    setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
+                                  }}
+                                  placeholder={t('Chọn sale hỗ trợ nội bộ...')}
+                                  searchable
+                                  showAvatars
+                                />
+                              )}
+                            </div>
+                          )}
                           <div className="form-group">
                             <label className="form-label">Nhân sự chăm sóc phụ (Co-care)</label>
                             <div
