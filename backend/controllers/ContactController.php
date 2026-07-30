@@ -179,6 +179,7 @@ class ContactController {
         }
 
         switch ($segment) {
+            case 'tiem_nang':  $where[] = "c.status != 'customer'"; break;
             case 'hot':        $where[] = 'c.lead_score >= 80'; break;
             case 'customer':   $where[] = "c.status = 'customer'"; break;
             case 'has_deal':   $where[] = "EXISTS (SELECT 1 FROM deals d WHERE d.contact_id = c.id AND d.deleted_at IS NULL)"; break;

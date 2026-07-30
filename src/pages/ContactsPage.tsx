@@ -1,7 +1,7 @@
-﻿import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Plus, Search, Phone, Mail, Eye, Trash2, X, Download, Users, Tag as TagIcon, UserCheck, RefreshCw, Filter, LayoutGrid, List, ArrowDownUp, Columns, Building2, Briefcase, Loader2, User, Calendar, AlertTriangle, AlertCircle, CheckSquare, Layers, MoreHorizontal, ChevronRight } from 'lucide-react';
+import { Plus, Search, Phone, Mail, Eye, Trash2, X, Download, Users, Tag as TagIcon, UserCheck, RefreshCw, Filter, LayoutGrid, List, ArrowDownUp, Columns, Building2, Briefcase, Loader2, User, Calendar, AlertTriangle, AlertCircle, CheckSquare, Layers, MoreHorizontal, ChevronRight, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar } from '../components/ui/Avatar';
 import { useUIStore } from '../store/uiStore';
@@ -27,7 +27,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const PAGE_SIZE = 10;
 
-const STATUS_LABEL: Record<string,string> = { lead:'Lead mới', qualified:'Đủ điều kiện', customer:'Khách hàng', churned:'Đã rời' };
+const STATUS_LABEL: Record<string,string> = { lead:'Lead mới', qualified:'Đủ điều kiện', customer:'Học viên', churned:'Đã rời' };
 const STATUS_CLASS: Record<string,string> = { lead:'info', qualified:'warning', customer:'success', churned:'danger' };
 
 const getInteractionTime = (lastContact: string | null, updatedAt: string, createdAt: string) => {
@@ -262,7 +262,7 @@ export const ContactsPage: React.FC = () => {
       }
     }
   }, [openContactId]);
-  const [segment, setSegment] = useState('all');
+  const [segment, setSegment] = useState('tiem_nang');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [page, setPage] = useState(1);
@@ -473,7 +473,8 @@ export const ContactsPage: React.FC = () => {
         limit: pageSize, 
         search: debouncedSearch, 
         sort: sortBy === 'score_desc' ? 'lead_score' : (sortBy === 'deal_desc' ? 'open_deal_value' : (sortBy === 'interaction_desc' ? 'last_contact' : 'created_at')),
-        order: 'DESC'
+        order: 'DESC',
+        segment
       };
       
       if (activeFilters.status) {
@@ -525,7 +526,7 @@ export const ContactsPage: React.FC = () => {
     if (initialMetadataLoaded) {
       fetchData();
     }
-  }, [page, pageSize, debouncedSearch, sortBy, activeFilters, initialMetadataLoaded]);
+  }, [page, pageSize, debouncedSearch, sortBy, activeFilters, segment, initialMetadataLoaded]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -797,7 +798,7 @@ export const ContactsPage: React.FC = () => {
         <div style={{ width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h1 className="page-title" style={{ margin: 0 }}>Khách hàng tiềm năng</h1>
+              <h1 className="page-title" style={{ margin: 0 }}>{segment === 'customer' ? 'Học viên' : 'Tiềm năng'}</h1>
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', fontWeight: 600, marginTop: '2px' }}>
                 {loading ? '(...)' : `(${total} liên hệ)`}
               </span>
@@ -882,6 +883,69 @@ export const ContactsPage: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Tab Selectors: Tiềm năng & Học viên */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border-light)',
+        padding: '4px',
+        borderRadius: '12px',
+        width: 'fit-content',
+        marginBottom: '1rem',
+        boxShadow: 'var(--shadow-xs)'
+      }}>
+        <button
+          type="button"
+          onClick={() => {
+            setSegment('tiem_nang');
+            setPage(1);
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.825rem',
+            fontWeight: 700,
+            background: segment === 'tiem_nang' ? 'var(--color-primary)' : 'transparent',
+            color: segment === 'tiem_nang' ? '#ffffff' : 'var(--color-text-muted)',
+            transition: 'all 0.2s ease-in-out'
+          }}
+        >
+          <Users size={14} />
+          <span>Tiềm năng</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSegment('customer');
+            setPage(1);
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.825rem',
+            fontWeight: 700,
+            background: segment === 'customer' ? 'var(--color-primary)' : 'transparent',
+            color: segment === 'customer' ? '#ffffff' : 'var(--color-text-muted)',
+            transition: 'all 0.2s ease-in-out'
+          }}
+        >
+          <GraduationCap size={14} />
+          <span>Học viên</span>
+        </button>
+      </div>
 
       {/* Search + filter row */}
       <div className={isMobile ? "" : "card"} style={{ padding: isMobile ? '0' : '0.75rem 1rem', marginBottom:'0.75rem', display:'flex', gap:'0.75rem', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', background: isMobile ? 'transparent' : undefined, border: isMobile ? 'none' : undefined, boxShadow: isMobile ? 'none' : undefined }}>
@@ -1373,7 +1437,7 @@ export const ContactsPage: React.FC = () => {
                           : [
                               { value: 'lead', label: 'Lead mới' },
                               { value: 'qualified', label: 'Đủ điều kiện' },
-                              { value: 'customer', label: 'Khách hàng VIP' },
+                              { value: 'customer', label: 'Học viên VIP' },
                               { value: 'churned', label: 'Đã rời' }
                             ]
                         )
@@ -2455,7 +2519,7 @@ export const ContactsPage: React.FC = () => {
                       options={[
                         { value: 'lead', label: 'Lead mới (Chưa xử lý)' },
                         { value: 'qualified', label: 'Đủ điều kiện (Qualified)' },
-                        { value: 'customer', label: 'Khách hàng (Closed Won)' }
+                        { value: 'customer', label: 'Học viên (Closed Won)' }
                       ]} 
                       value={createForm.status} 
                       onChange={val => setCreateForm(f => ({ ...f, status: val.toString() }))} 

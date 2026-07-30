@@ -34,7 +34,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'KHÁCH HÀNG',
     items: [
-      { name: 'Khách hàng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant'] },
+      { name: 'Tiềm năng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant'] },
       { name: 'Pipeline', href: '/deals', icon: TrendingUp, hideForRoles: ['hr', 'accountant'] },
       { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant'] },
       { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer', 'hr', 'accountant', 'marketing'] },
@@ -127,13 +127,13 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   sale: [
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
     { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
-    { name: 'Khách hàng', href: '/contacts', icon: Users },
+    { name: 'Tiềm năng', href: '/contacts', icon: Users },
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   sales: [
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
     { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
-    { name: 'Khách hàng', href: '/contacts', icon: Users },
+    { name: 'Tiềm năng', href: '/contacts', icon: Users },
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   accountant: [
