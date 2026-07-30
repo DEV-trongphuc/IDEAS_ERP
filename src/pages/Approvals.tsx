@@ -2165,31 +2165,6 @@ export default function Approvals() {
                     {/* LEFT COLUMN: Form Elements (70%) */}
                     <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
                       
-                      {/* Card 1: Người đề xuất */}
-                      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
-                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {t('Người đề xuất')}
-                        </div>
-                        <CustomSelect
-                          options={users.map(u => ({
-                            value: String(u.id),
-                            label: `${u.full_name || u.name} (${u.role || 'Nhân sự'})`,
-                            avatar: u.avatar || u.avatar_url
-                          }))}
-                          value={proposerUser ? String(proposerUser.id) : ''}
-                          onChange={val => {
-                            const selected = users.find(u => String(u.id) === String(val));
-                            if (selected) {
-                              setProposerUser(selected);
-                              if (selected.role) setJobPosition(selected.role);
-                            }
-                          }}
-                          placeholder={t('Tìm kiếm nhân sự đề xuất...')}
-                          searchable
-                          showAvatars
-                          width="100%"
-                        />
-                      </div>
 
                       {/* Card 2: Specialized fields details based on workflow type */}
                       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
@@ -3413,10 +3388,26 @@ export default function Approvals() {
                                   {stepIndex1}
                                 </div>
                                 <div>
-                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block' }}>{t('Lập đề xuất & gửi')}</strong>
-                                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)' }}>
-                                    {proposerUser?.full_name || t('Người lập')}
-                                  </span>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>{t('Lập đề xuất & gửi')}</strong>
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    padding: '6px 12px', 
+                                    background: 'var(--color-bg-light)', 
+                                    border: '1px solid var(--color-border-light)', 
+                                    borderRadius: '8px',
+                                    height: '38px'
+                                  }}>
+                                    <Avatar 
+                                      src={proposerUser?.avatar_url || proposerUser?.avatar} 
+                                      name={proposerUser?.full_name || proposerUser?.name || 'User'} 
+                                      size={20} 
+                                    />
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                      {proposerUser?.full_name || proposerUser?.name || t('Người lập')}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
