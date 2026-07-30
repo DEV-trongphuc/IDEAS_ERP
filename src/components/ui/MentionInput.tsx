@@ -44,7 +44,7 @@ export const MentionInput: React.FC<MentionInputProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; bottom?: number; upwards?: boolean } | null>(null);
   const [isEmpty, setIsEmpty] = useState(!value);
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -152,12 +152,17 @@ export const MentionInput: React.FC<MentionInputProps> = ({
           
           try {
             const rect = range.getBoundingClientRect();
-            const parent = editorRef.current?.parentElement;
-            if (rect && parent) {
-              const parentRect = parent.getBoundingClientRect();
+            const wrapper = editorRef.current?.closest('.rich-text-editor-wrapper');
+            if (rect && wrapper) {
+              const wrapperRect = wrapper.getBoundingClientRect();
+              const spaceBelow = window.innerHeight - rect.bottom;
+              const shouldOpenUpwards = spaceBelow < 220;
+              
               setDropdownPos({
-                top: rect.bottom - parentRect.top,
-                left: rect.left - parentRect.left
+                top: rect.bottom - wrapperRect.top,
+                bottom: wrapperRect.bottom - rect.top + 4,
+                left: rect.left - wrapperRect.left,
+                upwards: shouldOpenUpwards
               });
             }
           } catch (err) {
@@ -608,12 +613,15 @@ export const MentionInput: React.FC<MentionInputProps> = ({
       <AnimatePresence>
         {showDropdown && (
           <motion.div
-            initial={{ opacity: 0, y: -5 }}
+            initial={{ opacity: 0, y: dropdownPos?.upwards ? 5 : -5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
+            exit={{ opacity: 0, y: dropdownPos?.upwards ? 5 : -5 }}
             style={{
               position: 'absolute',
-              top: dropdownPos ? dropdownPos.top + 16 : '100%',
+              top: dropdownPos 
+                ? (dropdownPos.upwards ? undefined : dropdownPos.top + 16) 
+                : '100%',
+              bottom: dropdownPos && dropdownPos.upwards ? dropdownPos.bottom : undefined,
               left: dropdownPos ? Math.max(0, Math.min(dropdownPos.left, (editorRef.current?.clientWidth || 300) - 260)) : 0,
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border)',
