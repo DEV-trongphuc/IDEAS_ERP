@@ -214,11 +214,22 @@ class ContactController {
 
         $stmt = $this->db->prepare("
             SELECT c.*, 
-                   (
-                       SELECT MIN(dm.created_at)
-                       FROM deposit_milestones dm
-                       JOIN deposits dep ON dm.deposit_id = dep.id
-                       WHERE dep.contact_id = c.id
+                   COALESCE(
+                       (
+                           SELECT MIN(created_at)
+                           FROM audit_logs
+                           WHERE resource = 'contact'
+                             AND resource_id = c.id
+                             AND action = 'MOVE_STAGE'
+                             AND new_data LIKE '%pipeline_status%hoc_vien%'
+                       ),
+                       (
+                           SELECT MIN(dm.created_at)
+                           FROM deposit_milestones dm
+                           JOIN deposits dep ON dm.deposit_id = dep.id
+                           WHERE dep.contact_id = c.id
+                       ),
+                       c.created_at
                    ) as closed_date,
                    CASE 
                        WHEN comp.deleted_at IS NOT NULL THEN CONCAT(comp.name, ' (Đã xóa)')
