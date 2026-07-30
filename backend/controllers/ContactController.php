@@ -637,13 +637,13 @@ class ContactController {
                     respond(400, null, "Không được phép nhảy cóc trạng thái từ '$currStatus' sang '$newStatus' (Phải đi tuần tự)", false);
                 }
 
-                // Check TTL1 completion before moving to dong_y_gap or later
-                if ($newIdx >= 2) {
-                    $reqTtl1 = isset($b['ttl1_completed']) ? (int)$b['ttl1_completed'] : $currTtl1;
-                    if ($reqTtl1 !== 1) {
-                        respond(400, null, 'Trước khi sang giai đoạn Đồng ý gặp, bạn bắt buộc phải điền đầy đủ thông tin Form TTL1', false);
-                    }
-                }
+                // Check TTL1 completion removed as requested
+                // if ($newIdx >= 2) {
+                //     $reqTtl1 = isset($b['ttl1_completed']) ? (int)$b['ttl1_completed'] : $currTtl1;
+                //     if ($reqTtl1 !== 1) {
+                //         respond(400, null, 'Trước khi sang giai đoạn Đồng ý gặp, bạn bắt buộc phải điền đầy đủ thông tin Form TTL1', false);
+                //     }
+                // }
             }
         }
 
@@ -1017,12 +1017,12 @@ class ContactController {
             respond(400, null, "Không được phép nhảy cóc trạng thái từ '$currStatus' sang '$newStatus' (Phải đi tuần tự)", false);
         }
 
-        // Check TTL1 completion before moving to dong_y_gap or later
-        if ($newIdx >= 2) {
-            if ($currTtl1 !== 1) {
-                respond(400, null, 'Trước khi sang giai đoạn Đồng ý gặp, bạn bắt buộc phải điền đầy đủ thông tin Form TTL1', false);
-            }
-        }
+        // Check TTL1 completion removed as requested
+        // if ($newIdx >= 2) {
+        //     if ($currTtl1 !== 1) {
+        //         respond(400, null, 'Trước khi sang giai đoạn Đồng ý gặp, bạn bắt buộc phải điền đầy đủ thông tin Form TTL1', false);
+        //     }
+        // }
 
         $sql = "UPDATE contacts SET stage_id=?, pipeline_status=? WHERE id=? AND tenant_id=?";
         $p = [$stageId, $newStatus, $id, $auth['tenant_id']];
