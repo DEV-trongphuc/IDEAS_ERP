@@ -193,7 +193,7 @@ const ConsultantsInner = () => {
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const showAllTabs = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'sale', 'sales', 'hr', 'accountant'].includes(userRole || '');
+  const showAllTabs = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'sale', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'].includes(userRole || '');
   const activeTabRaw = queryParams.get('tab') || 'consultants';
   const activeTab = showAllTabs ? activeTabRaw : 'consultants';
 
