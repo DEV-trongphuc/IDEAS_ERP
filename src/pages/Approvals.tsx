@@ -462,6 +462,7 @@ export default function Approvals() {
   const [leaveTo, setLeaveTo] = useState('');
   const [stationeryItem, setStationeryItem] = useState('');
   const [stationeryQty, setStationeryQty] = useState('');
+  const [intermittentDates, setIntermittentDates] = useState<{ date: string; session: 'full' | 'morning' | 'afternoon' }[]>([{ date: '', session: 'full' }]);
   
   const [myBalance, setMyBalance] = useState<{
     annual_leave_total: number;
@@ -2237,23 +2238,40 @@ export default function Approvals() {
                                 fromVal = `${d}T13:30`;
                                 toVal = `${d}T17:30`;
                                 daysVal = 0.5;
+                              } else if (leaveSession === 'intermittent') {
+                                const validDates = intermittentDates.filter(item => item.date);
+                                if (validDates.length === 0) {
+                                  toast.error(t('Vui lòng chọn ít nhất 1 ngày xin nghỉ.'));
+                                  setSubmitting(false);
+                                  return;
+                                }
+                                
+                                const sortedDates = [...validDates].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                                const firstDate = sortedDates[0].date;
+                                const lastDate = sortedDates[sortedDates.length - 1].date;
+                                
+                                fromVal = `${firstDate}T08:00`;
+                                toVal = `${lastDate}T17:30`;
+                                
+                                daysVal = validDates.reduce((acc, item) => acc + (item.session === 'full' ? 1.0 : 0.5), 0);
                               } else {
+                                if (leaveFrom && leaveTo && new Date(leaveTo) < new Date(leaveFrom)) {
+                                  toast.error(t('Ngày kết thúc không được nhỏ hơn ngày bắt đầu.'));
+                                  setSubmitting(false);
+                                  return;
+                                }
                                 daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
                               }
 
-                              if (myBalance) {
-                                if (leaveType === 'annual' || leaveType === 'compensatory') {
-                                  const remComp = Math.max(0, myBalance.compensatory_leave_total - myBalance.compensatory_leave_used);
-                                  const remAnnual = Math.max(0, myBalance.annual_leave_total - myBalance.annual_leave_used);
-                                  if (daysVal > (remComp + remAnnual)) {
-                                    toast.error(t('Bạn không đủ tổng số ngày phép còn lại! Vui lòng chọn "Nghỉ việc riêng (không lương)".'));
-                                    setSubmitting(false);
-                                    return;
-                                  }
-                                }
+                              let leaveReasonStr = leaveReason;
+                              if (leaveSession === 'intermittent') {
+                                const datesLog = intermittentDates
+                                  .filter(item => item.date)
+                                  .map(item => `${item.date} (${item.session === 'full' ? t('Cả ngày') : item.session === 'morning' ? t('Sáng') : t('Chiều')})`)
+                                  .join(', ');
+                                leaveReasonStr += ` [Ngày nghỉ chi tiết: ${datesLog}]`;
                               }
 
-                              let leaveReasonStr = leaveReason;
                               if (isRecurring) {
                                 leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
                               }
@@ -2647,45 +2665,105 @@ export default function Approvals() {
                                     { value: 'full', label: t('Cả ngày (1 ngày)') },
                                     { value: 'morning', label: t('Buổi sáng (0.5 ngày)') },
                                     { value: 'afternoon', label: t('Buổi chiều (0.5 ngày)') },
-                                    { value: 'range', label: t('Nhiều ngày (Chọn khoảng ngày)') }
+                                    { value: 'range', label: t('Nhiều ngày liên tiếp (Chọn khoảng)') },
+                                    { value: 'intermittent', label: t('Nhiều ngày ngắt quãng (Chọn từng ngày)') }
                                   ]}
                                   width="100%"
                                 />
                               </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                  {leaveSession === 'range' ? t('Từ ngày') : t('Ngày xin nghỉ')}
-                                </label>
-                                <input
-                                  type="date"
-                                  className="form-input"
-                                  value={leaveFrom ? leaveFrom.split('T')[0] : ''}
-                                  onChange={e => {
-                                    const val = e.target.value;
-                                    setLeaveFrom(val);
-                                    if (leaveSession !== 'range') setLeaveTo(val);
-                                  }}
-                                  style={{ height: '36px', fontSize: '0.8rem' }}
-                                  required
-                                />
+                            {leaveSession === 'intermittent' ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Chọn các ngày xin nghỉ & Buổi nghỉ')}</label>
+                                {intermittentDates.map((item, idx) => (
+                                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <input
+                                      type="date"
+                                      className="form-input"
+                                      value={item.date}
+                                      onChange={e => {
+                                        const newDates = [...intermittentDates];
+                                        newDates[idx] = { ...newDates[idx], date: e.target.value };
+                                        setIntermittentDates(newDates);
+                                      }}
+                                      style={{ height: '36px', fontSize: '0.8rem', flex: 2 }}
+                                      required
+                                    />
+                                    <div style={{ flex: 1.5 }}>
+                                      <CustomSelect
+                                        value={item.session}
+                                        onChange={(val: any) => {
+                                          const newDates = [...intermittentDates];
+                                          newDates[idx] = { ...newDates[idx], session: val };
+                                          setIntermittentDates(newDates);
+                                        }}
+                                        options={[
+                                          { value: 'full', label: t('Cả ngày') },
+                                          { value: 'morning', label: t('Sáng (0.5)') },
+                                          { value: 'afternoon', label: t('Chiều (0.5)') }
+                                        ]}
+                                        width="100%"
+                                      />
+                                    </div>
+                                    {intermittentDates.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newDates = intermittentDates.filter((_, i) => i !== idx);
+                                          setIntermittentDates(newDates);
+                                        }}
+                                        style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                                        title={t('Xóa ngày này')}
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
+                                <button
+                                  type="button"
+                                  onClick={() => setIntermittentDates([...intermittentDates, { date: '', session: 'full' }])}
+                                  style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(59, 130, 246, 0.08)', color: 'var(--color-primary)', border: '1px dashed var(--color-primary)', borderRadius: '6px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  <Plus size={12} />
+                                  <span>{t('Thêm ngày nghỉ')}</span>
+                                </button>
                               </div>
-                              {leaveSession === 'range' && (
+                            ) : (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đến ngày')}</label>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {leaveSession === 'range' ? t('Từ ngày') : t('Ngày xin nghỉ')}
+                                  </label>
                                   <input
                                     type="date"
                                     className="form-input"
-                                    value={leaveTo ? leaveTo.split('T')[0] : ''}
-                                    onChange={e => setLeaveTo(e.target.value)}
+                                    value={leaveFrom ? leaveFrom.split('T')[0] : ''}
+                                    onChange={e => {
+                                      const val = e.target.value;
+                                      setLeaveFrom(val);
+                                      if (leaveSession !== 'range') setLeaveTo(val);
+                                    }}
                                     style={{ height: '36px', fontSize: '0.8rem' }}
                                     required
                                   />
                                 </div>
-                              )}
-                            </div>
+                                {leaveSession === 'range' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đến ngày')}</label>
+                                    <input
+                                      type="date"
+                                      className="form-input"
+                                      value={leaveTo ? leaveTo.split('T')[0] : ''}
+                                      onChange={e => setLeaveTo(e.target.value)}
+                                      style={{ height: '36px', fontSize: '0.8rem' }}
+                                      required
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Lý do xin nghỉ')}</label>
@@ -2701,27 +2779,27 @@ export default function Approvals() {
                             </div>
 
                             {(() => {
-                              const requestedDays = calculateWorkingDays(leaveFrom, leaveTo, leaveSession);
+                              const requestedDays = leaveSession === 'intermittent'
+                                ? intermittentDates.filter(item => item.date).reduce((acc, item) => acc + (item.session === 'full' ? 1.0 : 0.5), 0)
+                                : calculateWorkingDays(leaveFrom, leaveTo, leaveSession);
+                                
                               let isInsufficient = false;
                               let errorMsg = '';
                               let deductComp = 0;
                               let deductAnnual = 0;
+                              let deductUnpaid = 0;
                               
-                              if (myBalance) {
+                              if (leaveSession === 'range' && leaveFrom && leaveTo && new Date(leaveTo) < new Date(leaveFrom)) {
+                                isInsufficient = true;
+                                errorMsg = t('Ngày kết thúc không được nhỏ hơn ngày bắt đầu.');
+                              } else if (myBalance) {
                                 const remComp = Math.max(0, myBalance.compensatory_leave_total - myBalance.compensatory_leave_used);
                                 const remAnnual = Math.max(0, myBalance.annual_leave_total - myBalance.annual_leave_used);
                                 
                                 if (leaveType === 'annual' || leaveType === 'compensatory') {
                                   deductComp = Math.min(requestedDays, remComp);
-                                  deductAnnual = Math.max(0, requestedDays - deductComp);
-                                  
-                                  if (requestedDays > (remComp + remAnnual)) {
-                                    isInsufficient = true;
-                                    errorMsg = t('Bạn không đủ tổng số ngày phép còn lại (cần {req} ngày, còn {remComp} ngày phép bù + {remAnnual} ngày phép năm). Vui lòng chọn "Nghỉ việc riêng (không lương)".')
-                                      .replace('{req}', String(requestedDays))
-                                      .replace('{remComp}', String(Number(remComp.toFixed(2))))
-                                      .replace('{remAnnual}', String(Number(remAnnual.toFixed(2))));
-                                  }
+                                  deductAnnual = Math.min(Math.max(0, requestedDays - deductComp), remAnnual);
+                                  deductUnpaid = Math.max(0, requestedDays - (deductComp + deductAnnual));
                                 }
                               }
 
@@ -2749,13 +2827,16 @@ export default function Approvals() {
                                           return t('Nghỉ ốm / thai sản (Không khấu trừ phép)');
                                         }
                                         if (isInsufficient) {
-                                          return t('Không đủ phép (Cần chuyển sang Nghỉ không lương)');
+                                          return errorMsg;
                                         }
                                         
-                                        return [
+                                        const parts = [
                                           deductComp > 0 ? `-${Number(deductComp.toFixed(2))} ${t('phép bù')}` : null,
-                                          deductAnnual > 0 ? `-${Number(deductAnnual.toFixed(2))} ${t('phép năm')}` : null
-                                        ].filter(Boolean).join(', ') || t('0 ngày');
+                                          deductAnnual > 0 ? `-${Number(deductAnnual.toFixed(2))} ${t('phép năm')}` : null,
+                                          deductUnpaid > 0 ? `-${Number(deductUnpaid.toFixed(2))} ${t('không lương')}` : null
+                                        ].filter(Boolean);
+                                        
+                                        return parts.join(', ') || t('0 ngày');
                                       })()}
                                     </strong>
                                   </div>

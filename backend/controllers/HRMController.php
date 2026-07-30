@@ -280,12 +280,15 @@ class HRMController {
                 $profile = $profStmt->fetch(PDO::FETCH_ASSOC);
                 
                 $remComp = 0.0;
+                $remAnnual = 0.0;
                 if ($profile) {
                     $remComp = max(0.0, (float)$profile['compensatory_leave_total'] - (float)$profile['compensatory_leave_used']);
+                    $remAnnual = max(0.0, (float)$profile['annual_leave_total'] - (float)$profile['annual_leave_used']);
                 }
                 
                 $deductComp = min($days, $remComp);
-                $deductAnnual = max(0.0, $days - $deductComp);
+                $deductAnnual = min(max(0.0, $days - $deductComp), $remAnnual);
+                $deductUnpaid = max(0.0, $days - ($deductComp + $deductAnnual));
                 
                 if ($deductComp > 0) {
                     $updStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ? WHERE user_id = ?");
@@ -296,7 +299,12 @@ class HRMController {
                     $updStmt->execute([$deductAnnual, $userId]);
                 }
                 
-                $deductionLog = " [Khấu trừ thực tế: -" . $deductComp . " ngày phép bù, -" . $deductAnnual . " ngày phép năm]";
+                $parts = [];
+                if ($deductComp > 0) $parts[] = "-{$deductComp} ngày phép bù";
+                if ($deductAnnual > 0) $parts[] = "-{$deductAnnual} ngày phép năm";
+                if ($deductUnpaid > 0) $parts[] = "-{$deductUnpaid} ngày không lương";
+                
+                $deductionLog = " [Khấu trừ thực tế: " . implode(', ', $parts) . "]";
                 $updReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?) WHERE id = ?");
                 $updReason->execute([$deductionLog, (int)$leaveRow['id']]);
             }
