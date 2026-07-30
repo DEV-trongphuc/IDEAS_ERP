@@ -3153,11 +3153,12 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     const createdAtVal = detail?.created_at || item.created_at;
     const initialComments = [
       { 
-        id: 1, 
+        id: 'sys-1', 
         author: t('Hệ thống quy trình IDEAS'), 
         time: new Date(createdAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
         text: `${t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình lúc')} ${new Date(createdAtVal).toLocaleString('vi-VN')}.`, 
-        attachments: [] 
+        attachments: [],
+        timestamp: new Date(createdAtVal).getTime()
       }
     ];
 
@@ -3165,21 +3166,23 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     if (overall === 'approved') {
       const approvedAtVal = detail?.approved_at || detail?.updated_at || (item as any).updated_at || new Date().toISOString();
       initialComments.push({
-        id: 2,
+        id: 'sys-2',
         author: t('Hệ thống quy trình IDEAS'),
         time: new Date(approvedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         text: `✅ ${t('Yêu cầu đã được phê duyệt thành công lúc')} ${new Date(approvedAtVal).toLocaleString('vi-VN')}.`,
-        attachments: []
+        attachments: [],
+        timestamp: new Date(approvedAtVal).getTime()
       });
     } else if (overall === 'rejected') {
       const rejectedAtVal = detail?.updated_at || (item as any).updated_at || new Date().toISOString();
       const reasonStr = detail?.reason || detail?.reject_reason || '';
       initialComments.push({
-        id: 2,
+        id: 'sys-2',
         author: t('Hệ thống quy trình IDEAS'),
         time: new Date(rejectedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         text: `❌ ${t('Yêu cầu bị từ chối lúc')} ${new Date(rejectedAtVal).toLocaleString('vi-VN')}.${reasonStr ? ` Lý do: ${reasonStr}` : ''}`,
-        attachments: []
+        attachments: [],
+        timestamp: new Date(rejectedAtVal).getTime()
       });
     }
     return initialComments;
@@ -3197,10 +3200,13 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
         author: c.user_name || t('Tôi'),
         time: new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         text: c.body || '',
-        attachments: c.attachments || []
+        attachments: c.attachments || [],
+        timestamp: new Date(c.created_at).getTime()
       }));
       const systemComments = getSystemComments();
-      setLocalComments([...systemComments, ...mapped.reverse()]);
+      const combined = [...systemComments, ...mapped];
+      combined.sort((a, b) => b.timestamp - a.timestamp);
+      setLocalComments(combined);
     } catch (e) {
       console.error('Error fetching comments:', e);
     } finally {
