@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server, Home,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -280,6 +280,8 @@ export default function Approvals() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [itemToApprove, setItemToApprove] = useState<ApprovalItem | null>(null);
   
   // Custom states for timeline details and user listings
   const [users, setUsers] = useState<any[]>([]);
@@ -1139,15 +1141,8 @@ export default function Approvals() {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                showConfirm({
-                                  title: t('Chi tiết & Xác nhận phê duyệt'),
-                                  message: `• ${t('Tên đề xuất')}: ${item.title}\n• ${t('Người đề xuất')}: ${item.employee_name}\n• ${t('Chi tiết yêu cầu')}: ${item.description || '—'}`,
-                                  confirmText: t('Phê duyệt'),
-                                  cancelText: t('Hủy'),
-                                  onConfirm: async () => {
-                                    await handleApprove(item);
-                                  }
-                                });
+                                setItemToApprove(item);
+                                setApproveConfirmOpen(true);
                               }} 
                               style={{ 
                                 display: 'inline-flex',
@@ -1346,18 +1341,19 @@ export default function Approvals() {
       )}
 
       {/* Reject Modal */}
-      {rejectModalOpen && (
+      {rejectModalOpen && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 999999
         }}>
           <div className="card" style={{ width: '450px', padding: '1.5rem', background: 'var(--color-surface)' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1rem', color: '#ef4444' }}>
@@ -1384,8 +1380,198 @@ export default function Approvals() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {/* Custom Approve Confirmation Modal */}
+      {approveConfirmOpen && itemToApprove && createPortal((() => {
+        const creatorUser = users.find(u => String(u.full_name) === String(itemToApprove.employee_name) || String(u.name) === String(itemToApprove.employee_name));
+        const avatarUrl = creatorUser?.avatar_url || creatorUser?.avatar;
+        const displayRole = creatorUser?.role ? (creatorUser.role === 'sales' ? 'Phòng Kinh doanh' : creatorUser.role === 'accountant' ? 'Phòng Kế toán' : creatorUser.role) : 'Nhân viên';
+        
+        return (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999999,
+              padding: '1.5rem'
+            }}
+            onClick={() => setApproveConfirmOpen(false)}
+          >
+            <div 
+              style={{
+                background: 'var(--color-surface)',
+                width: '100%',
+                maxWidth: '480px',
+                borderRadius: '20px',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                border: '1px solid var(--color-border-light)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setApproveConfirmOpen(false)}
+                style={{
+                  position: 'absolute',
+                  top: '18px',
+                  right: '18px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.15s ease',
+                  zIndex: 10
+                }}
+              >
+                <X size={18} />
+              </button>
+
+              {/* Modal Body */}
+              <div style={{ padding: '2rem' }}>
+                <h3 style={{
+                  fontSize: '1.2rem',
+                  fontWeight: 800,
+                  color: 'var(--color-text)',
+                  marginBottom: '1.5rem',
+                  lineHeight: 1.3
+                }}>
+                  {t('Chi tiết & Xác nhận phê duyệt')}
+                </h3>
+
+                {/* Creator Avatar & Info Block */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  background: 'var(--color-bg)',
+                  padding: '12px 16px',
+                  borderRadius: '14px',
+                  border: '1px solid var(--color-border-light)',
+                  marginBottom: '1.25rem'
+                }}>
+                  <Avatar src={avatarUrl} name={itemToApprove.employee_name} size={44} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.92rem' }}>
+                      {itemToApprove.employee_name}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      {displayRole} • {new Date(itemToApprove.created_at).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Details Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {t('Tên đề xuất')}
+                    </label>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)', marginTop: '3px' }}>
+                      {itemToApprove.title}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: 'rgba(16, 185, 129, 0.04)',
+                    border: '1px solid rgba(16, 185, 129, 0.12)',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    marginTop: '4px'
+                  }}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                      {t('Chi tiết yêu cầu')}
+                    </label>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text)', lineHeight: 1.5, fontWeight: 500 }}>
+                      {itemToApprove.description || '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                background: 'var(--color-bg)',
+                padding: '1.25rem 2rem',
+                borderTop: '1px solid var(--color-border-light)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <button 
+                  onClick={() => {
+                    setApproveConfirmOpen(false);
+                    setSelectedTimelineItem(itemToApprove);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text)',
+                    padding: '8px 16px',
+                    fontSize: '0.825rem',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Eye size={14} />
+                  {t('Xem chi tiết')}
+                </button>
+
+                <button 
+                  onClick={async () => {
+                    setApproveConfirmOpen(false);
+                    await handleApprove(itemToApprove);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    background: '#10b981',
+                    border: 'none',
+                    color: '#ffffff',
+                    padding: '10px 24px',
+                    fontSize: '0.875rem',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  {t('Phê duyệt')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })(), document.body)}
 
       {/* Progress Timeline Drawer */}
       {selectedTimelineItem && (
