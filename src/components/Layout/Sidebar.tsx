@@ -28,7 +28,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Dashboard', href: '/', icon: LayoutDashboard, end: true },
       { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
       { name: 'Bảng tin nội bộ', href: '/feed', icon: Globe },
-      { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2, hideForRoles: ['hr', 'marketing'] }
+      { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2, hideForRoles: ['hr', 'marketing', 'sale_admin', 'saleadmin'] }
     ]
   },
   {
@@ -40,7 +40,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant', 'sale_admin', 'saleadmin'] },
       { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
       { name: 'AI Pre-screener', href: '/gatekeeper', icon: Filter, adminOnly: true, badgeKey: 'gatekeeper', hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
-      { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets', hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets', hideForRoles: ['hr', 'accountant'] },
       { name: 'Ticket hỗ trợ', href: '/support-tickets', icon: LifeBuoy, badgeKey: 'supportTickets' }
     ]
   },

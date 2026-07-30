@@ -246,7 +246,7 @@ function formatTimerString(value: number, unit: string) {
   return `+${value} ${finalUnit}`;
 }
 
-const ALLOWED_PORTAL_ROLES = ['sale', 'sales', 'superadmin', 'admin', 'super_admin', 'manager', 'director', 'assistant', 'viewer', 'hr', 'accountant', 'marketing'];
+const ALLOWED_PORTAL_ROLES = ['sale', 'sales', 'superadmin', 'admin', 'super_admin', 'manager', 'director', 'assistant', 'viewer', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'];
 
 const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePortalProps) => {
   const navigate = useNavigate();

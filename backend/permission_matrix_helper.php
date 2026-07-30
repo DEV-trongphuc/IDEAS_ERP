@@ -11,7 +11,12 @@ if (!function_exists('getModulePermissionScope')) {
         if ($role === 'superadmin' || $role === 'admin' || $role === 'super_admin') {
             return 'all';
         }
-        
+        if ($role === 'sale_admin' || $role === 'saleadmin') {
+            if (in_array($module, ['settings', 'hrm', 'attendance'], true)) {
+                return 'none';
+            }
+            return 'all';
+        }
         if (($role === 'sale' || $role === 'sales') && $module === 'deals') {
             return $action === 'delete' ? 'none' : 'own';
         }
