@@ -297,6 +297,18 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
       return;
     }
 
+    for (let i = 0; i < milestonesInput.length; i++) {
+      const m = milestonesInput[i];
+      if (!m.amount || parseFloat(m.amount) <= 0) {
+        addToast(`Vui lòng nhập số tiền hợp lệ cho Đợt ${i + 1}`, 'error');
+        return;
+      }
+      if (!m.expected_pay_date) {
+        addToast(`Vui lòng chọn ngày thanh toán dự kiến cho Đợt ${i + 1}`, 'error');
+        return;
+      }
+    }
+
     if (!depositAccountantId) {
       addToast('Vui lòng chọn người duyệt', 'error');
       return;

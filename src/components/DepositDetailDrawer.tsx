@@ -378,9 +378,21 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
   const handleSaveMilestones = async () => {
     if (!selectedDepForManage) return;
-    for (let m of tempMilestones) {
+    for (let i = 0; i < tempMilestones.length; i++) {
+      const m = tempMilestones[i];
       if (!m.milestone_name.trim()) {
         addToast('Tên đợt không được để trống.', 'error');
+        return;
+      }
+      const amt = selectedDepForManage.currency !== 'VND' 
+        ? (m.original_amount !== null && m.original_amount !== undefined ? m.original_amount : m.expected_amount)
+        : m.expected_amount;
+      if (!amt || parseFloat(String(amt)) <= 0) {
+        addToast(`Vui lòng nhập số tiền hợp lệ cho đợt "${m.milestone_name}".`, 'error');
+        return;
+      }
+      if (!m.expected_pay_date) {
+        addToast(`Vui lòng chọn ngày thanh toán dự kiến cho đợt "${m.milestone_name}".`, 'error');
         return;
       }
     }
