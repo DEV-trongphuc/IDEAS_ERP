@@ -21,41 +21,34 @@ import { Pagination } from '../components/ui/Pagination';
 
 const workflowList = [
   { id: 'payment', name: 'Đề nghị thanh toán', description: 'Đề xuất thanh toán nhà cung cấp, chi phí vận hành, đối tác.', category: 'finance', icon: FileSignature, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'advance_money', name: 'Đề nghị tạm ứng', description: 'Đề xuất tạm ứng chi phí công tác, mua hàng hoặc ứng lương.', category: 'finance', icon: DollarSign, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'expense_claim', name: 'Đề xuất chi phí', description: 'Yêu cầu hoàn trả chi phí tiếp khách, đi lại, văn phòng phẩm.', category: 'finance', icon: Receipt, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'client_meeting', name: 'Đề xuất tiếp khách', description: 'Chi phí tiếp đãi khách hàng, đối tác quan trọng.', category: 'finance', icon: Briefcase, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
+  { id: 'advance_money', name: 'Đề nghị tạm ứng', description: 'Đề xuất tạm ứng chi phí công tác, mua hàng hoặc ứng lương.', category: 'finance', icon: DollarSign, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
+  { id: 'expense_claim', name: 'Đề xuất chi phí', description: 'Yêu cầu hoàn trả chi phí tiếp khách, đi lại, văn phòng phẩm.', category: 'finance', icon: Receipt, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
+  { id: 'client_meeting', name: 'Đề xuất tiếp khách', description: 'Chi phí tiếp đãi khách hàng, đối tác quan trọng.', category: 'finance', icon: Briefcase, bg: 'rgba(236, 72, 153, 0.08)', color: '#ec4899' },
   { id: 'business_trip', name: 'Đăng ký công tác', description: 'Yêu cầu công tác, tạm ứng công tác phí và phương tiện.', category: 'finance', icon: Briefcase, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
-  { id: 'phased_payment', name: 'Thanh toán theo đợt', description: 'Đề xuất thanh toán chia nhiều đợt theo tiến độ hợp đồng.', category: 'finance', icon: GitBranch, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'recurring_payment', name: 'Thanh toán định kỳ', description: 'Đề xuất thanh toán định kỳ hàng tháng/quý (tiền nhà, internet, phí dịch vụ).', category: 'finance', icon: Clock3, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
+  { id: 'phased_payment', name: 'Thanh toán theo đợt', description: 'Đề xuất thanh toán chia nhiều đợt theo tiến độ hợp đồng.', category: 'finance', icon: GitBranch, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
+  { id: 'recurring_payment', name: 'Thanh toán định kỳ', description: 'Đề xuất thanh toán định kỳ hàng tháng/quý (tiền nhà, internet, phí dịch vụ).', category: 'finance', icon: Clock3, bg: 'rgba(217, 70, 239, 0.08)', color: '#d946ef' },
 
-  { id: 'leave_late', name: 'Đơn xin nghỉ', description: 'Đề xuất nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản, nghỉ ốm.', category: 'hr', icon: Calendar, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
-  { id: 'late_early', name: 'Đăng ký đi muộn, về sớm', description: 'Đăng ký đi muộn hoặc về sớm vì việc cá nhân lý do chính đáng.', category: 'hr', icon: Clock, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'overtime', name: 'Đăng ký làm thêm', description: 'Đề xuất làm thêm giờ (OT), tăng ca ngoài giờ làm việc hành chính.', category: 'hr', icon: Plus, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
-  { id: 'remote_work', name: 'Đăng ký làm việc từ xa', description: 'Đề xuất làm việc tại nhà (WFH) hoặc làm việc từ xa.', category: 'hr', icon: Home, bg: 'rgba(234, 179, 8, 0.08)', color: '#eab308' },
-  { id: 'attendance_bulk', name: 'Đề nghị cập nhật công', description: 'Giải trình và cập nhật bổ sung công bị thiếu do quên chấm công.', category: 'hr', icon: CheckSquare, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
+  { id: 'leave_late', name: 'Đơn xin nghỉ', description: 'Đề xuất nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản, nghỉ ốm.', category: 'hr', icon: Calendar, bg: 'rgba(239, 68, 68, 0.08)', color: '#ef4444' },
+  { id: 'late_early', name: 'Đăng ký đi muộn, về sớm', description: 'Đăng ký đi muộn hoặc về sớm vì việc cá nhân lý do chính đáng.', category: 'hr', icon: Clock, bg: 'rgba(234, 179, 8, 0.08)', color: '#eab308' },
+  { id: 'overtime', name: 'Đăng ký làm thêm', description: 'Đề xuất làm thêm giờ (OT), tăng ca ngoài giờ làm việc hành chính.', category: 'hr', icon: Plus, bg: 'rgba(20, 184, 166, 0.08)', color: '#14b8a6' },
+  { id: 'remote_work', name: 'Đăng ký làm việc từ xa', description: 'Đề xuất làm việc tại nhà (WFH) hoặc làm việc từ xa.', category: 'hr', icon: Home, bg: 'rgba(14, 165, 233, 0.08)', color: '#0ea5e9' },
+  { id: 'attendance_bulk', name: 'Đề nghị cập nhật công', description: 'Giải trình và cập nhật bổ sung công bị thiếu do quên chấm công.', category: 'hr', icon: CheckSquare, bg: 'rgba(99, 102, 241, 0.08)', color: '#6366f1' },
 
-  { id: 'purchase_request', name: 'Mua sắm trang thiết bị', description: 'Đề xuất mua sắm công cụ dụng cụ, thiết bị văn phòng.', category: 'admin', icon: ShoppingCart, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
-  { id: 'it_request', name: 'Cấp thiết bị IT', description: 'Yêu cầu cấp phát laptop, màn hình, tài khoản phần mềm.', category: 'admin', icon: Server, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
-  { id: 'meeting_room', name: 'Sử dụng phòng họp', description: 'Đăng ký phòng họp lớn, họp trực tuyến.', category: 'admin', icon: Users, bg: 'rgba(234, 179, 8, 0.08)', color: '#eab308' },
-  { id: 'stationery', name: 'Đề xuất văn phòng phẩm', description: 'Yêu cầu cung cấp giấy in, bút, tài liệu văn phòng.', category: 'admin', icon: FileText, bg: 'rgba(234, 179, 8, 0.08)', color: '#eab308' }
+  { id: 'purchase_request', name: 'Mua sắm trang thiết bị', description: 'Đề xuất mua sắm công cụ dụng cụ, thiết bị văn phòng.', category: 'admin', icon: ShoppingCart, bg: 'rgba(168, 85, 247, 0.08)', color: '#a855f7' },
+  { id: 'it_request', name: 'Cấp thiết bị IT', description: 'Yêu cầu cấp phát laptop, màn hình, tài khoản phần mềm.', category: 'admin', icon: Server, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
+  { id: 'meeting_room', name: 'Sử dụng phòng họp', description: 'Đăng ký phòng họp lớn, họp trực tuyến.', category: 'admin', icon: Users, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
+  { id: 'stationery', name: 'Đề xuất văn phòng phẩm', description: 'Yêu cầu cung cấp giấy in, bút, tài liệu văn phòng.', category: 'admin', icon: FileText, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }
 ];
 
 const getWorkflowColor = (colorHex: string) => {
   const lowercase = String(colorHex).toLowerCase();
+  
   if (lowercase === '#10b981') {
     return {
       bg: 'linear-gradient(135deg, #34d399, #059669)',
       color: '#ffffff',
       shadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-      hoverBg: 'rgba(5, 150, 105, 0.06)'
-    };
-  }
-  if (lowercase === '#f59e0b') {
-    return {
-      bg: 'linear-gradient(135deg, #fb923c, #d97706)',
-      color: '#ffffff',
-      shadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
-      hoverBg: 'rgba(217, 119, 6, 0.06)'
+      hoverBg: 'rgba(5, 150, 105, 0.08)'
     };
   }
   if (lowercase === '#3b82f6') {
@@ -63,23 +56,7 @@ const getWorkflowColor = (colorHex: string) => {
       bg: 'linear-gradient(135deg, #60a5fa, #1d4ed8)',
       color: '#ffffff',
       shadow: '0 4px 12px rgba(29, 78, 216, 0.3)',
-      hoverBg: 'rgba(29, 78, 216, 0.06)'
-    };
-  }
-  if (lowercase === '#ec4899') {
-    return {
-      bg: 'linear-gradient(135deg, #f472b6, #db2777)',
-      color: '#ffffff',
-      shadow: '0 4px 12px rgba(219, 39, 119, 0.3)',
-      hoverBg: 'rgba(219, 39, 119, 0.06)'
-    };
-  }
-  if (lowercase === '#8b5cf6') {
-    return {
-      bg: 'linear-gradient(135deg, #a78bfa, #6d28d9)',
-      color: '#ffffff',
-      shadow: '0 4px 12px rgba(109, 40, 217, 0.3)',
-      hoverBg: 'rgba(109, 40, 217, 0.06)'
+      hoverBg: 'rgba(29, 78, 216, 0.08)'
     };
   }
   if (lowercase === '#06b6d4') {
@@ -87,17 +64,90 @@ const getWorkflowColor = (colorHex: string) => {
       bg: 'linear-gradient(135deg, #22d3ee, #0891b2)',
       color: '#ffffff',
       shadow: '0 4px 12px rgba(8, 145, 178, 0.3)',
-      hoverBg: 'rgba(8, 145, 178, 0.06)'
+      hoverBg: 'rgba(8, 145, 178, 0.08)'
+    };
+  }
+  if (lowercase === '#ec4899') {
+    return {
+      bg: 'linear-gradient(135deg, #f472b6, #db2777)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(219, 39, 119, 0.3)',
+      hoverBg: 'rgba(219, 39, 119, 0.08)'
+    };
+  }
+  if (lowercase === '#f59e0b') {
+    return {
+      bg: 'linear-gradient(135deg, #fb923c, #d97706)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
+      hoverBg: 'rgba(217, 119, 6, 0.08)'
+    };
+  }
+  if (lowercase === '#8b5cf6') {
+    return {
+      bg: 'linear-gradient(135deg, #a78bfa, #6d28d9)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(109, 40, 217, 0.3)',
+      hoverBg: 'rgba(109, 40, 217, 0.08)'
+    };
+  }
+  if (lowercase === '#d946ef') {
+    return {
+      bg: 'linear-gradient(135deg, #f0abfc, #a21caf)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(162, 28, 175, 0.3)',
+      hoverBg: 'rgba(162, 28, 175, 0.08)'
+    };
+  }
+  if (lowercase === '#ef4444') {
+    return {
+      bg: 'linear-gradient(135deg, #f87171, #dc2626)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+      hoverBg: 'rgba(220, 38, 38, 0.08)'
     };
   }
   if (lowercase === '#eab308') {
     return {
-      bg: 'linear-gradient(135deg, #fbbf24, #b45309)',
+      bg: 'linear-gradient(135deg, #fde047, #ca8a04)',
       color: '#ffffff',
-      shadow: '0 4px 12px rgba(180, 83, 9, 0.3)',
-      hoverBg: 'rgba(180, 83, 9, 0.06)'
+      shadow: '0 4px 12px rgba(202, 138, 4, 0.3)',
+      hoverBg: 'rgba(202, 138, 4, 0.08)'
     };
   }
+  if (lowercase === '#14b8a6') {
+    return {
+      bg: 'linear-gradient(135deg, #2dd4bf, #0d9488)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(13, 148, 136, 0.3)',
+      hoverBg: 'rgba(13, 148, 136, 0.08)'
+    };
+  }
+  if (lowercase === '#0ea5e9') {
+    return {
+      bg: 'linear-gradient(135deg, #38bdf8, #0284c7)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+      hoverBg: 'rgba(2, 132, 199, 0.08)'
+    };
+  }
+  if (lowercase === '#6366f1') {
+    return {
+      bg: 'linear-gradient(135deg, #818cf8, #4f46e5)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
+      hoverBg: 'rgba(79, 70, 229, 0.08)'
+    };
+  }
+  if (lowercase === '#a855f7') {
+    return {
+      bg: 'linear-gradient(135deg, #c084fc, #7c3aed)',
+      color: '#ffffff',
+      shadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
+      hoverBg: 'rgba(124, 58, 237, 0.08)'
+    };
+  }
+
   return {
     bg: `linear-gradient(135deg, ${colorHex}, ${colorHex})`,
     color: '#ffffff',
