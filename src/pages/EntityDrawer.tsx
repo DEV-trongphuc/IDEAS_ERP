@@ -46,23 +46,8 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
     if (entity) setFormData(entity);
   }, [entity]);
 
-  const [isVisible, setIsVisible] = useState(isOpen);
-  const [animateIn, setAnimateIn] = useState(isOpen);
-
   useEffect(() => {
     if (isOpen) {
-      setIsVisible(true);
-      const timer = setTimeout(() => setAnimateIn(true), 10);
-      return () => clearTimeout(timer);
-    } else {
-      setAnimateIn(false);
-      const timer = setTimeout(() => setIsVisible(false), 420);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isVisible) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -70,31 +55,37 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isVisible]);
+  }, [isOpen]);
 
-  if (!isVisible) return null;
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <>
-      <div
-        className="drawer-backdrop"
-        onClick={onClose}
-        style={{
-          zIndex: 1000,
-          opacity: animateIn ? 1 : 0,
-          transition: 'opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1)',
-          pointerEvents: animateIn ? 'auto' : 'none'
-        }}
-      />
-      <div
-        className={styles.drawer}
-        style={{
-          transform: animateIn ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)',
-          willChange: 'transform'
-        }}
-      >
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            className="drawer-backdrop"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{
+              zIndex: 1000,
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(8px)',
+              position: 'fixed',
+              inset: 0,
+              cursor: 'pointer'
+            }}
+          />
+          <motion.div
+            className={styles.drawer}
+            initial={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, x: '250px' }}
+            animate={{ y: 0, x: 0, opacity: 1 }}
+            exit={window.innerWidth <= 768 ? { y: '100%' } : { opacity: 0, x: '250px' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
+          >
               {/* Header */}
               <div className={styles.header}>
                 <div className={styles.headerProfile}>
@@ -521,7 +512,10 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
                 <button className="btn ghost" onClick={onClose}>Hủy bỏ</button>
                 <button className="btn primary" onClick={() => onSave(formData)}>Lưu thay đổi</button>
               </div>
-      </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
 
       {/* Help Modal */}
       <AnimatePresence>
