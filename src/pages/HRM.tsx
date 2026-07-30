@@ -16,7 +16,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ComposedChart, Line, AreaChart, Area 
 } from 'recharts';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ApprovalDetailDrawer } from './Approvals';
 import type { ApprovalItem } from './Approvals';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
@@ -2355,43 +2355,45 @@ export default function HRM() {
       )}
 
       {/* Approval Detail Drawer */}
-      {selectedApproval && (
-        <ApprovalDetailDrawer
-          item={{
-            id: selectedApproval.data.id,
-            type: selectedApproval.type as any,
-            title: selectedApproval.type === 'leave' ? t('Đề nghị nghỉ phép') : t('Đề nghị tạm ứng'),
-            description: selectedApproval.data.reason || '',
-            status: selectedApproval.data.status,
-            created_at: selectedApproval.data.created_at,
-            employee_name: selectedApproval.data.employee_name
-          }}
-          onClose={() => setSelectedApproval(null)}
-          users={profiles}
-          t={t}
-          onApprove={async (item) => {
-            const actionStatus = 'approved';
-            if (item.type === 'leave') {
-              await handleApproveLeave(item.id, actionStatus);
-            } else {
-              await handleApproveAdvance(item.id, actionStatus);
-            }
-            loadData();
-            setSelectedApproval(null);
-          }}
-          onReject={async (item) => {
-            const actionStatus = 'rejected';
-            if (item.type === 'leave') {
-              await handleApproveLeave(item.id, actionStatus);
-            } else {
-              await handleApproveAdvance(item.id, actionStatus);
-            }
-            loadData();
-            setSelectedApproval(null);
-          }}
-          isAdmin={user?.role === 'admin' || user?.role === 'director' || user?.role === 'manager'}
-        />
-      )}
+      <AnimatePresence>
+        {selectedApproval && (
+          <ApprovalDetailDrawer
+            item={{
+              id: selectedApproval.data.id,
+              type: selectedApproval.type as any,
+              title: selectedApproval.type === 'leave' ? t('Đề nghị nghỉ phép') : t('Đề nghị tạm ứng'),
+              description: selectedApproval.data.reason || '',
+              status: selectedApproval.data.status,
+              created_at: selectedApproval.data.created_at,
+              employee_name: selectedApproval.data.employee_name
+            }}
+            onClose={() => setSelectedApproval(null)}
+            users={profiles}
+            t={t}
+            onApprove={async (item) => {
+              const actionStatus = 'approved';
+              if (item.type === 'leave') {
+                await handleApproveLeave(item.id, actionStatus);
+              } else {
+                await handleApproveAdvance(item.id, actionStatus);
+              }
+              loadData();
+              setSelectedApproval(null);
+            }}
+            onReject={async (item) => {
+              const actionStatus = 'rejected';
+              if (item.type === 'leave') {
+                await handleApproveLeave(item.id, actionStatus);
+              } else {
+                await handleApproveAdvance(item.id, actionStatus);
+              }
+              loadData();
+              setSelectedApproval(null);
+            }}
+            isAdmin={user?.role === 'admin' || user?.role === 'director' || user?.role === 'manager'}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Confirm Modal: Tính lại lương */}
       <ConfirmModal

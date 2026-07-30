@@ -13,6 +13,7 @@ import { EmptyCard } from '../components/ui/EmptyCard';
 import { Avatar } from '../components/ui/Avatar';
 import { ApprovalDetailDrawer } from './Approvals';
 import { CustomModal } from '../components/ui/CustomModal';
+import { AnimatePresence } from 'framer-motion';
 
 export default function MyPayslips() {
   const { t } = useLanguage();
@@ -1127,17 +1128,19 @@ export default function MyPayslips() {
       </CustomModal>
 
       {/* Progress Timeline Drawer */}
-      {selectedTimelineItem && (
-        <ApprovalDetailDrawer
-          item={selectedTimelineItem}
-          onClose={() => setSelectedTimelineItem(null)}
-          users={users}
-          t={t}
-          onApprove={async () => {}}
-          onReject={() => {}}
-          isAdmin={false}
-        />
-      )}
+      <AnimatePresence>
+        {selectedTimelineItem && (
+          <ApprovalDetailDrawer
+            item={selectedTimelineItem}
+            onClose={() => setSelectedTimelineItem(null)}
+            users={users}
+            t={t}
+            onApprove={async () => {}}
+            onReject={() => {}}
+            isAdmin={false}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

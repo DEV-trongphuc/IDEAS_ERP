@@ -16,7 +16,7 @@ import { EmptyCard } from '../components/ui/EmptyCard';
 import { Avatar } from '../components/ui/Avatar';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { MentionInput } from '../components/ui/MentionInput';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Pagination } from '../components/ui/Pagination';
 
 const workflowList = [
@@ -4098,28 +4098,36 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
       )}
 
       {/* Backdrop overlay utilizing the CSS-based backdrop classes */}
-      <div 
+      <motion.div 
         className="drawer-backdrop" 
         onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
         style={{ zIndex: 10500 }}
       />
 
       {/* Drawer Sheet Container */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
-        right: 0,
-        bottom: 0,
-        background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
-        boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        animation: 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        boxSizing: 'border-box',
-        zIndex: 10600,
-        overflow: 'hidden'
-      }} onClick={e => e.stopPropagation()}>
+      <motion.div 
+        initial={isMobile ? { y: '100%' } : { opacity: 0, x: '250px' }}
+        animate={{ y: 0, x: 0, opacity: 1 }}
+        exit={isMobile ? { y: '100%' } : { opacity: 0, x: '250px' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: isMobile ? 0 : 'var(--sidebar-width, 220px)',
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
+          boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+          zIndex: 10600,
+          overflow: 'hidden'
+        }} onClick={e => e.stopPropagation()}>
         
         {/* Drawer Header */}
         <div style={{
@@ -4396,7 +4404,7 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
         </div>
 
 
-      </div>
+      </motion.div>
     </>,
     document.body
   );
