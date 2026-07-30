@@ -131,7 +131,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
             animation: 'fadeIn 0.2s ease'
           }}
         >
-          {vietnameseText} {abbreviation ? `(${abbreviation})` : ''}
+          {vietnameseText}
         </span>
       )}
     </div>
