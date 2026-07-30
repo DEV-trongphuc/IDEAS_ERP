@@ -2,6 +2,27 @@ import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
 
+if (typeof window !== 'undefined') {
+  const reloadOnChunkError = (msg: string) => {
+    if (msg && (msg.includes('Failed to fetch dynamically imported module') || msg.includes('ChunkLoadError'))) {
+      const lastReload = sessionStorage.getItem('last_chunk_reload');
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 15000) {
+        sessionStorage.setItem('last_chunk_reload', String(now));
+        window.location.reload();
+      }
+    }
+  };
+
+  window.addEventListener('error', (e) => {
+    reloadOnChunkError(e.message || '');
+  }, true);
+
+  window.addEventListener('unhandledrejection', (e) => {
+    const msg = e.reason?.message || String(e.reason || '');
+    reloadOnChunkError(msg);
+  });
+}
 
 interface Props {
   children?: ReactNode;
@@ -24,6 +45,26 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+    
+    const errorMsg = error?.message || String(error || '');
+    const errorStack = error?.stack || '';
+    const isChunkError = 
+      errorMsg.includes('Failed to fetch dynamically imported module') ||
+      errorMsg.includes('ChunkLoadError') ||
+      error.name === 'ChunkLoadError' ||
+      errorStack.includes('Failed to fetch dynamically imported module') ||
+      errorStack.includes('ChunkLoadError');
+
+    if (isChunkError) {
+      const lastReload = sessionStorage.getItem('last_chunk_reload');
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 15000) {
+        sessionStorage.setItem('last_chunk_reload', String(now));
+        window.location.reload();
+        return;
+      }
+    }
+
     try {
       window.alert('LỖI HỆ THỐNG:\n' + error.message + '\n\nStack:\n' + (error.stack || '').substring(0, 500));
     } catch (e) {}
