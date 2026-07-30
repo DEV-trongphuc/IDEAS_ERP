@@ -475,8 +475,8 @@ export default function Approvals() {
     try {
       setLoadingBalance(true);
       const res = await api.get('/hrm/my-balance');
-      if (res.data) {
-        setMyBalance(res.data);
+      if (res.data && res.data.success && res.data.data) {
+        setMyBalance(res.data.data);
       }
     } catch (e) {
       console.error('Error fetching leave balance:', e);
