@@ -2490,7 +2490,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     });
     
     let calculatedStatus = 'lead';
-    if (targetId === 'dat_coc' || targetId === 'dong_deal') {
+    if (targetId === 'hoc_vien') {
       calculatedStatus = 'customer';
     } else if (targetId === 'not_lead') {
       calculatedStatus = 'churned';
@@ -3387,7 +3387,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   const mappedStages = hierarchy.map((slug: string, idx: number) => ({
                     id: slug,
                     name: labels[slug] || slug,
-                    color: slug === 'dat_coc' || slug === 'dong_deal' ? '#10b981' : slug === 'booking' || slug === 'da_gap' || slug === 'dong_y_gap' ? '#f59e0b' : '#3b82f6',
+                    color: slug === 'hoc_vien' ? '#ec4899' : slug === 'dong_le_phi_ho_so' ? '#10b981' : slug === 'co_hoi' || slug === 'dang_tu_van' || slug === 'nop_ho_so' ? '#f59e0b' : '#3b82f6',
                     order_index: idx
                   }));
                   setPipelineStages(mappedStages);
@@ -4296,7 +4296,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       // 3. Complete pipeline stage transition if pending
       if (pendingPipelineTransition) {
         const { targetId, targetLabel, note } = pendingPipelineTransition;
-        const calculatedStatus = 'customer';
+        const calculatedStatus = (targetId === 'hoc_vien') ? 'customer' : 'qualified';
 
         await api.put(`/contacts/${contact.id}`, { 
           pipeline_status: targetId, 
@@ -4549,7 +4549,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
   const isReleaseBlocked = (() => {
     const currentStatus = contact?.pipeline_status || 'chua_xac_dinh';
-    const blockedStatuses = ['dat_coc', 'da_coc', 'dong_deal', 'thanh_cong', ...(coopEligibleStatuses || [])];
+    const blockedStatuses = ['thanh_cong', 'dong_le_phi_ho_so', 'hoc_vien', ...(coopEligibleStatuses || [])];
     return blockedStatuses.includes(currentStatus);
   })();
 
@@ -4722,8 +4722,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       return;
     }
 
-    // Check interaction guardrail: if transitioning to 'churned' or 'dong_deal' (Đã rời bỏ/Đóng), must have at least 1 activity
-    if ((targetId === 'churned' || targetId === 'dong_deal') && drawerActivities.length === 0) {
+    // Check interaction guardrail: if transitioning to 'churned' or 'hoc_vien' (Đã rời bỏ/Đóng), must have at least 1 activity
+    if ((targetId === 'churned' || targetId === 'hoc_vien') && drawerActivities.length === 0) {
       addToast('Chặn đóng deal: Khách hàng chưa từng có tương tác nào! Vui lòng tạo ghi chú cuộc gọi, email hoặc hoạt động trước.', 'error');
       return;
     }
@@ -11065,7 +11065,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     const targetLabel = pipelineModal.targetLabel;
                     const note = pipelineModal.note;
                     
-                    if (targetId === 'dat_coc' || targetId === 'da_coc') {
+                    if (targetId === 'dong_le_phi_ho_so' || targetId === 'hoc_vien') {
                       setDepositProjectId('');
                       setDepositUnitCode('');
                       const defaultPrice = String(formData.expected_revenue || contact?.expected_revenue || '');
@@ -11073,7 +11073,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       setDepositExpectedCommission('');
                       setCommissionType('amount');
                       setCommissionPercent('');
-                      setDepositMilestones([{ name: 'Đợt 1 - Cọc giữ chỗ', amount: '', expected_pay_date: '' }]);
+                      const milestoneName = targetId === 'dong_le_phi_ho_so' 
+                        ? 'Đợt 1 - Đóng lệ phí hồ sơ' 
+                        : (targetId === 'hoc_vien' ? 'Đợt 1 - Học phí' : 'Đợt 1 - Cọc giữ chỗ');
+                      setDepositMilestones([{ name: milestoneName, amount: '', expected_pay_date: '' }]);
                       setPipelineModal({ isOpen: false, targetId: '', targetLabel: '', note: '' });
                       setPendingPipelineTransition({ targetId, targetLabel, note });
                       setShowDealModal(true);
@@ -11144,7 +11147,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
                       // Map selected pipeline stage slug to the macro status enum
                       let calculatedStatus = 'lead';
-                      if (targetId === 'dat_coc' || targetId === 'dong_deal') {
+                      if (targetId === 'hoc_vien') {
                         calculatedStatus = 'customer';
                       } else if (targetId === 'not_lead') {
                         calculatedStatus = 'churned';
