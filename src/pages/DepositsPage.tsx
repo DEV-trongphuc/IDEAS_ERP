@@ -1563,10 +1563,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                             const latestDate = dates.length > 0 ? new Date(Math.max(...dates.map(d => new Date(d).getTime()))) : null;
                             const latestDateStr = latestDate ? latestDate.toLocaleDateString('vi-VN') : '—';
                             return (
-                              <div>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#10b981', display: 'block' }}>Ngày {latestDateStr}</span>
-                                <span style={{ fontSize: '0.725rem', color: '#10b981', display: 'block', marginTop: '2px', fontWeight: 700 }}>Đã thu hết</span>
-                              </div>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#10b981' }}>{latestDateStr}</span>
                             );
                           }
 
@@ -1587,13 +1584,13 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                           const payDateStr = payDate.toLocaleDateString('vi-VN');
 
                           if (diffDays > 0) {
+                            const isUrgent = diffDays < 7;
                             return (
                               <div>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text)', display: 'block' }}>{payDateStr}</span>
-                                <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '2px' }}>Còn {diffDays} ngày nữa</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isUrgent ? '#d97706' : 'var(--color-text)', display: 'block' }}>{payDateStr}</span>
+                                <span style={{ fontSize: '0.725rem', color: isUrgent ? '#d97706' : 'var(--color-text-muted)', display: 'block', marginTop: '2px', fontWeight: isUrgent ? 600 : 400 }}>Còn {diffDays} ngày nữa</span>
                               </div>
                             );
-                          } else if (diffDays === 0) {
                             return (
                               <div>
                                 <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#d97706', display: 'block' }}>{payDateStr}</span>
