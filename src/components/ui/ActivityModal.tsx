@@ -360,7 +360,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <label className="form-label" style={{ margin: 0 }}>Thời lượng: <strong style={{ color: 'var(--color-primary)' }}>{formData.call_duration} phút</strong></label>
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        {[3, 5, 10, 20].map(mins => (
+                        {[3, 5, 10, 15, 20].map(mins => (
                           <button
                             key={mins}
                             type="button"
