@@ -5968,56 +5968,7 @@ switch ($action) {
                 }
             }
 
-            // Check van chống ôm (backpressure limit)
-            if ((int)$resChk['assigned_to'] > 0) {
-                $backpressureLimit = (int) get_system_setting($conn, 'backpressure_limit');
-                if ($backpressureLimit <= 0) {
-                    $backpressureLimit = 5;
-                }
-
-                $rawAssigned = (int)$resChk['assigned_to'];
-                $targetUserId = $rawAssigned;
-                $stmtU = $conn->prepare("SELECT id FROM users WHERE id = ? OR email = (SELECT email FROM consultants WHERE id = ? LIMIT 1) LIMIT 1");
-                if ($stmtU) {
-                    $stmtU->bind_param("ii", $rawAssigned, $rawAssigned);
-                    $stmtU->execute();
-                    $uRes = $stmtU->get_result()->fetch_column();
-                    if ($uRes) $targetUserId = (int)$uRes;
-                    $stmtU->close();
-                }
-
-                $stmtKhtn = $conn->prepare("
-                    SELECT COUNT(*) as cnt 
-                    FROM contacts c
-                    WHERE c.owner_id = ? 
-                      AND c.deleted_at IS NULL
-                      AND c.status != 'rejected'
-                      AND c.pipeline_status IN ('chua_xac_dinh', 'quan_tam')
-                      AND NOT EXISTS (
-                          SELECT 1 FROM notes n 
-                          WHERE n.entity_type = 'contact' 
-                            AND n.entity_id = c.id 
-                      )
-                      AND NOT EXISTS (
-                          SELECT 1 FROM activities a
-                          WHERE (a.related_type = 'contact' AND a.related_id = c.id)
-                             OR a.contact_id = c.id
-                      )
-                ");
-                $stmtKhtn->bind_param("i", $targetUserId);
-                $stmtKhtn->execute();
-                $khtnCnt = (int) ($stmtKhtn->get_result()->fetch_assoc()['cnt'] ?? 0);
-                $stmtKhtn->close();
-
-                if ($khtnCnt >= $backpressureLimit) {
-                    $conn->rollback();
-                    echo json_encode([
-                        'success' => false, 
-                        'message' => "Bạn đã vượt quá van chống ôm ($khtnCnt/$backpressureLimit data chưa xử lý). Vui lòng tương tác/ghi chú các data hiện tại trước khi nhận thêm."
-                    ]);
-                    break;
-                }
-            }
+            // Check van chống ôm (Đã lược bỏ theo yêu cầu)
 
             $stmtUp = $conn->prepare("UPDATE leads SET is_accepted = 1, accepted_at = NOW() WHERE id = ?");
             $stmtUp->bind_param("i", $lead_id);
@@ -18156,7 +18107,7 @@ switch ($action) {
             if ($shareHours > 0) {
                 $chuaXacDinhDuration = "+$shareHours hours";
             }
-            $secExpiresTime = date('Y-m-d H:i:s', strtotime($chuaXacDinhDuration));
+            $secExpiresTime = null;
 
             $stmtIns = $conn->prepare("
                 INSERT INTO contacts (person_id, project_id, owner_id, created_by, first_name, last_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type)

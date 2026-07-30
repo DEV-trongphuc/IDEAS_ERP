@@ -2183,39 +2183,7 @@ function checkConsultantGates($conn, $consultantId, $lead = null)
         }
     }
 
-    // GATE 4: Van chống ôm (Backpressure Valve)
-    $backpressureLimit = (int) get_system_setting($conn, 'backpressure_limit');
-    if ($backpressureLimit <= 0) {
-        $backpressureLimit = 5;
-    }
-    
-    // Count lead tính công in 'chua_xac_dinh' or 'quan_tam' with no notes created by owner
-    $stmtKhtn = $conn->prepare("
-        SELECT COUNT(*) as cnt 
-        FROM contacts c
-        WHERE c.owner_id = ? 
-          AND c.deleted_at IS NULL
-          AND c.status != 'rejected'
-          AND c.pipeline_status IN ('chua_xac_dinh', 'quan_tam')
-          AND NOT EXISTS (
-              SELECT 1 FROM notes n 
-              WHERE n.entity_type = 'contact' 
-                AND n.entity_id = c.id 
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM activities a
-              WHERE (a.related_type = 'contact' AND a.related_id = c.id)
-                 OR a.contact_id = c.id
-          )
-    ");
-    $stmtKhtn->bind_param("i", $targetUserId);
-    $stmtKhtn->execute();
-    $khtnCnt = (int) ($stmtKhtn->get_result()->fetch_assoc()['cnt'] ?? 0);
-    $stmtKhtn->close();
-    
-    if ($khtnCnt >= $backpressureLimit) {
-        return "Failed Gate 4: Backpressure valve limit exceeded ($khtnCnt >= $backpressureLimit 'Chưa Xác Định' leads)";
-    }
+    // GATE 4: Van chống ôm (Đã lược bỏ theo yêu cầu)
 
     // GATE 5: Hạn mức Giờ Vàng (Golden Hours Cap per Consultant)
     $goldenHoursStart = get_system_setting($conn, 'golden_hours_start_time') ?: '06:00';
@@ -3818,7 +3786,7 @@ function ensurePersonAndContact($conn, $leadId) {
         if ($shareHours > 0) {
             $chuaXacDinhDuration = "+$shareHours hours";
         }
-        $secExpiresTime = date('Y-m-d H:i:s', strtotime($chuaXacDinhDuration));
+        $secExpiresTime = null;
 
         $ownerUserId = null;
         if ($assigned_to > 0) {

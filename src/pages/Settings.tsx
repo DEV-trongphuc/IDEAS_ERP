@@ -413,6 +413,8 @@ const SettingsInner = () => {
   });
   const [dealOpportunityStatus, setDealOpportunityStatus] = useState<string>('booking');
   const [dealWonStatus, setDealWonStatus] = useState<string>('dong_deal');
+  const [saleAdminLeadVisibilityStage, setSaleAdminLeadVisibilityStage] = useState<string>('nop_ho_so');
+  const [accountantLeadVisibilityStage, setAccountantLeadVisibilityStage] = useState<string>('dong_le_phi_ho_so');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // States
@@ -781,6 +783,8 @@ const SettingsInner = () => {
         }
         if (json.data.deal_opportunity_status) setDealOpportunityStatus(json.data.deal_opportunity_status);
         if (json.data.deal_won_status) setDealWonStatus(json.data.deal_won_status);
+        if (json.data.sale_admin_lead_visibility_stage) setSaleAdminLeadVisibilityStage(json.data.sale_admin_lead_visibility_stage);
+        if (json.data.accountant_lead_visibility_stage) setAccountantLeadVisibilityStage(json.data.accountant_lead_visibility_stage);
         if (json.data.lead_scoring_rules) {
           try {
             setLeadScoringRules(JSON.parse(json.data.lead_scoring_rules));
@@ -1500,7 +1504,9 @@ const SettingsInner = () => {
       company_address: companyAddress,
       company_phone: companyPhone,
       company_tax_id: companyTaxId,
-      company_logo_url: companyLogoUrl
+      company_logo_url: companyLogoUrl,
+      sale_admin_lead_visibility_stage: saleAdminLeadVisibilityStage,
+      accountant_lead_visibility_stage: accountantLeadVisibilityStage
     };
 
     Object.keys(securityTimers).forEach(statusSlug => {
@@ -5027,95 +5033,7 @@ function doPost(e) {
                           </div>
                         </div>
 
-                        {/* Cụm 3: Chống Ôm & Chia Song Song */}
-                        <div style={{
-                          background: 'var(--color-bg-light)',
-                          padding: '1rem 1.25rem',
-                          borderRadius: '10px',
-                          border: '1px solid var(--color-border-light)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.75rem'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px dashed var(--color-border-light)', paddingBottom: '6px' }}>
-                            <Layers size={14} style={{ color: 'var(--color-primary)' }} />
-                            <h5 style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
-                              {t('Chống Ôm & Chia Song Song')}
-                            </h5>
-                          </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                              <div>
-                                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.75rem' }}>{t('Hạn mức chống ôm')}</label>
-                                <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                                  <input
-                                    type="number"
-                                    className="form-input"
-                                    style={{ paddingRight: '3.5rem', height: '34px', fontSize: '0.8125rem' }}
-                                    value={backpressureLimit}
-                                    onChange={e => setBackpressureLimit(Number(e.target.value))}
-                                    min={1}
-                                  />
-                                  <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('lead')}</span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.75rem' }}>{t('Thời gian chờ chia song song')}</label>
-                                <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                                  <input
-                                    type="number"
-                                    className="form-input"
-                                    style={{ paddingRight: '3.5rem', height: '34px', fontSize: '0.8125rem' }}
-                                    value={uncontactedLeadShareHours}
-                                    onChange={e => setUncontactedLeadShareHours(Number(e.target.value))}
-                                    min={1}
-                                  />
-                                  <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('giờ')}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.75rem' }}>{t('Trạng thái kích hoạt chia song song')}</label>
-                              <div
-                                onClick={() => setIsParallelTriggerModalOpen(true)}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  width: '100%',
-                                  height: '34px',
-                                  fontSize: '0.8125rem',
-                                  borderRadius: '6px',
-                                  border: '1px solid var(--color-border)',
-                                  padding: '0 10px',
-                                  background: 'white',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease-in-out',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.borderColor = 'var(--color-primary-light, #fca5a5)';
-                                  e.currentTarget.style.boxShadow = '0 0 0 1px var(--color-primary-light, #fca5a5)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.borderColor = 'var(--color-border)';
-                                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                                }}
-                              >
-                                <span style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.8125rem' }}>
-                                  {pipelineStatusLabels[parallelAssignmentTriggerStatus] || parallelAssignmentTriggerStatus}
-                                </span>
-                                <ChevronDown size={14} style={{ color: 'var(--color-text-muted)' }} />
-                              </div>
-                              <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.3 }}>
-                                {t('Gán thêm Sale thứ hai song song nếu lead ở trạng thái trên không tiến triển sau số giờ này.')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
 
                       </div>
                     </div>
@@ -5164,50 +5082,6 @@ function doPost(e) {
                         />
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
                           {t('Trạng thái đích nếu khách hàng từng có lịch sử đặt chỗ/booking (ví dụ: Booking).')}
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="form-label">{t('Phí môi giới tiêu chuẩn (%)')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                          <input
-                            type="number"
-                            step="0.1"
-                            className="form-input"
-                            style={{ paddingRight: '3.5rem' }}
-                            value={standardCommissionRate * 100}
-                            onChange={e => setStandardCommissionRate(Number(e.target.value) / 100)}
-                            min={0}
-                          />
-                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>%</span>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
-                          {t('Tỷ lệ phí môi giới tiêu chuẩn khi tính hoa hồng đổi căn mặc định.')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Nhóm 6: Bộ lọc & Loại trừ Broadcast */}
-                  <div style={{ background: 'var(--color-surface)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', marginTop: '1.25rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
-                      <Filter size={16} style={{ color: 'var(--color-primary)' }} />
-                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>{t('Bộ lọc & Loại trừ Broadcast')}</h4>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div>
-                        <label className="form-label" style={{ fontWeight: 600 }}>{t('Luật loại trừ Broadcast')}</label>
-                        <CustomSelect
-                          options={broadcastExclusionOptions}
-                          value={currentExclusionArr}
-                          onChange={(arr: any[]) => setBroadcastExclusionRules(arr.join(','))}
-                          multiple={true}
-                          searchable={true}
-                          placeholder={t('Chọn Trạng thái hoặc Thẻ loại trừ...')}
-                        />
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
-                          {t('Chọn các trạng thái phễu hoặc thẻ phân loại khách hàng để loại trừ khỏi các chiến dịch gửi tin hàng loạt (Zalo Broadcast, ZNS, SMS).')}
                         </span>
                       </div>
                     </div>
@@ -7352,6 +7226,56 @@ function doPost(e) {
                       />
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
                         {t('Trạng thái này đánh dấu giao dịch đã thành công (Chốt deal).')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cấu hình hiển thị Tiềm năng của Sale Admin & Kế toán */}
+                  <div style={{ 
+                    marginTop: '2rem', 
+                    paddingTop: '1.5rem', 
+                    borderTop: '1px solid var(--color-border)', 
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '1.5rem'
+                  }}>
+                    <div>
+                      <label className="form-label" style={{ fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <UserCheck size={16} style={{ color: 'var(--color-warning)' }} />
+                        {t('Mốc hiển thị Tiềm năng của Sale Admin')}
+                      </label>
+                      <CustomSelect
+                        options={pipelineStatusHierarchy.map(status => ({
+                          value: status,
+                          label: pipelineStatusLabels[status] || status
+                        }))}
+                        value={saleAdminLeadVisibilityStage}
+                        onChange={val => setSaleAdminLeadVisibilityStage(val as string)}
+                        direction="up"
+                        width="100%"
+                      />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
+                        {t('Cấp độ Sale Admin sẽ nhìn thấy danh sách Tiềm năng từ mốc này trở đi trong vòng đời.')}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="form-label" style={{ fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <UserCheck size={16} style={{ color: '#8b5cf6' }} />
+                        {t('Mốc hiển thị Tiềm năng của Kế toán')}
+                      </label>
+                      <CustomSelect
+                        options={pipelineStatusHierarchy.map(status => ({
+                          value: status,
+                          label: pipelineStatusLabels[status] || status
+                        }))}
+                        value={accountantLeadVisibilityStage}
+                        onChange={val => setAccountantLeadVisibilityStage(val as string)}
+                        direction="up"
+                        width="100%"
+                      />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
+                        {t('Cấp độ Kế toán sẽ nhìn thấy danh sách Tiềm năng từ mốc này trở đi trong vòng đời.')}
                       </span>
                     </div>
                   </div>

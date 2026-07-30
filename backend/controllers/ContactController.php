@@ -1170,28 +1170,7 @@ class ContactController {
     }
 
     private function getSecurityExpiration(string $status): ?string {
-        $defaultDurations = [
-            'chua_xac_dinh' => '+3 hours',
-            'quan_tam' => '+1 day',
-            'thien_chi' => '+3 days',
-            'dong_y_gap' => '+4 days',
-            'da_gap' => '+5 days',
-            'booking' => '+3 months',
-            'dat_coc' => '+6 months',
-            'dong_deal' => '+12 months'
-        ];
-        $default = $defaultDurations[$status] ?? '+3 days';
-        $duration = $this->getSetting('security_timer_' . $status, $default);
-        
-        $triggerStatus = $this->getSetting('parallel_assignment_trigger_status', 'chua_xac_dinh');
-        if ($status === $triggerStatus) {
-            $shareHours = (int)$this->getSetting('uncontacted_lead_share_hours', '3');
-            if ($shareHours > 0) {
-                $duration = "+$shareHours hours";
-            }
-        }
-        
-        return date('Y-m-d H:i:s', strtotime($duration));
+        return null;
     }
 
     private function getSlugFromStageId(int $stageId, int $tenantId): string {
