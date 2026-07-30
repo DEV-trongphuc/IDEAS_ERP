@@ -739,6 +739,10 @@ switch ($resource) {
         elseif ($resourceId === 'leaves' && $method === 'GET') $ctrl->indexLeaves($auth);
         elseif ($resourceId === 'leaves' && $method === 'POST') $ctrl->createLeave($auth);
         elseif ($resourceId === 'leaves' && $method === 'PUT') $ctrl->approveLeave($auth);
+        elseif ($resourceId === 'leaves' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'GET') $ctrl->getLeaveComments($auth, (int)$subResource);
+        elseif ($resourceId === 'leaves' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'POST') $ctrl->addLeaveComment($auth, (int)$subResource);
+        elseif ($resourceId === 'advances' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'GET') $ctrl->getAdvanceComments($auth, (int)$subResource);
+        elseif ($resourceId === 'advances' && $subResource && ($segments[3] ?? '') === 'comments' && $method === 'POST') $ctrl->addAdvanceComment($auth, (int)$subResource);
         elseif ($resourceId === 'leaves' && $method === 'DELETE' && $subResource) $ctrl->deleteLeave($auth, (int)$subResource);
         elseif ($resourceId === 'advances' && $method === 'GET') $ctrl->indexAdvances($auth);
         elseif ($resourceId === 'advances' && $method === 'POST') $ctrl->createAdvance($auth);
@@ -1177,6 +1181,10 @@ switch ($resource) {
             }
         } elseif ($resourceId && $subResource === 'bulk-approve' && $method === 'POST') {
             $ctrl->approveBulkRequest($auth, (int)$resourceId);
+        } elseif (is_numeric($resourceId) && $subResource === 'comments' && $method === 'GET') {
+            $ctrl->getCheckinComments($auth, (int)$resourceId);
+        } elseif (is_numeric($resourceId) && $subResource === 'comments' && $method === 'POST') {
+            $ctrl->addCheckinComments($auth, (int)$resourceId);
         } else {
             if     (!$resourceId && $method === 'GET')    $ctrl->index($auth);
             elseif (!$resourceId && $method === 'POST')   $ctrl->store($auth);

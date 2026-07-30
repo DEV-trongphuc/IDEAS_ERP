@@ -3122,6 +3122,81 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
   const [stepReminders, setStepReminders] = useState<Record<number, string>>({});
 
   const [localComments, setLocalComments] = useState<any[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  const getCommentsEndpoint = (type: string, id: number) => {
+    switch (type) {
+      case 'expense':
+        return `/expenses/${id}/comments`;
+      case 'leave':
+        return `/hrm/leaves/${id}/comments`;
+      case 'advance':
+        return `/hrm/advances/${id}/comments`;
+      case 'checkin':
+        return `/check-ins/${id}/comments`;
+      default:
+        return null;
+    }
+  };
+
+  const getSystemComments = () => {
+    const createdAtVal = detail?.created_at || item.created_at;
+    const initialComments = [
+      { 
+        id: 1, 
+        author: t('Hệ thống quy trình IDEAS'), 
+        time: new Date(createdAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
+        text: `${t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình lúc')} ${new Date(createdAtVal).toLocaleString('vi-VN')}.`, 
+        attachments: [] 
+      }
+    ];
+
+    const overall = (item.status || detail?.status || 'pending').toLowerCase();
+    if (overall === 'approved') {
+      const approvedAtVal = detail?.approved_at || detail?.updated_at || (item as any).updated_at || new Date().toISOString();
+      initialComments.push({
+        id: 2,
+        author: t('Hệ thống quy trình IDEAS'),
+        time: new Date(approvedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        text: `✅ ${t('Yêu cầu đã được phê duyệt thành công lúc')} ${new Date(approvedAtVal).toLocaleString('vi-VN')}.`,
+        attachments: []
+      });
+    } else if (overall === 'rejected') {
+      const rejectedAtVal = detail?.updated_at || (item as any).updated_at || new Date().toISOString();
+      const reasonStr = detail?.reason || detail?.reject_reason || '';
+      initialComments.push({
+        id: 2,
+        author: t('Hệ thống quy trình IDEAS'),
+        time: new Date(rejectedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        text: `❌ ${t('Yêu cầu bị từ chối lúc')} ${new Date(rejectedAtVal).toLocaleString('vi-VN')}.${reasonStr ? ` Lý do: ${reasonStr}` : ''}`,
+        attachments: []
+      });
+    }
+    return initialComments;
+  };
+
+  const fetchComments = async () => {
+    const endpoint = getCommentsEndpoint(item.type, item.id);
+    if (!endpoint) return;
+    setLoadingComments(true);
+    try {
+      const res = await api.get(endpoint);
+      const dbComments = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const mapped = dbComments.map((c: any) => ({
+        id: c.id,
+        author: c.user_name || t('Tôi'),
+        time: new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        text: c.body || '',
+        attachments: c.attachments || []
+      }));
+      const systemComments = getSystemComments();
+      setLocalComments([...systemComments, ...mapped.reverse()]);
+    } catch (e) {
+      console.error('Error fetching comments:', e);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
   const [newComment, setNewComment] = useState('');
   const [commentAttachments, setCommentAttachments] = useState<any[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -3137,19 +3212,40 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     }, 500);
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim() && commentAttachments.length === 0) return;
-    const commentObj = {
-      id: Date.now(),
-      author: t('Tôi'),
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      text: newComment,
-      attachments: commentAttachments
-    };
-    setLocalComments([...localComments, commentObj]);
-    setNewComment('');
-    setCommentAttachments([]);
-    toast.success(t('Đăng bình luận thành công!'));
+    const endpoint = getCommentsEndpoint(item.type, item.id);
+    if (!endpoint) {
+      // Fallback local only if type not supported
+      const commentObj = {
+        id: Date.now(),
+        author: t('Tôi'),
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        text: newComment,
+        attachments: commentAttachments
+      };
+      setLocalComments([...localComments, commentObj]);
+      setNewComment('');
+      setCommentAttachments([]);
+      toast.success(t('Đăng bình luận thành công!'));
+      return;
+    }
+
+    try {
+      const res = await api.post(endpoint, {
+        body: newComment,
+        attachments: commentAttachments
+      });
+      if (res.data?.success || res.data?.id) {
+        toast.success(t('Đăng bình luận thành công!'));
+        setNewComment('');
+        setCommentAttachments([]);
+        fetchComments();
+      }
+    } catch (e) {
+      console.error('Error adding comment:', e);
+      toast.error(t('Lỗi khi đăng bình luận.'));
+    }
   };
 
   useEffect(() => {
@@ -3186,40 +3282,7 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
 
   useEffect(() => {
     if (detail || item) {
-      const createdAtVal = detail?.created_at || item.created_at;
-      const initialComments = [
-        { 
-          id: 1, 
-          author: t('Hệ thống quy trình IDEAS'), 
-          time: new Date(createdAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }), 
-          text: `${t('Đã tiếp nhận yêu cầu phê duyệt và bắt đầu quy trình lúc')} ${new Date(createdAtVal).toLocaleString('vi-VN')}.`, 
-          attachments: [] 
-        }
-      ];
-
-      const overall = (item.status || detail?.status || 'pending').toLowerCase();
-      if (overall === 'approved') {
-        const approvedAtVal = detail?.approved_at || detail?.updated_at || (item as any).updated_at || new Date().toISOString();
-        initialComments.push({
-          id: 2,
-          author: t('Hệ thống quy trình IDEAS'),
-          time: new Date(approvedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          text: `✅ ${t('Yêu cầu đã được phê duyệt thành công lúc')} ${new Date(approvedAtVal).toLocaleString('vi-VN')}.`,
-          attachments: []
-        });
-      } else if (overall === 'rejected') {
-        const rejectedAtVal = detail?.updated_at || (item as any).updated_at || new Date().toISOString();
-        const reasonStr = detail?.reason || detail?.reject_reason || '';
-        initialComments.push({
-          id: 2,
-          author: t('Hệ thống quy trình IDEAS'),
-          time: new Date(rejectedAtVal).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          text: `❌ ${t('Yêu cầu bị từ chối lúc')} ${new Date(rejectedAtVal).toLocaleString('vi-VN')}.${reasonStr ? ` Lý do: ${reasonStr}` : ''}`,
-          attachments: []
-        });
-      }
-
-      setLocalComments(initialComments);
+      fetchComments();
     }
   }, [detail, item]);
 
