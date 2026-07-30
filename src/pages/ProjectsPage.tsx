@@ -1081,88 +1081,91 @@ export default function ProjectsPage() {
     headerActions?: React.ReactNode,
     isCampaign?: boolean
   ) => {
-    if (!isOpen) return null;
     return createPortal(
-      <>
-        <div
-          className="drawer-backdrop"
-          onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.65)',
-            zIndex: 10000,
-            backdropFilter: 'blur(4px)',
-            transition: 'all 0.3s ease',
-            cursor: 'pointer'
-          }}
-        />
-        <div
-          className="drawer-sheet"
-          style={{
-            left: window.innerWidth <= 768 ? 0 : 'var(--sidebar-width, 220px)',
-            right: 0,
-            maxWidth: '100vw',
-            zIndex: 10600,
-            background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'fixed',
-            top: 0,
-            bottom: 0,
-            boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
-            animation: 'slideInProj 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            willChange: 'transform'
-          }}
-        >
-          {/* Drawer Header */}
-          <div style={{
-            padding: isMobile ? '0.75rem 1rem' : '1.25rem 1.5rem',
-            borderBottom: '1px solid var(--color-border-light)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: 'var(--color-surface)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-              {isCampaign && isMobile && (
-                <button
-                  onClick={onClose}
-                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px 4px 0' }}
-                >
-                  <ChevronLeft size={24} />
-                </button>
-              )}
-              <h3 style={{ margin: 0, fontSize: (isCampaign && isMobile) ? '0.925rem' : '1.125rem', fontWeight: 800, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h3>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {headerActions}
-              {(!isCampaign || !isMobile) && (
-                <button
-                  onClick={onClose}
-                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
-                  className="hover-lift"
-                >
-                  <X size={20} />
-                </button>
-              )}
-            </div>
-          </div>
-          {/* Drawer Content */}
-          <div style={{ padding: isMobile ? '0.5rem 0.5rem 100px 0.5rem' : '1.5rem', overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
-            {content}
-          </div>
-        </div>
-        <style>{`
-          @keyframes slideInProj {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-          }
-        `}</style>
-      </>,
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              className="drawer-backdrop"
+              onClick={onClose}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.65)',
+                zIndex: 10000,
+                backdropFilter: 'blur(4px)',
+                cursor: 'pointer'
+              }}
+            />
+            <motion.div
+              className="drawer-sheet"
+              initial={isMobile ? { y: '100%' } : { opacity: 0, x: '250px' }}
+              animate={{ y: 0, x: 0, opacity: 1 }}
+              exit={isMobile ? { y: '100%' } : { opacity: 0, x: '250px' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
+              style={{
+                left: window.innerWidth <= 768 ? 0 : 'var(--sidebar-width, 220px)',
+                right: 0,
+                maxWidth: '100vw',
+                zIndex: 10600,
+                background: 'linear-gradient(180deg, var(--color-bg) 0%, var(--color-border-light) 100%)',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'fixed',
+                top: 0,
+                bottom: 0,
+                boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+                willChange: 'transform'
+              }}
+            >
+              {/* Drawer Header */}
+              <div style={{
+                padding: isMobile ? '0.75rem 1rem' : '1.25rem 1.5rem',
+                borderBottom: '1px solid var(--color-border-light)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'var(--color-surface)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                  {isCampaign && isMobile && (
+                    <button
+                      onClick={onClose}
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px 4px 0' }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                  )}
+                  <h3 style={{ margin: 0, fontSize: (isCampaign && isMobile) ? '0.925rem' : '1.125rem', fontWeight: 800, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h3>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {headerActions}
+                  {(!isCampaign || !isMobile) && (
+                    <button
+                      onClick={onClose}
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
+                      className="hover-lift"
+                    >
+                      <X size={20} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* Drawer Content */}
+              <div style={{ padding: isMobile ? '0.5rem 0.5rem 100px 0.5rem' : '1.5rem', overflowY: 'auto', flex: 1 }} className="custom-scrollbar">
+                {content}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>,
       document.body
     );
   };
