@@ -6424,6 +6424,65 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             }} />
                           </div>
                           <div className="form-group">
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">Ngày sinh</label>
+                                <input className="form-input" type="date" value={formData.birthday || ''} onChange={e => {
+                                  const val = e.target.value;
+                                  setFormData((prev: any) => ({ ...prev, birthday: val }));
+                                }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">Giới tính</label>
+                                <CustomSelect
+                                  options={[
+                                    { value: '', label: '— Chưa chọn —' },
+                                    { value: 'male', label: 'Nam' },
+                                    { value: 'female', label: 'Nữ' },
+                                    { value: 'other', label: 'Khác' }
+                                  ]}
+                                  value={formData.gender || ''}
+                                  onChange={val => setFormData((prev: any) => ({ ...prev, gender: val as string }))}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <div style={{ display: 'flex', gap: '0.75rem' }}>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">CCCD</label>
+                                <input className="form-input" placeholder="Nhập số CCCD" value={formData.citizen_id || ''} onChange={e => {
+                                  const val = e.target.value;
+                                  setFormData((prev: any) => ({ ...prev, citizen_id: val }));
+                                }} />
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <label className="form-label">Số Passport</label>
+                                <input className="form-input" placeholder="Nhập số Passport" value={formData.passport || ''} onChange={e => {
+                                  const val = e.target.value;
+                                  setFormData((prev: any) => ({ ...prev, passport: val }));
+                                }} />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="form-group">
+                            <AddressSelect
+                              label="Địa chỉ"
+                              value={formData.address || ''}
+                              onChange={addr => setFormData((prev: any) => ({ ...prev, address: addr }))}
+                              placeholder="Chọn địa chỉ liên hệ..."
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Chức danh</label>
+                            <input className="form-input" placeholder="ví dụ: Giám đốc" value={formData.job_title || ''} onChange={e => {
+                              const val = e.target.value;
+                              setFormData((prev: any) => ({ ...prev, job_title: val }));
+                            }} />
+                          </div>
+                          <div className="form-group">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                               <label className="form-label" style={{ margin: 0 }}>Số điện thoại chính</label>
                               <span 
@@ -6470,7 +6529,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
                                   }} />
                                 </div>
-                                <span>Liên kết Zalo</span>
+                                <span>Có Zalo</span>
                               </span>
                             </div>
                             <input className="form-input" type="tel" placeholder="09xx xxx xxx" value={formData.phone || ''} onChange={e => {
@@ -6532,7 +6591,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
                                   }} />
                                 </div>
-                                <span>Liên kết Zalo</span>
+                                <span>Có Zalo</span>
                               </span>
                             </div>
                             <input className="form-input" type="tel" placeholder="08xx xxx xxx" value={formData.mobile || ''} onChange={e => {
@@ -6546,65 +6605,6 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 return next;
                               });
                             }} />
-                          </div>
-                          <div className="form-group">
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                              <div style={{ flex: 1 }}>
-                                <label className="form-label">Ngày sinh</label>
-                                <input className="form-input" type="date" value={formData.birthday || ''} onChange={e => {
-                                  const val = e.target.value;
-                                  setFormData((prev: any) => ({ ...prev, birthday: val }));
-                                }} />
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <label className="form-label">Giới tính</label>
-                                <CustomSelect
-                                  options={[
-                                    { value: '', label: '— Chưa chọn —' },
-                                    { value: 'male', label: 'Nam' },
-                                    { value: 'female', label: 'Nữ' },
-                                    { value: 'other', label: 'Khác' }
-                                  ]}
-                                  value={formData.gender || ''}
-                                  onChange={val => setFormData((prev: any) => ({ ...prev, gender: val as string }))}
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="form-group">
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                              <div style={{ flex: 1 }}>
-                                <label className="form-label">CCCD</label>
-                                <input className="form-input" placeholder="Nhập số CCCD" value={formData.citizen_id || ''} onChange={e => {
-                                  const val = e.target.value;
-                                  setFormData((prev: any) => ({ ...prev, citizen_id: val }));
-                                }} />
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <label className="form-label">Số Passport</label>
-                                <input className="form-input" placeholder="Nhập số Passport" value={formData.passport || ''} onChange={e => {
-                                  const val = e.target.value;
-                                  setFormData((prev: any) => ({ ...prev, passport: val }));
-                                }} />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">Chức danh</label>
-                            <input className="form-input" placeholder="ví dụ: Giám đốc" value={formData.job_title || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, job_title: val }));
-                            }} />
-                          </div>
-                          <div className="form-group">
-                            <AddressSelect
-                              label="Địa chỉ"
-                              value={formData.address || ''}
-                              onChange={addr => setFormData((prev: any) => ({ ...prev, address: addr }))}
-                              placeholder="Chọn địa chỉ liên hệ..."
-                            />
                           </div>
                           <div className="form-group">
                             <label className="form-label">Liên kết Zalo</label>
