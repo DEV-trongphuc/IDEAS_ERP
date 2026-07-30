@@ -2677,7 +2677,10 @@ export default function Approvals() {
                                     <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{c.author}</strong>
                                     <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>{c.time}</span>
                                   </div>
-                                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>{c.text}</p>
+                                  <p 
+                                    style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}
+                                    dangerouslySetInnerHTML={{ __html: c.text }}
+                                  />
                                   
                                   {c.attachments && c.attachments.length > 0 && (
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
@@ -4312,7 +4315,10 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
                           <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{c.author}</strong>
                           <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>{c.time}</span>
                         </div>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left' }}>{c.text}</p>
+                        <p 
+                          style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left' }}
+                          dangerouslySetInnerHTML={{ __html: c.text }}
+                        />
                         
                         {/* Attached files chips list for comments */}
                         {c.attachments && c.attachments.length > 0 && (
