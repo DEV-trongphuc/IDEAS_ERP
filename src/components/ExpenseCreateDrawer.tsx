@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft, FileText } from 'lucide-react';
+import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft, FileText, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import { useUIStore } from '../store/uiStore';
@@ -72,6 +72,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   const isInitializedRef = useRef(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [allocationType, setAllocationType] = useState<'contact' | 'company'>('contact');
+  const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
 
   // Combine and filter suppliers and companies/partners for vendor search
   const filteredVendors = useMemo(() => {
@@ -165,6 +166,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   useEffect(() => {
     if (!isOpen) {
       isInitializedRef.current = false;
+      setShowParticipantDropdown(false);
     }
   }, [isOpen]);
 
@@ -1084,41 +1086,118 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                     Người liên quan
                   </h4>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ maxHeight: '100px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '4px', background: 'var(--color-bg)' }}>
-                      {form.related_user_ids.length === 0 ? (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Chưa chọn ai</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                      {/* Selected participant avatars */}
+                      {form.related_user_ids.length > 0 ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                          {form.related_user_ids.map((uid: number, idx: number) => {
+                            const u = users.find((x: any) => x.id === uid);
+                            if (!u) return null;
+                            return (
+                              <div
+                                key={uid}
+                                style={{
+                                  marginLeft: idx === 0 ? 0 : -8,
+                                  border: '1.5px solid var(--color-surface)',
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  zIndex: 10 - idx,
+                                  boxShadow: 'var(--shadow-sm)',
+                                  display: 'flex'
+                                }}
+                                title={u.full_name || u.name}
+                              >
+                                <Avatar src={u.avatar_url || u.avatar} name={u.full_name || u.name} size="sm" />
+                              </div>
+                            );
+                          })}
+                        </div>
                       ) : (
-                        form.related_user_ids.map((uid: number) => {
-                          const u = users.find((x: any) => x.id === uid);
-                          return (
-                            <span key={uid} style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(163, 20, 34, 0.2)' }}>
-                              <Avatar name={u?.full_name} size={16} />
-                              {u?.full_name}
-                              <X size={10} style={{ cursor: 'pointer' }} onClick={() => setForm({ ...form, related_user_ids: form.related_user_ids.filter((x: number) => x !== uid) })} />
-                            </span>
-                          );
-                        })
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Chưa chọn ai</span>
+                      )}
+
+                      {/* Dash add button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowParticipantDropdown(!showParticipantDropdown)}
+                        style={{
+                          border: '1px dashed var(--color-primary)',
+                          background: 'rgba(163, 20, 34, 0.04)',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          padding: 0,
+                          transition: 'all 0.15s ease'
+                        }}
+                        className="hover-scale"
+                        title="Thêm người liên quan"
+                      >
+                        <Plus size={14} color="var(--color-primary)" />
+                      </button>
+
+                      {/* Dropdown list of users */}
+                      {showParticipantDropdown && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          marginTop: '6px',
+                          zIndex: 9999,
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border-light)',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                          minWidth: '220px',
+                          maxHeight: '230px',
+                          overflowY: 'auto',
+                          padding: '6px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}>
+                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                            CHỌN NGƯỜI LIÊN QUAN
+                          </div>
+                          {users
+                            .filter((u: any) => u.id !== form.approver_id)
+                            .map((u: any) => {
+                              const isSelected = form.related_user_ids.includes(u.id);
+                              return (
+                                <div
+                                  key={u.id}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setForm({ ...form, related_user_ids: form.related_user_ids.filter((x: number) => x !== u.id) });
+                                    } else {
+                                      setForm({ ...form, related_user_ids: [...form.related_user_ids, u.id] });
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '6px 8px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: isSelected ? 'rgba(163, 20, 34, 0.06)' : 'transparent',
+                                    color: isSelected ? 'var(--color-primary)' : 'var(--color-text)'
+                                  }}
+                                >
+                                  <Avatar src={u.avatar_url || u.avatar} name={u.full_name || u.name} size="sm" />
+                                  <span style={{ fontSize: '0.75rem', fontWeight: isSelected ? 700 : 500 }}>
+                                    {u.full_name || u.name}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                        </div>
                       )}
                     </div>
-                    <CustomSelect
-                      options={users.filter((u: any) => !form.related_user_ids.includes(u.id) && u.id !== form.approver_id).map((u: any) => ({
-                        value: String(u.id),
-                        label: u.full_name,
-                        avatar: u.avatar_url,
-                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                      }))}
-                      value=""
-                      onChange={(val) => {
-                        const numVal = Number(val);
-                        if (numVal && !form.related_user_ids.includes(numVal)) {
-                          setForm({ ...form, related_user_ids: [...form.related_user_ids, numVal] });
-                        }
-                      }}
-                      placeholder="+ Thêm người liên quan..."
-                      showAvatars
-                      searchable
-                    />
                   </div>
                 </div>
               </div>
