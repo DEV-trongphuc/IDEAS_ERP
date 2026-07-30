@@ -199,8 +199,23 @@ function getModulePermissionScope($conn, $auth, $module, $action)
         return 'all';
     }
 
+    $role = isset($auth['role']) ? trim($auth['role']) : 'viewer';
+
+    // All roles can read departments and consultants
+    if ($module === 'users' && $action === 'read') {
+        return 'all';
+    }
+
+    // Sale Admin permission rules
+    if ($role === 'sale_admin' || $role === 'saleadmin') {
+        if (in_array($module, ['settings', 'hrm', 'attendance'], true)) {
+            return 'none';
+        }
+        return 'all';
+    }
+
     // Force sales role to have only 'own' (or 'none' for delete) on deals module
-    if (in_array($auth['role'], ['sale', 'sales'], true) && $module === 'deals') {
+    if (in_array($role, ['sale', 'sales'], true) && $module === 'deals') {
         return $action === 'delete' ? 'none' : 'own';
     }
 
