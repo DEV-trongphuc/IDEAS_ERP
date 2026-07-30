@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, ChevronLeft, ChevronRight, Plus, Trash2, Upload, AlertCircle, Loader2, Clock, 
+  X, ChevronLeft, ChevronRight, Plus, Trash2, Upload, AlertCircle, Loader2, Clock, Activity,
   CreditCard, Wallet, Edit, Check, Ban, Send, FileText, UserCheck, MessageSquare, Bell
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,7 +61,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   const { user } = useAuth();
   const { addToast, showConfirm } = useUIStore();
 
-  const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('history');
+  const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('comments');
   
   // States copied from DepositsPage.tsx
   const [selectedDepForManage, setSelectedDepForManage] = useState<any>(deposit);
@@ -1363,28 +1363,6 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                   {/* Tabs */}
                   <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-light)', padding: '0 8px' }}>
                     <button
-                      onClick={() => setActiveDrawerTab('history')}
-                      style={{
-                        flex: 1,
-                        padding: '14px 10px',
-                        border: 'none',
-                        background: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        color: activeDrawerTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                        borderBottom: activeDrawerTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <Clock size={14} />
-                      Lịch sử ({historyLogs.length})
-                    </button>
-                    <button
                       onClick={() => setActiveDrawerTab('comments')}
                       style={{
                         flex: 1,
@@ -1405,6 +1383,28 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                     >
                       <MessageSquare size={14} />
                       Thảo luận ({comments.length})
+                    </button>
+                    <button
+                      onClick={() => setActiveDrawerTab('history')}
+                      style={{
+                        flex: 1,
+                        padding: '14px 10px',
+                        border: 'none',
+                        background: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: activeDrawerTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        borderBottom: activeDrawerTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Activity size={14} />
+                      Hoạt động ({historyLogs.length})
                     </button>
                   </div>
 
