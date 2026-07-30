@@ -18,6 +18,7 @@ import { CustomSelect } from '../components/ui/CustomSelect';
 import { MentionInput } from '../components/ui/MentionInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pagination } from '../components/ui/Pagination';
+import { useUIStore } from '../store/uiStore';
 
 const workflowList = [
   { id: 'payment', name: 'Đề nghị thanh toán', description: 'Đề xuất thanh toán nhà cung cấp, chi phí vận hành, đối tác.', category: 'finance', icon: FileSignature, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
@@ -267,6 +268,7 @@ const formatApprovalCurrency = (amount: number | string, currency: string = 'VND
 export default function Approvals() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { showConfirm } = useUIStore();
   const isMobile = window.innerWidth < 768;
   
   const isAdmin = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr'].includes(String(user?.role).toLowerCase());
@@ -1135,7 +1137,18 @@ export default function Approvals() {
                               {t('Từ chối')}
                             </button>
                             <button 
-                              onClick={() => handleApprove(item)} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showConfirm({
+                                  title: t('Chi tiết & Xác nhận phê duyệt'),
+                                  message: `• ${t('Tên đề xuất')}: ${item.title}\n• ${t('Người đề xuất')}: ${item.employee_name}\n• ${t('Chi tiết yêu cầu')}: ${item.description || '—'}`,
+                                  confirmText: t('Phê duyệt'),
+                                  cancelText: t('Hủy'),
+                                  onConfirm: async () => {
+                                    await handleApprove(item);
+                                  }
+                                });
+                              }} 
                               style={{ 
                                 display: 'inline-flex',
                                 alignItems: 'center',

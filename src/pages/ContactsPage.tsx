@@ -1758,7 +1758,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                         {segment === 'customer' ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span>Ngày chốt</span>
-                            <Tooltip content="Ngày chuyển pipeline">
+                            <Tooltip content="Ngày chuyển pipeline" position="bottom">
                               <AlertCircle size={14} style={{ color: 'var(--color-text-muted)', cursor: 'help' }} />
                             </Tooltip>
                           </div>
