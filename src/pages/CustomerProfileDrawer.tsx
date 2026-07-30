@@ -9905,16 +9905,22 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           <StatRowSkeleton />
                         </div>
                       ) : docs.length === 0 ? (
-                        <EmptyCard
-                          icon={<FileText size={40} style={{ color: 'var(--color-text-muted)', opacity: 0.5 }} />}
-                          title="Chưa có tài liệu nào"
-                          description="Upload hợp đồng, CMND/CCCD hoặc báo giá tại đây."
-                          actionText={isOwnerOrAdmin ? "Upload file" : undefined}
-                          onAction={isOwnerOrAdmin ? () => {
-                            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                            if (fileInput) fileInput.click();
-                          } : undefined}
-                        />
+                        <div className="card-panel" style={{ textAlign: 'center', padding: '4rem 2rem', border: '2px dashed var(--color-border-light)', borderRadius: '24px' }}>
+                          <FileText size={48} style={{ color: 'var(--color-border)', margin: '0 auto 1.5rem', opacity: 0.4 }} />
+                          <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Chưa có tài liệu nào</h4>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '320px', margin: '0 auto 1.5rem' }}>Upload hợp đồng, CMND/CCCD hoặc báo giá tại đây.</p>
+                          {isOwnerOrAdmin && (
+                            <button 
+                              className="btn primary" 
+                              onClick={() => {
+                                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                                if (fileInput) fileInput.click();
+                              }}
+                            >
+                              Upload file
+                            </button>
+                          )}
+                        </div>
                       ) : visibleDocs.length === 0 ? (
                         <div style={{ width: '100%' }}>
                           <input
@@ -9971,16 +9977,22 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               }
                             }}
                           />
-                          <EmptyCard
-                            icon={<Folder size={40} style={{ color: 'var(--color-text-muted)', opacity: 0.5 }} />}
-                            title="Thư mục trống"
-                            description="Chưa có tài liệu nào trong thư mục này."
-                            actionText={isOwnerOrAdmin ? "Upload file" : undefined}
-                            onAction={isOwnerOrAdmin ? () => {
-                              const input = document.getElementById('empty-folder-upload-input');
-                              if (input) (input as HTMLInputElement).click();
-                            } : undefined}
-                          />
+                          <div className="card-panel" style={{ textAlign: 'center', padding: '4rem 2rem', border: '2px dashed var(--color-border-light)', borderRadius: '24px' }}>
+                            <Folder size={48} style={{ color: 'var(--color-border)', margin: '0 auto 1.5rem', opacity: 0.4 }} />
+                            <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Thư mục trống</h4>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '320px', margin: '0 auto 1.5rem' }}>Chưa có tài liệu nào trong thư mục này.</p>
+                            {isOwnerOrAdmin && (
+                              <button 
+                                className="btn primary" 
+                                onClick={() => {
+                                  const input = document.getElementById('empty-folder-upload-input');
+                                  if (input) (input as HTMLInputElement).click();
+                                }}
+                              >
+                                Upload file
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         /* Files List View */
