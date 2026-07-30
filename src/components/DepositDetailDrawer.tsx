@@ -219,7 +219,8 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
         milestone_name: `Đợt ${tempMilestones.length + 1}`,
         expected_amount: 0,
         original_amount: isForeign ? 0 : null,
-        status: 'pending'
+        status: 'pending',
+        expected_pay_date: new Date().toLocaleDateString('sv-SE')
       }
     ]);
   };
@@ -1131,7 +1132,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                 display: 'grid',
                                 gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr 1.2fr 1.8fr',
                                 gap: '12px',
-                                alignItems: 'center',
+                                alignItems: 'flex-start',
                                 padding: '10px 12px',
                                 background: 'var(--color-surface)',
                                 border: '1px solid var(--color-border-light)',

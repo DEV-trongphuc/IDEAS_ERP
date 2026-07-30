@@ -50,7 +50,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
   const [currency, setCurrency] = useState('VND');
   const [exchangeRate, setExchangeRate] = useState('1');
   const [milestonesInput, setMilestonesInput] = useState<{ name: string; amount: string; expected_pay_date: string }[]>([
-    { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
+    { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: new Date().toLocaleDateString('sv-SE') }
   ]);
 
   // Automatically calculate Doanh thu dự kiến (price) as sum of milestones converted to VND
@@ -162,16 +162,16 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
 
         if (defaultContact._targetPipelineStatus === 'dong_le_phi_ho_so') {
           setMilestonesInput([
-            { name: 'Lệ phí hồ sơ', amount: '', expected_pay_date: '' }
+            { name: 'Lệ phí hồ sơ', amount: '', expected_pay_date: new Date().toLocaleDateString('sv-SE') }
           ]);
         } else {
           setMilestonesInput([
-            { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
+            { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: new Date().toLocaleDateString('sv-SE') }
           ]);
         }
       } else {
         setMilestonesInput([
-          { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: '' }
+          { name: 'Đợt 1 - Thanh toán cọc', amount: '', expected_pay_date: new Date().toLocaleDateString('sv-SE') }
         ]);
       }
     }
@@ -619,7 +619,9 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
 
                       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (currency !== 'VND' ? '1fr 1fr' : '1fr 1.5fr 1.5fr'), gap: '1rem' }}>
                         <div className="form-group" style={{ margin: 0 }}>
-                          <label className="form-label">Loại tiền tệ *</label>
+                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', height: '26px' }}>
+                            <label className="form-label" style={{ margin: 0 }}>Loại tiền tệ *</label>
+                          </div>
                           <CustomSelect
                             options={[
                               { value: 'VND', label: 'VND' },
@@ -631,9 +633,9 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                             onChange={val => {
                               setCurrency(val);
                               if (val === 'VND') setExchangeRate('1');
-                              else if (val === 'USD') setExchangeRate('25000');
-                              else if (val === 'EURO') setExchangeRate('27000');
-                              else if (val === 'CHF') setExchangeRate('28000');
+                              else if (val === 'USD') setExchangeRate('26000');
+                              else if (val === 'EURO') setExchangeRate('30000');
+                              else if (val === 'CHF') setExchangeRate('32000');
                             }}
                             width="100%"
                           />
@@ -641,7 +643,9 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
 
                         {currency !== 'VND' && (
                           <div className="form-group" style={{ margin: 0 }}>
-                            <label className="form-label">Tỷ giá dự kiến *</label>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', height: '26px' }}>
+                              <label className="form-label" style={{ margin: 0 }}>Tỷ giá dự kiến *</label>
+                            </div>
                             <CurrencyInput
                               value={exchangeRate}
                               onChange={val => setExchangeRate(String(val))}
@@ -653,19 +657,20 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                         )}
 
                         <div className="form-group" style={{ margin: 0 }}>
-                          <label className="form-label">Doanh thu dự kiến (VND) *</label>
+                          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', height: '26px' }}>
+                            <label className="form-label" style={{ margin: 0 }}>Doanh thu dự kiến (VND) *</label>
+                          </div>
                           <CurrencyInput
                             value={price}
-                            onChange={() => {}}
+                            onChange={val => setPrice(String(val))}
                             placeholder="0"
                             showTextHelper={false}
                             currency="VND"
-                            disabled
                           />
                         </div>
 
                         <div className="form-group" style={{ margin: 0 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', height: '26px' }}>
                             <label className="form-label" style={{ margin: 0 }}>Hoa hồng dự kiến</label>
                             <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '2px', borderRadius: '6px', border: '1px solid var(--color-border-light)' }}>
                               <button
@@ -682,7 +687,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                                   cursor: 'pointer'
                                 }}
                               >
-                                {currency}
+                               VND
                               </button>
                               <button
                                 type="button"
@@ -708,7 +713,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                               onChange={val => setExpectedCommission(String(val))}
                               placeholder="0"
                               showTextHelper={false}
-                              currency={currency}
+                              currency="VND"
                             />
                           ) : (
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -733,7 +738,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                           )}
                           {commissionType === 'percent' && expectedCommission && (
                             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                              = {parseFloat(expectedCommission).toLocaleString()} {currency}
+                              = {parseFloat(expectedCommission).toLocaleString()} VND
                             </div>
                           )}
                         </div>
@@ -759,7 +764,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {milestonesInput.map((m, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
                             <input
                               type="text"
                               value={m.name}
@@ -807,7 +812,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMilestoneInput(idx)}
-                                style={{ padding: '8px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', borderRadius: '50%' }}
+                                style={{ marginTop: '4px', padding: '8px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', display: 'flex', borderRadius: '50%' }}
                                 className="btn-icon sm"
                               >
                                 <Trash2 size={15} />
