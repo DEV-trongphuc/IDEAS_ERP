@@ -1046,8 +1046,8 @@ class HRMController {
                     'id' => (int)$l['id'],
                     'type' => 'leave',
                     'employee_name' => $l['employee_name'],
-                    'title' => 'Đơn xin nghỉ phép (' . ($l['leave_type'] === 'annual' ? 'Phép năm' : ($l['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($l['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($l['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')))) . ') - ' . $levelText,
-                    'description' => 'Thời gian: ' . $l['start_date'] . ' -> ' . $l['end_date'] . ' (' . $l['total_days'] . ' ngày). Lý do: "' . $l['reason'] . '"',
+                    'title' => ($l['leave_type'] === 'overtime' ? 'Đăng ký tăng ca' : ($l['leave_type'] === 'remote_work' ? 'Đăng ký làm việc từ xa' : ('Đơn xin nghỉ phép (' . ($l['leave_type'] === 'annual' ? 'Phép năm' : ($l['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($l['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($l['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')))) . ')'))) . ' - ' . $levelText,
+                    'description' => 'Thời gian: ' . $l['start_date'] . ' -> ' . $l['end_date'] . ' (' . $l['total_days'] . ' ngày/giờ). Lý do: "' . $l['reason'] . '"',
                     'created_at' => $l['created_at']
                 ];
             }
@@ -1193,8 +1193,8 @@ class HRMController {
             $pending[] = [
                 'id' => (int)$l['id'],
                 'type' => 'leave',
-                'title' => 'Đơn xin nghỉ phép (' . ($l['leave_type'] === 'annual' ? 'Phép năm' : ($l['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($l['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($l['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')))) . ')',
-                'description' => 'Thời gian: ' . $l['start_date'] . ' -> ' . $l['end_date'] . ' (' . $l['total_days'] . ' ngày). Lý do: "' . $l['reason'] . '"',
+                'title' => $l['leave_type'] === 'overtime' ? 'Đăng ký tăng ca' : ($l['leave_type'] === 'remote_work' ? 'Đăng ký làm việc từ xa' : ('Đơn xin nghỉ phép (' . ($l['leave_type'] === 'annual' ? 'Phép năm' : ($l['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($l['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($l['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')))) . ')')),
+                'description' => 'Thời gian: ' . $l['start_date'] . ' -> ' . $l['end_date'] . ' (' . $l['total_days'] . ' ngày/giờ). Lý do: "' . $l['reason'] . '"',
                 'status' => $statusText,
                 'created_at' => $l['created_at']
             ];

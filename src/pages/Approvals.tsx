@@ -6,7 +6,7 @@ import {
   FileText, Calendar, CheckCircle2, XCircle, Clock,
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
-  HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server,
+  HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server, Home,
   FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -28,12 +28,11 @@ const workflowList = [
   { id: 'phased_payment', name: 'Thanh toán theo đợt', description: 'Đề xuất thanh toán chia nhiều đợt theo tiến độ hợp đồng.', category: 'finance', icon: GitBranch, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
   { id: 'recurring_payment', name: 'Thanh toán định kỳ', description: 'Đề xuất thanh toán định kỳ hàng tháng/quý (tiền nhà, internet, phí dịch vụ).', category: 'finance', icon: Clock3, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
 
-  { id: 'leave_late', name: 'Đề nghị nghỉ phép', description: 'Yêu cầu nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản.', category: 'hr', icon: Calendar, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
-  { id: 'attendance_bulk', name: 'Cập nhật công gộp', description: 'Đề xuất cập nhật công hàng loạt cho nhiều ngày trong tháng.', category: 'hr', icon: CheckSquare, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
-  { id: 'checkin_explain', name: 'Giải trình chấm công', description: 'Giải trình đi trễ, về sớm hoặc quên chấm công.', category: 'hr', icon: Clock, bg: 'rgba(236, 72, 153, 0.08)', color: '#ec4899' },
-  { id: 'recruitment', name: 'Đề xuất tuyển dụng', description: 'Yêu cầu bổ sung nhân sự cho phòng ban.', category: 'hr', icon: Users, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
-  { id: 'salary_raise', name: 'Đề xuất tăng lương', description: 'Đề xuất điều chỉnh thu nhập cho nhân sự xuất sắc.', category: 'hr', icon: DollarSign, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
-  { id: 'resignation', name: 'Đơn xin nghỉ việc', description: 'Thủ tục xin thôi việc, bàn giao công việc.', category: 'hr', icon: FileText, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
+  { id: 'leave_late', name: 'Đơn xin nghỉ', description: 'Đề xuất nghỉ phép năm, nghỉ việc riêng, nghỉ thai sản, nghỉ ốm.', category: 'hr', icon: Calendar, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
+  { id: 'late_early', name: 'Đăng ký đi muộn, về sớm', description: 'Đăng ký đi muộn hoặc về sớm vì việc cá nhân lý do chính đáng.', category: 'hr', icon: Clock, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
+  { id: 'overtime', name: 'Đăng ký làm thêm', description: 'Đề xuất làm thêm giờ (OT), tăng ca ngoài giờ làm việc hành chính.', category: 'hr', icon: Plus, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
+  { id: 'remote_work', name: 'Đăng ký làm việc từ xa', description: 'Đề xuất làm việc tại nhà (WFH) hoặc làm việc từ xa.', category: 'hr', icon: Home, bg: 'rgba(234, 179, 8, 0.08)', color: '#eab308' },
+  { id: 'attendance_bulk', name: 'Đề nghị cập nhật công', description: 'Giải trình và cập nhật bổ sung công bị thiếu do quên chấm công.', category: 'hr', icon: CheckSquare, bg: 'rgba(139, 92, 246, 0.08)', color: '#8b5cf6' },
 
   { id: 'purchase_request', name: 'Mua sắm trang thiết bị', description: 'Đề xuất mua sắm công cụ dụng cụ, thiết bị văn phòng.', category: 'admin', icon: ShoppingCart, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
   { id: 'it_request', name: 'Cấp thiết bị IT', description: 'Yêu cầu cấp phát laptop, màn hình, tài khoản phần mềm.', category: 'admin', icon: Server, bg: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6' },
@@ -51,6 +50,40 @@ const getWorkflowColor = (colorHex: string) => {
   if (lowercase === '#06b6d4') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
   if (lowercase === '#eab308') return { bg: 'linear-gradient(135deg, #eab308, #a16207)', color: '#ffffff' };
   return { bg: `linear-gradient(135deg, ${colorHex}, ${colorHex})`, color: '#ffffff' };
+};const calculateWorkingDays = (fromStr: string, toStr: string, session: string) => {
+  if (!fromStr) return 0;
+  if (session === 'morning' || session === 'afternoon') {
+    return 0.5;
+  }
+  if (session === 'full') {
+    return 1.0;
+  }
+  if (!toStr) return 0;
+  const from = new Date(fromStr);
+  const to = new Date(toStr);
+  if (isNaN(from.getTime()) || isNaN(to.getTime()) || from > to) return 0;
+
+  let count = 0;
+  const curDate = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const endDate = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  
+  while (curDate <= endDate) {
+    const dayOfWeek = curDate.getDay();
+    // Exclude Sunday (0)
+    if (dayOfWeek !== 0) {
+      count += 1;
+    }
+    curDate.setDate(curDate.getDate() + 1);
+  }
+  return count;
+};
+
+const diffHours = (start: string, end: string) => {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+  return diffMin > 0 ? Number((diffMin / 60).toFixed(1)) : 0;
 };
 
 export interface ApprovalItem {
@@ -217,7 +250,13 @@ export default function Approvals() {
 
   // Form field states
   const [proposerUser, setProposerUser] = useState<any>(null);
-  const [formType, setFormType] = useState<'leave' | 'advance' | 'expense' | 'general' | 'attendance_bulk'>('expense');
+  const [formType, setFormType] = useState<'leave' | 'advance' | 'expense' | 'general' | 'attendance_bulk' | 'late_early' | 'overtime' | 'remote_work'>('expense');
+  const [leaveSession, setLeaveSession] = useState<'full' | 'morning' | 'afternoon' | 'range'>('full');
+  const [lateEarlyType, setLateEarlyType] = useState<'late' | 'early'>('late');
+  const [lateEarlyMinutes, setLateEarlyMinutes] = useState(30);
+  const [otDate, setOtDate] = useState(new Date().toISOString().split('T')[0]);
+  const [otStart, setOtStart] = useState('17:30');
+  const [otEnd, setOtEnd] = useState('21:30');
   const [expenseTitle, setExpenseTitle] = useState('');
   const [jobPosition, setJobPosition] = useState('');
   const [departmentName, setDepartmentName] = useState('');
@@ -368,7 +407,7 @@ export default function Approvals() {
       setShowStepDirector(false);
       setStationeryItem('');
       setStationeryQty('');
-    } else if (formType === 'leave') {
+    } else if (formType === 'leave' || formType === 'late_early' || formType === 'overtime' || formType === 'remote_work') {
       setShowStepManager(true);
       setShowStepAccountant(false);
       setShowStepDirector(false);
@@ -1212,7 +1251,7 @@ export default function Approvals() {
         if (selectedWorkflowDef?.id === 'stationery') {
           defaultApp1 = users.find(u => String(u.role).toLowerCase() === 'hr');
         }
-        if (!defaultApp1 && formType === 'leave') {
+        if (!defaultApp1 && (formType === 'leave' || formType === 'late_early' || formType === 'overtime' || formType === 'remote_work')) {
           defaultApp1 = users.find(u => String(u.id) === String(leaveFrom)); // Mock logic or manager
         }
         if (!defaultApp1) {
@@ -1410,7 +1449,12 @@ export default function Approvals() {
                               key={item.id}
                               onClick={() => {
                                 setSelectedWorkflowDef(item);
-                                setFormType(item.id === 'leave_late' ? 'leave' : 'general');
+                                if (item.id === 'leave_late') setFormType('leave');
+                                else if (item.id === 'attendance_bulk') setFormType('attendance_bulk');
+                                else if (item.id === 'late_early') setFormType('late_early');
+                                else if (item.id === 'overtime') setFormType('overtime');
+                                else if (item.id === 'remote_work') setFormType('remote_work');
+                                else setFormType('general');
                                 setExpenseTitle(item.name);
                                 handleSelectWorkflow(item.id);
                               }}
@@ -1671,6 +1715,29 @@ export default function Approvals() {
                                 approver_id: finalApproverId
                               });
                             } else if (formType === 'leave') {
+                              let fromVal = leaveFrom;
+                              let toVal = leaveTo;
+                              let daysVal = 1.0;
+
+                              if (leaveSession === 'full') {
+                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                                fromVal = `${d}T08:00`;
+                                toVal = `${d}T17:30`;
+                                daysVal = 1.0;
+                              } else if (leaveSession === 'morning') {
+                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                                fromVal = `${d}T08:00`;
+                                toVal = `${d}T12:00`;
+                                daysVal = 0.5;
+                              } else if (leaveSession === 'afternoon') {
+                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                                fromVal = `${d}T13:30`;
+                                toVal = `${d}T17:30`;
+                                daysVal = 0.5;
+                              } else {
+                                daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
+                              }
+
                               let leaveReasonStr = leaveReason;
                               if (isRecurring) {
                                 leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
@@ -1681,8 +1748,89 @@ export default function Approvals() {
                                 body: JSON.stringify({
                                   leave_type: leaveType,
                                   reason: leaveReasonStr,
-                                  from_date: leaveFrom,
-                                  to_date: leaveTo,
+                                  from_date: fromVal,
+                                  to_date: toVal,
+                                  total_days: daysVal,
+                                  approver_id: finalApproverId
+                                })
+                              });
+                            } else if (formType === 'late_early') {
+                              const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                              const startTimeStr = `${d}T${otStart}`;
+                              const fromDateObj = new Date(startTimeStr);
+                              const toDateObj = new Date(fromDateObj.getTime() + lateEarlyMinutes * 60000);
+                              const formattedFrom = startTimeStr;
+                              const formattedTo = toDateObj.toISOString().replace('Z', '').substring(0, 16);
+
+                              const descStr = `[${lateEarlyType === 'late' ? 'Đăng ký Đi muộn' : 'Đăng ký Về sớm'}] Thời gian: ${otStart} (${lateEarlyMinutes} phút). Lý do: ${leaveReason}`;
+
+                              await fetchAPI('hrm/leaves', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  leave_type: 'late_early',
+                                  reason: descStr,
+                                  from_date: formattedFrom,
+                                  to_date: formattedTo,
+                                  total_days: 0.0,
+                                  approver_id: finalApproverId
+                                })
+                              });
+                            } else if (formType === 'overtime') {
+                              const fromStr = `${otDate}T${otStart}`;
+                              const toStr = `${otDate}T${otEnd}`;
+                              const hours = diffHours(otStart, otEnd);
+                              const daysVal = Number((hours / 8).toFixed(2));
+
+                              const descStr = `[Đăng ký Tăng ca] Thời gian: ${otStart} - ${otEnd} (${hours} giờ = ${daysVal} ngày công OT). Lý do: ${leaveReason}`;
+
+                              await fetchAPI('hrm/leaves', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  leave_type: 'overtime',
+                                  reason: descStr,
+                                  from_date: fromStr,
+                                  to_date: toStr,
+                                  total_days: daysVal,
+                                  approver_id: finalApproverId
+                                })
+                              });
+                            } else if (formType === 'remote_work') {
+                              let fromVal = leaveFrom;
+                              let toVal = leaveTo;
+                              let daysVal = 1.0;
+
+                              if (leaveSession === 'full') {
+                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                                fromVal = `${d}T08:00`;
+                                toVal = `${d}T17:30`;
+                                daysVal = 1.0;
+                              } else if (leaveSession === 'morning') {
+                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                                fromVal = `${d}T08:00`;
+                                toVal = `${d}T12:00`;
+                                daysVal = 0.5;
+                              } else if (leaveSession === 'afternoon') {
+                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+                                fromVal = `${d}T13:30`;
+                                toVal = `${d}T17:30`;
+                                daysVal = 0.5;
+                              } else {
+                                daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
+                              }
+
+                              const descStr = `[Đăng ký làm việc từ xa] Lý do: ${leaveReason}`;
+
+                              await fetchAPI('hrm/leaves', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  leave_type: 'remote_work',
+                                  reason: descStr,
+                                  from_date: fromVal,
+                                  to_date: toVal,
+                                  total_days: daysVal,
                                   approver_id: finalApproverId
                                 })
                               });
@@ -1974,22 +2122,71 @@ export default function Approvals() {
                           </div>
                         ) : formType === 'leave' ? (
                           /* LEAVE FORM FIELDS */
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại nghỉ phép')}</label>
-                              <CustomSelect
-                                value={leaveType}
-                                onChange={val => setLeaveType(val)}
-                                options={[
-                                  { value: 'annual', label: t('Nghỉ phép năm') },
-                                  { value: 'compensatory', label: t('Nghỉ bù') },
-                                  { value: 'sick', label: t('Nghỉ ốm / thai sản') },
-                                  { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') },
-                                  { value: 'overtime', label: t('Đăng ký tăng ca') }
-                                ]}
-                                width="100%"
-                              />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại nghỉ phép')}</label>
+                                <CustomSelect
+                                  value={leaveType}
+                                  onChange={val => setLeaveType(val)}
+                                  options={[
+                                    { value: 'annual', label: t('Nghỉ phép năm') },
+                                    { value: 'compensatory', label: t('Nghỉ bù') },
+                                    { value: 'sick', label: t('Nghỉ ốm / thai sản') },
+                                    { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') }
+                                  ]}
+                                  width="100%"
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Thời gian nghỉ')}</label>
+                                <CustomSelect
+                                  value={leaveSession}
+                                  onChange={(val: any) => setLeaveSession(val)}
+                                  options={[
+                                    { value: 'full', label: t('Cả ngày (1 ngày)') },
+                                    { value: 'morning', label: t('Buổi sáng (0.5 ngày)') },
+                                    { value: 'afternoon', label: t('Buổi chiều (0.5 ngày)') },
+                                    { value: 'range', label: t('Nhiều ngày (Chọn khoảng ngày)') }
+                                  ]}
+                                  width="100%"
+                                />
+                              </div>
                             </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                  {leaveSession === 'range' ? t('Từ ngày') : t('Ngày xin nghỉ')}
+                                </label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={leaveFrom ? leaveFrom.split('T')[0] : ''}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setLeaveFrom(val);
+                                    if (leaveSession !== 'range') setLeaveTo(val);
+                                  }}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                              {leaveSession === 'range' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đến ngày')}</label>
+                                  <input
+                                    type="date"
+                                    className="form-input"
+                                    value={leaveTo ? leaveTo.split('T')[0] : ''}
+                                    onChange={e => setLeaveTo(e.target.value)}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                              )}
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                               <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Lý do xin nghỉ')}</label>
                               <input
@@ -2002,27 +2199,250 @@ export default function Approvals() {
                                 required
                               />
                             </div>
+
+                            {/* Duration preview alert */}
+                            <div className="card-panel" style={{ 
+                              padding: '10px 14px', 
+                              background: 'rgba(59, 130, 246, 0.06)', 
+                              border: '1px solid rgba(59, 130, 246, 0.15)', 
+                              borderRadius: '8px', 
+                              fontSize: '0.8rem', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              color: 'var(--color-text)'
+                            }}>
+                              <span><strong>{t('Thời gian quy đổi:')}</strong></span>
+                              <strong style={{ color: 'var(--color-primary)' }}>
+                                {calculateWorkingDays(leaveFrom, leaveTo, leaveSession)} {t('ngày công')}
+                              </strong>
+                            </div>
+                          </div>
+                        ) : formType === 'late_early' ? (
+                          /* LATE / EARLY REGISTRATION FORM */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại đăng ký')}</label>
+                                <CustomSelect
+                                  value={lateEarlyType}
+                                  onChange={(val: any) => setLateEarlyType(val)}
+                                  options={[
+                                    { value: 'late', label: t('Đi muộn') },
+                                    { value: 'early', label: t('Về sớm') }
+                                  ]}
+                                  width="100%"
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số phút đăng ký')}</label>
+                                <CustomSelect
+                                  value={String(lateEarlyMinutes)}
+                                  onChange={(val: any) => setLateEarlyMinutes(Number(val))}
+                                  options={[
+                                    { value: '30', label: t('30 phút') },
+                                    { value: '60', label: t('60 phút (1 giờ)') },
+                                    { value: '90', label: t('90 phút') },
+                                    { value: '120', label: t('120 phút (2 giờ)') }
+                                  ]}
+                                  width="100%"
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày đăng ký')}</label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={leaveFrom ? leaveFrom.split('T')[0] : ''}
+                                  onChange={e => {
+                                    setLeaveFrom(e.target.value);
+                                    setLeaveTo(e.target.value);
+                                  }}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Thời gian cụ thể')}</label>
+                                <input
+                                  type="time"
+                                  className="form-input"
+                                  value={otStart}
+                                  onChange={e => setOtStart(e.target.value)}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Từ ngày')}</label>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Lý do đi muộn / về sớm')}</label>
                               <input
-                                type="datetime-local"
+                                type="text"
                                 className="form-input"
-                                value={leaveFrom}
-                                onChange={e => setLeaveFrom(e.target.value)}
+                                value={leaveReason}
+                                onChange={e => setLeaveReason(e.target.value)}
+                                placeholder={t('Lý do chi tiết...')}
                                 style={{ height: '36px', fontSize: '0.8rem' }}
                                 required
                               />
                             </div>
+                          </div>
+                        ) : formType === 'overtime' ? (
+                          /* OVERTIME REGISTRATION FORM */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày tăng ca')}</label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={otDate}
+                                  onChange={e => setOtDate(e.target.value)}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Giờ bắt đầu')}</label>
+                                <input
+                                  type="time"
+                                  className="form-input"
+                                  value={otStart}
+                                  onChange={e => setOtStart(e.target.value)}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Giờ kết thúc')}</label>
+                                <input
+                                  type="time"
+                                  className="form-input"
+                                  value={otEnd}
+                                  onChange={e => setOtEnd(e.target.value)}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đến ngày')}</label>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Nội dung công việc tăng ca')}</label>
                               <input
-                                type="datetime-local"
+                                type="text"
                                 className="form-input"
-                                value={leaveTo}
-                                onChange={e => setLeaveTo(e.target.value)}
+                                value={leaveReason}
+                                onChange={e => setLeaveReason(e.target.value)}
+                                placeholder={t('Chi tiết công việc cần tăng ca...')}
                                 style={{ height: '36px', fontSize: '0.8rem' }}
                                 required
                               />
+                            </div>
+
+                            {/* Overtime calculation preview alert */}
+                            <div className="card-panel" style={{ 
+                              padding: '10px 14px', 
+                              background: 'rgba(16, 185, 129, 0.06)', 
+                              border: '1px solid rgba(16, 185, 129, 0.15)', 
+                              borderRadius: '8px', 
+                              fontSize: '0.8rem', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              color: 'var(--color-text)'
+                            }}>
+                              <span><strong>{t('Thời gian tăng ca quy đổi:')}</strong></span>
+                              <strong style={{ color: '#10b981' }}>
+                                {diffHours(otStart, otEnd)} {t('giờ')} ({Number((diffHours(otStart, otEnd) / 8).toFixed(2))} {t('ngày công tăng ca')} x 1.5)
+                              </strong>
+                            </div>
+                          </div>
+                        ) : formType === 'remote_work' ? (
+                          /* REMOTE WORK / WFH FORM */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Buổi đăng ký')}</label>
+                                <CustomSelect
+                                  value={leaveSession}
+                                  onChange={(val: any) => setLeaveSession(val)}
+                                  options={[
+                                    { value: 'full', label: t('Cả ngày (1 ngày)') },
+                                    { value: 'morning', label: t('Buổi sáng (0.5 ngày)') },
+                                    { value: 'afternoon', label: t('Buổi chiều (0.5 ngày)') },
+                                    { value: 'range', label: t('Nhiều ngày (Chọn khoảng ngày)') }
+                                  ]}
+                                  width="100%"
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                  {leaveSession === 'range' ? t('Từ ngày') : t('Ngày đăng ký')}
+                                </label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={leaveFrom ? leaveFrom.split('T')[0] : ''}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setLeaveFrom(val);
+                                    if (leaveSession !== 'range') setLeaveTo(val);
+                                  }}
+                                  style={{ height: '36px', fontSize: '0.8rem' }}
+                                  required
+                                />
+                              </div>
+                            </div>
+
+                            {leaveSession === 'range' && (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đến ngày')}</label>
+                                  <input
+                                    type="date"
+                                    className="form-input"
+                                    value={leaveTo ? leaveTo.split('T')[0] : ''}
+                                    onChange={e => setLeaveTo(e.target.value)}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                                <div />
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Kế hoạch công việc từ xa')}</label>
+                              <textarea
+                                className="form-input"
+                                value={leaveReason}
+                                onChange={e => setLeaveReason(e.target.value)}
+                                placeholder={t('Chi tiết các đầu việc thực hiện từ xa...')}
+                                style={{ height: '70px', fontSize: '0.8rem', padding: '8px', resize: 'none' }}
+                                required
+                              />
+                            </div>
+
+                            {/* Duration preview alert */}
+                            <div className="card-panel" style={{ 
+                              padding: '10px 14px', 
+                              background: 'rgba(234, 179, 8, 0.06)', 
+                              border: '1px solid rgba(234, 179, 8, 0.15)', 
+                              borderRadius: '8px', 
+                              fontSize: '0.8rem', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              color: 'var(--color-text)'
+                            }}>
+                              <span><strong>{t('Thời gian WFH quy đổi:')}</strong></span>
+                              <strong style={{ color: '#eab308' }}>
+                                {calculateWorkingDays(leaveFrom, leaveTo, leaveSession)} {t('ngày')}
+                              </strong>
                             </div>
                           </div>
                         ) : formType === 'advance' ? (
