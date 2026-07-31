@@ -49,8 +49,8 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Khóa học', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
-      { name: 'Tài liệu', href: '/files', icon: File },
       { name: 'Đối tác', href: '/companies', icon: Building2 },
+      { name: 'Tài liệu', href: '/files', icon: File },
       { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
     ]
   },

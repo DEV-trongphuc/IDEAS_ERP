@@ -9031,12 +9031,36 @@ export default function ProjectsPage() {
                       type="button"
                       className="btn primary"
                       style={{ borderRadius: '10px', fontWeight: 700, padding: '10px 20px', fontSize: '0.88rem', height: '42px', background: 'var(--color-primary)', border: 'none' }}
-                      onClick={() => {
-                        setConfiguringSubjectId(null);
-                        addToast('Đã ghi nhận thay đổi của môn học vào danh sách!', 'info');
+                      disabled={isSaving}
+                      onClick={async () => {
+                        try {
+                          setIsSaving(true);
+                          const res = await fetchAPI(`campaigns/${editingCampaign.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                              ...editingCampaign,
+                              subjects_json: JSON.stringify(subjects)
+                            })
+                          });
+                          if (res.success) {
+                            addToast('Lưu cấu hình môn học thành công!', 'success');
+                            setEditingCampaign({
+                              ...editingCampaign,
+                              subjects_json: JSON.stringify(subjects)
+                            });
+                            loadCampaigns();
+                            setConfiguringSubjectId(null);
+                          } else {
+                            addToast(res.message || 'Lỗi lưu thông tin', 'error');
+                          }
+                        } catch (e: any) {
+                          addToast(e.message || 'Lỗi kết nối', 'error');
+                        } finally {
+                          setIsSaving(false);
+                        }
                       }}
                     >
-                      Lưu cấu hình môn
+                      {isSaving ? 'Đang lưu...' : 'Lưu cấu hình môn'}
                     </button>
                   </div>
                 </div>
