@@ -4364,17 +4364,17 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            padding: '3px 8px',
-                            background: 'rgba(59, 130, 246, 0.08)',
+                            gap: '6px',
+                            padding: '5px 12px',
+                            background: 'rgba(163, 20, 34, 0.06)',
                             color: 'var(--color-primary)',
-                            fontSize: '0.72rem',
+                            fontSize: '0.78rem',
                             fontWeight: 600,
-                            borderRadius: '12px',
-                            border: '1px solid rgba(59, 130, 246, 0.15)'
+                            borderRadius: '16px',
+                            border: '1px solid rgba(163, 20, 34, 0.12)'
                           }}
                         >
-                          <Users size={12} style={{ opacity: 0.8 }} />
+                          <Users size={13} style={{ opacity: 0.9 }} />
                           {t.name}
                           <button
                             type="button"
@@ -4391,8 +4391,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                               cursor: 'pointer',
                               display: 'inline-flex',
                               padding: 0,
-                              fontSize: '0.75rem',
-                              marginLeft: '2px'
+                              fontSize: '0.85rem',
+                              marginLeft: '4px'
                             }}
                           >
                             ×
@@ -4410,8 +4410,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   style={{
                     border: '1px dashed var(--color-primary)',
                     background: 'rgba(163, 20, 34, 0.04)',
-                    width: '28px',
-                    height: '28px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -4423,7 +4423,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   className="hover-scale"
                   title={t('Liên kết thêm team')}
                 >
-                  <Plus size={14} color="var(--color-primary)" />
+                  <Plus size={16} color="var(--color-primary)" />
                 </button>
 
                 {/* Dropdown list of teams */}
@@ -4438,18 +4438,18 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                       zIndex: 9999,
                       background: 'var(--color-surface)',
                       border: '1px solid var(--color-border-light)',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                      minWidth: '220px',
-                      maxHeight: '230px',
+                      borderRadius: '16px',
+                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+                      minWidth: '260px',
+                      maxHeight: '280px',
                       overflowY: 'auto',
-                      padding: '6px',
+                      padding: '8px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '2px'
+                      gap: '3px'
                     }}
                   >
-                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '6px 8px', borderBottom: '1px dashed var(--color-border-light)', marginBottom: '4px' }}>
                       {t('Chọn team liên kết:')}
                     </div>
                     {allowedTeams.map((tItem: any) => {
@@ -4492,10 +4492,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             handleSaveMeta(nextMeta);
                           }}
                           style={{
-                            padding: '6px 8px',
-                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
                             cursor: 'pointer',
-                            fontSize: '0.75rem',
+                            fontSize: '0.78rem',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
@@ -4505,8 +4505,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           }}
                           className="hover-bg-alt"
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Users size={12} color={isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Users size={14} color={isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
                             <span>{tItem.name}</span>
                           </div>
                           {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
