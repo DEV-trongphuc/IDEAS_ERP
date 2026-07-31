@@ -3502,7 +3502,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   boxShadow: isReply ? 'inset 0 1px 2px rgba(0, 0, 0, 0.01)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
                                   transition: 'all 0.5s ease',
                                   marginTop: isReply ? '4px' : '0',
-                                  width: '100%'
+                                  boxSizing: 'border-box'
                                 }}
                               >
                                 <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={isReply ? 24 : 32} />
