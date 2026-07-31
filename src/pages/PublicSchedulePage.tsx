@@ -135,6 +135,81 @@ export const PublicSchedulePage: React.FC = () => {
     }
   });
 
+  // Calculate nearest class and assignment/milestone
+  const calculateNearestDeadlines = () => {
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+
+    let nearestClassDays: number | null = null;
+    let nearestClassDateStr: string = '';
+    
+    let nearestAsmDays: number | null = null;
+    let nearestAsmDateStr: string = '';
+    let nearestAsmName: string = '';
+
+    // 1. Find nearest class
+    allEvents.forEach(evt => {
+      if (!evt.date) return;
+      const evtDate = new Date(evt.date + 'T00:00:00');
+      evtDate.setHours(0, 0, 0, 0);
+      if (evtDate >= todayDate) {
+        const diffTime = evtDate.getTime() - todayDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (nearestClassDays === null || diffDays < nearestClassDays) {
+          nearestClassDays = diffDays;
+          nearestClassDateStr = evt.date;
+        }
+      }
+    });
+
+    // 2. Find nearest assignment / thesis milestone
+    subjects.forEach((sub: any) => {
+      if (Array.isArray(sub.assignments)) {
+        sub.assignments.forEach((asm: any) => {
+          if (!asm.due_date) return;
+          const dueOnlyDate = asm.due_date.split('T')[0];
+          const asmDate = new Date(dueOnlyDate + 'T00:00:00');
+          asmDate.setHours(0, 0, 0, 0);
+          if (asmDate >= todayDate) {
+            const diffTime = asmDate.getTime() - todayDate.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            if (nearestAsmDays === null || diffDays < nearestAsmDays) {
+              nearestAsmDays = diffDays;
+              nearestAsmDateStr = dueOnlyDate;
+              nearestAsmName = asm.name;
+            }
+          }
+        });
+      }
+    });
+
+    // Check thesis milestones
+    thesisMilestones.forEach((ms: any) => {
+      if (!ms.due_date) return;
+      const msDate = new Date(ms.due_date + 'T00:00:00');
+      msDate.setHours(0, 0, 0, 0);
+      if (msDate >= todayDate) {
+        const diffTime = msDate.getTime() - todayDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (nearestAsmDays === null || diffDays < nearestAsmDays) {
+          nearestAsmDays = diffDays;
+          nearestAsmDateStr = ms.due_date;
+          nearestAsmName = ms.milestone;
+        }
+      }
+    });
+
+    return { nearestClassDays, nearestClassDateStr, nearestAsmDays, nearestAsmDateStr, nearestAsmName };
+  };
+
+  const { nearestClassDays, nearestClassDateStr, nearestAsmDays, nearestAsmDateStr, nearestAsmName } = calculateNearestDeadlines();
+
+  const formatDaysPhrase = (days: number) => {
+    if (days === 0) return 'hôm nay';
+    if (days === 1) return 'ngày mai';
+    return `trong ${days} ngày tới`;
+  };
+
   // Calendar Helper Logic
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -220,10 +295,10 @@ export const PublicSchedulePage: React.FC = () => {
         maxWidth: '1200px', 
         width: '100%', 
         margin: '0 auto', 
-        padding: '1.5rem', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '1.5rem' 
+        padding: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem'
       }}>
       {/* 0. Branded Top Header Bar */}
       <div style={{
@@ -241,7 +316,7 @@ export const PublicSchedulePage: React.FC = () => {
           style={{ height: '48px', objectFit: 'contain' }}
         />
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b91c1c', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             Tri thức Nguyên Bản
           </div>
           <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
@@ -269,7 +344,7 @@ export const PublicSchedulePage: React.FC = () => {
             width: '64px', 
             height: '64px', 
             borderRadius: '50%', 
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%)', 
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', 
             color: '#ffffff',
             display: 'flex', 
             alignItems: 'center', 
@@ -312,6 +387,62 @@ export const PublicSchedulePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 1.1 Nearest Deadlines Notice Bar */}
+      {(nearestClassDays !== null || nearestAsmDays !== null) && (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+          gap: '1rem',
+          marginTop: '-0.25rem' 
+        }}>
+          {nearestClassDays !== null && (
+            <div style={{ 
+              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
+              border: '1px solid #bfdbfe', 
+              borderRadius: '16px', 
+              padding: '1rem 1.25rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#3b82f6', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Clock size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch học sắp tới</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e3a8a', marginTop: '2px' }}>
+                  Bạn có lịch học gần nhất vào <span style={{ color: '#2563eb', fontWeight: 800 }}>{formatDaysPhrase(nearestClassDays)}</span> ({nearestClassDateStr.split('-').reverse().join('/')}).
+                </div>
+              </div>
+            </div>
+          )}
+
+          {nearestAsmDays !== null && (
+            <div style={{ 
+              background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', 
+              border: '1px solid #fed7aa', 
+              borderRadius: '16px', 
+              padding: '1rem 1.25rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ea580c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <FileText size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bài tập & Hạn nộp</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7c2d12', marginTop: '2px' }}>
+                  Bạn có bài tập/mốc cần hoàn thành <span style={{ color: '#ea580c', fontWeight: 800 }}>{formatDaysPhrase(nearestAsmDays)}</span> ({nearestAsmDateStr.split('-').reverse().join('/')}): <span style={{ fontWeight: 800 }}>{nearestAsmName}</span>.
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 2. Calendar panel */}
       <div style={{ 
