@@ -153,7 +153,7 @@ export const InternalSchedulePage: React.FC = () => {
             subjectCode: sub.code || 'MÔN HỌC',
             subjectName: sub.name,
             title: sem.topic || 'Lớp chuyên đề',
-            time: sem.time_slot || 'Chưa cấu hình giờ',
+            time: sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : 'Chưa cấu hình giờ'),
             lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
             lecturerId: sem.lecturer_id || sub.lecturer_id || null,
             location: sem.location || 'Online',

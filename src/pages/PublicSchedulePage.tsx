@@ -145,7 +145,7 @@ export const PublicSchedulePage: React.FC = () => {
             subjectCode: sub.code || 'MÔN HỌC',
             subjectName: sub.name,
             title: sem.topic || 'Lớp chuyên đề',
-            time: sem.time_slot || 'Chưa cấu hình giờ',
+            time: sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : 'Chưa cấu hình giờ'),
             lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
             location: sem.location || 'Online',
             zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
