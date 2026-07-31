@@ -1777,6 +1777,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [tasks, setTasks] = useState<any[]>([]);
   const [allowedProjects, setAllowedProjects] = useState<any[]>([]);
   const [allowedCampaigns, setAllowedCampaigns] = useState<any[]>([]);
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   const [allowedTeams, setAllowedTeams] = useState<any[]>([]);
   const [pipelineModal, setPipelineModal] = useState<{ isOpen: boolean; targetId: string; targetLabel: string; note: string }>({ isOpen: false, targetId: '', targetLabel: '', note: '' });
   const [users, setUsers] = useState<any[]>([]);
@@ -7439,19 +7440,157 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {subjects.map((sub: any, idx: number) => {
                                   const subLecturer = getLecturerName(sub.lecturer_id);
+                                  const subKey = sub.id || sub.code || sub.name || String(idx);
+                                  const isExpanded = !!expandedSubjects[subKey];
+                                  const totalSessions = (sub.host_sessions?.length || 0) + (sub.seminars?.length || 0);
+                                  const isInactive = totalSessions === 0;
+
                                   return (
-                                    <div key={sub.id || idx} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--color-bg-light)', borderRadius: '10px', border: '1px solid var(--color-border-light)' }}>
-                                      <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '2px 6px', borderRadius: '4px' }}>{sub.code || 'MÃ'}</span>
-                                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{sub.name}</span>
+                                    <div 
+                                      key={subKey} 
+                                      style={{ 
+                                        padding: '12px 16px', 
+                                        background: isInactive ? '#f8fafc' : 'var(--color-bg-light)', 
+                                        borderRadius: '12px', 
+                                        border: isInactive ? '1px dashed #cbd5e1' : '1px solid var(--color-border-light)',
+                                        opacity: isInactive ? 0.75 : 1,
+                                        display: 'flex', 
+                                        flexDirection: 'column',
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: isExpanded ? 'var(--shadow-sm)' : 'none'
+                                      }}
+                                    >
+                                      {/* Header Row */}
+                                      <div 
+                                        onClick={() => {
+                                          setExpandedSubjects(prev => ({
+                                            ...prev,
+                                            [subKey]: !prev[subKey]
+                                          }));
+                                        }}
+                                        style={{ 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          justifyContent: 'space-between', 
+                                          cursor: 'pointer',
+                                          userSelect: 'none'
+                                        }}
+                                      >
+                                        <div>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '2px 6px', borderRadius: '4px' }}>{sub.code || 'MÃ'}</span>
+                                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{sub.name}</span>
+                                            {isInactive && (
+                                              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', background: '#e2e8f0', padding: '1px 5px', borderRadius: '4px', marginLeft: '4px' }}>
+                                                Chưa xếp lịch
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                                            <span>GV: <strong>{subLecturer}</strong></span>
+                                            <span>Lịch học: <strong>{sub.host_sessions?.length || 0} buổi</strong></span>
+                                            <span>Chuyên đề: <strong>{sub.seminars?.length || 0} buổi</strong></span>
+                                          </div>
                                         </div>
-                                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem' }}>
-                                          <span>GV: <strong>{subLecturer}</strong></span>
-                                          <span>Lịch học: <strong>{sub.host_sessions?.length || 0} buổi</strong></span>
-                                          <span>Chuyên đề: <strong>{sub.seminars?.length || 0} buổi</strong></span>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <ChevronDown 
+                                            size={16} 
+                                            style={{ 
+                                              color: 'var(--color-text-muted)', 
+                                              transition: 'transform 0.2s ease',
+                                              transform: isExpanded ? 'rotate(180deg)' : 'none' 
+                                            }} 
+                                          />
                                         </div>
                                       </div>
+
+                                      {/* Collapsible Details Body */}
+                                      {isExpanded && (
+                                        <div style={{ 
+                                          marginTop: '12px', 
+                                          paddingTop: '12px', 
+                                          borderTop: '1px solid var(--color-border-light)',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: '12px'
+                                        }}>
+                                          {/* Zoom Link Section */}
+                                          {(sub.zoom_link || sub.zoom_id || sub.zoom_pass) ? (
+                                            <div style={{ padding: '10px 12px', background: '#e0f2fe', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.78rem' }}>
+                                              <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '4px' }}>
+                                                Zoom Meeting
+                                              </div>
+                                              {sub.zoom_link && (
+                                                <div style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
+                                                  Link: <a href={sub.zoom_link} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 700, textDecoration: 'underline' }}>{sub.zoom_link}</a>
+                                                </div>
+                                              )}
+                                              {(sub.zoom_id || sub.zoom_pass) && (
+                                                <div style={{ color: '#0c4a6e' }}>
+                                                  {sub.zoom_id && <>ID: <strong>{sub.zoom_id}</strong></>}
+                                                  {sub.zoom_pass && <>&nbsp;&nbsp;|&nbsp;&nbsp;Pass: <strong>{sub.zoom_pass}</strong></>}
+                                                </div>
+                                              )}
+                                            </div>
+                                          ) : null}
+
+                                          {/* Host Sessions Section */}
+                                          {Array.isArray(sub.host_sessions) && sub.host_sessions.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                                                Lịch học với trường ({sub.host_sessions.length})
+                                              </div>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                {sub.host_sessions.map((hs: any, sidx: number) => (
+                                                  <div key={sidx} style={{ padding: '8px 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid var(--color-border-light)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                      <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{hs.name || `Buổi học ${sidx + 1}`}</div>
+                                                      <div style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', marginTop: '2px' }}>
+                                                        Giờ: {hs.time_start || '20:00'} - {hs.time_end || '22:00'} | Phòng: {hs.location || 'Online'}
+                                                      </div>
+                                                    </div>
+                                                    <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.75rem' }}>
+                                                      {hs.date ? hs.date.split('-').reverse().join('/') : 'Chưa xếp ngày'}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          ) : null}
+
+                                          {/* Seminars Section */}
+                                          {Array.isArray(sub.seminars) && sub.seminars.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#6b21a8' }}>
+                                                Lớp chuyên đề ({sub.seminars.length})
+                                              </div>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                {sub.seminars.map((sem: any, sidx: number) => (
+                                                  <div key={sidx} style={{ padding: '8px 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid var(--color-border-light)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div>
+                                                      <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{sem.topic || `Chuyên đề ${sidx + 1}`}</div>
+                                                      <div style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', marginTop: '2px' }}>
+                                                        Giờ: {sem.time_slot || 'Chưa cấu hình giờ'} | Phòng: {sem.location || 'Online'}
+                                                      </div>
+                                                    </div>
+                                                    <span style={{ fontWeight: 800, color: '#6b21a8', fontSize: '0.75rem' }}>
+                                                      {sem.date ? sem.date.split('-').reverse().join('/') : 'Chưa xếp ngày'}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          ) : null}
+
+                                          {/* Empty State message when expanded but no schedules */}
+                                          {isInactive && (
+                                            <div style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
+                                              Chưa có lịch học hay chuyên đề nào được xếp cho môn này.
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
