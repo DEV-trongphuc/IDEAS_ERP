@@ -3653,7 +3653,16 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           });
                         })()
                       )}
-                          {loadingTimeline ? (
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 5px', position: 'relative' }}>
+                    {/* Scrollable Container for Timeline */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '450px', overflowY: 'auto', paddingRight: '6px', position: 'relative' }} className="custom-scrollbar">
+                      {/* Vertical line connector */}
+                      <div style={{ position: 'absolute', left: '17px', top: '15px', bottom: '15px', width: '2px', background: 'var(--color-border-light)' }} />
+                      
+                      {loadingTimeline ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           <StatRowSkeleton />
                           <StatRowSkeleton />
