@@ -4366,15 +4366,15 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             alignItems: 'center',
                             gap: '6px',
                             padding: '5px 12px',
-                            background: 'rgba(163, 20, 34, 0.06)',
-                            color: 'var(--color-primary)',
+                            background: 'rgba(107, 114, 128, 0.08)',
+                            color: 'var(--color-text)',
                             fontSize: '0.78rem',
                             fontWeight: 600,
                             borderRadius: '16px',
-                            border: '1px solid rgba(163, 20, 34, 0.12)'
+                            border: '1px solid rgba(107, 114, 128, 0.16)'
                           }}
                         >
-                          <Users size={13} style={{ opacity: 0.9 }} />
+                          <Users size={13} style={{ opacity: 0.7 }} color="var(--color-text-muted)" />
                           {t.name}
                           <button
                             type="button"
@@ -4387,7 +4387,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             style={{
                               background: 'transparent',
                               border: 'none',
-                              color: 'var(--color-primary)',
+                              color: 'rgba(107, 114, 128, 0.8)',
                               cursor: 'pointer',
                               display: 'inline-flex',
                               padding: 0,
