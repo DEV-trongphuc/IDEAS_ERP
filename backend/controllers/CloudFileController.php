@@ -163,7 +163,7 @@ class CloudFileController {
 
         // Auto notification for contact document upload
         if ($contact_id) {
-            $stmtOwner = $this->db->prepare("SELECT owner_id, CONCAT(first_name, ' ', COALESCE(last_name, '')) as contact_name FROM contacts WHERE id = ? AND tenant_id = ?");
+            $stmtOwner = $this->db->prepare("SELECT owner_id, full_name as contact_name FROM contacts WHERE id = ? AND tenant_id = ?");
             $stmtOwner->execute([$contact_id, $tid]);
             $contactInfo = $stmtOwner->fetch();
             if ($contactInfo) {

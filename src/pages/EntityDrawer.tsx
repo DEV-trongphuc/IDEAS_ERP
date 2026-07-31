@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, FileText, FileBadge, Tag as TagIcon, Phone, Mail, MapPin, Search, History, Briefcase, Plus, HelpCircle, Settings, Download, Trash2, CheckCircle, ShoppingCart, Lock } from 'lucide-react';
+import { X, User, FileText, FileBadge, Tag as TagIcon, Phone, Mail, MapPin, Search, History, Briefcase, Plus, HelpCircle, Settings, Download, Trash2, CheckCircle, ShoppingCart, Lock, Calendar, Building2 } from 'lucide-react';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { CustomCheckbox } from '../components/ui/CustomCheckbox';
 import { CustomRadio } from '../components/ui/CustomRadio';
@@ -91,10 +91,10 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
               <div className={styles.header}>
                 <div className={styles.headerProfile}>
                   <div className="avatar-placeholder lg" style={{ background: '#a31422', fontSize: '1.25rem', width: 56, height: 56 }}>
-                    {formData?.last_name?.[0]}{formData?.first_name?.[0]}
+                    {(formData?.full_name || 'K')[0]}
                   </div>
                   <div>
-                    <h2 className={styles.title}>{formData?.last_name} {formData?.first_name}</h2>
+                    <h2 className={styles.title}>{formData?.full_name || 'Khách hàng'}</h2>
                     <p className={styles.subtitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Briefcase size={14} /> {formData?.job_title || 'Chưa cập nhật chức vụ'} tại {formData?.company_name || 'Chưa cập nhật công ty'}
                     </p>
@@ -143,22 +143,39 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
                         <div className="grid grid-2">
                           <div className="form-group">
                             <label className="form-label">Họ tên <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <input className="form-input" placeholder="Họ" value={formData?.first_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, first_name: e.target.value }))} />
-                              <input className="form-input" placeholder="Tên" value={formData?.last_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, last_name: e.target.value }))} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <User size={16} />
+                              </div>
+                              <input className="form-input" placeholder="Nhập đầy đủ họ tên" style={{ paddingLeft: '2.5rem', borderRadius: '10px', height: '42px' }} value={formData?.full_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, full_name: e.target.value }))} />
                             </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Email</label>
-                            <input className="form-input" type="email" placeholder="ví dụ: email@congty.com" value={formData?.email || ''} onChange={e => setFormData((prev: any) => ({ ...prev, email: e.target.value }))} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Mail size={16} />
+                              </div>
+                              <input className="form-input" type="email" placeholder="ví dụ: email@congty.com" style={{ paddingLeft: '2.5rem', borderRadius: '10px', height: '42px' }} value={formData?.email || ''} onChange={e => setFormData((prev: any) => ({ ...prev, email: e.target.value }))} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Số điện thoại chính</label>
-                            <input className="form-input" type="tel" placeholder="09xx xxx xxx" value={formData?.phone || ''} onChange={e => setFormData((prev: any) => ({ ...prev, phone: e.target.value }))} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Phone size={16} />
+                              </div>
+                              <input className="form-input" type="tel" placeholder="09xx xxx xxx" style={{ paddingLeft: '2.5rem', borderRadius: '10px', height: '42px' }} value={formData?.phone || ''} onChange={e => setFormData((prev: any) => ({ ...prev, phone: e.target.value }))} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Ngày sinh</label>
-                            <input className="form-input" type="date" value={formData?.birthday || ''} onChange={e => setFormData((prev: any) => ({ ...prev, birthday: e.target.value }))} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Calendar size={16} />
+                              </div>
+                              <input className="form-input" type="date" style={{ paddingLeft: '2.5rem', borderRadius: '10px', height: '42px' }} value={formData?.birthday || ''} onChange={e => setFormData((prev: any) => ({ ...prev, birthday: e.target.value }))} />
+                            </div>
                           </div>
                         </div>
 
@@ -167,11 +184,21 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
                         <div className="grid grid-2">
                           <div className="form-group">
                             <label className="form-label">Công ty / Tổ chức</label>
-                            <input className="form-input" placeholder="Tên công ty" value={formData?.company_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, company_name: e.target.value }))} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Building2 size={16} />
+                              </div>
+                              <input className="form-input" placeholder="Tên công ty" style={{ paddingLeft: '2.5rem', borderRadius: '10px', height: '42px' }} value={formData?.company_name || ''} onChange={e => setFormData((prev: any) => ({ ...prev, company_name: e.target.value }))} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Chức vụ</label>
-                            <input className="form-input" placeholder="Ví dụ: Giám đốc, Kế toán trưởng..." value={formData?.job_title || ''} onChange={e => setFormData((prev: any) => ({ ...prev, job_title: e.target.value }))} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Briefcase size={16} />
+                              </div>
+                              <input className="form-input" placeholder="Ví dụ: Giám đốc, Kế toán trưởng..." style={{ paddingLeft: '2.5rem', borderRadius: '10px', height: '42px' }} value={formData?.job_title || ''} onChange={e => setFormData((prev: any) => ({ ...prev, job_title: e.target.value }))} />
+                            </div>
                           </div>
                         </div>
                       </div>

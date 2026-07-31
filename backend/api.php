@@ -4000,7 +4000,7 @@ switch ($action) {
         if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
             // Fetch invoices (SO) for the date
             $invRes = $conn->query("
-                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.first_name, ct.last_name, i.deal_id
+                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.full_name, i.deal_id
                 FROM invoices i
                 LEFT JOIN contacts ct ON i.contact_id = ct.id
                 WHERE DATE(i.issue_date) = '$escapedDate' AND i.deleted_at IS NULL $pendingFilterSO
@@ -4014,7 +4014,7 @@ switch ($action) {
                         'total' => (float)$row['total'],
                         'status' => $row['status'],
                         'issue_date' => $row['issue_date'],
-                        'customer_name' => ($row['first_name'] || $row['last_name']) ? trim($row['first_name'] . ' ' . $row['last_name']) : 'N/A',
+                        'customer_name' => ($row['full_name'] ?? '') ? trim($row['full_name']) : 'N/A',
                         'deal_id' => $row['deal_id'] ? (int)$row['deal_id'] : null
                     ];
                 }
@@ -18068,13 +18068,6 @@ switch ($action) {
 
             // 7. Create CRM Contact for the claiming Sale
             $fullName = $person['full_name'] ?: 'Khách hàng Databank';
-            $parts = explode(' ', trim($fullName));
-            $lastName = array_shift($parts) ?? '';
-            $firstName = implode(' ', $parts);
-            if (empty($firstName)) {
-                $firstName = $lastName;
-                $lastName = '';
-            }
 
             $stmtProj = $conn->prepare("SELECT project_id FROM contacts WHERE person_id = ? AND project_id IS NOT NULL LIMIT 1");
             $stmtProj->bind_param("i", $personId);
@@ -18110,10 +18103,10 @@ switch ($action) {
             $secExpiresTime = null;
 
             $stmtIns = $conn->prepare("
-                INSERT INTO contacts (person_id, project_id, owner_id, created_by, first_name, last_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, ?, ?, ?)
+                INSERT INTO contacts (person_id, project_id, owner_id, created_by, full_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, ?, ?, ?)
             ");
-            $stmtIns->bind_param("iiiisssssssss", $personId, $projectId, $saleUserId, $createdBy, $firstName, $lastName, $person['email'], $person['phone'], $sourceVal, $triggerStatus, $secExpiresTime, $noteVal, $typeVal);
+            $stmtIns->bind_param("iiiissssssss", $personId, $projectId, $saleUserId, $createdBy, $fullName, $person['email'], $person['phone'], $sourceVal, $triggerStatus, $secExpiresTime, $noteVal, $typeVal);
             $stmtIns->execute();
             $newContactId = $conn->insert_id;
             $stmtIns->close();

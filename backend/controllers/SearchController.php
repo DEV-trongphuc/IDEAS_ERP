@@ -18,7 +18,7 @@ class SearchController {
         $results = [];
 
         // Contacts
-        $sqlC = "SELECT id, CONCAT(first_name,' ',last_name) as label, email as sublabel, 'contact' as type, status FROM contacts WHERE tenant_id=? AND deleted_at IS NULL AND (CONCAT(first_name,' ',last_name) LIKE ? OR email LIKE ? OR phone LIKE ?)";
+        $sqlC = "SELECT id, full_name as label, email as sublabel, 'contact' as type, status FROM contacts WHERE tenant_id=? AND deleted_at IS NULL AND (full_name LIKE ? OR email LIKE ? OR phone LIKE ?)";
         $pC = [$tid, $like, $like, $like];
         if ($isSale) { 
             $sqlC .= ' AND (owner_id=? OR id IN (
@@ -127,7 +127,7 @@ class SearchController {
             }
 
             $s = $this->db->prepare("
-                SELECT c.id, CONCAT(c.first_name,' ',c.last_name) as name, c.phone, c.status
+                SELECT c.id, c.full_name as name, c.phone, c.status
                 FROM contacts c
                 WHERE c.tenant_id=? AND c.deleted_at IS NULL AND c.id NOT IN (
                     SELECT related_id FROM activities
@@ -161,7 +161,7 @@ class SearchController {
             }
 
             $s = $this->db->prepare("
-                SELECT c.id, CONCAT(c.first_name,' ',c.last_name) as name, c.expected_revenue, ps.name as stage
+                SELECT c.id, c.full_name as name, c.expected_revenue, ps.name as stage
                 FROM contacts c LEFT JOIN pipeline_stages ps ON c.stage_id=ps.id
                 WHERE c.tenant_id=? AND c.deleted_at IS NULL AND c.expected_revenue >= ? $saleFilter
                 ORDER BY c.expected_revenue DESC LIMIT 20

@@ -55,7 +55,7 @@ class ContactController {
         }
 
         // Validating sort fields
-        $allowedSort = ['created_at', 'updated_at', 'first_name', 'lead_score', 'last_contact'];
+        $allowedSort = ['created_at', 'updated_at', 'full_name', 'lead_score', 'last_contact'];
         if (!in_array($sortBy, $allowedSort)) $sortBy = 'created_at';
         if (!in_array(strtoupper($order), ['ASC', 'DESC'])) $order = 'DESC';
 
@@ -105,7 +105,7 @@ class ContactController {
 
         if ($search) {
             if (is_numeric($search)) {
-                $where[]  = '(CONCAT(c.first_name, \' \', c.last_name) LIKE ? OR c.phone LIKE ? OR c.mobile LIKE ? OR c.email LIKE ? OR c.id = ? OR c.person_id = ?)';
+                $where[]  = '(c.full_name LIKE ? OR c.phone LIKE ? OR c.mobile LIKE ? OR c.email LIKE ? OR c.id = ? OR c.person_id = ?)';
                 $params[] = "%$search%";
                 $params[] = "%$search%";
                 $params[] = "%$search%";
@@ -113,9 +113,7 @@ class ContactController {
                 $params[] = (int)$search;
                 $params[] = (int)$search;
             } else {
-                $where[]  = '(CONCAT(c.first_name, \' \', c.last_name) LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ? OR c.phone LIKE ? OR c.mobile LIKE ? OR c.email LIKE ?)';
-                $params[] = "%$search%";
-                $params[] = "%$search%";
+                $where[]  = '(c.full_name LIKE ? OR c.phone LIKE ? OR c.mobile LIKE ? OR c.email LIKE ?)';
                 $params[] = "%$search%";
                 $params[] = "%$search%";
                 $params[] = "%$search%";
@@ -286,7 +284,7 @@ class ContactController {
     public function store(array $auth): void {
         if ($auth['role'] === 'viewer') respond(403, null, 'Bạn không có quyền thêm mới', false);
         $b = getBody();
-        $required = ['first_name'];
+        $required = ['full_name'];
         foreach ($required as $f) {
             if (empty($b[$f])) respond(422, null, "Trường '$f' là bắt buộc", false);
         }
@@ -353,7 +351,7 @@ class ContactController {
             require_once __DIR__ . '/../webhook_logic.php';
             $phoneClean = normalizePhone($phone);
             if ($phoneClean) {
-                $fullName = trim($b['first_name'] . ' ' . ($b['last_name'] ?? ''));
+                $fullName = trim($b['full_name'] ?? '');
                 $stmtPerson = $this->db->prepare("
                     INSERT INTO persons (phone, email, full_name, is_public) 
                     VALUES (?, ?, ?, 0) 
@@ -373,15 +371,15 @@ class ContactController {
         $last_contact = empty($b['last_contact']) ? null : $b['last_contact'];
 
         $stmt = $this->db->prepare("
-            INSERT INTO contacts (tenant_id,company_id,owner_id,created_by,first_name,last_name,
+            INSERT INTO contacts (tenant_id,company_id,owner_id,created_by,full_name,
                 email,phone,mobile,job_title,department,source,status,tags,notes,stage_id,
                 birthday,address,city,ward,expected_revenue,win_probability,last_contact,lead_score,person_id,collaborator_ids)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ");
         $stmt->execute([
             $auth['tenant_id'],
             $company_id, (in_array($auth['role'], ['sale', 'sales'], true)) ? $auth['user_id'] : (!empty($b['owner_id']) ? (int)$b['owner_id'] : $auth['user_id']),
-            $auth['user_id'], $b['first_name'], $b['last_name'] ?? '',
+            $auth['user_id'], trim($b['full_name'] ?? ''),
             $email, $phone, $phone,
             $b['job_title'] ?? null, $b['department'] ?? null,
             $b['source'] ?? 'other', $b['status'] ?? 'lead',
@@ -429,7 +427,7 @@ class ContactController {
         if (!empty($b['collaborator_ids'])) {
             $newCollabs = array_filter(array_map('trim', explode(',', $b['collaborator_ids'] ?? '')));
             if (!empty($newCollabs)) {
-                $fullName = trim($b['first_name'] . ' ' . ($b['last_name'] ?? ''));
+                $fullName = trim($b['full_name'] ?? '');
                 require_once __DIR__ . '/../NotificationService.php';
                 foreach ($newCollabs as $collabRawId) {
                     $collabRawId = (int)$collabRawId;
@@ -462,8 +460,8 @@ class ContactController {
         if (isset($b['custom_fields']) && is_array($b['custom_fields'])) {
             saveCustomFields($this->db, $auth['tenant_id'], $id, 'contact', $b['custom_fields']);
         }
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE', 'contact', $id, json_encode(['first_name' => $b['first_name'], 'last_name' => $b['last_name'] ?? '']));
-        logInteraction($this->db, $auth['tenant_id'], $auth['user_id'], 'note', 'Tạo Khách hàng mới', "Khách hàng \"{$b['first_name']} " . ($b['last_name'] ?? '') . "\" đã được thêm vào hệ thống.", 'contact', $id);
+        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE', 'contact', $id, json_encode(['full_name' => trim($b['full_name'] ?? '')]));
+        logInteraction($this->db, $auth['tenant_id'], $auth['user_id'], 'note', 'Tạo Khách hàng mới', "Khách hàng \"{$b['full_name']}\" đã được thêm vào hệ thống.", 'contact', $id);
         $this->show($auth, $id);
     }
 
@@ -549,7 +547,7 @@ class ContactController {
         if ($auth['role'] === 'viewer') respond(403, null, 'Bạn không có quyền cập nhật', false);
         $b = getBody();
         // 1. Pre-fetch current contact state for lifecycle validation
-        $stmtCurr = $this->db->prepare("SELECT pipeline_status, ttl1_completed, owner_id, first_name, last_name, person_id, email, phone, mobile, collaborator_ids FROM contacts WHERE id = ? AND tenant_id = ?");
+        $stmtCurr = $this->db->prepare("SELECT pipeline_status, ttl1_completed, owner_id, full_name, person_id, email, phone, mobile, collaborator_ids FROM contacts WHERE id = ? AND tenant_id = ?");
         $stmtCurr->execute([$id, $auth['tenant_id']]);
         $currentContact = $stmtCurr->fetch();
         if (!$currentContact) respond(404, null, 'Không tìm thấy liên hệ', false);
@@ -669,7 +667,7 @@ class ContactController {
         }
 
         $fields = [
-            'company_id','project_id','owner_id','first_name','last_name','email','phone',
+            'company_id','project_id','owner_id','full_name','email','phone',
             'mobile','job_title','department','source','status','notes',
             'birthday','address','city','ward',
             'expected_revenue','win_probability','last_contact','stage_id',
@@ -823,7 +821,7 @@ class ContactController {
                 $addedCollabs = array_diff($newCollabs, $oldCollabs);
 
                 if (!empty($addedCollabs)) {
-                    $fullName = trim($currentContact['first_name'] . ' ' . ($currentContact['last_name'] ?? ''));
+                    $fullName = trim($currentContact['full_name'] ?? '');
                     $title = "Bạn được thêm làm nhân sự chăm sóc phụ (Co-care)";
                     $body = "Bạn đã được sale " . ($auth['full_name'] ?? 'đồng nghiệp') . " thêm làm nhân sự chăm sóc phụ cho khách hàng: " . $fullName;
                     $type = "info";
@@ -921,7 +919,7 @@ class ContactController {
         // Notify the owner asynchronously if modified by another user
         // CUSTOMER_UPDATE notification disabled per user request
         
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'UPDATE', 'contact', $id, json_encode(['first_name' => $currentContact['first_name'], 'last_name' => $currentContact['last_name'] ?? '']));
+        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'UPDATE', 'contact', $id, json_encode(['full_name' => $currentContact['full_name'] ?? '']));
         $sql = "SELECT c.*, 
                     CASE 
                         WHEN comp.deleted_at IS NOT NULL THEN CONCAT(comp.name, ' (Đã xóa)')
@@ -969,7 +967,7 @@ class ContactController {
         $newStatus = $this->getSlugFromStageId($stageId, $auth['tenant_id']);
 
         // Check current status for CAPI/Timer trigger
-        $stmtC = $this->db->prepare("SELECT pipeline_status, owner_id, first_name, last_name, ttl1_completed FROM contacts WHERE id = ? AND tenant_id = ?");
+        $stmtC = $this->db->prepare("SELECT pipeline_status, owner_id, full_name, ttl1_completed FROM contacts WHERE id = ? AND tenant_id = ?");
         $stmtC->execute([$id, $auth['tenant_id']]);
         $currentContact = $stmtC->fetch();
         $currStatus = $currentContact['pipeline_status'] ?? 'chua_xac_dinh';
@@ -1191,7 +1189,7 @@ class ContactController {
         $tid = $auth['tenant_id'];
 
         // 1. Fetch contact
-        $stmt = $this->db->prepare("SELECT id, person_id, owner_id, first_name, last_name FROM contacts WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
+        $stmt = $this->db->prepare("SELECT id, person_id, owner_id, full_name FROM contacts WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
         $stmt->execute([$id, $tid]);
         $contact = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$contact) respond(404, null, 'Không tìm thấy liên hệ', false);

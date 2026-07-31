@@ -77,13 +77,13 @@ try {
     ON DUPLICATE KEY UPDATE name=VALUES(name)");
 
     // 2. Contacts
-    $conn->query("INSERT INTO contacts (id, tenant_id, first_name, last_name, email, phone, status, pipeline_status, owner_id, created_by, project_id) VALUES 
-        (101, 1, 'Văn A', 'Nguyễn', 'client.a@gmail.test', '0912345678', 'customer', 'hoc_vien', 100012, 100012, 1),
-        (102, 1, 'Thị B', 'Trần', 'client.b@gmail.test', '0987654321', 'lead', 'dong_le_phi_ho_so', 100012, 100012, 2),
-        (103, 1, 'Văn C', 'Phạm', 'client.c@gmail.test', '0905123456', 'lead', 'nop_ho_so', 100012, 100012, 3),
-        (104, 1, 'Văn D', 'Lê', 'client.d@gmail.test', '0934123456', 'lead', 'co_hoi', 100015, 100015, 1),
-        (105, 1, 'Thị E', 'Hoàng', 'client.e@gmail.test', '0978123456', 'lead', 'dong_le_phi_ho_so', 100015, 100015, 2)
-    ON DUPLICATE KEY UPDATE first_name=VALUES(first_name), last_name=VALUES(last_name)");
+    $conn->query("INSERT INTO contacts (id, tenant_id, full_name, email, phone, status, pipeline_status, owner_id, created_by, project_id) VALUES 
+        (101, 1, 'Nguyễn Văn A', 'client.a@gmail.test', '0912345678', 'customer', 'hoc_vien', 100012, 100012, 1),
+        (102, 1, 'Trần Thị B', 'client.b@gmail.test', '0987654321', 'lead', 'dong_le_phi_ho_so', 100012, 100012, 2),
+        (103, 1, 'Phạm Văn C', 'client.c@gmail.test', '0905123456', 'lead', 'nop_ho_so', 100012, 100012, 3),
+        (104, 1, 'Lê Văn D', 'client.d@gmail.test', '0934123456', 'lead', 'co_hoi', 100015, 100015, 1),
+        (105, 1, 'Hoàng Thị E', 'client.e@gmail.test', '0978123456', 'lead', 'dong_le_phi_ho_so', 100015, 100015, 2)
+    ON DUPLICATE KEY UPDATE full_name=VALUES(full_name)");
 
     // 3. Deals
     $conn->query("INSERT INTO deals (id, tenant_id, contact_id, title, value, stage_id, owner_id, created_by) VALUES 

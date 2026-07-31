@@ -5793,5 +5793,13 @@ div[data-react-hot-toast] > div,
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15) !important;
 }
 
+/* Custom form input with left icon spacing */
+.form-input-icon-left {
+  padding-left: 2.5rem !important;
+  border-radius: 10px !important;
+  height: 42px !important;
+}
+
+
 
 

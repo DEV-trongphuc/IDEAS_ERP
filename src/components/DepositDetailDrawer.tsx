@@ -28,8 +28,7 @@ interface Deposit {
   unit_code: string;
   created_by: number;
   contact_owner_id?: number;
-  first_name?: string;
-  last_name?: string;
+  full_name?: string;
   phone?: string;
   email?: string;
   avatar_url?: string;
@@ -720,13 +719,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <Avatar
                           src={selectedDepForManage.avatar_url}
-                          name={`${selectedDepForManage.last_name || ''} ${selectedDepForManage.first_name || ''}`}
+                          name={selectedDepForManage.full_name || ''}
                           size="lg"
                           style={{ width: '52px', height: '52px', fontSize: '1.2rem' }}
                         />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                            {selectedDepForManage.last_name} {selectedDepForManage.first_name}
+                            {selectedDepForManage.full_name}
                           </h4>
                           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
                             SĐT: <strong style={{ color: 'var(--color-text)' }}>{selectedDepForManage.phone || '—'}</strong>
@@ -1748,12 +1747,12 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
         {previewReminderMilestone && (() => {
           const sendToCaretaker = remindTargetManage === 2 || !selectedDepForManage.email;
           const caretakerUser = sharesData && sharesData.length > 0 ? sharesData[0] : null;
-          const recipientName = sendToCaretaker ? (caretakerUser?.name || 'Sale chăm sóc') : `${selectedDepForManage.last_name || ''} ${selectedDepForManage.first_name || ''}`;
+          const recipientName = sendToCaretaker ? (caretakerUser?.name || 'Sale chăm sóc') : (selectedDepForManage.full_name || '').trim();
           const amountStr = (selectedDepForManage.currency !== 'VND' && previewReminderMilestone.original_amount !== null && previewReminderMilestone.original_amount !== undefined)
             ? `${formatMoney(previewReminderMilestone.original_amount, selectedDepForManage.currency)} (≈ ${formatMoney(previewReminderMilestone.expected_amount, 'VND')})`
             : formatMoney(previewReminderMilestone.expected_amount, 'VND');
           const payDateStr = previewReminderMilestone.expected_pay_date ? new Date(previewReminderMilestone.expected_pay_date).toLocaleDateString('vi-VN') : '—';
-          const custName = `${selectedDepForManage.last_name || ''} ${selectedDepForManage.first_name || ''}`;
+          const custName = (selectedDepForManage.full_name || '').trim();
           const subject = sendToCaretaker ? `[Nhắc lịch thanh toán] Khách hàng ${custName} - ${selectedDepForManage.project_name}` : `[Thông báo thanh toán] Căn hộ ${selectedDepForManage.unit_code} - ${selectedDepForManage.project_name}`;
 
           return (

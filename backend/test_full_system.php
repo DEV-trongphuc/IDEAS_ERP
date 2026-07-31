@@ -34,7 +34,7 @@ if ($userRow) {
 }
 
 // 5. Test Extended CRM fields presence in Contacts
-$contactRow = $conn->query("SELECT id, first_name, zalo_phone, preferred_location, budget FROM contacts LIMIT 1")->fetch_assoc();
+$contactRow = $conn->query("SELECT id, full_name, zalo_phone, preferred_location, budget FROM contacts LIMIT 1")->fetch_assoc();
 if ($contactRow) {
     $cId = (int)$contactRow['id'];
     assertDbField($conn, 'contacts', 'id', "id = {$cId}", $cId, "Truy van bang Contacts theo ID");

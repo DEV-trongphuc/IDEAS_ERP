@@ -445,7 +445,7 @@ export const FinancialDashboard: React.FC = () => {
                 ) : soList.slice(0, 5).map((so, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
                     <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{so.unit_code}</td>
-                    <td style={{ padding: '12px', fontWeight: 600 }}>{`${so.last_name || ''} ${so.first_name || ''}`}</td>
+                    <td style={{ padding: '12px', fontWeight: 600 }}>{so.full_name || ''}</td>
                     <td style={{ padding: '12px' }}>{so.project_name}</td>
                     <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700 }}>{FMT_VND(so.price)}</td>
                     <td style={{ padding: '12px' }}>{so.creator_name || '—'}</td>

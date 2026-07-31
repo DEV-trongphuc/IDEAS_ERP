@@ -156,16 +156,15 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
       const tax = Math.round(subtotal * taxRate / 100);
       const total = subtotal + tax;
 
-      // Enforce 3-level approval constraint based on threshold
+      // Enforce approval constraint: default 1 level, 2 levels if total >= threshold
+      if (!formData.approver_id) {
+        addToast('Vui lòng chọn người duyệt Cấp 1', 'error');
+        setIsSubmitting(false);
+        return;
+      }
       if (total >= threshold) {
-        if (!formData.approver_id || !formData.approver_id_2 || !formData.approver_id_3) {
-          addToast(`Đơn hàng từ ${new Intl.NumberFormat('vi-VN').format(threshold)} đ trở lên bắt buộc phải phê duyệt 3 cấp, vui lòng chọn đầy đủ người duyệt`, 'error');
-          setIsSubmitting(false);
-          return;
-        }
-      } else {
-        if ((formData.approver_id_2 || formData.approver_id_3) && !formData.approver_id) {
-          addToast('Vui lòng chọn người duyệt Cấp 1 trước khi chọn Cấp 2 hoặc Cấp 3', 'error');
+        if (!formData.approver_id_2) {
+          addToast(`Đơn hàng từ ${new Intl.NumberFormat('vi-VN').format(threshold)} đ trở lên bắt buộc phải phê duyệt 2 cấp, vui lòng chọn người duyệt Cấp 2`, 'error');
           setIsSubmitting(false);
           return;
         }
@@ -443,7 +442,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                 
                 {/* Left Column: Form & Selected Items */}
                 <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', borderRight: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-                  <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ padding: '1.25rem 1.5rem 80px 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     
                     {/* Settings Form */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
@@ -527,12 +526,11 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                         {/* Summary / Warning info */}
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: 'var(--color-surface)', border: '1px dashed var(--color-border)', borderRadius: '12px', padding: '8px 12px' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--color-text-muted)' }}>
-                            Hạn mức 3 cấp duyệt:
+                            Hạn mức 2 cấp duyệt:
                           </span>
                           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: '2px' }}>
                             {new Intl.NumberFormat('vi-VN').format(threshold)} đ
                           </span>
-                          {/* Indicator if current total requires 3 levels */}
                           {(() => {
                             const subtotal = calculateTotal();
                             const taxRate = Number(formData.tax_rate || 0);
@@ -540,17 +538,12 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                             const total = subtotal + tax;
                             if (total >= threshold) {
                               return (
-                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-danger)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  ⚠️ Bắt buộc 3 cấp duyệt!
-                                </span>
-                              );
-                            } else {
-                              return (
-                                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-success)', marginTop: '2px' }}>
-                                  Duyệt 1 cấp (Cấp 2, 3 tùy chọn)
+                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-danger)', marginTop: '2px' }}>
+                                  Tiền trên {new Intl.NumberFormat('vi-VN').format(threshold)}đ phê duyệt 2 cấp
                                 </span>
                               );
                             }
+                            return null;
                           })()}
                         </div>
                       </div>
@@ -577,13 +570,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                            Người duyệt Cấp 2 {(() => {
-                              const subtotal = calculateTotal();
-                              const taxRate = Number(formData.tax_rate || 0);
-                              const tax = Math.round(subtotal * taxRate / 100);
-                              const total = subtotal + tax;
-                              return total >= threshold ? <span className="text-danger">*</span> : <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Tùy chọn)</span>;
-                            })()}
+                            Người duyệt Cấp 2 <span className="text-danger">*</span>
                           </label>
                           <CustomSelect 
                             options={users.map((u: any) => ({
@@ -594,7 +581,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                             }))}
                             value={formData.approver_id_2} 
                             onChange={val => setFormData({...formData, approver_id_2: String(val)})}
-                            placeholder="-- Không có --"
+                            placeholder="Chọn người duyệt..."
                             searchable
                             showAvatars
                           />

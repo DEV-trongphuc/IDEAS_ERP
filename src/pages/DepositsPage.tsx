@@ -39,8 +39,7 @@ interface Deposit {
   status: string;
   cancelled_reason: string | null;
   created_at: string;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   phone: string;
   email?: string;
   avatar_url?: string;
@@ -73,8 +72,7 @@ interface Milestone {
 
 interface Contact {
   id: number;
-  first_name: string;
-  last_name: string;
+  full_name: string;
   phone: string;
   email?: string;
   expected_revenue?: number | string;
@@ -162,7 +160,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     }
 
     return list.filter((d: any) => {
-      const clientName = `${d.last_name || ''} ${d.first_name || ''}`.toLowerCase();
+      const clientName = (d.full_name || '').toLowerCase();
       const matchesSearch = !searchQuery.trim() ? true : 
         clientName.includes(searchQuery.toLowerCase()) || 
         (d.phone && d.phone.includes(searchQuery)) || 
@@ -1018,7 +1016,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
               map[dateStr].totalAmount += Number(m.expected_amount) || 0;
               map[dateStr].milestones.push({
                 ...m,
-                customerName: `${d.last_name} ${d.first_name}`,
+                customerName: d.full_name || '',
                 phone: d.phone,
                 unitCode: d.unit_code,
                 projectName: d.project_name
@@ -1201,7 +1199,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       totalSOAmount += priceVal;
       if (priceVal > maxSOAmount) {
         maxSOAmount = priceVal;
-        maxSOTitle = `${d.last_name} ${d.first_name} - ${d.project_name || 'Dự án'}`;
+        maxSOTitle = `${d.full_name || ''} - ${d.project_name || 'Dự án'}`;
       }
 
       if (d.milestones && d.milestones.length > 0) {
@@ -1512,9 +1510,9 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                       {/* Client / Program */}
                       <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Avatar src={dep.avatar_url} name={`${dep.last_name || ''} ${dep.first_name || ''}`} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
+                          <Avatar src={dep.avatar_url} name={dep.full_name || ''} size="sm" style={{ width: 24, height: 24, fontSize: 10 }} />
                           <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                            {dep.last_name} {dep.first_name}
+                            {dep.full_name}
                           </span>
                         </div>
                         <div style={{ fontWeight: 600, color: 'var(--color-text-light)', fontSize: '0.75rem', marginTop: '4px', paddingLeft: '32px' }}>
@@ -2138,7 +2136,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
         width="600px"
       >
         {previewReminderMilestone && selectedDepForManage && (() => {
-          const custName = `${selectedDepForManage.first_name || ''} ${selectedDepForManage.last_name || ''}`.trim();
+          const custName = (selectedDepForManage.full_name || '').trim();
           const customerEmail = selectedDepForManage.email ? selectedDepForManage.email.trim() : '';
           const hasEmail = customerEmail !== '';
           const isTargetSale = remindTargetManage === 2;

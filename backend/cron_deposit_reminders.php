@@ -13,7 +13,7 @@ try {
     $sql = "
         SELECT d.id as deposit_id, d.unit_code, d.price, d.expected_commission, d.remind_days_before, d.remind_target,
                m.id as milestone_id, m.milestone_name, m.expected_amount, m.expected_pay_date, m.status as milestone_status,
-               c.first_name, c.last_name, c.email as contact_email, c.phone as contact_phone,
+               c.full_name, c.email as contact_email, c.phone as contact_phone,
                u.email as creator_email, u.full_name as creator_name,
                o.email as owner_email, o.full_name as owner_name,
                p.name as project_name, c.tenant_id
@@ -39,7 +39,7 @@ try {
 
     $count = 0;
     while ($row = $stmt->fetch_assoc()) {
-        $custName = trim($row['first_name'] . ' ' . ($row['last_name'] ?? ''));
+        $custName = trim($row['full_name'] ?? '');
         $payDateStr = date('d/m/Y', strtotime($row['expected_pay_date']));
         $amountStr = number_format($row['expected_amount']) . ' VND';
         $remindTarget = (int)($row['remind_target'] ?? 1);

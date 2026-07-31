@@ -85,54 +85,48 @@ $authCreator = [
 $poController = new PurchaseOrderController($pdo);
 
 // ---------------------------------------------------------------------
-// TEST 1: Tạo PO có 3 cấp duyệt
+// TEST 1: Tạo PO trên 5 triệu có 2 cấp duyệt (Cấp 1 & Cấp 2 bắt buộc)
 // ---------------------------------------------------------------------
-echo "📌 1. Tạo PO mới với 3 cấp phê duyệt...\n";
+echo "📌 1. Tạo PO mới với tổng tiền trên 5 triệu (cần 2 cấp phê duyệt)...\n";
 global $mockBody;
 $mockBody = [
     'supplier_id' => $supplierId,
     'order_date' => date('Y-m-d'),
-    'notes' => 'Test PO 3 levels approval',
-    'subtotal' => 1500000.00,
+    'notes' => 'Test PO >= 5M (2 levels required)',
+    'subtotal' => 5000000.00,
     'tax_rate' => 10,
-    'tax' => 150000.00,
-    'total' => 1650000.00,
+    'tax' => 500000.00,
+    'total' => 5500000.00,
     'approver_id' => $user1,
     'approver_id_2' => $user2,
-    'approver_id_3' => $user3,
+    'approver_id_3' => null,
     'items' => [
         [
             'product_id' => null,
-            'name' => 'Sản phẩm Test Cấp Duyệt 1',
-            'quantity' => 5,
-            'unit_cost' => 300000.00,
-            'subtotal' => 1500000.00
+            'name' => 'Sản phẩm Test Cấp Duyệt trên 5tr',
+            'quantity' => 1,
+            'unit_cost' => 5000000.00,
+            'subtotal' => 5000000.00
         ]
     ]
 ];
 
-$poId = 0;
+$poId1 = 0;
 try {
     $poController->store($authCreator);
 } catch (ResponseException $e) {
-    if ($e->code === 500) {
-        echo "LỖI KHI TẠO ĐƠN HÀNG: " . $e->msg . "\n";
-    }
+    echo "Tạo PO trả về Code: {$e->code}, Message: {$e->msg}\n";
     $poData = $e->data;
-    $poId = $poData['id'] ?? 0;
+    $poId1 = $poData['id'] ?? 0;
 }
 
-assertTest("Khởi tạo PO thành công", $poId > 0, "PO ID: " . $poId);
-assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'pending_approval', 'Trạng thái PO ban đầu');
-assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId}", 'pending', 'Trạng thái duyệt PO ban đầu');
-assertDbField($conn, 'purchase_orders', 'status_level_1', "id = {$poId}", 'pending', 'Trạng thái Cấp 1 ban đầu');
-assertDbField($conn, 'purchase_orders', 'status_level_2', "id = {$poId}", 'pending', 'Trạng thái Cấp 2 ban đầu');
-assertDbField($conn, 'purchase_orders', 'status_level_3', "id = {$poId}", 'pending', 'Trạng thái Cấp 3 ban đầu');
+assertTest("Khởi tạo PO trên 5M thành công", $poId1 > 0, "PO ID: " . $poId1);
+assertDbField($conn, 'purchase_orders', 'status', "id = {$poId1}", 'pending_approval', 'Trạng thái PO ban đầu');
+assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId1}", 'pending', 'Trạng thái duyệt PO ban đầu');
+assertDbField($conn, 'purchase_orders', 'status_level_1', "id = {$poId1}", 'pending', 'Trạng thái Cấp 1 ban đầu');
+assertDbField($conn, 'purchase_orders', 'status_level_2', "id = {$poId1}", 'pending', 'Trạng thái Cấp 2 ban đầu');
 
-// ---------------------------------------------------------------------
-// TEST 2: Thử nhập kho đơn hàng khi chưa được duyệt đầy đủ
-// ---------------------------------------------------------------------
-echo "\n📌 2. Kiểm tra chặn nhập kho khi đơn chưa duyệt...\n";
+// Thử nhập kho đơn hàng khi chưa được duyệt đầy đủ
 $authWarehouse = [
     'user_id' => $user1,
     'tenant_id' => $tenantId,
@@ -141,91 +135,152 @@ $authWarehouse = [
 
 $receivedCode = 0;
 try {
-    $poController->receive($authWarehouse, $poId);
+    $poController->receive($authWarehouse, $poId1);
 } catch (ResponseException $e) {
     $receivedCode = $e->code;
 }
-assertTest("Chặn nhập kho thành công (Trạng thái lỗi 422)", $receivedCode === 422, "Code trả về: " . $receivedCode);
+assertTest("Chặn nhập kho khi chưa duyệt đủ 2 cấp (Trạng thái lỗi 422)", $receivedCode === 422, "Code: " . $receivedCode);
 
-// ---------------------------------------------------------------------
-// TEST 3: Thực hiện quy trình duyệt từng cấp
-// ---------------------------------------------------------------------
-echo "\n📌 3. Thực hiện quy trình phê duyệt từng cấp...\n";
-
-// Cấp 1 duyệt
+// Phê duyệt Cấp 1
 $mockBody = ['status' => 'approved'];
 $authAppr1 = ['user_id' => $user1, 'tenant_id' => $tenantId, 'role' => 'manager'];
 try {
-    $poController->approve($authAppr1, $poId);
+    $poController->approve($authAppr1, $poId1);
 } catch (ResponseException $e) {}
-assertDbField($conn, 'purchase_orders', 'status_level_1', "id = {$poId}", 'approved', 'Cấp 1 phê duyệt thành công');
-assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId}", 'pending', 'Tổng duyệt vẫn pending chờ Cấp 2');
+assertDbField($conn, 'purchase_orders', 'status_level_1', "id = {$poId1}", 'approved', 'Cấp 1 phê duyệt thành công');
+assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId1}", 'pending', 'Tổng duyệt vẫn pending chờ Cấp 2');
 
-// Cấp 2 duyệt
+// Phê duyệt Cấp 2
 $authAppr2 = ['user_id' => $user2, 'tenant_id' => $tenantId, 'role' => 'manager'];
 try {
-    $poController->approve($authAppr2, $poId);
+    $poController->approve($authAppr2, $poId1);
 } catch (ResponseException $e) {}
-assertDbField($conn, 'purchase_orders', 'status_level_2', "id = {$poId}", 'approved', 'Cấp 2 phê duyệt thành công');
-assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId}", 'pending', 'Tổng duyệt vẫn pending chờ Cấp 3');
+assertDbField($conn, 'purchase_orders', 'status_level_2', "id = {$poId1}", 'approved', 'Cấp 2 phê duyệt thành công');
+assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId1}", 'approved', 'Tổng duyệt đã approved thành công sau 2 cấp');
+assertDbField($conn, 'purchase_orders', 'status', "id = {$poId1}", 'ordered', 'Trạng thái PO đã cập nhật thành ordered');
 
-// Cấp 3 duyệt
-$authAppr3 = ['user_id' => $user3, 'tenant_id' => $tenantId, 'role' => 'director'];
-try {
-    $poController->approve($authAppr3, $poId);
-} catch (ResponseException $e) {}
-assertDbField($conn, 'purchase_orders', 'status_level_3', "id = {$poId}", 'approved', 'Cấp 3 phê duyệt thành công');
-assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId}", 'approved', 'Tổng duyệt đã approved thành công');
-assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'ordered', 'Trạng thái PO đã cập nhật thành ordered');
-
-// ---------------------------------------------------------------------
-// TEST 4: Thực hiện nhập kho sau khi đã duyệt đầy đủ
-// ---------------------------------------------------------------------
-echo "\n📌 4. Thực hiện nhập kho đơn hàng sau khi duyệt thành công...\n";
+// Thực hiện nhập kho sau khi đã duyệt đầy đủ
 $receiveSuccessCode = 0;
 try {
-    $poController->receive($authWarehouse, $poId);
+    $poController->receive($authWarehouse, $poId1);
 } catch (ResponseException $e) {
     $receiveSuccessCode = $e->code;
 }
-assertTest("Nhập kho thành công (Trạng thái code 200)", $receiveSuccessCode === 200, "Code trả về: " . $receiveSuccessCode);
-assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'received', 'Trạng thái PO sau nhập kho');
+assertTest("Nhập kho thành công (Trạng thái code 200)", $receiveSuccessCode === 200, "Code: " . $receiveSuccessCode);
+
 
 // ---------------------------------------------------------------------
-// TEST 5: Kiểm tra hạn mức phê duyệt 3 cấp (Threshold Validation)
+// TEST 2: Tạo PO dưới 5 triệu chỉ có 1 cấp duyệt (Cấp 1 bắt buộc)
 // ---------------------------------------------------------------------
-echo "\n📌 5. Kiểm tra hạn mức phê duyệt 3 cấp...\n";
-
-// A. Tạo PO lớn hơn hoặc bằng 5 triệu (ví dụ 6 triệu) nhưng thiếu người duyệt Cấp 2, 3
+echo "\n📌 2. Tạo PO dưới 5 triệu (chỉ cần 1 cấp phê duyệt)...\n";
 $mockBody = [
     'supplier_id' => $supplierId,
     'order_date' => date('Y-m-d'),
-    'notes' => 'Test PO trên 5tr thiếu cấp duyệt',
-    'subtotal' => 5500000.00,
+    'notes' => 'Test PO < 5M (1 level required)',
+    'subtotal' => 1000000.00,
     'tax_rate' => 10,
-    'tax' => 550000.00,
-    'total' => 6050000.00,
+    'tax' => 100000.00,
+    'total' => 1100000.00,
     'approver_id' => $user1,
-    'approver_id_2' => null, // Thiếu cấp 2
-    'approver_id_3' => null, // Thiếu cấp 3
+    'approver_id_2' => null,
+    'approver_id_3' => null,
     'items' => [
         [
             'product_id' => null,
-            'name' => 'Sản phẩm Test Giá Cao',
+            'name' => 'Sản phẩm Test Cấp Duyệt dưới 5tr',
             'quantity' => 1,
-            'unit_cost' => 5500000.00,
-            'subtotal' => 5500000.00
+            'unit_cost' => 1000000.00,
+            'subtotal' => 1000000.00
         ]
     ]
 ];
 
-$storeErrorCode = 0;
+$poId2 = 0;
 try {
     $poController->store($authCreator);
 } catch (ResponseException $e) {
-    $storeErrorCode = $e->code;
+    $poData = $e->data;
+    $poId2 = $poData['id'] ?? 0;
 }
-assertTest("Chặn tạo PO >= 5tr khi thiếu cấp duyệt thành công (Trạng thái 422)", $storeErrorCode === 422, "Code trả về: " . $storeErrorCode);
+
+assertTest("Khởi tạo PO dưới 5M thành công", $poId2 > 0, "PO ID: " . $poId2);
+assertDbField($conn, 'purchase_orders', 'status', "id = {$poId2}", 'pending_approval', 'Trạng thái PO ban đầu');
+assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId2}", 'pending', 'Trạng thái duyệt PO ban đầu');
+
+// Phê duyệt Cấp 1 và tự động hoàn tất
+$mockBody = ['status' => 'approved'];
+try {
+    $poController->approve($authAppr1, $poId2);
+} catch (ResponseException $e) {}
+assertDbField($conn, 'purchase_orders', 'status_level_1', "id = {$poId2}", 'approved', 'Cấp 1 phê duyệt thành công');
+assertDbField($conn, 'purchase_orders', 'approval_status', "id = {$poId2}", 'approved', 'Tổng duyệt đã approved thành công chỉ sau 1 cấp');
+assertDbField($conn, 'purchase_orders', 'status', "id = {$poId2}", 'ordered', 'Trạng thái PO đã cập nhật thành ordered');
+
+
+// ---------------------------------------------------------------------
+// TEST 3: Kiểm tra các case validation chặn lỗi
+// ---------------------------------------------------------------------
+echo "\n📌 3. Kiểm tra các trường hợp chặn lỗi (Validation block)...\n";
+
+// A. PO trên 5 triệu nhưng thiếu Cấp 2
+$mockBody = [
+    'supplier_id' => $supplierId,
+    'order_date' => date('Y-m-d'),
+    'notes' => 'Test PO > 5M thiếu cấp 2',
+    'subtotal' => 5000000.00,
+    'tax_rate' => 10,
+    'tax' => 500000.00,
+    'total' => 5500000.00,
+    'approver_id' => $user1,
+    'approver_id_2' => null, // Thiếu cấp 2
+    'items' => [
+        [
+            'product_id' => null,
+            'name' => 'Sản phẩm Test Cấp Duyệt lỗi',
+            'quantity' => 1,
+            'unit_cost' => 5000000.00,
+            'subtotal' => 5000000.00
+        ]
+    ]
+];
+
+$storeErrorCode1 = 0;
+try {
+    $poController->store($authCreator);
+} catch (ResponseException $e) {
+    $storeErrorCode1 = $e->code;
+}
+assertTest("Chặn tạo PO >= 5tr khi thiếu Cấp 2 thành công (Code 422)", $storeErrorCode1 === 422, "Code: " . $storeErrorCode1);
+
+// B. PO dưới 5 triệu nhưng thiếu Cấp 1
+$mockBody = [
+    'supplier_id' => $supplierId,
+    'order_date' => date('Y-m-d'),
+    'notes' => 'Test PO < 5M thiếu cấp 1',
+    'subtotal' => 1000000.00,
+    'tax_rate' => 10,
+    'tax' => 100000.00,
+    'total' => 1100000.00,
+    'approver_id' => null, // Thiếu cấp 1
+    'items' => [
+        [
+            'product_id' => null,
+            'name' => 'Sản phẩm Test Cấp Duyệt lỗi 2',
+            'quantity' => 1,
+            'unit_cost' => 1000000.00,
+            'subtotal' => 1000000.00
+        ]
+    ]
+];
+
+$storeErrorCode2 = 0;
+try {
+    $poController->store($authCreator);
+} catch (ResponseException $e) {
+    $storeErrorCode2 = $e->code;
+}
+assertTest("Chặn tạo PO khi thiếu Cấp 1 thành công (Code 422)", $storeErrorCode2 === 422, "Code: " . $storeErrorCode2);
 
 echo "\n";
 printTestSummary();
+

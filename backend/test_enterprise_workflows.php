@@ -82,8 +82,8 @@ echo "\n--- 2. Kiểm thử Bình luận & Nhắc tên (Mentions) ---\n";
 
 // Tạo một khách hàng tiềm năng kiểm thử
 $conn->query("
-    INSERT INTO contacts (tenant_id, owner_id, created_by, first_name, last_name, phone, pipeline_status, status)
-    VALUES ({$tenantId}, {$salesId}, {$salesId}, 'Test', 'Mention', '0999888777', 'da_gap', 'lead')
+    INSERT INTO contacts (tenant_id, owner_id, created_by, full_name, phone, pipeline_status, status)
+    VALUES ({$tenantId}, {$salesId}, {$salesId}, 'Test Mention', '0999888777', 'da_gap', 'lead')
 ");
 $contactId = $conn->insert_id;
 

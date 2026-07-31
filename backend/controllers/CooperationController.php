@@ -13,7 +13,7 @@ class CooperationController {
 
         // Fetch slip and contact info to enrich notifications with customer details
         $stmtSlip = $this->db->prepare("
-            SELECT cs.id, cs.created_by, c.tenant_id, c.first_name, c.last_name, c.phone, c.owner_id
+            SELECT cs.id, cs.created_by, c.tenant_id, c.full_name, c.phone, c.owner_id
             FROM cooperation_slips cs
             JOIN contacts c ON cs.contact_id = c.id
             WHERE cs.id = ?
@@ -23,7 +23,7 @@ class CooperationController {
         if (!$slip) return;
 
         $tenantId = (int)$slip['tenant_id'];
-        $customerName = trim($slip['first_name'] . ' ' . $slip['last_name']) ?: 'Khách hàng ẩn danh';
+        $customerName = trim($slip['full_name'] ?? '') ?: 'Khách hàng ẩn danh';
         $customerPhone = $slip['phone'] ?: 'Không có SĐT';
 
         // Enrich subject and content with customer info
@@ -120,7 +120,7 @@ class CooperationController {
         $tid = $auth['tenant_id'];
 
         $sql = "
-            SELECT cs.*, c.first_name, c.last_name, c.phone, c.expected_revenue, 
+            SELECT cs.*, c.full_name, c.phone, c.expected_revenue, 
                    (SELECT COALESCE(SUM(total),0) FROM invoices WHERE contact_id = c.id AND status = 'paid' AND deleted_at IS NULL) as actual_revenue,
                    dep.unit_code, proj.name as project_name, dep.expected_commission
             FROM cooperation_slips cs
@@ -854,7 +854,7 @@ class CooperationController {
         }
 
         // Find owner of contact and check access
-        $stmtC = $this->db->prepare("SELECT owner_id, tenant_id, pipeline_status, first_name, last_name FROM contacts WHERE id = ?");
+         $stmtC = $this->db->prepare("SELECT owner_id, tenant_id, pipeline_status, full_name FROM contacts WHERE id = ?");
         $stmtC->execute([$contactId]);
         $contactRow = $stmtC->fetch();
         if (!$contactRow) {
@@ -963,7 +963,7 @@ class CooperationController {
         $this->syncCollaboratorsToContact((int)$contactId, $sharesJson);
 
         // Email and notify all shareholders that a slip requires their signature
-        $custFullName = trim(($contactRow['first_name'] ?? '') . ' ' . ($contactRow['last_name'] ?? '')) ?: 'Khách hàng';
+        $custFullName = trim($contactRow['full_name'] ?? '') ?: 'Khách hàng';
         $emailSubject = "[IDEAS] Yêu cầu ký xác nhận Phiếu hợp tác #" . $slipId;
         $emailTitle = "KÝ XÁC NHẬN PHIẾU HỢP TÁC";
         $emailContent = "Chào các thành viên,<br/><br/>" .
@@ -1321,7 +1321,7 @@ class CooperationController {
 
     public function syncCollaboratorsToContact(int $contactId, string $sharesJson): void {
         $shares = json_decode($sharesJson, true) ?: [];
-        $stmt = $this->db->prepare("SELECT tenant_id, owner_id, collaborator_ids, first_name, last_name FROM contacts WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT tenant_id, owner_id, collaborator_ids, full_name FROM contacts WHERE id = ?");
         $stmt->execute([$contactId]);
         $contact = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$contact) return;
@@ -1411,7 +1411,7 @@ class CooperationController {
 
         // Fetch slip and client details
         $stmt = $this->db->prepare("
-            SELECT cs.*, CONCAT(c.first_name, ' ', COALESCE(c.last_name,'')) as customer_name, c.owner_id
+            SELECT cs.*, c.full_name as customer_name, c.owner_id
             FROM cooperation_slips cs
             JOIN contacts c ON cs.contact_id = c.id
             WHERE cs.id = ?
@@ -1549,7 +1549,7 @@ class CooperationController {
         try {
             // Fetch slip details
             $stmt = $this->db->prepare("
-                SELECT cs.*, CONCAT(c.first_name, ' ', COALESCE(c.last_name,'')) as customer_name, c.tenant_id
+                SELECT cs.*, c.full_name as customer_name, c.tenant_id
                 FROM cooperation_slips cs
                 JOIN contacts c ON cs.contact_id = c.id
                 WHERE cs.id = ?

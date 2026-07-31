@@ -24,7 +24,7 @@ try {
 
     // 2. Tìm các invoice có deal_id nhưng chưa có bản ghi trong deposits
     $resInv = $conn->query("
-        SELECT i.*, ct.first_name, ct.last_name
+        SELECT i.*, ct.full_name
         FROM invoices i
         LEFT JOIN contacts ct ON i.contact_id = ct.id
         WHERE i.deal_id IS NOT NULL 

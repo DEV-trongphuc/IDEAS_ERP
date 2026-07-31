@@ -274,7 +274,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   const [profileContact, setProfileContact] = useState<any>(null);
   const [showImportExport, setShowImportExport] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({ first_name: '', last_name: '', email: '', phone: '', company_name: '', job_title: '', status: 'lead', source: 'other', owner_id: '', city: '', ward: '', address: '' });
+  const [createForm, setCreateForm] = useState({ full_name: '', email: '', phone: '', company_name: '', job_title: '', status: 'lead', source: 'other', owner_id: '', city: '', ward: '', address: '' });
   const [creating, setCreating] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
 
@@ -759,7 +759,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   const bulkAssign = () => addToast('Gán nhân viên phụ trách...', 'info');
 
   const handleCreateContact = async () => {
-    if (!createForm.first_name.trim()) { addToast('Vui lòng nhập họ tên', 'error'); return; }
+    if (!createForm.full_name.trim()) { addToast('Vui lòng nhập họ tên', 'error'); return; }
     
     // Yêu cầu ít nhất email hoặc số điện thoại
     if (!createForm.email.trim() && !createForm.phone.trim()) {
@@ -773,7 +773,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
       const newContact = r.data.data;
       setContacts(prev => [newContact, ...prev]);
       setShowCreateModal(false);
-      setCreateForm({ first_name: '', last_name: '', email: '', phone: '', company_name: '', job_title: '', status: 'lead', source: 'other', owner_id: '', city: '', ward: '', address: '' });
+      setCreateForm({ full_name: '', email: '', phone: '', company_name: '', job_title: '', status: 'lead', source: 'other', owner_id: '', city: '', ward: '', address: '' });
       addToast('Đã thêm liên hệ mới thành công', 'success');
     } catch (e: any) {
       addToast(e.response?.data?.message || 'Không thể tạo liên hệ', 'error');
@@ -1773,7 +1773,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                 <tbody>
                   {paged.map(c => {
                     const days = AGO_DAYS(c.last_contact);
-                    const fullName = `${c.last_name} ${c.first_name}`;
+                    const fullName = c.full_name || '';
                     return (
                       <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                          style={{ transition: 'background 0.2s', cursor: 'pointer' }}
@@ -2048,7 +2048,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
               <div className="grid-cards-responsive">
                 {paged.map(c => {
                   const days = AGO_DAYS(c.last_contact);
-                  const fullName = `${c.last_name} ${c.first_name}`;
+                  const fullName = c.full_name || '';
                   return (
                     <motion.div 
                       key={c.id} 
@@ -2439,15 +2439,9 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
               {/* Body */}
               <div className="modal-body" style={{ padding: isMobile ? '1.25rem' : '2.5rem', overflowY: 'auto' }}>
                 {/* Name row */}
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '1rem' : '1.5rem' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>Họ <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                    <input className="form-input lg" placeholder="VD: Nguyễn" value={createForm.first_name} onChange={e => setCreateForm(f => ({ ...f, first_name: e.target.value }))} autoFocus />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>Tên đệm & Tên</label>
-                    <input className="form-input lg" placeholder="VD: Văn An" value={createForm.last_name} onChange={e => setCreateForm(f => ({ ...f, last_name: e.target.value }))} />
-                  </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700 }}>Họ tên <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                  <input className="form-input lg" placeholder="Nhập đầy đủ họ tên" value={createForm.full_name} onChange={e => setCreateForm(f => ({ ...f, full_name: e.target.value }))} autoFocus />
                 </div>
 
                 {/* Contact row */}

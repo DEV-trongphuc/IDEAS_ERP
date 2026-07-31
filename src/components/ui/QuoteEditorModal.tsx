@@ -21,8 +21,7 @@ interface Product {
 
 interface Contact {
   id: number;
-  first_name?: string;
-  last_name?: string;
+  full_name?: string;
   phone?: string;
   email?: string;
   company_name?: string;
@@ -183,7 +182,7 @@ export const QuoteEditorModal: React.FC<QuoteEditorProps> = ({
   const filteredContacts = useMemo(() => {
     const contactList = Array.isArray(contacts) ? contacts : [];
     if (!searchContact) return [];
-    return contactList.filter(c => `${c.last_name} ${c.first_name} ${c.phone} ${c.email}`.toLowerCase().includes(searchContact.toLowerCase())).slice(0, 8);
+    return contactList.filter(c => `${c.full_name} ${c.phone} ${c.email}`.toLowerCase().includes(searchContact.toLowerCase())).slice(0, 8);
   }, [contacts, searchContact]);
 
   const addItem = (p: Product) => {
@@ -301,7 +300,7 @@ export const QuoteEditorModal: React.FC<QuoteEditorProps> = ({
                           <input 
                             style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '0.875rem', color: 'var(--color-text)', fontWeight: selectedContact ? 700 : 400 }}
                             placeholder="Tìm theo tên, SĐT hoặc Email..." 
-                            value={selectedContact ? `${selectedContact.last_name || ''} ${selectedContact.first_name}` : searchContact}
+                            value={selectedContact ? selectedContact.full_name || '' : searchContact}
                             onChange={e => { setSearchContact(e.target.value); setShowContactResults(true); if (selectedContact) setSelectedContact(null); }}
                             onFocus={() => setShowContactResults(true)}
                           />
@@ -331,10 +330,10 @@ export const QuoteEditorModal: React.FC<QuoteEditorProps> = ({
                                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                   >
                                     <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0, border: '1px solid var(--color-primary-light)' }}>
-                                      {c.first_name?.[0]}
+                                      {(c.full_name || 'K')[0]}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                      <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)' }}>{c.first_name} {c.last_name || ''}</p>
+                                      <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)' }}>{c.full_name}</p>
                                       <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         {c.phone && <span>{c.phone}</span>}
                                         {c.phone && c.email && <span>•</span>}

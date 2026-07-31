@@ -1521,7 +1521,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     
     // Allowed fields that are editable in the form
     const editableFields = [
-      'company_id', 'company_name', 'owner_id', 'first_name', 'last_name', 'email', 'phone',
+      'company_id', 'company_name', 'owner_id', 'full_name', 'email', 'phone',
       'mobile', 'job_title', 'department', 'source', 'status', 'notes',
       'birthday', 'address', 'city', 'ward', 'expected_revenue', 'win_probability', 'gender', 'zalo_link', 'fb_link', 'customer_type', 'industry', 'budget_range',
       'project_id', 'campaign_id', 'ttl1_completed', 'ttl1_data', 'citizen_id', 'passport'
@@ -1559,7 +1559,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const handleSave = useCallback(async () => {
     // Only send fields that ContactController accepts
     const allowedFields = [
-      'company_id', 'company_name', 'owner_id', 'first_name', 'last_name', 'email', 'phone',
+      'company_id', 'company_name', 'owner_id', 'full_name', 'email', 'phone',
       'mobile', 'job_title', 'department', 'source', 'status', 'notes',
       'birthday', 'address', 'city', 'ward', 'expected_revenue', 'win_probability', 'last_contact', 'created_at',
       'gender', 'zalo_link', 'fb_link', 'customer_type', 'industry', 'budget_range', 'project_id', 'campaign_id', 'ttl1_completed', 'ttl1_data',
@@ -2230,8 +2230,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         project_id: d.project_id,
         milestones: d.milestones || [],
         contact_id: d.contact_id,
-        first_name: d.first_name,
-        last_name: d.last_name,
+        full_name: d.full_name,
         phone: d.phone,
         avatar_url: d.avatar_url,
         created_at: d.created_at,
@@ -3087,8 +3086,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           project_id: d.project_id,
           milestones: d.milestones || [],
           contact_id: d.contact_id,
-          first_name: d.first_name,
-          last_name: d.last_name,
+          full_name: d.full_name,
           phone: d.phone,
           avatar_url: d.avatar_url,
           created_at: d.created_at,
@@ -3626,7 +3624,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       rawActivity: a
     })).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }, [drawerActivities, contact?.id, timelineFilter]);
-  const fullName = `${formData.last_name || ''} ${formData.first_name || ''}`.trim() || 'Chưa cập nhật tên';
+  const fullName = (formData.full_name || '').trim() || 'Chưa cập nhật tên';
   const ownerUser = users.find(u => u.full_name === formData.owner_name || u.name === formData.owner_name || u.username === formData.owner_name);
   const ownerAvatarUrl = ownerUser?.avatar_url || ownerUser?.avatar || undefined;
 
@@ -3639,7 +3637,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     }
 
     const systemKeys = [
-      'id', 'company_id', 'company_name', 'owner_id', 'first_name', 'last_name', 
+      'id', 'company_id', 'company_name', 'owner_id', 'full_name', 
       'email', 'phone', 'mobile', 'job_title', 'department', 'source', 'status', 
       'notes', 'birthday', 'address', 'city', 'ward', 'expected_revenue', 
       'win_probability', 'last_contact', 'created_at', 'updated_at', 'avatar_url', 'tags',
@@ -6405,32 +6403,41 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         <div className="grid grid-2">
                           <div className="form-group">
                             <label className="form-label">Họ tên <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <input className="form-input" placeholder="Họ" value={formData.first_name || ''} onChange={e => {
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <User size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" placeholder="Nhập đầy đủ họ tên" value={formData.full_name || ''} onChange={e => {
                                 const val = e.target.value;
-                                setFormData((prev: any) => ({ ...prev, first_name: val }));
-                              }} />
-                              <input className="form-input" placeholder="Tên" value={formData.last_name || ''} onChange={e => {
-                                const val = e.target.value;
-                                setFormData((prev: any) => ({ ...prev, last_name: val }));
+                                setFormData((prev: any) => ({ ...prev, full_name: val }));
                               }} />
                             </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Email</label>
-                            <input className="form-input" type="email" placeholder="ví dụ: email@congty.com" value={formData.email || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, email: val }));
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Mail size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" type="email" placeholder="ví dụ: email@congty.com" value={formData.email || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => ({ ...prev, email: val }));
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
                               <div style={{ flex: 1 }}>
                                 <label className="form-label">Ngày sinh</label>
-                                <input className="form-input" type="date" value={formData.birthday || ''} onChange={e => {
-                                  const val = e.target.value;
-                                  setFormData((prev: any) => ({ ...prev, birthday: val }));
-                                }} />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                    <Calendar size={16} />
+                                  </div>
+                                  <input className="form-input form-input-icon-left" type="date" value={formData.birthday || ''} onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData((prev: any) => ({ ...prev, birthday: val }));
+                                  }} />
+                                </div>
                               </div>
                               <div style={{ flex: 1 }}>
                                 <label className="form-label">Giới tính</label>
@@ -6452,17 +6459,27 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             <div style={{ display: 'flex', gap: '0.75rem' }}>
                               <div style={{ flex: 1 }}>
                                 <label className="form-label">CCCD</label>
-                                <input className="form-input" placeholder="Nhập số CCCD" value={formData.citizen_id || ''} onChange={e => {
-                                  const val = e.target.value;
-                                  setFormData((prev: any) => ({ ...prev, citizen_id: val }));
-                                }} />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                    <CreditCard size={16} />
+                                  </div>
+                                  <input className="form-input form-input-icon-left" placeholder="Nhập số CCCD" value={formData.citizen_id || ''} onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData((prev: any) => ({ ...prev, citizen_id: val }));
+                                  }} />
+                                </div>
                               </div>
                               <div style={{ flex: 1 }}>
                                 <label className="form-label">Số Passport</label>
-                                <input className="form-input" placeholder="Nhập số Passport" value={formData.passport || ''} onChange={e => {
-                                  const val = e.target.value;
-                                  setFormData((prev: any) => ({ ...prev, passport: val }));
-                                }} />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                    <FileText size={16} />
+                                  </div>
+                                  <input className="form-input form-input-icon-left" placeholder="Nhập số Passport" value={formData.passport || ''} onChange={e => {
+                                    const val = e.target.value;
+                                    setFormData((prev: any) => ({ ...prev, passport: val }));
+                                  }} />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -6477,10 +6494,15 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           </div>
                           <div className="form-group">
                             <label className="form-label">Chức danh</label>
-                            <input className="form-input" placeholder="ví dụ: Giám đốc" value={formData.job_title || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, job_title: val }));
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Briefcase size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" placeholder="ví dụ: Giám đốc" value={formData.job_title || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => ({ ...prev, job_title: val }));
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -6532,17 +6554,22 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 <span>Có Zalo</span>
                               </span>
                             </div>
-                            <input className="form-input" type="tel" placeholder="09xx xxx xxx" value={formData.phone || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => {
-                                const next = { ...prev, phone: val };
-                                if (zaloSource === 'primary') {
-                                  const cleanPhone = val.replace(/[^0-9]/g, '');
-                                  next.zalo_link = cleanPhone ? `https://zalo.me/${cleanPhone}` : '';
-                                }
-                                return next;
-                              });
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Phone size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" type="tel" placeholder="09xx xxx xxx" value={formData.phone || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => {
+                                  const next = { ...prev, phone: val };
+                                  if (zaloSource === 'primary') {
+                                    const cleanPhone = val.replace(/[^0-9]/g, '');
+                                    next.zalo_link = cleanPhone ? `https://zalo.me/${cleanPhone}` : '';
+                                  }
+                                  return next;
+                                });
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -6594,31 +6621,46 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 <span>Có Zalo</span>
                               </span>
                             </div>
-                            <input className="form-input" type="tel" placeholder="08xx xxx xxx" value={formData.mobile || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => {
-                                const next = { ...prev, mobile: val };
-                                if (zaloSource === 'secondary') {
-                                  const cleanPhone = val.replace(/[^0-9]/g, '');
-                                  next.zalo_link = cleanPhone ? `https://zalo.me/${cleanPhone}` : '';
-                                }
-                                return next;
-                              });
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Phone size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" type="tel" placeholder="08xx xxx xxx" value={formData.mobile || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => {
+                                  const next = { ...prev, mobile: val };
+                                  if (zaloSource === 'secondary') {
+                                    const cleanPhone = val.replace(/[^0-9]/g, '');
+                                    next.zalo_link = cleanPhone ? `https://zalo.me/${cleanPhone}` : '';
+                                  }
+                                  return next;
+                                });
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Liên kết Zalo</label>
-                            <input className="form-input" placeholder="https://zalo.me/..." value={formData.zalo_link || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, zalo_link: val }));
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Link2 size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" placeholder="https://zalo.me/..." value={formData.zalo_link || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => ({ ...prev, zalo_link: val }));
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Liên kết Facebook</label>
-                            <input className="form-input" placeholder="https://facebook.com/..." value={formData.fb_link || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, fb_link: val }));
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Link2 size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" placeholder="https://facebook.com/..." value={formData.fb_link || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => ({ ...prev, fb_link: val }));
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Công ty (Liên kết)</label>
@@ -6640,12 +6682,17 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               }}
                             />
                           </div>
-                          <div className="form-group">
+                           <div className="form-group">
                             <label className="form-label">Phòng ban</label>
-                            <input className="form-input" placeholder="ví dụ: Kinh doanh" value={formData.department || ''} onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, department: val }));
-                            }} />
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                                <Layers size={16} />
+                              </div>
+                              <input className="form-input form-input-icon-left" placeholder="ví dụ: Kinh doanh" value={formData.department || ''} onChange={e => {
+                                const val = e.target.value;
+                                setFormData((prev: any) => ({ ...prev, department: val }));
+                              }} />
+                            </div>
                           </div>
                           <div className="form-group">
                             <label className="form-label">Chương trình Quan tâm (Liên kết)</label>
@@ -9113,7 +9160,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           {!isViewer && (
                             <button className="btn primary" style={{ padding: '8px 16px', fontSize: '0.875rem', height: '34px' }} onClick={() => {
                               const today = new Date().toISOString().slice(0, 10);
-                              const fullName = `${formData.last_name || ''} ${formData.first_name || ''}`.trim();
+                              const fullName = (formData.full_name || '').trim();
                               setSelectedTaskForDetails({
                                 id: 'new',
                                 subject: '',
@@ -11592,7 +11639,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           entity_type: 'contact',
           entity_id: contact?.id || formData?.id,
           contact_id: contact?.id || formData?.id,
-          contact_name: `${formData?.last_name || contact?.last_name || ''} ${formData?.first_name || contact?.first_name || ''}`.trim(),
+          contact_name: (formData?.full_name || contact?.full_name || '').trim(),
           created_by: currentUser?.id
         }}
         onSaveSuccess={() => {

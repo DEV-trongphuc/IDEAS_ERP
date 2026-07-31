@@ -17022,7 +17022,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                               { value: '', label: t('Liên kết Khách hàng (Không có)') },
                               ...contactsList.map(c => ({
                                 value: String(c.id),
-                                label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.phone || '',
+                                label: (c.full_name || '').trim() || c.phone || '',
                                 avatar: resolveAttachmentUrl(c.avatar_url)
                               }))
                             ]}
@@ -17312,7 +17312,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                             { value: '', label: t('Liên kết Khách hàng (Không có)') },
                             ...contactsList.map(c => ({
                               value: String(c.id),
-                              label: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.phone || '',
+                              label: (c.full_name || '').trim() || c.phone || '',
                               avatar: resolveAttachmentUrl(c.avatar_url)
                             }))
                           ]}

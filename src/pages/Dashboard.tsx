@@ -2156,8 +2156,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                       <td style={{ padding: '12px', fontWeight: 700, color: 'var(--color-primary)' }}>{so.unit_code}</td>
                       <td style={{ padding: '12px', fontWeight: 600 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Avatar src={so.avatar} name={`${so.last_name || ''} ${so.first_name || ''}`} size={24} />
-                          <span>{`${so.last_name || ''} ${so.first_name || ''}`}</span>
+                          <Avatar src={so.avatar} name={so.full_name || ''} size={24} />
+                          <span>{so.full_name || ''}</span>
                         </div>
                       </td>
                       <td style={{ padding: '12px' }}>{so.project_name}</td>

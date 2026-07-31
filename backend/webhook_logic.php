@@ -3771,14 +3771,7 @@ function ensurePersonAndContact($conn, $leadId) {
             }
         }
 
-        // Split name into first_name and last_name
-        $parts = explode(' ', trim($name));
-        $lastName = array_shift($parts) ?? '';
-        $firstName = implode(' ', $parts);
-        if (empty($firstName)) {
-            $firstName = $lastName;
-            $lastName = '';
-        }
+        $fullName = trim($name);
 
         $triggerStatus = get_system_setting($conn, 'parallel_assignment_trigger_status') ?: 'chua_xac_dinh';
         $chuaXacDinhDuration = get_system_setting($conn, 'security_timer_' . $triggerStatus) ?: '+3 hours';
@@ -3826,8 +3819,7 @@ function ensurePersonAndContact($conn, $leadId) {
             // Update all existing active contacts (useful for parallel owners)
             $stmtUpContact = $conn->prepare("
                 UPDATE contacts 
-                SET first_name = IF(? != '' AND (first_name = '' OR first_name IS NULL), ?, first_name),
-                    last_name = IF(? != '' AND (last_name = '' OR last_name IS NULL), ?, last_name),
+                SET full_name = IF(? != '' AND (full_name = '' OR full_name IS NULL), ?, full_name),
                     email = IF(? != '' AND (email = '' OR email IS NULL), ?, email),
                     phone = IF(? != '' AND (phone = '' OR phone IS NULL), ?, phone),
                     notes = ?,
@@ -3835,7 +3827,7 @@ function ensurePersonAndContact($conn, $leadId) {
                 WHERE id = ?
             ");
             foreach ($existingContacts as $c) {
-                $stmtUpContact->bind_param("ssssssssssi", $firstName, $firstName, $lastName, $lastName, $email, $email, $phone, $phone, $note, $type, $c['id']);
+                $stmtUpContact->bind_param("sssssssssi", $fullName, $fullName, $email, $email, $phone, $phone, $note, $type, $c['id']);
                 $stmtUpContact->execute();
             }
             $stmtUpContact->close();
@@ -3857,8 +3849,8 @@ function ensurePersonAndContact($conn, $leadId) {
             }
 
             $stmtContact = $conn->prepare("
-                INSERT INTO contacts (person_id, project_id, owner_id, created_by, first_name, last_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type, temperature, suggested_temperature)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, ?, ?, ?, ?, ?)
+                INSERT INTO contacts (person_id, project_id, owner_id, created_by, full_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type, temperature, suggested_temperature)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, ?, ?, ?, ?, ?)
             ");
             if ($stmtContact) {
                 $createdBy = 1;
@@ -3868,7 +3860,7 @@ function ensurePersonAndContact($conn, $leadId) {
                         $projectId = null;
                     }
                 }
-                $stmtContact->bind_param("iiiisssssssssss", $person_id, $projectId, $ownerUserId, $createdBy, $firstName, $lastName, $email, $phone, $source, $triggerStatus, $secExpiresTime, $note, $type, $initTemp, $initTemp);
+                $stmtContact->bind_param("iiiissssssssss", $person_id, $projectId, $ownerUserId, $createdBy, $fullName, $email, $phone, $source, $triggerStatus, $secExpiresTime, $note, $type, $initTemp, $initTemp);
                 $stmtContact->execute();
                 $stmtContact->close();
             }

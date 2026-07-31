@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 206;
+$targetVersion = 207;
 $currentVersion = 186;
 
 // Query current DB version
@@ -728,7 +728,7 @@ try {
 
         // Create Lead Nguyễn Văn A
         $conn->query("DELETE FROM `contacts` WHERE phone = '0909123456'");
-        $conn->query("INSERT INTO `contacts` (tenant_id, first_name, last_name, phone, mobile, email, source, status, owner_id, created_by, stage_id) VALUES (1, 'Nguyễn Văn', 'A', '0909123456', '0909123456', 'nguyenvana@ideas.test', 'Mở bán phân khu The Beverly', 'customer', $agentId, $agentId, $stageId)");
+        $conn->query("INSERT INTO `contacts` (tenant_id, full_name, phone, mobile, email, source, status, owner_id, created_by, stage_id) VALUES (1, 'Nguyễn Văn A', '0909123456', '0909123456', 'nguyenvana@ideas.test', 'Mở bán phân khu The Beverly', 'customer', $agentId, $agentId, $stageId)");
         $contactId = (int)$conn->insert_id;
         $logMsg("Đã khởi tạo Lead Nguyễn Văn A (ID: $contactId) thuộc chiến dịch The Beverly.", "success");
 
@@ -1053,9 +1053,55 @@ try {
         $logMsg("Nâng cấp lên phiên bản 206 hoàn tất.", "success");
     }
 
-    // 13. Update DB version in system_settings
-    $targetVersion = 206;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '206') ON DUPLICATE KEY UPDATE setting_value = '206'");
+    // 13. Upgrade to 207: Migrate first_name & last_name to unified full_name across tables
+    if ($currentVersion < 207) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 207...", "info");
+        
+        $tablesToMigrate = ['contacts', 'leads', 'capi_logs', 'cooperation_slips', 'deposits'];
+        foreach ($tablesToMigrate as $table) {
+            $logMsg("Kiểm tra và di trú cột họ tên trong bảng `{$table}`...", "info");
+            try {
+                // Check if full_name exists
+                $res = $conn->query("SHOW COLUMNS FROM `{$table}` LIKE 'full_name'");
+                $hasFullName = ($res && $res->num_rows > 0);
+                
+                $chkFirst = $conn->query("SHOW COLUMNS FROM `{$table}` LIKE 'first_name'");
+                $chkLast = $conn->query("SHOW COLUMNS FROM `{$table}` LIKE 'last_name'");
+                $hasFirst = ($chkFirst && $chkFirst->num_rows > 0);
+                $hasLast = ($chkLast && $chkLast->num_rows > 0);
+                
+                if (!$hasFullName) {
+                    $conn->query("ALTER TABLE `{$table}` ADD COLUMN `full_name` VARCHAR(255) DEFAULT NULL");
+                    $logMsg("Đã bổ sung cột full_name vào bảng `{$table}`.", "success");
+                    
+                    if ($hasFirst || $hasLast) {
+                        $conn->query("UPDATE `{$table}` SET `full_name` = TRIM(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))");
+                        $logMsg("Đã chuyển đổi dữ liệu họ tên sang full_name trong bảng `{$table}`.", "success");
+                    }
+                } else {
+                    $logMsg("Cột full_name đã tồn tại trong bảng `{$table}`.", "info");
+                }
+                
+                // Drop first_name & last_name if they exist
+                if ($hasFirst) {
+                    $conn->query("ALTER TABLE `{$table}` DROP COLUMN `first_name`");
+                    $logMsg("Đã xóa cột first_name trong bảng `{$table}`.", "success");
+                }
+                if ($hasLast) {
+                    $conn->query("ALTER TABLE `{$table}` DROP COLUMN `last_name`");
+                    $logMsg("Đã xóa cột last_name trong bảng `{$table}`.", "success");
+                }
+            } catch (Throwable $e) {
+                $logMsg("Lỗi di trú dữ liệu bảng `{$table}`: " . $e->getMessage(), "error");
+            }
+        }
+        
+        $logMsg("Nâng cấp lên phiên bản 207 hoàn tất.", "success");
+    }
+
+    // 14. Update DB version in system_settings
+    $targetVersion = 207;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '207') ON DUPLICATE KEY UPDATE setting_value = '207'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

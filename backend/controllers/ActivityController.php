@@ -301,7 +301,7 @@ class ActivityController {
         $stmt=$this->db->prepare("
             SELECT a.*, u.full_name as user_name, u.avatar_url,
                    creator.full_name as created_by_name, creator.avatar_url as created_by_avatar,
-                   COALESCE(NULLIF(TRIM(CONCAT(COALESCE(ct.first_name,''),' ',COALESCE(ct.last_name,''))), ''), NULLIF(TRIM(CONCAT(COALESCE(deal_ct.first_name,''),' ',COALESCE(deal_ct.last_name,''))), '')) as contact_name,
+                   COALESCE(NULLIF(TRIM(ct.full_name), ''), NULLIF(TRIM(deal_ct.full_name), '')) as contact_name,
                    COALESCE(a.contact_id, ct.id, deal_ct.id) as contact_id,
                    COALESCE(ct.avatar_url, deal_ct.avatar_url) as contact_avatar,
                    d.title as deal_name,
@@ -491,7 +491,7 @@ class ActivityController {
         $stmt=$this->db->prepare("
             SELECT a.*, u.full_name as user_name,
                    creator.full_name as created_by_name, creator.avatar_url as created_by_avatar,
-                   COALESCE(NULLIF(TRIM(CONCAT(COALESCE(ct.first_name,''),' ',COALESCE(ct.last_name,''))), ''), NULLIF(TRIM(CONCAT(COALESCE(deal_ct.first_name,''),' ',COALESCE(deal_ct.last_name,''))), '')) as contact_name,
+                   COALESCE(NULLIF(TRIM(ct.full_name), ''), NULLIF(TRIM(deal_ct.full_name), '')) as contact_name,
                    COALESCE(a.contact_id, ct.id, deal_ct.id) as contact_id,
                    COALESCE(ct.avatar_url, deal_ct.avatar_url) as contact_avatar,
                    d.title as deal_name,
@@ -1175,7 +1175,7 @@ class ActivityController {
         }
 
         if ($contactId) {
-            $stmtC = $this->db->prepare("SELECT email, first_name, last_name, lead_score, stage_id FROM contacts WHERE id = ? AND tenant_id = ?");
+            $stmtC = $this->db->prepare("SELECT email, full_name, lead_score, stage_id FROM contacts WHERE id = ? AND tenant_id = ?");
             $stmtC->execute([$contactId, $auth['tenant_id']]);
             $contact = $stmtC->fetch(PDO::FETCH_ASSOC);
 
@@ -1184,7 +1184,7 @@ class ActivityController {
                     try {
                         require_once __DIR__ . '/../mailer.php';
                         $emailSubj = "[AUTOMATION] Cập nhật hoạt động: " . $b['subject'];
-                        $emailBody = "<h3>Chào " . htmlspecialchars($contact['first_name'] . ' ' . ($contact['last_name'] ?? '')) . ",</h3>"
+                        $emailBody = "<h3>Chào " . htmlspecialchars($contact['full_name'] ?? '') . ",</h3>"
                                    . "<p>Hệ thống ghi nhận hoạt động mới: <strong>" . htmlspecialchars($b['subject']) . "</strong></p>"
                                    . "<p>Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.</p>";
                         sendEmailNotification($contact['email'], $emailSubj, 'Hệ thống tự động', $emailBody);

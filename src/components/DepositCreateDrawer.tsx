@@ -592,7 +592,7 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                           <CustomSelect
                             options={entitySubtab === 'contact' ? contacts.map(c => ({
                               value: String(c.id),
-                              label: `${c.last_name || ''} ${c.first_name || ''} (${c.phone || c.email || 'KH'})`,
+                              label: `${c.full_name || ''} (${c.phone || c.email || 'KH'})`,
                               avatar: c.avatar_url || c.avatar
                             })) : [
                               ...companies.map((comp: any) => ({

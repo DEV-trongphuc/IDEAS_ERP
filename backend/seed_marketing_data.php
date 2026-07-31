@@ -99,13 +99,12 @@ try {
             
             if ($isAccepted) {
                 // Create a contact
-                $first = "Demo " . ($monthIdx + 1) . "-" . $i;
-                $last = "Khách hàng";
+                $fullName = "Khách hàng Demo " . ($monthIdx + 1) . "-" . $i;
                 $contactStatus = (rand(1, 100) <= 40) ? 'customer' : 'lead';
                 
-                $stmtC = $conn->prepare("INSERT INTO contacts (tenant_id, person_id, first_name, last_name, email, phone, status, pipeline_status, owner_id, created_by, source, created_at) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmtC = $conn->prepare("INSERT INTO contacts (tenant_id, person_id, full_name, email, phone, status, pipeline_status, owner_id, created_by, source, created_at) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $pStatus = ($contactStatus === 'customer') ? 'dat_coc' : 'quan_tam';
-                $stmtC->bind_param("issssssiiss", $personId, $first, $last, $email, $phone, $contactStatus, $pStatus, $assignedTo, $assignedTo, $source, $acceptedAt);
+                $stmtC->bind_param("isssssiiss", $personId, $fullName, $email, $phone, $contactStatus, $pStatus, $assignedTo, $assignedTo, $source, $acceptedAt);
                 $stmtC->execute();
                 $contactId = $conn->insert_id;
                 $stmtC->close();

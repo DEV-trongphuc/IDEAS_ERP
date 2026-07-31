@@ -4,7 +4,7 @@
 class ParallelHelper {
     public static function lockPersonForWinningContact(PDO $db, int $contactId): void {
         // 1. Get contact details
-        $stmt = $db->prepare("SELECT person_id, owner_id, tenant_id, first_name, last_name FROM contacts WHERE id = ?");
+        $stmt = $db->prepare("SELECT person_id, owner_id, tenant_id, full_name FROM contacts WHERE id = ?");
         $stmt->execute([$contactId]);
         $contact = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$contact || !$contact['person_id']) {

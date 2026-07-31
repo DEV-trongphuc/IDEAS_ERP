@@ -75,7 +75,7 @@ class SalesOrderController {
         $sql = "
             SELECT 
                 so.*,
-                CONCAT(IFNULL(c.first_name, ''), ' ', IFNULL(c.last_name, '')) as contact_name,
+                c.full_name as contact_name,
                 c.phone as contact_phone,
                 c.email as contact_email,
                 comp.name as company_name,
@@ -127,7 +127,7 @@ class SalesOrderController {
         $stmt = $this->db->prepare("
             SELECT 
                 so.*,
-                CONCAT(IFNULL(c.first_name, ''), ' ', IFNULL(c.last_name, '')) as contact_name, c.phone as contact_phone, c.email as contact_email,
+                c.full_name as contact_name, c.phone as contact_phone, c.email as contact_email,
                 comp.name as company_name,
                 u.full_name as creator_name
             FROM sales_orders so

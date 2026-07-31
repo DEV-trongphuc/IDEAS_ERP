@@ -86,19 +86,19 @@ echo "\n";
 // ----------------------------------------------------
 echo "--- 2. AUDIT BANG CONTACTS ---\n";
 
-$cRes = $conn->query("SELECT id, first_name, last_name, phone, email, zalo_phone, facebook_link, preferred_location, budget FROM contacts LIMIT 1");
+$cRes = $conn->query("SELECT id, full_name, phone, email, zalo_phone, facebook_link, preferred_location, budget FROM contacts LIMIT 1");
 if ($cRes && $cRes->num_rows > 0) {
     $testContact = $cRes->fetch_assoc();
     $contactId = (int)$testContact['id'];
-    $origFirstName = $testContact['first_name'];
+    $origFullName = $testContact['full_name'];
     $origZaloPhone = $testContact['zalo_phone'];
     $origBudget = $testContact['budget'];
 
-    echo "Found test contact ID: $contactId (Name: $origFirstName, ZaloPhone: " . ($origZaloPhone ?: 'NULL') . ")\n";
+    echo "Found test contact ID: $contactId (Name: $origFullName, ZaloPhone: " . ($origZaloPhone ?: 'NULL') . ")\n";
 
     // Simulate ContactController fields list check
     $fields = [
-        'company_id','project_id','owner_id','first_name','last_name','email','phone',
+        'company_id','project_id','owner_id','full_name','email','phone',
         'mobile','job_title','department','source','status','notes',
         'birthday','address','city','ward',
         'expected_revenue','win_probability','last_contact','stage_id',
@@ -112,7 +112,7 @@ if ($cRes && $cRes->num_rows > 0) {
     ];
 
     $bPartial = [
-        'first_name' => $origFirstName . ' (Audit)',
+        'full_name' => $origFullName . ' (Audit)',
         'zalo_phone' => '0909123456'
     ];
 
@@ -141,12 +141,12 @@ if ($cRes && $cRes->num_rows > 0) {
         $stmtC->close();
 
         // Verify
-        $verifyC = $conn->query("SELECT first_name, zalo_phone, budget FROM contacts WHERE id = $contactId")->fetch_assoc();
-        assertTest("Partial Update Contacts: Update first_name & zalo_phone", $verifyC['zalo_phone'] === '0909123456');
+        $verifyC = $conn->query("SELECT full_name, zalo_phone, budget FROM contacts WHERE id = $contactId")->fetch_assoc();
+        assertTest("Partial Update Contacts: Update full_name & zalo_phone", $verifyC['zalo_phone'] === '0909123456');
         assertTest("Partial Update Contacts: Preserve budget", $verifyC['budget'] == $origBudget);
 
         // Revert
-        $conn->query("UPDATE contacts SET first_name = '" . $conn->real_escape_string($origFirstName) . "', zalo_phone = " . ($origZaloPhone ? "'" . $conn->real_escape_string($origZaloPhone) . "'" : "NULL") . " WHERE id = $contactId");
+        $conn->query("UPDATE contacts SET full_name = '" . $conn->real_escape_string($origFullName) . "', zalo_phone = " . ($origZaloPhone ? "'" . $conn->real_escape_string($origZaloPhone) . "'" : "NULL") . " WHERE id = $contactId");
     }
 } else {
     echo "⚠️ No test contact found in contacts table.\n";

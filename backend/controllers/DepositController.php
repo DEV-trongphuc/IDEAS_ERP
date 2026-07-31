@@ -12,7 +12,7 @@ class DepositController {
         $tid = $auth['tenant_id'];
 
         $sql = "
-            SELECT d.*, c.first_name, c.last_name, c.phone, c.avatar_url, c.email, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
+            SELECT d.*, c.full_name, c.phone, c.avatar_url, c.email, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
                    c.owner_id as contact_owner_id, c.pipeline_status
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
@@ -153,7 +153,7 @@ class DepositController {
         $this->db->beginTransaction();
         try {
             // Check contact existence and ownership
-            $stmtC = $this->db->prepare("SELECT id, owner_id, pipeline_status, first_name, last_name FROM contacts WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
+            $stmtC = $this->db->prepare("SELECT id, owner_id, pipeline_status, full_name FROM contacts WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
             $stmtC->execute([$contactId, $auth['tenant_id']]);
             $contact = $stmtC->fetch();
             if (!$contact) {
@@ -423,7 +423,7 @@ class DepositController {
             require_once __DIR__ . '/../config/CapiHelper.php';
             CapiHelper::sendEvent($this->db, $contactId, 'Purchase', $price);
 
-            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE_DEPOSIT', 'deposit', $depositId, "Tạo đơn hàng sản phẩm $unitCode cho khách hàng " . $contact['first_name'] . " " . $contact['last_name']);
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE_DEPOSIT', 'deposit', $depositId, "Tạo đơn hàng sản phẩm $unitCode cho khách hàng " . ($contact['full_name'] ?? ''));
             respond(200, [
                 'id' => $depositId,
                 'milestones' => $createdMilestones
@@ -565,7 +565,7 @@ class DepositController {
         
         // Fetch deposit details to link the invoice and notify owner
         $stmtDep = $this->db->prepare("
-            SELECT d.*, c.company_id, c.first_name, c.last_name, p.name as project_name,
+            SELECT d.*, c.company_id, c.full_name, p.name as project_name,
                    u.email as owner_email, u.full_name as owner_name, u.zalo_chat_id as owner_zalo_chat_id,
                    c.owner_id as contact_owner_id, c.created_by as contact_created_by
             FROM deposits d
@@ -685,7 +685,7 @@ class DepositController {
                     NotificationService::send($this->db, $auth['tenant_id'], 'MY_DEPOSIT_UPDATE', [
                         'user_id' => (int)$u['id'],
                         'deposit_id' => $id,
-                        'customer_name' => trim($depositData['first_name'] . ' ' . ($depositData['last_name'] ?? '')),
+                        'customer_name' => trim($depositData['full_name'] ?? ''),
                         'status_text' => 'được duyệt đợt thanh toán ' . ($mileData['milestone_name'] ?? ''),
                         'reason' => 'Đợt thanh toán ' . number_format($total, 0, ',', '.') . ' VND đã được phê duyệt thành công'
                     ]);
@@ -723,7 +723,7 @@ class DepositController {
 
         // Notify all related users
         $stmtDep = $this->db->prepare("
-            SELECT d.*, c.first_name, c.last_name, c.created_by as contact_created_by, c.owner_id as contact_owner_id,
+            SELECT d.*, c.full_name, c.created_by as contact_created_by, c.owner_id as contact_owner_id,
                    u.email as owner_email, u.full_name as owner_name, u.zalo_chat_id as owner_zalo_chat_id
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
@@ -773,7 +773,7 @@ class DepositController {
                         NotificationService::send($this->db, $auth['tenant_id'], 'MY_DEPOSIT_UPDATE', [
                             'user_id' => (int)$u['id'],
                             'deposit_id' => $id,
-                            'customer_name' => trim($depositData['first_name'] . ' ' . ($depositData['last_name'] ?? '')),
+                            'customer_name' => trim($depositData['full_name'] ?? ''),
                             'status_text' => 'bị từ chối đợt thanh toán ' . ($mileData['milestone_name'] ?? ''),
                             'reason' => $reason
                         ]);
@@ -904,7 +904,7 @@ class DepositController {
 
             // Email owner about cancellation
             $stmtOwner = $this->db->prepare("
-                SELECT u.email, u.full_name, CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) as contact_name 
+                SELECT u.email, u.full_name, c.full_name as contact_name 
                 FROM contacts c
                 JOIN users u ON c.owner_id = u.id
                 WHERE c.id = ?
@@ -940,7 +940,7 @@ class DepositController {
 
         // 1. Verify deposit ownership/permissions
         $stmtDep = $this->db->prepare("
-            SELECT d.id, d.created_by, c.owner_id, d.contact_id, d.currency, d.exchange_rate 
+            SELECT d.id, d.created_by, c.owner_id, d.contact_id, d.currency, d.exchange_rate, c.full_name 
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
             WHERE d.id = ? AND c.tenant_id = ?
@@ -1019,7 +1019,7 @@ class DepositController {
                             logActivity($this->db, $tid, $auth['user_id'], 'ADMIN_UPDATE_COOP_SHARES', 'cooperation_slip', $coopId, "Admin đã cập nhật lại tỷ lệ hoa hồng cho phiếu cọc #$id");
                             logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_SHARES', 'deposit', $id, "Cập nhật lại tỷ lệ chia sẻ hoa hồng: " . json_encode($sharesMap, JSON_UNESCAPED_UNICODE));
 
-                            $stmtCust = $this->db->prepare("SELECT CONCAT(first_name, ' ', COALESCE(last_name,'')) FROM contacts WHERE id = ?");
+                            $stmtCust = $this->db->prepare("SELECT full_name FROM contacts WHERE id = ?");
                             $stmtCust->execute([$dep['contact_id']]);
                             $custName = $stmtCust->fetchColumn() ?: "Khách hàng";
 
@@ -1049,7 +1049,7 @@ class DepositController {
                                     NotificationService::send($this->db, $tid, 'MY_DEPOSIT_UPDATE', [
                                         'user_id' => (int)$u['id'],
                                         'deposit_id' => $id,
-                                        'customer_name' => trim($dep['first_name'] . ' ' . ($dep['last_name'] ?? '')),
+                                        'customer_name' => trim($dep['full_name'] ?? ''),
                                         'status_text' => 'duyệt phiếu hợp tác chia sẻ hoa hồng',
                                         'reason' => 'Phiếu hợp tác đã được phê duyệt thành công'
                                     ]);
@@ -1151,7 +1151,7 @@ class DepositController {
         // Fetch deposit and contact details
         $stmt = $this->db->prepare("
             SELECT d.*, m.milestone_name, m.expected_amount, m.expected_pay_date, m.status as milestone_status,
-                   c.first_name, c.last_name, c.email as contact_email, c.phone as contact_phone,
+                   c.full_name, c.email as contact_email, c.phone as contact_phone,
                    u.email as creator_email, u.full_name as creator_name,
                    o.email as owner_email, o.full_name as owner_name,
                    p.name as project_name
@@ -1174,7 +1174,7 @@ class DepositController {
             respond(400, null, 'Đợt thanh toán này đã đóng tiền hoặc đã được duyệt', false);
         }
 
-        $custName = trim($row['first_name'] . ' ' . ($row['last_name'] ?? ''));
+        $custName = trim($row['full_name'] ?? '');
         $payDateStr = !empty($row['expected_pay_date']) 
             ? date('d/m/Y', strtotime($row['expected_pay_date'])) 
             : 'Chưa thiết lập';

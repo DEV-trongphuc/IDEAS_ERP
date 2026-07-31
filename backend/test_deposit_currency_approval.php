@@ -54,8 +54,8 @@ $db->exec("DELETE FROM contacts WHERE phone = '0999999999'");
 
 // Create test contact
 $db->exec("
-    INSERT INTO contacts (tenant_id, first_name, last_name, phone, pipeline_status, status)
-    VALUES (1, 'Test', 'Currency User', '0999999999', 'lead', 'lead')
+    INSERT INTO contacts (tenant_id, full_name, phone, pipeline_status, status)
+    VALUES (1, 'Test Currency User', '0999999999', 'lead', 'lead')
 ");
 $contactId = $db->lastInsertId();
 

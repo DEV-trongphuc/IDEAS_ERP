@@ -96,9 +96,12 @@ class PurchaseOrderController {
         $approver_id_2 = !empty($b['approver_id_2']) ? (int)$b['approver_id_2'] : null;
         $approver_id_3 = !empty($b['approver_id_3']) ? (int)$b['approver_id_3'] : null;
 
+        if (empty($approver_id)) {
+            respond(422, null, 'Đơn hàng yêu cầu duyệt bắt buộc phải chọn người duyệt Cấp 1.', false);
+        }
         if ($total >= $threshold) {
-            if (empty($approver_id) || empty($approver_id_2) || empty($approver_id_3)) {
-                respond(422, null, 'Đơn hàng từ ' . number_format($threshold, 0, ',', '.') . ' VND trở lên bắt buộc phải phê duyệt 3 cấp, vui lòng chọn đầy đủ người duyệt.', false);
+            if (empty($approver_id_2)) {
+                respond(422, null, 'Đơn hàng từ ' . number_format($threshold, 0, ',', '.') . ' VND trở lên bắt buộc phải phê duyệt 2 cấp, vui lòng chọn đầy đủ người duyệt Cấp 2.', false);
             }
         }
 

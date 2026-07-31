@@ -35,7 +35,7 @@ assertTest("Do trễ truy vấn CSDL (DB Latency)", $connLatency < 10, "Thoi gia
 
 // 2. Measure Contacts Index Performance
 $t1 = microtime(true);
-$cRes = $pdo->query("SELECT id, first_name, last_name, phone FROM contacts ORDER BY id DESC LIMIT 50");
+$cRes = $pdo->query("SELECT id, full_name, phone FROM contacts ORDER BY id DESC LIMIT 50");
 $t2 = microtime(true);
 $cLatency = round(($t2 - $t1) * 1000, 3);
 assertTest("Tien trinh doc 50 Contacts Mới nhất", $cLatency < 25, "Thoi gian: {$cLatency} ms");

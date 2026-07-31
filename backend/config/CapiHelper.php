@@ -93,14 +93,20 @@ class CapiHelper {
             // Fetch contact details for custom data matching
             $phone = ''; $email = ''; $firstName = ''; $lastName = ''; $leadId = null;
             if ($contactId) {
-                $stmtC = $db->prepare("SELECT phone, email, first_name, last_name, id FROM contacts WHERE id = ?");
+                $stmtC = $db->prepare("SELECT phone, email, full_name, id FROM contacts WHERE id = ?");
                 $stmtC->execute([$contactId]);
                 $c = $stmtC->fetch();
                 if ($c) {
                     $phone = $c['phone'] ?? '';
                     $email = $c['email'] ?? '';
-                    $firstName = $c['first_name'] ?? '';
-                    $lastName = $c['last_name'] ?? '';
+                    $fullName = $c['full_name'] ?? '';
+                    $parts = explode(' ', trim($fullName));
+                    $lastName = array_shift($parts) ?? '';
+                    $firstName = implode(' ', $parts);
+                    if (empty($firstName)) {
+                        $firstName = $lastName;
+                        $lastName = '';
+                    }
                 }
 
                 // Try to find the associated raw lead_id

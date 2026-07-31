@@ -18,8 +18,8 @@ $projectId = 2; // ID dự án thực tế
 
 // Tạo một khách hàng tiềm năng thử nghiệm
 $conn->query("
-    INSERT INTO contacts (tenant_id, owner_id, created_by, first_name, last_name, phone, pipeline_status, status, temperature, created_at)
-    VALUES ({$tenantId}, {$ownerId}, {$ownerId}, 'Kiểm Thử', 'Kế Toán', '0999999888', 'booking', 'lead', 'hot', NOW())
+    INSERT INTO contacts (tenant_id, owner_id, created_by, full_name, phone, pipeline_status, status, temperature, created_at)
+    VALUES ({$tenantId}, {$ownerId}, {$ownerId}, 'Kiểm Thử Kế Toán', '0999999888', 'booking', 'lead', 'hot', NOW())
 ");
 $contactId = $conn->insert_id;
 assertTest("Tạo thành công contact kiểm thử", $contactId > 0, "Contact ID: " . $contactId);

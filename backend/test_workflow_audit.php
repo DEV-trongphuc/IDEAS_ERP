@@ -55,7 +55,7 @@ if (!$validProjectId) $validProjectId = 1;
 echo "\n--- 2. KIỂM THỬ QUY TẮC 1: BỂ CỌC CHƯA PHÁT SINH DOANH THU ---\n";
 try {
     // Giả lập một Person/Lead đặt cọc nhưng chưa có đợt đóng tiền thực tế nào (status = 'pending')
-    $pdo->exec("INSERT INTO contacts (id, first_name, pipeline_status, tenant_id, created_by) VALUES (9999, 'Khách hàng Test Bể Cọc 1', 'Đã Gặp', 1, {$validUserId}) ON DUPLICATE KEY UPDATE pipeline_status='Đã Gặp'");
+    $pdo->exec("INSERT INTO contacts (id, full_name, pipeline_status, tenant_id, created_by) VALUES (9999, 'Khách hàng Test Bể Cọc 1', 'Đã Gặp', 1, {$validUserId}) ON DUPLICATE KEY UPDATE pipeline_status='Đã Gặp'");
     $pdo->exec("INSERT INTO deposits (id, contact_id, price, status, project_id, unit_code, created_by) VALUES (9999, 9999, 50000000, 'pending_admin', {$validProjectId}, 'TEST-UNIT', {$validUserId}) ON DUPLICATE KEY UPDATE status='pending_admin'");
     
     // Giả lập hệ thống tự chuyển trạng thái KHTN sang "Đặt Cọc" khi lập phiếu cọc
@@ -83,7 +83,7 @@ try {
 // 3. Kiểm thử Quy tắc Nghiệp vụ 2: Bể cọc sau khi đã có doanh thu thực tế (Rule 2)
 echo "\n--- 3. KIỂM THỬ QUY TẮC 2: BỂ CỌC ĐÃ PHÁT SINH DOANH THU ---\n";
 try {
-    $pdo->exec("INSERT INTO contacts (id, first_name, pipeline_status, tenant_id, created_by) VALUES (8888, 'Khách hàng Test Bể Cọc 2', 'Đã Gặp', 1, {$validUserId}) ON DUPLICATE KEY UPDATE pipeline_status='Đã Gặp'");
+    $pdo->exec("INSERT INTO contacts (id, full_name, pipeline_status, tenant_id, created_by) VALUES (8888, 'Khách hàng Test Bể Cọc 2', 'Đã Gặp', 1, {$validUserId}) ON DUPLICATE KEY UPDATE pipeline_status='Đã Gặp'");
     // Đã thanh toán đợt 1 (status = 'approved') -> đã thu tiền
     $pdo->exec("INSERT INTO deposits (id, contact_id, price, status, project_id, unit_code, created_by) VALUES (8888, 8888, 20000000, 'approved', {$validProjectId}, 'TEST-UNIT', {$validUserId}) ON DUPLICATE KEY UPDATE status='approved'");
     

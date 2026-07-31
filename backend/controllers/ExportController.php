@@ -42,8 +42,7 @@ class ExportController {
         if ($type === 'contact') {
             $baseColumns = [
                 'id' => 'ID', 
-                'first_name' => 'Tên', 
-                'last_name' => 'Họ', 
+                'full_name' => 'Họ tên', 
                 'email' => 'Email', 
                 'phone' => 'Số điện thoại', 
                 'mobile' => 'Di động', 
@@ -91,8 +90,8 @@ class ExportController {
             }
 
             if ($search) {
-                $where[]  = '(MATCH(t.first_name, t.last_name, t.email) AGAINST(? IN BOOLEAN MODE) OR t.phone LIKE ? OR t.mobile LIKE ? OR t.email LIKE ?)';
-                $params[] = "$search*";
+                $where[]  = '(t.full_name LIKE ? OR t.phone LIKE ? OR t.mobile LIKE ? OR t.email LIKE ?)';
+                $params[] = "%$search%";
                 $params[] = "%$search%";
                 $params[] = "%$search%";
                 $params[] = "%$search%";
@@ -167,7 +166,7 @@ class ExportController {
             }
             $whereStr = implode(' AND ', $where);
             
-            $sql = "SELECT t.*, CONCAT(c.first_name, ' ', c.last_name) as contact_name, co.name as company_name, u.full_name as owner_name, ps.name as stage_name
+            $sql = "SELECT t.*, c.full_name as contact_name, co.name as company_name, u.full_name as owner_name, ps.name as stage_name
                     FROM deals t 
                     LEFT JOIN contacts c ON t.contact_id = c.id
                     LEFT JOIN companies co ON t.company_id = co.id 

@@ -2349,7 +2349,7 @@ function releaseExpiredLeadsToKho($conn) {
     }, $applicableSources);
     $sourcesFilter = "AND (c.source IN (" . implode(',', $applicableSourcesEscaped) . ") OR c.source = 'databank')";
     
-    $sql = "SELECT c.id AS contact_id, c.person_id, c.owner_id, c.tenant_id
+    $sql = "SELECT c.id AS contact_id, c.person_id, c.owner_id, c.tenant_id, c.full_name
             FROM contacts c
             WHERE c.security_expires_at <= NOW()
               AND c.security_expires_at IS NOT NULL
@@ -2396,7 +2396,7 @@ function releaseExpiredLeadsToKho($conn) {
             $ownerRow = $stmtOwner->get_result()->fetch_assoc();
             $stmtOwner->close();
 
-            $clientName = trim($row['first_name'] . ' ' . $row['last_name']) ?: 'Khách hàng ẩn danh';
+            $clientName = trim($row['full_name'] ?? '') ?: 'Khách hàng ẩn danh';
             $notifTitle = "Thu hồi khách hàng do hết hạn bảo mật";
             $notifBody = "Khách hàng $clientName đã bị thu hồi khỏi danh sách của bạn do hết hạn bảo mật.";
             
@@ -2585,7 +2585,7 @@ function assignParallelLeads($conn) {
     }, $applicableSources);
     $sourcesFilter = "AND c.source IN (" . implode(',', $applicableSourcesEscaped) . ")";
 
-    $sql = "SELECT c.id as contact_id, c.person_id, c.owner_id, c.project_id, c.email, c.phone, c.first_name, c.last_name, c.source, c.notes, c.customer_type, c.tenant_id,
+    $sql = "SELECT c.id as contact_id, c.person_id, c.owner_id, c.project_id, c.email, c.phone, c.full_name, c.source, c.notes, c.customer_type, c.tenant_id,
                    (SELECT round_id FROM distribution_logs WHERE lead_id = c.id AND status = 'assigned' ORDER BY id DESC LIMIT 1) as original_round_id
             FROM contacts c
             JOIN persons p ON c.person_id = p.id
@@ -2623,7 +2623,7 @@ function assignParallelLeads($conn) {
             $leadData = [
                 'phone' => $row['phone'],
                 'email' => $row['email'],
-                'name' => trim($row['first_name'] . ' ' . $row['last_name']),
+                'name' => trim($row['full_name'] ?? ''),
                 'source' => $row['source'],
                 'type' => '',
                 'note' => ''
@@ -2720,19 +2720,19 @@ function assignParallelLeads($conn) {
             }
 
             $stmtIns = $conn->prepare("
-                INSERT INTO contacts (tenant_id, person_id, project_id, owner_id, created_by, first_name, last_name, email, phone, source, status, pipeline_status, parallel_assigned, security_expires_at, notes, customer_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, 1, ?, ?, ?)
+                INSERT INTO contacts (tenant_id, person_id, project_id, owner_id, created_by, full_name, email, phone, source, status, pipeline_status, parallel_assigned, security_expires_at, notes, customer_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, 1, ?, ?, ?)
             ");
             $createdBy = 1;
             $tenantId = (int)$row['tenant_id'];
-            $stmtIns->bind_param("iiiiisssssssss", $tenantId, $personId, $projectId, $secondUserId, $createdBy, $row['first_name'], $row['last_name'], $row['email'], $row['phone'], $row['source'], $triggerStatus, $secExpiresTime, $row['notes'], $row['customer_type']);
+            $stmtIns->bind_param("iiiiissssssss", $tenantId, $personId, $projectId, $secondUserId, $createdBy, $row['full_name'], $row['email'], $row['phone'], $row['source'], $triggerStatus, $secExpiresTime, $row['notes'], $row['customer_type']);
             $stmtIns->execute();
             $secondContactId = $stmtIns->insert_id;
             $stmtIns->close();
 
             // Insert matching lead record to satisfy foreign key constraint on distribution_logs.lead_id
             $stmtLead = $conn->prepare("INSERT IGNORE INTO leads (id, person_id, phone, email, name, source, status) VALUES (?, ?, NULL, ?, ?, ?, 'assigned')");
-            $leadName = trim($row['first_name'] . ' ' . $row['last_name']);
+            $leadName = trim($row['full_name'] ?? '');
             $stmtLead->bind_param("issss", $secondContactId, $personId, $row['email'], $leadName, $row['source']);
             $stmtLead->execute();
             $stmtLead->close();
@@ -2768,7 +2768,7 @@ function assignParallelLeads($conn) {
                 $rNameRow = $rNameRes ? $rNameRes->fetch_assoc() : null;
                 $roundName = $rNameRow ? $rNameRow['round_name'] : 'Vòng xoay';
                 
-                $fullName = trim($row['first_name'] . ' ' . $row['last_name']) ?: 'Khách hàng ẩn danh';
+                $fullName = trim($row['full_name'] ?? '') ?: 'Khách hàng ẩn danh';
                 try {
                     sendLeadAssignedEmailToSale(
                         $cDetail['email'],

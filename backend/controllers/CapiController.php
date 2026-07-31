@@ -94,7 +94,7 @@ class CapiController {
         requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director']);
 
         $stmt = $this->db->query("
-            SELECT cl.*, c.first_name, c.last_name, c.phone 
+            SELECT cl.*, c.full_name, c.phone 
             FROM capi_logs cl
             LEFT JOIN contacts c ON cl.contact_id = c.id
             ORDER BY cl.sent_at DESC 

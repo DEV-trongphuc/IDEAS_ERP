@@ -100,11 +100,10 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
         api.get('/contacts', { params: { search: ticket.customer_name, limit: 5 } }).then(res => {
           const list = res.data.data?.items || res.data.data || [];
           const matched = list.find((x: any) => {
-            const name1 = `${x.last_name || ''} ${x.first_name || ''}`.trim().toLowerCase();
-            const name2 = `${x.first_name || ''} ${x.last_name || ''}`.trim().toLowerCase();
+            const fullName = (x.full_name || '').trim().toLowerCase();
             const cName = x.name ? x.name.trim().toLowerCase() : '';
             const target = ticket.customer_name.trim().toLowerCase();
-            return name1 === target || name2 === target || cName === target;
+            return fullName === target || cName === target;
           });
           if (matched) {
             setResolvedContact(matched);
@@ -660,11 +659,10 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
                 const matchedContact = resolvedContact || (cid 
                   ? (contacts || []).find((x: any) => String(x.id) === String(cid))
                   : (contacts || []).find((x: any) => {
-                      const name1 = `${x.last_name || ''} ${x.first_name || ''}`.trim().toLowerCase();
-                      const name2 = `${x.first_name || ''} ${x.last_name || ''}`.trim().toLowerCase();
+                      const fullName = (x.full_name || '').trim().toLowerCase();
                       const cName = x.name ? x.name.trim().toLowerCase() : '';
                       const target = (formData.customer_name || '').trim().toLowerCase();
-                      return target && (name1 === target || name2 === target || cName === target);
+                      return target && (fullName === target || cName === target);
                     }));
 
                 const targetContact = matchedContact || { 
@@ -727,9 +725,9 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
                         style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '6px 8px', borderRadius: '8px', background: 'var(--color-bg)' }}
                         className="hover-lift"
                       >
-                        <Avatar src={c.avatar_url} name={`${c.last_name} ${c.first_name}`} size={28} />
+                        <Avatar src={c.avatar_url} name={c.full_name || ''} size={28} />
                         <div style={{ fontSize: '0.8125rem' }}>
-                          <p style={{ fontWeight: 600, margin: 0 }}>{c.last_name} {c.first_name}</p>
+                          <p style={{ fontWeight: 600, margin: 0 }}>{c.full_name}</p>
                           <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', margin: 0 }}>{c.phone}</p>
                         </div>
                       </div>

@@ -23,8 +23,7 @@ interface Product {
 
 interface Contact {
   id: number;
-  first_name?: string;
-  last_name?: string;
+  full_name?: string;
   phone?: string;
   avatar_url?: string;
 }
@@ -46,7 +45,7 @@ export const POSModal: React.FC<{ onClose: () => void; defaultContact?: Contact 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [newCust, setNewCust] = useState({ first_name: '', last_name: '', phone: '' });
+  const [newCust, setNewCust] = useState({ full_name: '', phone: '' });
   const [shippingFee, setShippingFee] = useState<number>(0);
   const [shippingCustomerPay, setShippingCustomerPay] = useState(true);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
@@ -111,7 +110,7 @@ export const POSModal: React.FC<{ onClose: () => void; defaultContact?: Contact 
   };
 
   const handleQuickAdd = async () => {
-    if (!newCust.first_name || !newCust.phone) return addToast('Vui lòng nhập tên và SĐT', 'warning');
+    if (!newCust.full_name || !newCust.phone) return addToast('Vui lòng nhập tên và SĐT', 'warning');
     setLoading(true);
     try {
       const r = await api.post('/contacts', newCust);
@@ -119,7 +118,7 @@ export const POSModal: React.FC<{ onClose: () => void; defaultContact?: Contact 
       setContacts(prev => [created, ...prev]);
       setSelectedContact(created);
       setShowQuickAdd(false);
-      setNewCust({ first_name: '', last_name: '', phone: '' });
+      setNewCust({ full_name: '', phone: '' });
       addToast('Đã thêm khách hàng mới', 'success');
     } catch {
       addToast('Lỗi khi thêm khách hàng', 'error');
@@ -449,10 +448,10 @@ export const POSModal: React.FC<{ onClose: () => void; defaultContact?: Contact 
                     justifyContent: 'space-between' 
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Avatar name={`${selectedContact.last_name || ''} ${selectedContact.first_name || ''}`} src={selectedContact.avatar_url} size={36} />
+                      <Avatar name={selectedContact.full_name || ''} src={selectedContact.avatar_url} size={36} />
                       <div>
                         <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text)', margin: 0 }}>
-                          {selectedContact.last_name || ''} {selectedContact.first_name || 'Khách lẻ'}
+                          {selectedContact.full_name || 'Khách lẻ'}
                         </p>
                         <p style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', margin: 0 }}>{selectedContact.phone || 'Chưa có SĐT'}</p>
                       </div>
@@ -504,15 +503,14 @@ export const POSModal: React.FC<{ onClose: () => void; defaultContact?: Contact 
                             <button type="button" onClick={() => setShowQuickAdd(false)} style={{ color: 'var(--color-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={14} /></button>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <input className="form-input sm" placeholder="Họ" value={newCust.last_name} onChange={e => setNewCust(prev => ({ ...prev, last_name: e.target.value }))} />
-                            <input className="form-input sm" placeholder="Tên *" value={newCust.first_name} onChange={e => setNewCust(prev => ({ ...prev, first_name: e.target.value }))} />
+                            <input className="form-input sm" placeholder="Họ tên *" value={newCust.full_name} onChange={e => setNewCust(prev => ({ ...prev, full_name: e.target.value }))} />
                             <input className="form-input sm" placeholder="Số điện thoại *" value={newCust.phone} onChange={e => setNewCust(prev => ({ ...prev, phone: e.target.value }))} />
                             <button type="button" className="btn primary sm" style={{ width: '100%', marginTop: '4px' }} onClick={handleQuickAdd} disabled={loading}>Lưu & Chọn</button>
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
-
+ 
                     {searchContact && (
                       <div style={{ marginTop: '4px', padding: '4px', position: 'absolute', width: '100%', zIndex: 10, borderRadius: '12px', top: '42px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
                         {filteredContacts.length > 0 ? filteredContacts.map(c => (
@@ -522,7 +520,7 @@ export const POSModal: React.FC<{ onClose: () => void; defaultContact?: Contact 
                             style={{ padding: '0.625rem 0.75rem', borderRadius: '8px' }} 
                             onClick={() => { setSelectedContact(c); setSearchContact(''); }}
                           >
-                            <p style={{ fontWeight: 700, fontSize: '0.825rem', color: 'var(--color-text)', margin: 0 }}>{c.last_name} {c.first_name}</p>
+                            <p style={{ fontWeight: 700, fontSize: '0.825rem', color: 'var(--color-text)', margin: 0 }}>{c.full_name}</p>
                             <p style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', margin: 0 }}>{c.phone}</p>
                           </div>
                         )) : (

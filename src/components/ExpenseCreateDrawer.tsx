@@ -269,7 +269,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           initialEntities = [{
             entity_type: 'contact',
             entity_id: cId,
-            name: editItem.contact_name || (matchedContact ? `${matchedContact.last_name || ''} ${matchedContact.first_name || ''}`.trim() : `Khách hàng #${cId}`),
+            name: editItem.contact_name || (matchedContact ? (matchedContact.full_name || '').trim() : `Khách hàng #${cId}`),
             avatar_url: matchedContact?.avatar_url || matchedContact?.avatar
           }];
         } else if (editItem.company_id || (editItem.entity_type === 'company' && editItem.entity_id)) {
@@ -344,8 +344,8 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
       return;
     }
     if (Number(form.amount || 0) >= threshold) {
-      if (form.approver_id_2 === null || form.approver_id_3 === null) {
-        addToast(`Khoản chi từ ${threshold.toLocaleString('vi-VN')}đ trở lên bắt buộc phê duyệt 3 cấp. Vui lòng chọn đủ người duyệt!`, 'error');
+      if (form.approver_id_2 === null) {
+        addToast(`Khoản chi từ ${threshold.toLocaleString('vi-VN')}đ trở lên bắt buộc phê duyệt 2 cấp. Vui lòng chọn người duyệt Cấp 2!`, 'error');
         return;
       }
     }
@@ -518,7 +518,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
 
             <div className="modal-body custom-scrollbar" style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', padding: '1.5rem', flex: 1, overflowY: 'auto', maxHeight: 'none' }}>
               {/* Left Column: Main form details */}
-              <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderRight: isMobile ? 'none' : '1px solid var(--color-border-light)', paddingRight: isMobile ? '0' : '1.5rem' }}>
+              <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem', borderRight: isMobile ? 'none' : '1px solid var(--color-border-light)', paddingRight: isMobile ? '0' : '1.5rem', paddingBottom: '80px' }}>
                 <div className="form-group">
                   <label className="form-label" style={{ fontWeight: 600 }}>Nội dung chi *</label>
                   <input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="VD: Thuê văn phòng tháng 6..." />
@@ -963,7 +963,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                     <CustomSelect
                       options={contacts.filter(c => !form.entities.find((e: any) => e.entity_id === c.id)).map(c => ({
                         value: String(c.id),
-                        label: `${c.last_name || ''} ${c.first_name}`.trim(),
+                        label: (c.full_name || '').trim(),
                         avatar: c.avatar_url,
                         sublabel: c.company_name
                       }))}
@@ -971,7 +971,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                       onChange={(val) => {
                         const found = contacts.find(c => String(c.id) === val);
                         if (found) {
-                          setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: `${found.last_name || ''} ${found.first_name}`.trim(), avatar_url: found.avatar_url }] });
+                          setForm({ ...form, entities: [...form.entities, { entity_type: 'contact', entity_id: found.id, name: (found.full_name || '').trim(), avatar_url: found.avatar_url }] });
                         }
                       }}
                       placeholder="+ Thêm khách hàng..."
@@ -1021,118 +1021,203 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   gap: '1rem',
                   boxShadow: 'var(--shadow-sm)'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)' }}>
                       Phê duyệt & Vận hành
                     </h4>
-                    {Number(form.amount || 0) >= threshold ? (
-                      <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        ⚠️ Bắt buộc 3 cấp duyệt!
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
-                        Duyệt 1 cấp (Cấp 2, 3 tùy chọn)
-                      </span>
+                    {Number(form.amount || 0) >= threshold && (
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', marginTop: '4px' }}>
+                        Tiền trên {threshold.toLocaleString('vi-VN')}đ phê duyệt 2 cấp
+                      </div>
                     )}
                   </div>
 
-                  {/* Creator */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Người tạo</label>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 12px',
-                      background: 'var(--color-bg)',
-                      border: '1px solid var(--color-border-light)',
-                      borderRadius: '8px',
-                      height: '38px'
-                    }}>
-                      <Avatar src={user?.avatar_url || user?.avatar} name={user?.full_name || user?.name || user?.username} size="sm" />
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user?.full_name || user?.name || user?.username}</span>
+                  {/* Vertical Timeline Stepper */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '12px', position: 'relative', paddingLeft: '30px' }}>
+                    {/* Vertical timeline line */}
+                    <div style={{ position: 'absolute', left: '10px', top: '10px', bottom: '10px', width: '2px', background: 'var(--color-border-light)' }} />
+
+                    {/* Step 1: Creator */}
+                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '-30px',
+                        top: '0px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background: 'var(--color-primary)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        zIndex: 2
+                      }}>
+                        1
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>Người tạo</strong>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px', 
+                          padding: '6px 12px', 
+                          background: 'var(--color-bg)', 
+                          border: '1px solid var(--color-border-light)', 
+                          borderRadius: '8px',
+                          height: '38px'
+                        }}>
+                          <Avatar src={user?.avatar_url || user?.avatar} name={user?.full_name || user?.name || user?.username} size="sm" />
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user?.full_name || user?.name || user?.username}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Level 1 Approver */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-danger)' }}>
-                      Người duyệt Cấp 1 *
-                    </label>
-                    <CustomSelect
-                      options={users.map((u: any) => ({
-                        value: u.id,
-                        label: u.full_name,
-                        avatar: u.avatar_url,
-                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                      }))}
-                      value={form.approver_id}
-                      onChange={val => {
-                        const numVal = Number(val);
-                        setForm({
-                          ...form,
-                          approver_id: numVal,
-                          related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
-                        });
-                      }}
-                      placeholder="Chọn người duyệt Cấp 1..."
-                      searchable
-                      showAvatars
-                    />
-                  </div>
+                    {/* Step 2: Level 1 Approver */}
+                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '-30px',
+                        top: '0px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background: form.approver_id ? 'var(--color-primary)' : 'var(--color-surface)',
+                        border: `2px solid ${form.approver_id ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
+                        color: form.approver_id ? '#ffffff' : 'var(--color-text-light)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        zIndex: 2
+                      }}>
+                        2
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.8rem', color: form.approver_id ? 'var(--color-text)' : 'var(--color-text-light)', display: 'block', marginBottom: '6px' }}>
+                          Người duyệt Cấp 1 *
+                        </strong>
+                        <CustomSelect
+                          options={users.map((u: any) => ({
+                            value: u.id,
+                            label: u.full_name,
+                            avatar: u.avatar_url,
+                            sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                          }))}
+                          value={form.approver_id}
+                          onChange={val => {
+                            const numVal = Number(val);
+                            setForm({
+                              ...form,
+                              approver_id: numVal,
+                              related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
+                            });
+                          }}
+                          placeholder="Chọn người duyệt Cấp 1..."
+                          searchable
+                          showAvatars
+                        />
+                      </div>
+                    </div>
 
-                  {/* Level 2 Approver */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: Number(form.amount || 0) >= threshold ? 'var(--color-danger)' : 'var(--color-text-light)' }}>
-                      Người duyệt Cấp 2 {Number(form.amount || 0) >= threshold ? '*' : '(Tùy chọn)'}
-                    </label>
-                    <CustomSelect
-                      options={users.map((u: any) => ({
-                        value: u.id,
-                        label: u.full_name,
-                        avatar: u.avatar_url,
-                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                      }))}
-                      value={form.approver_id_2}
-                      onChange={val => {
-                        const numVal = Number(val);
-                        setForm({
-                          ...form,
-                          approver_id_2: numVal,
-                          related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
-                        });
-                      }}
-                      placeholder="Chọn người duyệt Cấp 2..."
-                      searchable
-                      showAvatars
-                    />
-                  </div>
+                    {/* Step 3: Level 2 Approver */}
+                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '-30px',
+                        top: '0px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background: form.approver_id_2 ? 'var(--color-primary)' : 'var(--color-surface)',
+                        border: `2px solid ${form.approver_id_2 ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
+                        color: form.approver_id_2 ? '#ffffff' : 'var(--color-text-light)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        zIndex: 2
+                      }}>
+                        3
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.8rem', color: Number(form.amount || 0) >= threshold ? 'var(--color-danger)' : 'var(--color-text-light)', display: 'block', marginBottom: '6px' }}>
+                          Người duyệt Cấp 2 {Number(form.amount || 0) >= threshold ? '*' : '(Tùy chọn)'}
+                        </strong>
+                        <CustomSelect
+                          options={users.map((u: any) => ({
+                            value: u.id,
+                            label: u.full_name,
+                            avatar: u.avatar_url,
+                            sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                          }))}
+                          value={form.approver_id_2}
+                          onChange={val => {
+                            const numVal = Number(val);
+                            setForm({
+                              ...form,
+                              approver_id_2: numVal,
+                              related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
+                            });
+                          }}
+                          placeholder="Chọn người duyệt Cấp 2..."
+                          searchable
+                          showAvatars
+                        />
+                      </div>
+                    </div>
 
-                  {/* Level 3 Approver */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: Number(form.amount || 0) >= threshold ? 'var(--color-danger)' : 'var(--color-text-light)' }}>
-                      Người duyệt Cấp 3 {Number(form.amount || 0) >= threshold ? '*' : '(Tùy chọn)'}
-                    </label>
-                    <CustomSelect
-                      options={users.map((u: any) => ({
-                        value: u.id,
-                        label: u.full_name,
-                        avatar: u.avatar_url,
-                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                      }))}
-                      value={form.approver_id_3}
-                      onChange={val => {
-                        const numVal = Number(val);
-                        setForm({
-                          ...form,
-                          approver_id_3: numVal,
-                          related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
-                        });
-                      }}
-                      placeholder="Chọn người duyệt Cấp 3..."
-                      searchable
-                      showAvatars
-                    />
+                    {/* Step 4: Level 3 Approver */}
+                    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '-30px',
+                        top: '0px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background: form.approver_id_3 ? 'var(--color-primary)' : 'var(--color-surface)',
+                        border: `2px solid ${form.approver_id_3 ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
+                        color: form.approver_id_3 ? '#ffffff' : 'var(--color-text-light)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        zIndex: 2
+                      }}>
+                        4
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.8rem', color: form.approver_id_3 ? 'var(--color-text)' : 'var(--color-text-light)', display: 'block', marginBottom: '6px' }}>
+                          Người duyệt Cấp 3 {Number(form.amount || 0) >= threshold ? '*' : '(Tùy chọn)'}
+                        </strong>
+                        <CustomSelect
+                          options={users.map((u: any) => ({
+                            value: u.id,
+                            label: u.full_name,
+                            avatar: u.avatar_url,
+                            sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                          }))}
+                          value={form.approver_id_3}
+                          onChange={val => {
+                            const numVal = Number(val);
+                            setForm({
+                              ...form,
+                              approver_id_3: numVal,
+                              related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
+                            });
+                          }}
+                          placeholder="Chọn người duyệt Cấp 3..."
+                          searchable
+                          showAvatars
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { fetchAPI } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Link2, Save, Check, X, AlertCircle, RefreshCw, Code, CheckCircle, Info, ShieldAlert, ArrowRight, Search, Calendar, FileText, MessageCircle, Eye, Zap } from 'lucide-react';
@@ -14,8 +14,7 @@ interface CapiLog {
   response_status: number;
   response_body: string;
   sent_at: string;
-  first_name: string | null;
-  last_name: string | null;
+  full_name: string | null;
   phone: string | null;
 }
 
@@ -303,7 +302,7 @@ export default function CapiPage() {
                           {l.event_name}
                         </td>
                         <td style={{ padding: '0.75rem 0', textAlign: 'left' }}>
-                          {l.first_name ? `${l.last_name || ''} ${l.first_name}`.trim() : 'Raw Lead'}
+                          {l.full_name ? l.full_name.trim() : 'Raw Lead'}
                           {l.phone && <span style={{ display: 'block', fontSize: '10px', color: 'var(--color-text-muted)' }}>{l.phone}</span>}
                         </td>
                         <td style={{ padding: '0.75rem 0', textAlign: 'center' }}>

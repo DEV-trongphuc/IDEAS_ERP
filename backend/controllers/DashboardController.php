@@ -367,7 +367,7 @@ class DashboardController {
         $tid = $scope['tid'];
 
         $sql = "SELECT d.id, d.title, d.value, ps.name as stage_name, ps.color as stage_color,
-                   CONCAT(c.first_name,' ',c.last_name) as contact_name,
+                   c.full_name as contact_name,
                    u.full_name as owner_name
             FROM deals d
             LEFT JOIN pipeline_stages ps ON d.stage_id = ps.id

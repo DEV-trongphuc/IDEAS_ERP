@@ -122,8 +122,7 @@ class FinanceController
             $params[] = $to;
         }
         if ($search) {
-            $where[] = '(i.invoice_number LIKE ? OR ct.first_name LIKE ? OR ct.last_name LIKE ?)';
-            $params[] = "%$search%";
+            $where[] = '(i.invoice_number LIKE ? OR ct.full_name LIKE ?)';
             $params[] = "%$search%";
             $params[] = "%$search%";
         }
@@ -135,8 +134,8 @@ class FinanceController
 
         $stmt = $this->db->prepare("
             SELECT i.*, c.name as company_name,
-                   CASE WHEN ct.deleted_at IS NULL THEN CONCAT(ct.first_name,' ',ct.last_name) 
-                        ELSE CONCAT(ct.first_name,' ',ct.last_name, ' (Đã xóa)') END as contact_name,
+                   CASE WHEN ct.deleted_at IS NULL THEN ct.full_name 
+                        ELSE CONCAT(ct.full_name, ' (Đã xóa)') END as contact_name,
                    ct.phone as contact_phone,
                    u.full_name as creator_name
             FROM invoices i
@@ -217,7 +216,7 @@ class FinanceController
     public function showInvoice(array $auth, int $id): void
     {
         $sql = "
-            SELECT i.*, CONCAT(ct.first_name,' ',ct.last_name) as contact_name, ct.phone as contact_phone, c.name as company_name
+            SELECT i.*, ct.full_name as contact_name, ct.phone as contact_phone, c.name as company_name
             FROM invoices i
             LEFT JOIN contacts ct ON i.contact_id = ct.id
             LEFT JOIN companies c ON i.company_id = c.id
@@ -708,13 +707,13 @@ class FinanceController
         if (!empty($rows)) {
             $ids = array_column($rows, 'id');
             $in = str_repeat('?,', count($ids) - 1) . '?';
-            $sEE = $this->db->prepare("SELECT ee.*, c.first_name, c.last_name, c.avatar_url FROM expense_entities ee LEFT JOIN contacts c ON ee.entity_type='contact' AND ee.entity_id=c.id WHERE ee.expense_id IN ($in)");
+            $sEE = $this->db->prepare("SELECT ee.*, c.full_name, c.avatar_url FROM expense_entities ee LEFT JOIN contacts c ON ee.entity_type='contact' AND ee.entity_id=c.id WHERE ee.expense_id IN ($in)");
             $sEE->execute($ids);
             $allEntities = $sEE->fetchAll();
 
             $entitiesByExp = [];
             foreach ($allEntities as $ee) {
-                $ee['name'] = trim(($ee['first_name'] ?? '') . ' ' . ($ee['last_name'] ?? ''));
+                $ee['name'] = trim($ee['full_name'] ?? '');
                 $entitiesByExp[$ee['expense_id']][] = $ee;
             }
 
@@ -839,11 +838,11 @@ class FinanceController
             respond(404, null, 'Không tìm thấy chi phí', false);
 
         // Fetch linked entities with names
-        $sEE = $this->db->prepare("SELECT ee.*, c.first_name, c.last_name, c.avatar_url FROM expense_entities ee LEFT JOIN contacts c ON ee.entity_type='contact' AND ee.entity_id=c.id WHERE ee.expense_id=?");
+        $sEE = $this->db->prepare("SELECT ee.*, c.full_name, c.avatar_url FROM expense_entities ee LEFT JOIN contacts c ON ee.entity_type='contact' AND ee.entity_id=c.id WHERE ee.expense_id=?");
         $sEE->execute([$id]);
         $entities = $sEE->fetchAll();
         foreach ($entities as &$ee) {
-            $ee['name'] = trim(($ee['first_name'] ?? '') . ' ' . ($ee['last_name'] ?? ''));
+            $ee['name'] = trim($ee['full_name'] ?? '');
         }
         $row['entities'] = $entities;
 
@@ -889,9 +888,14 @@ class FinanceController
             }
         }
 
-        if ($totalAmount >= $threshold && $statusVal === 'pending') {
-            if (empty($approver_id) || empty($approver_id_2) || empty($approver_id_3)) {
-                respond(422, null, 'Chi phí từ ' . number_format($threshold, 0, ',', '.') . ' VND trở lên bắt buộc phải phê duyệt 3 cấp, vui lòng chọn đầy đủ người duyệt.', false);
+        if ($statusVal === 'pending') {
+            if (empty($approver_id)) {
+                respond(422, null, 'Chi phí yêu cầu duyệt bắt buộc phải chọn người duyệt Cấp 1.', false);
+            }
+            if ($totalAmount >= $threshold) {
+                if (empty($approver_id_2)) {
+                    respond(422, null, 'Chi phí từ ' . number_format($threshold, 0, ',', '.') . ' VND trở lên bắt buộc phải phê duyệt 2 cấp, vui lòng chọn người duyệt Cấp 2.', false);
+                }
             }
         }
 

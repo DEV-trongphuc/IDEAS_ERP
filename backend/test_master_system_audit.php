@@ -29,8 +29,8 @@ try {
     $personId = $conn->insert_id;
 
     $conn->query("
-        INSERT INTO contacts (tenant_id, person_id, created_by, first_name, last_name, phone, status, pipeline_status, temperature) 
-        VALUES (1, $personId, 1000, 'Master', 'Audit', '$phone', 'lead', 'booking', 'hot')
+        INSERT INTO contacts (tenant_id, person_id, created_by, full_name, phone, status, pipeline_status, temperature) 
+        VALUES (1, $personId, 1000, 'Master Audit', '$phone', 'lead', 'booking', 'hot')
     ");
     $contactId = $conn->insert_id;
     echo "[SETUP] Created mock contact ID: $contactId\n";
@@ -143,8 +143,8 @@ try {
     // Create contact with security_expires_at in the past
     $pastDate = date('Y-m-d H:i:s', strtotime('-1 day'));
     $conn->query("
-        INSERT INTO contacts (tenant_id, person_id, created_by, first_name, last_name, phone, status, pipeline_status, security_expires_at, source) 
-        VALUES (1, $expPersonId, 1000, 'Expired', 'Client', '$expiredPhone', 'lead', 'chua_xac_dinh', '$pastDate', 'R3_Fb')
+        INSERT INTO contacts (tenant_id, person_id, created_by, full_name, phone, status, pipeline_status, security_expires_at, source) 
+        VALUES (1, $expPersonId, 1000, 'Expired Client', '$expiredPhone', 'lead', 'chua_xac_dinh', '$pastDate', 'R3_Fb')
     ");
     $expContactId = $conn->insert_id;
 

@@ -156,7 +156,7 @@ export const CreateExpenseModal: React.FC<Props> = ({ isOpen, onClose, initialEn
     const q = contactSearch.toLowerCase();
     return contacts
       .filter(c => !selectedContacts.find(sc => sc.id === c.id))
-      .filter(c => `${c.last_name} ${c.first_name} ${c.phone} ${c.email}`.toLowerCase().includes(q))
+      .filter(c => `${c.full_name} ${c.phone} ${c.email}`.toLowerCase().includes(q))
       .slice(0, 6);
   }, [contacts, contactSearch, selectedContacts]);
 
@@ -538,7 +538,7 @@ export const CreateExpenseModal: React.FC<Props> = ({ isOpen, onClose, initialEn
                               onClick={() => {
                                 setSelectedContacts(prev => [...prev, {
                                   id: c.id,
-                                  name: `${c.last_name || ''} ${c.first_name}`.trim(),
+                                  name: (c.full_name || '').trim(),
                                   avatar: c.avatar_url,
                                 }]);
                                 setContactSearch('');
@@ -551,9 +551,9 @@ export const CreateExpenseModal: React.FC<Props> = ({ isOpen, onClose, initialEn
                               onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-primary-light)')}
                               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                             >
-                              <Avatar name={`${c.last_name} ${c.first_name}`} size={32} src={c.avatar_url} />
+                              <Avatar name={c.full_name || ''} size={32} src={c.avatar_url} />
                               <div>
-                                <p style={{ fontWeight: 700, fontSize: '0.875rem' }}>{c.first_name} {c.last_name || ''}</p>
+                                <p style={{ fontWeight: 700, fontSize: '0.875rem' }}>{c.full_name}</p>
                                 <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{c.phone || c.email}</p>
                               </div>
                             </div>

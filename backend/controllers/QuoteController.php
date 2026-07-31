@@ -67,8 +67,7 @@ class QuoteController {
         if ($from)   { $where[] = 'q.created_at >= ?'; $params[] = $from . " 00:00:00"; }
         if ($to)     { $where[] = 'q.created_at <= ?'; $params[] = $to . " 23:59:59"; }
         if ($search) {
-            $where[] = '(q.quote_number LIKE ? OR q.title LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)';
-            $params[] = "%$search%";
+            $where[] = '(q.quote_number LIKE ? OR q.title LIKE ? OR c.full_name LIKE ?)';
             $params[] = "%$search%";
             $params[] = "%$search%";
             $params[] = "%$search%";
@@ -97,7 +96,7 @@ class QuoteController {
         $summary = $sumStmt->fetch();
 
         // List items
-        $sql = "SELECT q.*, u.full_name as created_by_name, CONCAT(c.first_name,' ',c.last_name) as contact_name 
+        $sql = "SELECT q.*, u.full_name as created_by_name, c.full_name as contact_name 
                 FROM quotes q 
                 LEFT JOIN users u ON q.created_by = u.id 
                 LEFT JOIN contacts c ON q.contact_id = c.id 

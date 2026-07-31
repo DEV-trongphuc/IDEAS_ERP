@@ -122,7 +122,7 @@ class DealController {
         $stmt = $this->db->prepare("
             SELECT d.*,
                    ps.name as stage_name, ps.color as stage_color, ps.is_won, ps.is_lost,
-                   CONCAT(c.first_name,' ',c.last_name) as contact_name,
+                   c.full_name as contact_name,
                    comp.name as company_name,
                    u.full_name as owner_name, u.avatar_url as owner_avatar
             FROM deals d
@@ -206,7 +206,7 @@ class DealController {
     public function show(array $auth, int $id): void {
         $sql = "
             SELECT d.*, ps.name as stage_name, ps.color as stage_color, ps.is_won, ps.is_lost,
-                   CONCAT(c.first_name,' ',c.last_name) as contact_name,
+                   c.full_name as contact_name,
                    comp.name as company_name, u.full_name as owner_name, u.avatar_url as owner_avatar
             FROM deals d
             LEFT JOIN pipeline_stages ps ON d.stage_id=ps.id
