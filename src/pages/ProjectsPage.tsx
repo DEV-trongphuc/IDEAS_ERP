@@ -2655,42 +2655,14 @@ export default function ProjectsPage() {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '3px', height: '14px', background: 'var(--color-primary)', borderRadius: '1.5px' }} />
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cấu hình Môn học &amp; Lịch giảng dạy</h4>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {editingCampaign?.id && (
-              <button
-                type="button"
-                className="btn outline sm hover-lift"
-                style={{ 
-                  borderRadius: '100px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  fontSize: '0.75rem', 
-                  fontWeight: 750, 
-                  borderColor: '#ea580c', 
-                  color: '#ea580c', 
-                  background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', 
-                  border: '1px solid #fed7aa',
-                  boxShadow: 'var(--shadow-sm)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => {
-                  const publicLink = `/public-schedule/course/${editingCampaign.id}`;
-                  window.open(publicLink, '_blank');
-                }}
-              >
-                <Calendar size={14} />
-                <span>Xem lịch khóa học (Public)</span>
-              </button>
-            )}
-            {canEdit && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {copiedSubject && (
+          {canEdit && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {copiedSubject && (
                 <button
                   type="button"
                   className="btn outline sm"
@@ -2754,7 +2726,6 @@ export default function ProjectsPage() {
               </button>
             </div>
           )}
-          </div>
         </div>
 
         {subjects.length === 0 ? (
@@ -7880,26 +7851,59 @@ export default function ProjectsPage() {
           </>,
           '850px',
           campaignModalMode === 'view' ? (
-            <button
-              onClick={() => setCampaignDrawerTab(campaignDrawerTab === 'details' ? 'changelog' : 'details')}
-              style={{
-                border: 'none',
-                background: campaignDrawerTab === 'changelog' ? 'rgba(100, 116, 139, 0.08)' : 'transparent',
-                cursor: 'pointer',
-                color: campaignDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '6px',
-                borderRadius: '8px',
-                transition: 'all 0.2s ease',
-                outline: 'none'
-              }}
-              title={campaignDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
-              className="hover-lift"
-            >
-              <History size={20} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {editingCampaign?.id && (
+                <button
+                  type="button"
+                  className="btn outline sm hover-lift"
+                  style={{
+                    borderColor: '#b91c1c',
+                    color: '#b91c1c',
+                    background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                    border: '1px solid #fecaca',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 750,
+                    height: '38px',
+                    borderRadius: '10px',
+                    boxShadow: 'var(--shadow-sm)',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => {
+                    const publicLink = `/public-schedule/course/${editingCampaign.id}`;
+                    window.open(publicLink, '_blank');
+                  }}
+                >
+                  <Calendar size={16} />
+                  <span>Xem lịch khóa học (Public)</span>
+                </button>
+              )}
+              <button
+                onClick={() => setCampaignDrawerTab(campaignDrawerTab === 'details' ? 'changelog' : 'details')}
+                style={{
+                  border: 'none',
+                  background: campaignDrawerTab === 'changelog' ? 'rgba(100, 116, 139, 0.08)' : 'transparent',
+                  cursor: 'pointer',
+                  color: campaignDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease',
+                  outline: 'none',
+                  height: '38px',
+                  width: '38px'
+                }}
+                title={campaignDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
+                className="hover-lift"
+              >
+                <History size={20} />
+              </button>
+            </div>
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <button

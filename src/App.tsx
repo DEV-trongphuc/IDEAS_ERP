@@ -545,9 +545,9 @@ export default function App() {
                   <Route path="/report-data" element={<ReportData />} />
                   <Route path="/demo" element={<DemoEntry />} />
                   <Route path="/download" element={<DownloadPage />} />
-                  <Route path="/public-schedule/:customerId" element={<PublicSchedulePage />} />
                   <Route path="/public-schedule/course/:campaignId" element={<PublicSchedulePage />} />
                   <Route path="/public-schedule/lecturer/:lecturerId" element={<PublicSchedulePage />} />
+                  <Route path="/public-schedule/:customerId" element={<PublicSchedulePage />} />
 
                   {/* All authenticated users (sharing a single persistent AppTabs instance) */}
                   <Route element={<ProtectedRoute />}>
