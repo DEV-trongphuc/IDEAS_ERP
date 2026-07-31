@@ -556,7 +556,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $action = $_GET['action'] ?? '';
 
 // Require authentication for all endpoints except login
-$publicActions = ['login', 'login_google', 'login_google_sale', 'submit_report', 'get_report_context', 'debug_companies_db'];
+$publicActions = ['login', 'login_google', 'login_google_sale', 'submit_report', 'get_report_context', 'debug_companies_db', 'public_student_schedule'];
 
 if (!in_array($action, $publicActions)) {
     $token = getBearerToken();
@@ -1997,6 +1997,89 @@ switch ($action) {
             $conn->rollback();
             echo json_encode(['success' => false, 'message' => 'Lỗi khi xóa dữ liệu: ' . $e->getMessage()]);
         }
+        break;
+
+    case 'public_student_schedule':
+        $customerId = isset($_GET['customer_id']) ? (int)$_GET['customer_id'] : 0;
+        if ($customerId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Mã học viên không hợp lệ']);
+            break;
+        }
+
+        // 1. Query Lead
+        $stmtL = $conn->prepare("SELECT id, name, full_name, campaign_id, phone, email, dob, citizen_id FROM leads WHERE id = ? LIMIT 1");
+        $stmtL->bind_param("i", $customerId);
+        $stmtL->execute();
+        $lead = $stmtL->get_result()->fetch_assoc();
+        if (!$lead) {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy học viên']);
+            break;
+        }
+
+        $campaignId = (int)($lead['campaign_id'] ?? 0);
+        $campaign = null;
+        $project = null;
+
+        // 2. Query Campaign/Course
+        if ($campaignId > 0) {
+            $stmtC = $conn->prepare("SELECT id, name, project_id, subjects_json, status, thesis_milestones_json FROM marketing_campaigns WHERE id = ? LIMIT 1");
+            $stmtC->bind_param("i", $campaignId);
+            $stmtC->execute();
+            $campaign = $stmtC->get_result()->fetch_assoc();
+
+            if ($campaign) {
+                $projectId = (int)($campaign['project_id'] ?? 0);
+                // 3. Query Project/Program
+                if ($projectId > 0) {
+                    $stmtP = $conn->prepare("SELECT id, name, code, developer FROM projects WHERE id = ? LIMIT 1");
+                    $stmtP->bind_param("i", $projectId);
+                    $stmtP->execute();
+                    $project = $stmtP->get_result()->fetch_assoc();
+                }
+            }
+        }
+
+        // 4. Fetch Lecturers lookup dictionary
+        $lecturers = [];
+        $resComp = $conn->query("SELECT id, name FROM companies");
+        if ($resComp) {
+            while ($row = $resComp->fetch_assoc()) {
+                $lecturers[$row['id']] = $row['name'];
+            }
+        }
+        $resUsers = $conn->query("SELECT id, name, full_name FROM users");
+        if ($resUsers) {
+            while ($row = $resUsers->fetch_assoc()) {
+                $lecturers[$row['id']] = $row['full_name'] ?: $row['name'];
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'student' => [
+                    'id' => $lead['id'],
+                    'name' => $lead['full_name'] ?? $lead['name'] ?? '',
+                    'email' => $lead['email'] ?? '',
+                    'phone' => $lead['phone'] ?? '',
+                    'dob' => $lead['dob'] ?? '',
+                    'citizen_id' => $lead['citizen_id'] ?? ''
+                ],
+                'course' => $campaign ? [
+                    'id' => $campaign['id'],
+                    'name' => $campaign['name'] ?? '',
+                    'subjects' => $campaign['subjects_json'] ? json_decode($campaign['subjects_json'], true) : [],
+                    'thesis_milestones' => $campaign['thesis_milestones_json'] ? json_decode($campaign['thesis_milestones_json'], true) : []
+                ] : null,
+                'program' => $project ? [
+                    'id' => $project['id'],
+                    'name' => $project['name'] ?? '',
+                    'code' => $project['code'] ?? '',
+                    'degree_awarding_body' => $project['developer'] ?? ''
+                ] : null,
+                'lecturers' => $lecturers
+            ]
+        ]);
         break;
 
     case 'login':

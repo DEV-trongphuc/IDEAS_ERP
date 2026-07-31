@@ -55,6 +55,7 @@ const HRM = lazy(() => import('./pages/HRM'));
 const MyPayslips = lazy(() => import('./pages/MyPayslips'));
 const Approvals = lazy(() => import('./pages/Approvals'));
 const EnterpriseFeed = lazy(() => import('./pages/EnterpriseFeed').then(module => ({ default: module.EnterpriseFeed })));
+const PublicSchedulePage = lazy(() => import('./pages/PublicSchedulePage').then(module => ({ default: module.PublicSchedulePage })));
 
 // Loading spinner fallback
 const PageLoader = () => (
@@ -541,6 +542,7 @@ export default function App() {
                   <Route path="/report-data" element={<ReportData />} />
                   <Route path="/demo" element={<DemoEntry />} />
                   <Route path="/download" element={<DownloadPage />} />
+                  <Route path="/public-schedule/:customerId" element={<PublicSchedulePage />} />
 
                   {/* All authenticated users (sharing a single persistent AppTabs instance) */}
                   <Route element={<ProtectedRoute />}>

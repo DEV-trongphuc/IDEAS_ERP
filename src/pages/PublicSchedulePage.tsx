@@ -1,0 +1,682 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { 
+  Calendar as CalendarIcon, 
+  User, 
+  Briefcase, 
+  Clock, 
+  MapPin, 
+  Video, 
+  Award, 
+  FileText, 
+  ChevronLeft, 
+  ChevronRight, 
+  BookOpen, 
+  CalendarDays,
+  AlertCircle
+} from 'lucide-react';
+import axios from 'axios';
+
+export const PublicSchedulePage: React.FC = () => {
+  const { customerId } = useParams<{ customerId: string }>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
+
+  // Calendar State
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDaySchedules, setSelectedDaySchedules] = useState<any[]>([]);
+  const [selectedDayMilestones, setSelectedDayMilestones] = useState<any[]>([]);
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!customerId) return;
+    setLoading(true);
+    setError(null);
+    axios.get(`/backend/api.php?action=public_student_schedule&customer_id=${customerId}`)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setData(res.data.data);
+        } else {
+          setError(res.data?.message || 'Không thể tải lịch học của học viên.');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setError('Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [customerId]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--color-bg)', gap: '12px' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Đang tải thông tin lịch học...</div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--color-bg)', padding: '2rem', textAlign: 'center' }}>
+        <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '0.5rem' }}>Không thể truy cập</h3>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', maxWidth: '400px', marginBottom: '1.5rem' }}>{error || 'Đường dẫn liên kết không chính xác hoặc dữ liệu không tồn tại.'}</p>
+      </div>
+    );
+  }
+
+  const { student, course, program, lecturers } = data;
+  const subjects = course?.subjects || [];
+  const thesisMilestones = course?.thesis_milestones || [];
+
+  // Parse all schedules:
+  const getLecturerName = (lecturerId: any) => {
+    if (!lecturerId) return 'Chưa phân công';
+    return lecturers?.[lecturerId] || lecturerId;
+  };
+
+  const allEvents: any[] = [];
+
+  subjects.forEach((sub: any) => {
+    const subLecturer = getLecturerName(sub.lecturer_id);
+
+    // 1. Host sessions
+    if (Array.isArray(sub.host_sessions)) {
+      sub.host_sessions.forEach((hs: any, hsIdx: number) => {
+        if (hs.date) {
+          allEvents.push({
+            type: 'school',
+            date: hs.date,
+            subjectCode: sub.code || 'MÔN HỌC',
+            subjectName: sub.name,
+            title: hs.name || `Buổi học ${hsIdx + 1}`,
+            time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
+            lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
+            location: hs.location || 'Online',
+            zoom_link: sub.zoom_link || '',
+            zoom_id: sub.zoom_id || '',
+            zoom_pass: sub.zoom_pass || ''
+          });
+        }
+      });
+    }
+
+    // 2. Seminars
+    if (Array.isArray(sub.seminars)) {
+      sub.seminars.forEach((sem: any) => {
+        if (sem.date) {
+          allEvents.push({
+            type: 'seminar',
+            date: sem.date,
+            subjectCode: sub.code || 'MÔN HỌC',
+            subjectName: sub.name,
+            title: sem.topic || 'Lớp chuyên đề',
+            time: sem.time_slot || 'Chưa cấu hình giờ',
+            lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
+            location: sem.location || 'Online',
+            zoom_link: sub.zoom_link || '',
+            zoom_id: sub.zoom_id || '',
+            zoom_pass: sub.zoom_pass || ''
+          });
+        }
+      });
+    }
+  });
+
+  // Calendar Helper Logic
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, ...
+  // Convert Sunday=0 to Sunday=7 for easier alignment with Mon=1 to Sun=7 layout
+  const adjustedStartDay = startDayOfWeek === 0 ? 7 : startDayOfWeek;
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Create date cells
+  const dayCells: (Date | null)[] = [];
+  // Empty slots for previous month offset
+  for (let i = 1; i < adjustedStartDay; i++) {
+    dayCells.push(null);
+  }
+  // Days of current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    dayCells.push(new Date(year, month, i));
+  }
+
+  // Group events by date string "YYYY-MM-DD"
+  const eventsByDate: Record<string, any[]> = {};
+  allEvents.forEach(evt => {
+    if (!eventsByDate[evt.date]) {
+      eventsByDate[evt.date] = [];
+    }
+    eventsByDate[evt.date].push(evt);
+  });
+
+  // Group milestones by date string
+  const milestonesByDate: Record<string, any[]> = {};
+  thesisMilestones.forEach((ms: any) => {
+    if (ms.due_date) {
+      if (!milestonesByDate[ms.due_date]) {
+        milestonesByDate[ms.due_date] = [];
+      }
+      milestonesByDate[ms.due_date].push(ms);
+    }
+  });
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleDayClick = (date: Date) => {
+    const dStr = date.toISOString().split('T')[0];
+    const dayEvts = eventsByDate[dStr] || [];
+    const dayMs = milestonesByDate[dStr] || [];
+
+    setSelectedDaySchedules(dayEvts);
+    setSelectedDayMilestones(dayMs);
+    setSelectedDateStr(dStr.split('-').reverse().join('/'));
+    setIsModalOpen(true);
+  };
+
+  const getStudentInitials = (name: string) => {
+    if (!name) return 'HV';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      
+      {/* 1. Header Student Info Card */}
+      <div style={{ 
+        background: 'var(--color-surface)', 
+        borderRadius: '20px', 
+        border: '1px solid var(--color-border-light)', 
+        padding: '1.5rem 2rem', 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        gap: '1.5rem',
+        boxShadow: 'var(--shadow-md)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          {/* Circular Avatar */}
+          <div style={{ 
+            width: '64px', 
+            height: '64px', 
+            borderRadius: '50%', 
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%)', 
+            color: '#ffffff',
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: '1.5rem', 
+            fontWeight: 800,
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+            border: '3px solid #ffffff'
+          }}>
+            {getStudentInitials(student.name)}
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{student.name}</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-light)', padding: '2px 8px', borderRadius: '100px' }}>Học viên</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} /> Chương trình: <strong style={{ color: 'var(--color-text)' }}>{program?.name || 'Chưa liên kết'}</strong></span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BookOpen size={14} /> Khóa học: <strong style={{ color: 'var(--color-text)' }}>{course?.name || 'Chưa liên kết'}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* School (Degree Awarding Body) */}
+        {program?.degree_awarding_body && (
+          <div style={{ 
+            background: 'var(--color-bg-light)', 
+            padding: '12px 18px', 
+            borderRadius: '14px', 
+            border: '1px solid var(--color-border-light)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <Award size={20} style={{ color: '#d97706' }} />
+            <div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trường cấp bằng</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 750, color: 'var(--color-text)' }}>{program.degree_awarding_body}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 2. Calendar panel */}
+      <div style={{ 
+        background: 'var(--color-surface)', 
+        borderRadius: '20px', 
+        border: '1px solid var(--color-border-light)', 
+        padding: '1.5rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem',
+        boxShadow: 'var(--shadow-md)',
+        flex: 1
+      }}>
+        {/* Calendar Header Controls */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CalendarIcon size={22} style={{ color: 'var(--color-primary)' }} />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 850, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+              Lịch học & Sự kiện
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-bg-light)', borderRadius: '10px', padding: '3px', border: '1px solid var(--color-border-light)' }}>
+              <button 
+                onClick={handlePrevMonth}
+                style={{ background: 'none', border: 'none', padding: '6px', borderRadius: '8px', cursor: 'pointer', display: 'flex', color: 'var(--color-text)' }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span style={{ fontSize: '0.875rem', fontWeight: 750, color: 'var(--color-text)', padding: '0 12px', minWidth: '120px', textAlign: 'center' }}>
+                Tháng {month + 1} {year}
+              </span>
+              <button 
+                onClick={handleNextMonth}
+                style={{ background: 'none', border: 'none', padding: '6px', borderRadius: '8px', cursor: 'pointer', display: 'flex', color: 'var(--color-text)' }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <button 
+              onClick={handleToday}
+              style={{ 
+                background: 'var(--color-surface)', 
+                border: '1px solid var(--color-border-light)', 
+                padding: '7px 16px', 
+                borderRadius: '10px', 
+                fontSize: '0.85rem', 
+                fontWeight: 700, 
+                color: 'var(--color-text)', 
+                cursor: 'pointer',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              Hôm nay
+            </button>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6' }}></span>
+            <span>Lịch học Trường</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#a855f7' }}></span>
+            <span>Lớp Chuyên đề (IDEAS)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ea580c' }}></span>
+            <span>Mốc Khóa luận</span>
+          </div>
+        </div>
+
+        {/* Calendar Grid Container */}
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <div style={{ minWidth: '700px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+            
+            {/* Days of Week Header */}
+            {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => (
+              <div 
+                key={idx} 
+                style={{ 
+                  textAlign: 'center', 
+                  padding: '8px', 
+                  fontSize: '0.78rem', 
+                  fontWeight: 800, 
+                  color: day === 'CN' ? '#ef4444' : 'var(--color-text-muted)', 
+                  background: 'var(--color-bg-light)', 
+                  borderRadius: '6px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                {day}
+              </div>
+            ))}
+
+            {/* Calendar Cells */}
+            {dayCells.map((date, idx) => {
+              if (!date) {
+                return (
+                  <div key={idx} style={{ background: '#f8fafc', opacity: 0.35, borderRadius: '12px', minHeight: '100px', border: '1px solid var(--color-border-light)' }}></div>
+                );
+              }
+
+              const dStr = date.toISOString().split('T')[0];
+              const dayEvts = eventsByDate[dStr] || [];
+              const dayMs = milestonesByDate[dStr] || [];
+              
+              const isToday = new Date().toDateString() === date.toDateString();
+
+              return (
+                <div 
+                  key={idx} 
+                  onClick={() => handleDayClick(date)}
+                  style={{ 
+                    background: isToday ? '#eff6ff' : 'var(--color-surface)', 
+                    borderRadius: '12px', 
+                    minHeight: '110px', 
+                    padding: '8px',
+                    border: isToday ? '2px solid var(--color-primary)' : '1px solid var(--color-border-light)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    boxShadow: isToday ? '0 4px 10px rgba(59, 130, 246, 0.1)' : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = isToday ? '0 4px 10px rgba(59, 130, 246, 0.1)' : 'none';
+                  }}
+                >
+                  {/* Date Number row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ 
+                      fontSize: '0.85rem', 
+                      fontWeight: isToday ? 850 : 700, 
+                      color: isToday ? 'var(--color-primary)' : 'var(--color-text)',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isToday ? 'var(--color-primary-light)' : 'none'
+                    }}>
+                      {date.getDate()}
+                    </span>
+                  </div>
+
+                  {/* Day Events Indicators */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
+                    {dayEvts.slice(0, 3).map((evt, eidx) => (
+                      <div 
+                        key={eidx} 
+                        style={{ 
+                          fontSize: '0.68rem', 
+                          fontWeight: 700, 
+                          color: '#ffffff', 
+                          background: evt.type === 'school' ? '#3b82f6' : '#a855f7', 
+                          padding: '1px 6px', 
+                          borderRadius: '4px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {evt.subjectCode}: {evt.title}
+                      </div>
+                    ))}
+
+                    {dayMs.slice(0, 2).map((ms, eidx) => (
+                      <div 
+                        key={eidx} 
+                        style={{ 
+                          fontSize: '0.68rem', 
+                          fontWeight: 700, 
+                          color: '#ffffff', 
+                          background: '#ea580c', 
+                          padding: '1px 6px', 
+                          borderRadius: '4px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        Mốc KL: {ms.milestone}
+                      </div>
+                    ))}
+
+                    {/* Show more indicator */}
+                    {(dayEvts.length + dayMs.length) > 3 && (
+                      <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', fontWeight: 800, textAlign: 'center', marginTop: '2px' }}>
+                        +{(dayEvts.length + dayMs.length) - 3} sự kiện
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Detailed Day Dialog Modal */}
+      {isModalOpen && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          background: 'rgba(15, 23, 42, 0.45)', 
+          backdropFilter: 'blur(4px)',
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          zIndex: 2000,
+          padding: '1rem',
+          animation: 'fadeIn 0.2s ease'
+        }}>
+          <div style={{ 
+            background: 'var(--color-surface)', 
+            borderRadius: '20px', 
+            border: '1px solid var(--color-border-light)', 
+            width: '100%', 
+            maxWidth: '520px', 
+            maxHeight: '85vh', 
+            overflowY: 'auto',
+            boxShadow: 'var(--shadow-xl)',
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CalendarDays size={18} style={{ color: 'var(--color-primary)' }} />
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)' }}>Chi tiết ngày {selectedDateStr}</span>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  fontSize: '1.25rem', 
+                  fontWeight: 600, 
+                  color: 'var(--color-text-muted)', 
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Content Body */}
+            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* Day Schedules List */}
+              {selectedDaySchedules.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Buổi học & Chuyên đề ({selectedDaySchedules.length})
+                  </div>
+                  {selectedDaySchedules.map((evt, idx) => (
+                    <div key={idx} style={{ 
+                      padding: '12px 14px', 
+                      background: 'var(--color-bg-light)', 
+                      borderRadius: '14px', 
+                      border: '1px solid var(--color-border-light)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          fontWeight: 800, 
+                          padding: '2px 8px', 
+                          borderRadius: '100px', 
+                          color: '#ffffff', 
+                          background: evt.type === 'school' ? '#3b82f6' : '#a855f7' 
+                        }}>
+                          {evt.type === 'school' ? 'Trường' : 'Chuyên đề'}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                          {evt.subjectCode} - {evt.subjectName}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>{evt.title}</div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-light)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '8px', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={13} /> Giờ: <strong style={{ color: 'var(--color-text)' }}>{evt.time}</strong></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={13} /> Giảng viên: <strong style={{ color: 'var(--color-text)' }}>{evt.lecturer}</strong></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={13} /> Địa điểm: <strong style={{ color: 'var(--color-text)' }}>{evt.location}</strong></div>
+                      </div>
+
+                      {/* Zoom details if present */}
+                      {(evt.zoom_link || evt.zoom_id) && (
+                        <div style={{ 
+                          padding: '10px', 
+                          background: '#f0f9ff', 
+                          borderRadius: '10px', 
+                          border: '1px solid #e0f2fe', 
+                          fontSize: '0.75rem', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '4px',
+                          marginTop: '4px'
+                        }}>
+                          <div style={{ fontWeight: 850, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Video size={13} /> Lớp trực tuyến Zoom
+                          </div>
+                          {evt.zoom_link && (
+                            <div style={{ wordBreak: 'break-all' }}>
+                              Link: <a href={evt.zoom_link} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 700, textDecoration: 'underline' }}>{evt.zoom_link}</a>
+                            </div>
+                          )}
+                          {(evt.zoom_id || evt.zoom_pass) && (
+                            <div style={{ color: '#0c4a6e' }}>
+                              {evt.zoom_id && <>ID: <strong>{evt.zoom_id}</strong></>}
+                              {evt.zoom_pass && <>&nbsp;&nbsp;|&nbsp;&nbsp;Pass: <strong>{evt.zoom_pass}</strong></>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Day Milestones List */}
+              {selectedDayMilestones.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Mốc tiến độ khóa luận ({selectedDayMilestones.length})
+                  </div>
+                  {selectedDayMilestones.map((ms, idx) => (
+                    <div key={idx} style={{ 
+                      padding: '12px 14px', 
+                      background: '#fff7ed', 
+                      borderRadius: '14px', 
+                      border: '1px solid #ffedd5',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 800, color: '#ea580c' }}>
+                        <Award size={15} /> Mốc quan trọng
+                      </div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#9a3412' }}>{ms.milestone}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#c2410c', fontWeight: 600 }}>Hạn nộp: {ms.due_date ? ms.due_date.split('-').reverse().join('/') : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {selectedDaySchedules.length === 0 && selectedDayMilestones.length === 0 ? (
+                <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                  Không có buổi học, chuyên đề hay mốc lịch trình nào trong ngày này.
+                </div>
+              ) : null}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', justifyContent: 'flex-end', background: 'var(--color-bg-light)', borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px' }}>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                style={{ 
+                  background: 'var(--color-surface)', 
+                  border: '1px solid var(--color-border-light)', 
+                  padding: '7px 18px', 
+                  borderRadius: '10px', 
+                  fontSize: '0.85rem', 
+                  fontWeight: 700, 
+                  color: 'var(--color-text)', 
+                  cursor: 'pointer'
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global CSS Styles for fade animations */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+};
