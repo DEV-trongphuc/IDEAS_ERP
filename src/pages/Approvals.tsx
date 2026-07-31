@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server, Home,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye, MessageSquare, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,6 +16,7 @@ import { EmptyCard } from '../components/ui/EmptyCard';
 import { Avatar } from '../components/ui/Avatar';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { MentionInput } from '../components/ui/MentionInput';
+import { ProcessFeed } from '../components/ui/ProcessFeed';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pagination } from '../components/ui/Pagination';
 import { useUIStore } from '../store/uiStore';
@@ -4206,6 +4207,7 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
 
   const [localComments, setLocalComments] = useState<any[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [detailTab, setDetailTab] = useState<'comments' | 'history'>('comments');
 
   const getCommentsEndpoint = (type: string, id: number) => {
     switch (type) {
@@ -4232,6 +4234,7 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
       const mapped = dbComments.map((c: any) => ({
         id: c.id,
         author: c.user_name || t('Tôi'),
+        avatar: c.avatar_url || c.avatar || c.user_avatar || c.user_avatar_url,
         time: new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         text: c.body || '',
         attachments: c.attachments || [],
@@ -5468,136 +5471,38 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
               {renderTimeline()}
             </div>
 
-            {/* Discussion / Comments Section */}
-            <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)' }}>
-              <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                {t('THẢO LUẬN & HOẠT ĐỘNG')}
-              </h3>
-
-              {/* List of comments */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '10px', 
-                  marginBottom: '1.25rem',
-                  maxHeight: '320px',
-                  overflowY: 'auto',
-                  paddingRight: '6px'
+            {/* Unified Discussion & Activity Feed */}
+            <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, overflow: 'hidden' }}>
+              <ProcessFeed
+                comments={localComments.filter((c: any) => !String(c.id).startsWith('sys-'))}
+                historyLogs={localComments.filter((c: any) => String(c.id).startsWith('sys-'))}
+                loadingComments={loadingComments}
+                loadingHistory={loadingComments}
+                currentUser={user}
+                showAttachments={true}
+                maxHeight={320}
+                onAddComment={async (text, fileAttachments) => {
+                  const endpoint = getCommentsEndpoint(item.type, item.id);
+                  if (!endpoint) {
+                    const commentObj = {
+                      id: Date.now(),
+                      author: t('Tôi'),
+                      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                      text: text,
+                      attachments: fileAttachments || []
+                    };
+                    setLocalComments([...localComments, commentObj]);
+                    toast.success(t('Đăng bình luận thành công!'));
+                    return;
+                  }
+                  await api.post(endpoint, {
+                    body: text,
+                    attachments: fileAttachments || []
+                  });
+                  toast.success(t('Thêm bình luận thành công'));
+                  fetchComments();
                 }}
-                className="custom-scrollbar"
-              >
-                {localComments.length === 0 ? (
-                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                    {t('Chưa có bình luận nào.')}
-                  </span>
-                ) : (
-                  localComments.map((c: any) => (
-                    <div key={c.id} style={{
-                      display: 'flex',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      background: 'var(--color-bg)',
-                      borderRadius: '14px',
-                      border: '1px solid var(--color-border-light)',
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.01)'
-                    }}>
-                      <Avatar name={c.author} size={28} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                          <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{c.author}</strong>
-                          <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>{c.time}</span>
-                        </div>
-                        <p 
-                          style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left' }}
-                          dangerouslySetInnerHTML={{ __html: c.text }}
-                        />
-                        
-                        {/* Attached files chips list for comments */}
-                        {c.attachments && c.attachments.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                            {c.attachments.map((file: any, index: number) => (
-                              <div key={index} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: 'var(--color-surface)',
-                                border: '1px solid var(--color-border)',
-                                borderRadius: '6px',
-                                padding: '4px 8px',
-                                fontSize: '0.72rem',
-                                color: 'var(--color-text-light)'
-                              }}>
-                                <span>📄</span>
-                                <span style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {file.name}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Add Comment Input Field Area */}
-              <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '12px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
-                <div style={{ position: 'relative' }}>
-                  <MentionInput
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    placeholder={t('Viết bình luận... Gõ @ để nhắc tên')}
-                    style={{ minHeight: '65px', fontSize: '0.85rem', paddingRight: '40px' }}
-                  />
-                  <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
-                    <input type="file" onChange={handleCommentFileChange} style={{ display: 'none' }} />
-                    <Paperclip size={18} />
-                  </label>
-                </div>
-
-                {commentAttachments.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingTop: '2px' }}>
-                    {commentAttachments.map((file, index) => (
-                      <div key={index} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        background: 'var(--color-surface)',
-                        border: '1px solid var(--color-border-light)',
-                        padding: '3px 8px',
-                        borderRadius: '12px',
-                        fontSize: '0.72rem',
-                        color: 'var(--color-text)'
-                      }}>
-                        <span>📄</span>
-                        <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
-                          {file.name}
-                        </span>
-                        <button
-                          onClick={() => setCommentAttachments(commentAttachments.filter((_, i) => i !== index))}
-                          style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px', lineHeight: 1 }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px' }}>
-                  <button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() && commentAttachments.length === 0}
-                    className="btn primary sm"
-                    style={{ padding: '6px 18px', fontSize: '0.78rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: '#fff' }}
-                  >
-                    <Send size={13} />
-                    <span>{t('Gửi')}</span>
-                  </button>
-                </div>
-              </div>
+              />
             </div>
           </div>
         </div>

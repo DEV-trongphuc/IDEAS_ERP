@@ -6,6 +6,7 @@ import api from '../api/axios';
 import { Avatar } from './ui/Avatar';
 import { useUIStore } from '../store/uiStore';
 import { MentionInput } from './ui/MentionInput';
+import { ProcessFeed } from './ui/ProcessFeed';
 import { compressToWebP } from '../utils/imageCompress';
 import { numberToVietnameseText } from '../utils/numberToText';
 
@@ -1288,167 +1289,39 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
               overflow: 'hidden',
               background: 'var(--color-surface)',
               borderLeft: '1px solid var(--color-border-light)',
-              padding: '1.25rem',
               boxSizing: 'border-box'
             }}>
-              {/* Scrollable container for stepper and feed */}
-              <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingRight: '4px' }}>
-                
-                {/* Section 1: CÁC BƯỚC THỰC HIỆN */}
-                <div>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                    Các bước thực hiện
-                  </h3>
-                  {renderTimeline()}
-                </div>
-
-                {/* Section 2: THẢO LUẬN & HOẠT ĐỘNG */}
-                <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                    Thảo luận & Hoạt động
-                  </h3>
-
-                  {/* Combined Feed Items */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {loadingComments || loadingHistory ? (
-                      <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                        <Loader2 size={20} className="spin text-primary" />
-                      </div>
-                    ) : combinedFeed.length === 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                        <Coffee size={24} style={{ opacity: 0.4 }} />
-                        <span style={{ fontSize: '0.8rem' }}>Chưa có hoạt động hay thảo luận nào cho khoản chi này.</span>
-                      </div>
-                    ) : (
-                      combinedFeed.map((item) => {
-                        if (item.type === 'comment') {
-                          return (
-                            <div key={item.id} style={{
-                              display: 'flex',
-                              gap: '12px',
-                              padding: '12px 16px',
-                              background: 'var(--color-bg)',
-                              borderRadius: '14px',
-                              border: '1px solid var(--color-border-light)',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
-                              position: 'relative'
-                            }}>
-                              <Avatar src={item.data.avatar_url} name={item.data.user_name} size={28} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{item.data.user_name}</strong>
-                                  <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                    {new Date(item.data.created_at).toLocaleString('vi-VN')}
-                                  </span>
-                                </div>
-                                {item.data.body && /<[a-z][\s\S]*>/i.test(item.data.body) ? (
-                                  <div 
-                                    className="rich-comment-content text-left"
-                                    dangerouslySetInnerHTML={{ __html: item.data.body }}
-                                    style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.45', textAlign: 'left' }}
-                                  />
-                                ) : (
-                                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{item.data.body}</p>
-                                )}
-                              </div>
-                              {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === item.data.user_id) && (
-                                <button
-                                  onClick={() => handleDeleteComment(item.data.id)}
-                                  style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '8px', top: '8px' }}
-                                  title="Xóa bình luận"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              )}
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <div key={item.id} style={{
-                              display: 'flex',
-                              gap: '12px',
-                              padding: '10px 14px',
-                              background: 'var(--color-bg-secondary)',
-                              borderRadius: '10px',
-                              borderLeft: '3px solid var(--color-primary-light)',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.01)',
-                              alignItems: 'center'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', color: 'var(--color-primary)', flexShrink: 0 }}>
-                                <Info size={14} />
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                  <strong style={{ fontSize: '0.78rem', color: 'var(--color-text)', fontWeight: 700 }}>Hệ thống phiếu chi IDEAS</strong>
-                                  <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                    {new Date(item.data.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'left', lineHeight: '1.4' }}>
-                                  <strong style={{ color: 'var(--color-text-light)' }}>{item.data.operator_name}</strong> {item.data.action_text} lúc {new Date(item.data.created_at).toLocaleTimeString('vi-VN')} {new Date(item.data.created_at).toLocaleDateString('vi-VN')}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        }
-                      })
-                    )}
-                  </div>
-                </div>
+              {/* Stepper (Always Visible on Top) */}
+              <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--color-border-light)', flexShrink: 0 }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                  Các bước thực hiện
+                </h3>
+                {renderTimeline()}
               </div>
 
-              {/* Comment Editor Box at bottom */}
-              <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '8px', 
-                borderTop: '1px solid var(--color-border-light)', 
-                paddingTop: '12px', 
-                flexShrink: 0,
-                marginTop: '1rem',
-                background: 'var(--color-surface)'
-              }}>
-                <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
-                  <MentionInput
-                    value={commentText}
-                    onChange={(e: any) => setCommentText(e.target.value)}
-                    placeholder="Viết bình luận... Gõ @ để nhắc tên"
-                    style={{ 
-                      width: '100%', 
-                      minHeight: '65px', 
-                      border: 'none',
-                      borderRadius: 0,
-                      outline: 'none', 
-                      background: 'transparent',
-                      color: 'var(--color-text)', 
-                      boxSizing: 'border-box'
-                    }}
-                    disabled={submittingComment}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px', borderTop: '1px dashed var(--color-border-light)' }}>
-                    <button
-                      disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
-                      onClick={handleAddComment}
-                      className="btn primary sm"
-                      style={{
-                        background: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '20px',
-                        padding: '6px 18px',
-                        cursor: 'pointer',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px'
-                      }}
-                    >
-                      <Send size={13} />
-                      Gửi
-                    </button>
-                  </div>
-                </div>
+              {/* Unified Discussion & Activity Feed */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '1rem 1.25rem 1.25rem 1.25rem' }}>
+                <ProcessFeed
+                  comments={comments}
+                  historyLogs={historyLogs}
+                  loadingComments={loadingComments}
+                  loadingHistory={loadingHistory}
+                  currentUser={user}
+                  onAddComment={async (text) => {
+                    if (!text.trim() || !viewItem) return;
+                    await api.post(`/expenses/${viewItem.id}/comments`, {
+                      body: text.trim()
+                    });
+                    addToast('Thêm bình luận thành công', 'success');
+                    fetchComments(viewItem.id);
+                  }}
+                  onDeleteComment={async (commentId) => {
+                    if (!viewItem) return;
+                    await api.delete(`/expenses/comments/${commentId}`);
+                    addToast('Đã xóa bình luận', 'success');
+                    fetchComments(viewItem.id);
+                  }}
+                />
               </div>
             </div>
           </div>
