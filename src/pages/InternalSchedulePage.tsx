@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { Avatar } from '../components/ui/Avatar';
+import { CompanyDrawer } from './CompanyDrawer';
 import { 
   Calendar, BookOpen, User, Users, Copy, ExternalLink, 
   ChevronLeft, ChevronRight, Clock, MapPin, 
@@ -32,6 +34,8 @@ export const InternalSchedulePage: React.FC = () => {
   const [selectedDayMilestones, setSelectedDayMilestones] = useState<any[]>([]);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLecturerDrawerOpen, setIsLecturerDrawerOpen] = useState(false);
+  const [selectedLecturerEntity, setSelectedLecturerEntity] = useState<any>(null);
 
   // Load lists
   useEffect(() => {
@@ -130,6 +134,7 @@ export const InternalSchedulePage: React.FC = () => {
             title: hs.name || `Buổi học ${hsIdx + 1}`,
             time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
             lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
+            lecturerId: hs.lecturer_name || sub.lecturer_id || null,
             location: hs.location || 'Online',
             zoom_link: (isShared ? sub.zoom_link : sub.school_zoom_link) || '',
             zoom_id: (isShared ? sub.zoom_id : sub.school_zoom_id) || '',
@@ -150,6 +155,7 @@ export const InternalSchedulePage: React.FC = () => {
             title: sem.topic || 'Lớp chuyên đề',
             time: sem.time_slot || 'Chưa cấu hình giờ',
             lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
+            lecturerId: sem.lecturer_id || sub.lecturer_id || null,
             location: sem.location || 'Online',
             zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
             zoom_id: (isShared ? sub.zoom_id : sub.seminar_zoom_id) || '',
@@ -871,7 +877,7 @@ export const InternalSchedulePage: React.FC = () => {
             background: 'var(--color-surface)',
             borderRadius: '20px',
             width: '90%',
-            maxWidth: '520px',
+            maxWidth: '620px',
             maxHeight: '85vh',
             display: 'flex',
             flexDirection: 'column',
@@ -934,9 +940,40 @@ export const InternalSchedulePage: React.FC = () => {
                             </span>
                           </div>
                           <div style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--color-text)' }}>{evt.title}</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '0.72rem', color: 'var(--color-text-light)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px', marginTop: '2px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.72rem', color: 'var(--color-text-light)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px', marginTop: '2px' }}>
                             <div>Giờ: <strong style={{ color: 'var(--color-text)' }}>{evt.time}</strong></div>
-                            <div>Giảng viên: <strong style={{ color: 'var(--color-text)' }}>{evt.lecturer}</strong></div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>Giảng viên:</span>
+                              <div 
+                                onClick={() => {
+                                  if (evt.lecturerId) {
+                                    const lecturerEntity = companies.find(c => String(c.id) === String(evt.lecturerId));
+                                    if (lecturerEntity) {
+                                      setSelectedLecturerEntity(lecturerEntity);
+                                      setIsLecturerDrawerOpen(true);
+                                    } else {
+                                      setSelectedLecturerEntity({ id: Number(evt.lecturerId), name: evt.lecturer });
+                                      setIsLecturerDrawerOpen(true);
+                                    }
+                                  }
+                                }}
+                                style={{ 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  gap: '4px', 
+                                  cursor: evt.lecturerId ? 'pointer' : 'default',
+                                  padding: '2px 8px',
+                                  background: 'var(--color-bg-light)',
+                                  borderRadius: '20px',
+                                  border: '1px solid var(--color-border-light)',
+                                  transition: 'all 0.2s'
+                                }}
+                                className={evt.lecturerId ? "hover-lift" : ""}
+                              >
+                                <Avatar name={evt.lecturer} size={16} />
+                                <strong style={{ color: 'var(--color-text)' }}>{evt.lecturer}</strong>
+                              </div>
+                            </div>
                             <div>Địa điểm: <strong style={{ color: 'var(--color-text)' }}>{evt.location}</strong></div>
                           </div>
                           {evt.zoom_link && (
@@ -1051,6 +1088,14 @@ export const InternalSchedulePage: React.FC = () => {
           </div>
         </div>
       , document.body)}
+
+      {isLecturerDrawerOpen && selectedLecturerEntity && (
+        <CompanyDrawer
+          isOpen={isLecturerDrawerOpen}
+          onClose={() => setIsLecturerDrawerOpen(false)}
+          entity={selectedLecturerEntity}
+        />
+      )}
     </div>
   );
 };
