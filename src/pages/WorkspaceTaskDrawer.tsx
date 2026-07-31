@@ -234,10 +234,17 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       if (showParticipantDropdown && participantDropdownRef.current && !participantDropdownRef.current.contains(target)) {
         setShowParticipantDropdown(false);
       }
+      if (activeAssigneeDropdownId !== null) {
+        const isTrigger = (target as HTMLElement).closest('.subtask-assignee-trigger');
+        const isDropdown = (target as HTMLElement).closest('.subtask-assignee-dropdown');
+        if (!isTrigger && !isDropdown) {
+          setActiveAssigneeDropdownId(null);
+        }
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [showTeamDropdown, showParticipantDropdown]);
+  }, [showTeamDropdown, showParticipantDropdown, activeAssigneeDropdownId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -2698,6 +2705,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                      e.stopPropagation();
                                      setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id);
                                    }}
+                                   className="subtask-assignee-trigger"
                                    style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
                                    title={itemUsers.map(u => u.full_name || u.name).join(', ')}
                                  >
@@ -2705,13 +2713,13 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                      <div 
                                        key={u.id} 
                                        style={{ 
-                                         marginLeft: idx === 0 ? 0 : -8, 
-                                         border: '1.5px solid var(--color-surface)',
-                                         borderRadius: '50%',
-                                         overflow: 'hidden',
-                                         zIndex: 10 - idx,
-                                         boxShadow: 'var(--shadow-sm)',
-                                         display: 'flex'
+                                          marginLeft: idx === 0 ? 0 : -8, 
+                                          border: '1.5px solid var(--color-surface)',
+                                          borderRadius: '50%',
+                                          overflow: 'hidden',
+                                          zIndex: 10 - idx,
+                                          boxShadow: 'var(--shadow-sm)',
+                                          display: 'flex'
                                        }}
                                      >
                                        <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={22} />
@@ -2720,19 +2728,19 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                    {itemUsers.length > 3 && (
                                      <div 
                                        style={{ 
-                                         marginLeft: -8, 
-                                         width: '22px', 
-                                         height: '22px', 
-                                         borderRadius: '50%', 
-                                         background: 'var(--color-primary-light)', 
-                                         color: 'var(--color-primary)', 
-                                         fontSize: '0.625rem', 
-                                         fontWeight: 800, 
-                                         display: 'flex', 
-                                         alignItems: 'center', 
-                                         justifyContent: 'center',
-                                         border: '1.5px solid var(--color-surface)',
-                                         zIndex: 5
+                                          marginLeft: -8, 
+                                          width: '22px', 
+                                          height: '22px', 
+                                          borderRadius: '50%', 
+                                          background: 'var(--color-primary-light)', 
+                                          color: 'var(--color-primary)', 
+                                          fontSize: '0.625rem', 
+                                          fontWeight: 800, 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          justifyContent: 'center',
+                                          border: '1.5px solid var(--color-surface)',
+                                          zIndex: 5
                                        }}
                                      >
                                        +{itemUsers.length - 3}
@@ -2761,9 +2769,9 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                    padding: 0,
                                    transition: 'all 0.15s ease'
                                  }}
-                                 className="hover-scale"
+                                 className="hover-scale subtask-assignee-trigger"
                                  title={t('Phân công người thực hiện')}
-                                >
+                               >
                                  <UserPlus size={12} color="var(--color-primary)" />
                                </button>
 
@@ -2771,6 +2779,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                               {isAssigneeDropdownOpen && (
                                 <div 
                                   onClick={(e) => e.stopPropagation()}
+                                  className="subtask-assignee-dropdown"
                                   style={{
                                     position: 'absolute',
                                     top: '100%',
