@@ -5,7 +5,7 @@ import { fetchAPI } from '../utils/api';
 import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../store/uiStore';
-import { Building2, Users, FileText, Plus, Trash2, Edit, X, Upload, Download, Check, AlertCircle, Layers, FileSpreadsheet, Link2, Globe, Search, Folder, ExternalLink, MessageSquare, Paperclip, RefreshCw, Calendar, CheckSquare, HardDrive, Info, MapPin, Briefcase, AlignLeft, Filter, History, Megaphone, Eye, Settings, ShieldAlert, Zap, Send, GraduationCap, BookOpen, PenTool } from 'lucide-react';
+import { Building2, Users, FileText, Plus, Trash2, Edit, X, Upload, Download, Check, AlertCircle, Layers, FileSpreadsheet, Link2, Globe, Search, Folder, ExternalLink, MessageSquare, Paperclip, RefreshCw, Calendar, CheckSquare, HardDrive, Info, MapPin, Briefcase, AlignLeft, Filter, History, Megaphone, Eye, Settings, ShieldAlert, Zap, Send, GraduationCap, BookOpen, PenTool, Award } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { compressToWebP } from '../utils/imageCompress';
@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MentionInput } from '../components/ui/MentionInput';
 const WorkspaceTaskDrawer = lazy(() => import('./WorkspaceTaskDrawer').then(module => ({ default: module.WorkspaceTaskDrawer })));
 const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(module => ({ default: module.CustomerProfileDrawer })));
+import { CompanyDrawer } from './CompanyDrawer';
 import { FilesPage } from './FilesPage';
 import { useUploadProgress } from '../contexts/UploadProgressContext';
 
@@ -325,6 +326,15 @@ export default function ProjectsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTaskForDrawer, setSelectedTaskForDrawer] = useState<any>(null);
   const [selectedContactForDrawer, setSelectedContactForDrawer] = useState<any>(null);
+  const [isLecturerDrawerOpen, setIsLecturerDrawerOpen] = useState(false);
+  const [selectedLecturerEntity, setSelectedLecturerEntity] = useState<any>(null);
+
+  // Copy subject modal state
+  const [isCopySubjectModalOpen, setIsCopySubjectModalOpen] = useState(false);
+  const [subjectToCopy, setSubjectToCopy] = useState<any>(null);
+  const [copyTargetCampaignId, setCopyTargetCampaignId] = useState<string>('');
+  const [copyConflictMode, setCopyConflictMode] = useState<'add' | 'replace'>('replace');
+  const [isCopyingSubject, setIsCopyingSubject] = useState(false);
 
   // Quick campaigns modal state
   const [quickCampaignsModalOpen, setQuickCampaignsModalOpen] = useState(false);
@@ -335,6 +345,60 @@ export default function ProjectsPage() {
     setQuickCampaignsProject(proj);
     setQuickCampaignsList(linkedCamps);
     setQuickCampaignsModalOpen(true);
+  };
+
+  const isTimeOverlapping = (time1: string, time2: string) => {
+    if (!time1 || !time2) return true;
+    const parseTime = (tStr: string) => {
+      const match = tStr.match(/(\d{1,2}):(\d{2})/);
+      if (!match) return 0;
+      return parseInt(match[1]) * 60 + parseInt(match[2]);
+    };
+    const getRanges = (rangeStr: string) => {
+      const parts = rangeStr.split(/[-–]/).map(p => p.trim());
+      return {
+        start: parseTime(parts[0]),
+        end: parseTime(parts[1] || parts[0])
+      };
+    };
+    const r1 = getRanges(time1);
+    const r2 = getRanges(time2);
+    return (r1.start < r2.end && r2.start < r1.end);
+  };
+
+  const checkLecturerConflict = (lecturerId: string, date: string, timeRange: string, currentSubjectId: string, currentSessionId: string) => {
+    if (!lecturerId || !date) return null;
+    for (const camp of campaigns) {
+      if (camp.status !== 'active') continue;
+      const isCurrentCamp = editingCampaign && String(camp.id) === String(editingCampaign.id);
+      const campSubs = camp.subjects_json ? (typeof camp.subjects_json === 'string' ? JSON.parse(camp.subjects_json) : camp.subjects_json) : [];
+      for (const s of campSubs) {
+        if (isCurrentCamp && String(s.id) === String(currentSubjectId)) {
+          continue;
+        }
+        if (Array.isArray(s.host_sessions)) {
+          for (const hs of s.host_sessions) {
+            if (hs.date === date && String(hs.lecturer_name) === String(lecturerId)) {
+              const hsTime = `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`;
+              if (isTimeOverlapping(hsTime, timeRange) && (s.id !== currentSubjectId || hs.id !== currentSessionId)) {
+                return { course: camp.name, subject: s.name, type: 'Lớp trường', time: hsTime };
+              }
+            }
+          }
+        }
+        if (Array.isArray(s.seminars)) {
+          for (const sem of s.seminars) {
+            if (sem.date === date && String(sem.lecturer_id) === String(lecturerId)) {
+              const semTime = sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : '08:30 - 11:30');
+              if (isTimeOverlapping(semTime, timeRange) && (s.id !== currentSubjectId || sem.id !== currentSessionId)) {
+                return { course: camp.name, subject: s.name, type: 'Chuyên đề', time: semTime };
+              }
+            }
+          }
+        }
+      }
+    }
+    return null;
   };
 
   const renderQuickCampaignsDrawer = () => {
@@ -536,7 +600,7 @@ export default function ProjectsPage() {
 
   const [projectRoster, setProjectRoster] = useState<any[]>([]);
   const [projectRosterLoading, setProjectRosterLoading] = useState(false);
-  const [projectDrawerTab, setProjectDrawerTab] = useState<'details' | 'changelog'>('details');
+  const [projectDrawerTab, setProjectDrawerTab] = useState<'details' | 'hierarchy' | 'changelog'>('details');
   const [campaignDrawerTab, setCampaignDrawerTab] = useState<'details' | 'subjects' | 'thesis' | 'reminders' | 'changelog'>('details');
   const [subjects, setSubjects] = useState<any[]>([]);
   const [remindersConfig, setRemindersConfig] = useState<{
@@ -550,6 +614,8 @@ export default function ProjectsPage() {
     lecturer_reminder_hours: number;
     thesis_reminder_enabled: boolean;
     thesis_reminder_hours: number;
+    upcoming_session_reminder_enabled?: boolean;
+    upcoming_session_reminder_minutes?: number;
   }>({
     school_reminder_enabled: true,
     school_reminder_hours: 12,
@@ -561,6 +627,8 @@ export default function ProjectsPage() {
     lecturer_reminder_hours: 12,
     thesis_reminder_enabled: true,
     thesis_reminder_hours: 12,
+    upcoming_session_reminder_enabled: true,
+    upcoming_session_reminder_minutes: 5,
   });
   const [copiedSubject, setCopiedSubject] = useState<any>(() => {
     try {
@@ -1126,7 +1194,7 @@ export default function ProjectsPage() {
             ? JSON.parse(editingCampaign.reminders_json)
             : editingCampaign.reminders_json)
           : null;
-        setRemindersConfig(rems || {
+        setRemindersConfig({
           school_reminder_enabled: true,
           school_reminder_hours: 12,
           ideas_reminder_enabled: true,
@@ -1137,6 +1205,9 @@ export default function ProjectsPage() {
           lecturer_reminder_hours: 12,
           thesis_reminder_enabled: true,
           thesis_reminder_hours: 12,
+          upcoming_session_reminder_enabled: true,
+          upcoming_session_reminder_minutes: 5,
+          ...(rems || {})
         });
       } catch (e) {
         console.error('Error parsing reminders_json', e);
@@ -1151,6 +1222,8 @@ export default function ProjectsPage() {
           lecturer_reminder_hours: 12,
           thesis_reminder_enabled: true,
           thesis_reminder_hours: 12,
+          upcoming_session_reminder_enabled: true,
+          upcoming_session_reminder_minutes: 5
         });
       }
     } else {
@@ -1237,7 +1310,8 @@ export default function ProjectsPage() {
     content: React.ReactNode,
     width: string = '850px',
     headerActions?: React.ReactNode,
-    isCampaign?: boolean
+    isCampaign?: boolean,
+    showBackButton?: boolean
   ) => {
     return createPortal(
       <AnimatePresence>
@@ -1293,7 +1367,7 @@ export default function ProjectsPage() {
                 zIndex: 10
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                  {isCampaign && isMobile && (
+                  {(showBackButton || (isCampaign && isMobile)) && (
                     <button
                       onClick={onClose}
                       style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px 4px 0' }}
@@ -1301,11 +1375,11 @@ export default function ProjectsPage() {
                       <ChevronLeft size={24} />
                     </button>
                   )}
-                  <h3 style={{ margin: 0, fontSize: (isCampaign && isMobile) ? '0.925rem' : '1.125rem', fontWeight: 800, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h3>
+                  <h3 style={{ margin: 0, fontSize: (showBackButton || (isCampaign && isMobile)) ? '0.925rem' : '1.125rem', fontWeight: 800, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h3>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   {headerActions}
-                  {(!isCampaign || !isMobile) && (
+                  {(!isCampaign || !isMobile) && !showBackButton && (
                     <button
                       onClick={onClose}
                       style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%' }}
@@ -1360,6 +1434,78 @@ export default function ProjectsPage() {
     }
     setCampaignRosters(rosters);
     setCampaignRostersLoading(false);
+  };
+
+  const handleConfirmCopySubject = async () => {
+    if (!subjectToCopy || !copyTargetCampaignId) {
+      addToast('Vui lòng chọn khóa học đích!', 'error');
+      return;
+    }
+
+    setIsCopyingSubject(true);
+    try {
+      const resCamp = await fetchAPI(`campaigns/${copyTargetCampaignId}`);
+      if (!resCamp.success) {
+        addToast(resCamp.message || 'Lỗi tải thông tin khóa học đích', 'error');
+        return;
+      }
+
+      const targetCamp = resCamp.data;
+      const targetSubjects = targetCamp.subjects_json
+        ? (typeof targetCamp.subjects_json === 'string'
+          ? JSON.parse(targetCamp.subjects_json)
+          : targetCamp.subjects_json)
+        : [];
+
+      // Clone subject with unique IDs for safety
+      const clonedSub = {
+        ...subjectToCopy,
+        id: 'sub_' + Date.now(),
+        host_sessions: subjectToCopy.host_sessions ? subjectToCopy.host_sessions.map((hs: any, idx: number) => ({ ...hs, id: `hs_${Date.now()}_${idx}` })) : [],
+        seminars: subjectToCopy.seminars ? subjectToCopy.seminars.map((sem: any, idx: number) => ({ ...sem, id: `sem_${Date.now()}_${idx}` })) : [],
+        assignments: subjectToCopy.assignments ? subjectToCopy.assignments.map((asn: any, idx: number) => ({ ...asn, id: `asn_${Date.now()}_${idx}` })) : []
+      };
+
+      let updatedSubjects = [...targetSubjects];
+      const hasConflict = targetSubjects.some((s: any) => String(s.code).trim().toLowerCase() === String(subjectToCopy.code).trim().toLowerCase());
+
+      if (hasConflict) {
+        if (copyConflictMode === 'replace') {
+          updatedSubjects = updatedSubjects.filter((s: any) => String(s.code).trim().toLowerCase() !== String(subjectToCopy.code).trim().toLowerCase());
+          updatedSubjects.push(clonedSub);
+        } else {
+          updatedSubjects.push(clonedSub);
+        }
+      } else {
+        updatedSubjects.push(clonedSub);
+      }
+
+      const resUpdate = await fetchAPI(`campaigns/${copyTargetCampaignId}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          subjects_json: JSON.stringify(updatedSubjects)
+        })
+      });
+
+      if (resUpdate.success) {
+        addToast(`Sao chép môn học sang khóa "${targetCamp.name}" thành công!`, 'success');
+        setIsCopySubjectModalOpen(false);
+        setSubjectToCopy(null);
+        setCopyTargetCampaignId('');
+        
+        loadCampaigns();
+
+        if (editingCampaign && String(editingCampaign.id) === String(copyTargetCampaignId)) {
+          setSubjects(updatedSubjects);
+        }
+      } else {
+        addToast(resUpdate.message || 'Lỗi cập nhật khóa học đích', 'error');
+      }
+    } catch (e: any) {
+      addToast(e.message || 'Lỗi kết nối hệ thống', 'error');
+    } finally {
+      setIsCopyingSubject(false);
+    }
   };
 
   const handleOpenCampaignView = (camp: any) => {
@@ -1681,10 +1827,192 @@ export default function ProjectsPage() {
     );
   };
 
+  const renderProjectHierarchy = () => {
+    const linkedCamps = campaigns.filter(c => 
+      String(c.project_id) === String(editingProject?.id) ||
+      (editingProject?.campaign_ids && editingProject.campaign_ids.split(',').map((s: string) => s.trim()).includes(c.name))
+    );
+    const canEdit = user && ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'academic'].includes(user.role);
+
+    return (
+      <div style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border-light)',
+        borderRadius: '16px',
+        padding: '1.5rem',
+        boxShadow: 'var(--shadow-sm)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem',
+        maxHeight: '75vh',
+        overflowY: 'auto'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Layers size={18} style={{ color: 'var(--color-primary)' }} />
+            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sơ đồ phân cấp Chương trình &amp; Khóa học</h4>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              className="btn primary sm"
+              onClick={() => {
+                setEditingCampaign({
+                  project_id: editingProject?.id,
+                  status: 'active',
+                  start_date: new Date().toISOString().split('T')[0]
+                });
+                setCampaignModalMode('create');
+                setIsCampaignModalOpen(true);
+              }}
+              style={{ borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 700 }}
+            >
+              <Plus size={14} /> Thêm khóa học mới
+            </button>
+          )}
+        </div>
+
+        {linkedCamps.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+            Chưa có khóa học nào liên kết với chương trình này.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingLeft: '8px' }}>
+            {linkedCamps.map((camp) => {
+              const subs = camp.subjects_json ? (typeof camp.subjects_json === 'string' ? JSON.parse(camp.subjects_json) : camp.subjects_json) : [];
+              return (
+                <div key={camp.id} style={{ borderLeft: '2px solid rgba(163, 20, 34, 0.15)', paddingLeft: '16px', position: 'relative' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '-6px',
+                    top: '6px',
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: 'var(--color-primary)',
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 0 0 1px var(--color-primary)'
+                  }} />
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)' }}>Khóa học: {camp.name}</span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px', background: camp.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(100, 116, 139, 0.08)', color: camp.status === 'active' ? '#10b981' : '#64748b', fontWeight: 700 }}>
+                        {camp.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn outline sm"
+                      onClick={() => handleOpenCampaignView(camp)}
+                      style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '6px', height: '28px' }}
+                    >
+                      Xem chi tiết khóa
+                    </button>
+                  </div>
+
+                  {subs.length === 0 ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', paddingLeft: '12px', fontStyle: 'italic' }}>
+                      Chưa cấu hình môn học
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '12px', marginTop: '6px' }}>
+                      {subs.map((s: any) => {
+                        const lecturerId = s.lecturer_id;
+                        const foundComp = companiesList.find(c => String(c.id) === String(lecturerId));
+                        const lecturerName = foundComp ? foundComp.name : (lecturerId ? `GV ID: ${lecturerId}` : 'Chưa phân công');
+                        const avatarUrl = foundComp ? (foundComp.logo || foundComp.avatar_url) : '';
+                        return (
+                          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--color-bg-light)', border: '1px solid var(--color-border-light)', borderRadius: '8px', padding: '8px 12px', flexWrap: 'wrap' }}>
+                            <BookOpen size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: '150px' }}>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                {s.code || 'MÔN'}: {s.name}
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-light)' }}>
+                                Lớp: {s.host_sessions?.length || 0} buổi trường • {s.seminars?.length || 0} chuyên đề
+                              </span>
+                            </div>
+                            <div 
+                              onClick={() => {
+                                if (foundComp) {
+                                  setSelectedLecturerEntity(foundComp);
+                                  setIsLecturerDrawerOpen(true);
+                                }
+                              }}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px', 
+                                background: '#ffffff', 
+                                padding: '3px 10px', 
+                                borderRadius: '20px', 
+                                border: '1px solid var(--color-border-light)',
+                                cursor: foundComp ? 'pointer' : 'default'
+                              }}
+                              className={foundComp ? 'hover-lift' : ''}
+                            >
+                              <Avatar name={lecturerName} src={avatarUrl || undefined} size={14} />
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text)' }}>{lecturerName}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderProjectViewDrawer = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
-        {projectDrawerTab === 'details' ? (
+        {/* Unified Tab Selectors */}
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid var(--color-border-light)',
+          background: 'transparent',
+          padding: '0 8px',
+          gap: '1.5rem',
+          marginBottom: '0.25rem'
+        }}>
+          {[
+            { id: 'details', label: 'Thông tin chung', icon: <Info size={14} /> },
+            { id: 'hierarchy', label: 'Sơ đồ phân cấp', icon: <Layers size={14} /> },
+            { id: 'changelog', label: 'Lịch sử hoạt động', icon: <History size={14} /> }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setProjectDrawerTab(tab.id as any)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '0 4px',
+                height: '40px',
+                border: 'none',
+                background: 'transparent',
+                fontSize: '0.85rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                color: projectDrawerTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                borderBottom: projectDrawerTab === tab.id ? '2.5px solid var(--color-primary)' : '2.5px solid transparent'
+              }}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {projectDrawerTab === 'details' && (
           <>
             {/* KPI Summary Cards */}
             {projectStats && (
@@ -2375,7 +2703,11 @@ export default function ProjectsPage() {
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {projectDrawerTab === 'hierarchy' && renderProjectHierarchy()}
+
+        {projectDrawerTab === 'changelog' && (
           /* Changelog Tab View */
           <div style={{
             background: 'var(--color-surface)',
@@ -2739,105 +3071,162 @@ export default function ProjectsPage() {
             )}
           </div>
         ) : (
-          <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            {subjects.map((sub) => {
-              const sessionCount = sub.host_sessions?.length || 0;
-              const seminarCount = sub.seminars?.length || 0;
-              const assignmentCount = sub.assignments?.length || 0;
+          <div style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border-light)',
+            borderRadius: '16px',
+            boxShadow: 'var(--shadow-sm)',
+            overflow: 'hidden',
+            width: '100%'
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border-light)' }}>
+                  <th style={{ padding: 0, width: '35%' }}>
+                    <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Môn học</div>
+                  </th>
+                  <th style={{ padding: 0, width: '20%' }}>
+                    <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Giảng viên chính</div>
+                  </th>
+                  <th style={{ padding: 0, width: '28%' }}>
+                    <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thời lượng / Bài tập</div>
+                  </th>
+                  <th style={{ padding: 0, width: '17%', textAlign: 'right' }}>
+                    <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Hành động</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {subjects.map((sub) => {
+                  const sessionCount = sub.host_sessions?.length || 0;
+                  const seminarCount = sub.seminars?.length || 0;
+                  const assignmentCount = sub.assignments?.length || 0;
 
-              return (
-                <div key={sub.id} style={{
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border-light)',
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  boxShadow: 'var(--shadow-sm)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  position: 'relative'
-                }}>
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSubject(sub.id)}
-                      style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '4px' }}
-                      title="Xóa môn học"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  const lecturerId = sub.lecturer_id;
+                  const foundComp = companiesList.find(c => String(c.id) === String(lecturerId));
+                  const foundCons = consultants.find(c => String(c.id) === String(lecturerId));
+                  const lecturerName = foundComp ? foundComp.name : (foundCons ? foundCons.name : (lecturerId || 'Chưa phân công'));
+                  const avatarUrl = foundComp ? (foundComp.logo || foundComp.avatar_url) : (foundCons ? foundCons.avatar_url : '');
 
-                  <div>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '2px 8px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {sub.code || 'MÃ MÔN'}
-                    </span>
-                    <h5 style={{ margin: '8px 0 4px 0', fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                      {sub.name || 'Tên môn học chưa đặt'}
-                    </h5>
-                    {(() => {
-                      const lecturerId = sub.lecturer_id;
-                      if (!lecturerId) {
-                        return (
-                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Users size={12} /> GV: <strong>Chưa phân công</strong>
-                          </p>
-                        );
-                      }
-
-                      const foundComp = companiesList.find(c => String(c.id) === String(lecturerId));
-                      const foundCons = consultants.find(c => String(c.id) === String(lecturerId));
-                      const name = foundComp ? foundComp.name : (foundCons ? foundCons.name : lecturerId);
-                      const avatarUrl = foundComp ? (foundComp.logo || foundComp.avatar_url) : (foundCons ? foundCons.avatar_url : '');
-
-                      return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>GV:</span>
-                          <Avatar name={name} src={avatarUrl || undefined} size={20} />
-                          <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{name}</strong>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', background: 'var(--color-bg-light)', padding: '4px 10px', borderRadius: '8px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                      <Calendar size={12} /> {sessionCount} buổi
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', background: 'var(--color-bg-light)', padding: '4px 10px', borderRadius: '8px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                      <Layers size={12} /> {seminarCount} chuyên đề
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', background: 'var(--color-bg-light)', padding: '4px 10px', borderRadius: '8px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                      <CheckSquare size={12} /> {assignmentCount} bài tập
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '0.5rem' }}>
-                    <button
-                      type="button"
-                      className="btn primary sm"
-                      style={{ flex: 1, borderRadius: '8px', height: '36px', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  return (
+                    <tr 
+                      key={sub.id} 
+                      style={{ 
+                        borderBottom: '1px solid var(--color-border-light)',
+                        transition: 'background 0.2s ease',
+                        cursor: 'pointer'
+                      }}
+                      className="hover-bg-light"
                       onClick={() => setConfiguringSubjectId(sub.id)}
                     >
-                      <Settings size={14} /> Cấu hình lịch học
-                    </button>
-                    <button
-                      type="button"
-                      className="btn outline sm"
-                      style={{ borderRadius: '8px', height: '36px', width: '36px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      onClick={() => {
-                        sessionStorage.setItem('ideas_copied_subject', JSON.stringify(sub));
-                        setCopiedSubject(sub);
-                        addToast('Đã sao chép cấu hình môn học! Mở khóa học khác và nhấn "Dán môn học" để copy.', 'success');
-                      }}
-                      title="Sao chép cấu hình môn học để dán sang khóa khác"
-                    >
-                      <Copy size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      {/* Cột 1: Mã môn học & Tên môn học */}
+                      <td style={{ padding: 0, verticalAlign: 'middle' }}>
+                        <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '2px 8px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
+                            {sub.code || 'MÃ MÔN'}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 750, color: 'var(--color-text)' }}>
+                            {sub.name || 'Tên môn học chưa đặt'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Cột 2: Giảng viên phụ trách */}
+                      <td style={{ padding: 0, verticalAlign: 'middle' }}>
+                        <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center' }}>
+                          {!lecturerId ? (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Users size={12} /> Chưa phân công
+                            </span>
+                          ) : (
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (foundComp) {
+                                  setSelectedLecturerEntity(foundComp);
+                                  setIsLecturerDrawerOpen(true);
+                                }
+                              }}
+                              style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '6px', 
+                                cursor: foundComp ? 'pointer' : 'default',
+                                padding: '3px 8px',
+                                background: foundComp ? 'var(--color-bg-light)' : 'transparent',
+                                borderRadius: '12px',
+                                border: foundComp ? '1px solid var(--color-border-light)' : 'none',
+                                maxWidth: '180px'
+                              }}
+                              className={foundComp ? 'hover-lift' : ''}
+                            >
+                              <Avatar name={lecturerName} src={avatarUrl || undefined} size={18} />
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)' }}>{lecturerName}</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Cột 3: Thống kê buổi học */}
+                      <td style={{ padding: 0, verticalAlign: 'middle' }}>
+                        <div style={{ padding: '8px 16px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'var(--color-bg-light)', padding: '3px 8px', borderRadius: '6px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                            <Calendar size={11} /> {sessionCount} buổi trường
+                          </span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'var(--color-bg-light)', padding: '3px 8px', borderRadius: '6px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                            <Layers size={11} /> {seminarCount} chuyên đề
+                          </span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'var(--color-bg-light)', padding: '3px 8px', borderRadius: '6px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                            <CheckSquare size={11} /> {assignmentCount} bài tập
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Cột 4: Nút hành động */}
+                      <td style={{ padding: 0, verticalAlign: 'middle', textAlign: 'right' }}>
+                        <div 
+                          style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="btn primary sm"
+                            style={{ borderRadius: '8px', height: '30px', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', padding: '0 10px' }}
+                            onClick={() => setConfiguringSubjectId(sub.id)}
+                          >
+                            <Settings size={12} /> Cài đặt
+                          </button>
+                          <button
+                            type="button"
+                            className="btn outline sm"
+                            style={{ borderRadius: '8px', height: '30px', width: '30px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ffffff', border: '1px solid var(--color-border)' }}
+                            onClick={() => {
+                              setSubjectToCopy(sub);
+                              setCopyTargetCampaignId('');
+                              setCopyConflictMode('replace');
+                              setIsCopySubjectModalOpen(true);
+                            }}
+                            title="Sao chép môn học sang khóa khác..."
+                          >
+                            <Copy size={12} />
+                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSubject(sub.id)}
+                              style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Xóa môn học"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -3290,6 +3679,62 @@ export default function ProjectsPage() {
                   }}>
                     <span style={{
                       position: 'absolute', content: '""', height: '16px', width: '16px', left: remindersConfig.thesis_reminder_enabled ? '20px' : '4px', bottom: '3px',
+                      backgroundColor: 'white', transition: '0.4s', borderRadius: '50%'
+                    }} />
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Upcoming Session Reminder Card */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '1rem',
+              background: 'rgba(100, 116, 139, 0.02)',
+              border: '1px solid var(--color-border-light)',
+              borderRadius: '12px',
+              gap: '1.5rem',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ flex: 1, minWidth: '240px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>Nhắc nhở lịch học sắp bắt đầu</span>
+                  <span style={{ fontSize: '0.72rem', background: '#f5f5f5', color: '#404040', padding: '2px 8px', borderRadius: '100px', fontWeight: 600 }}>Sắp diễn ra</span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Gửi thông báo nhắc nhở trước khi buổi học bắt đầu vài phút (chỉ nhắc buổi đầu tiên trong ngày nếu có nhiều buổi).</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Nhắc trước:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    className="form-input"
+                    disabled={!canEdit || !(remindersConfig.upcoming_session_reminder_enabled ?? true)}
+                    value={remindersConfig.upcoming_session_reminder_minutes ?? 5}
+                    onChange={e => setRemindersConfig({ ...remindersConfig, upcoming_session_reminder_minutes: Math.max(1, parseInt(e.target.value) || 0) })}
+                    style={{ width: '70px', height: '36px', textAlign: 'center', padding: '0 4px', fontSize: '0.85rem' }}
+                  />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>phút</span>
+                </div>
+                <label className="switch" style={{ display: 'inline-block', width: '40px', height: '22px', position: 'relative' }}>
+                  <input
+                    type="checkbox"
+                    disabled={!canEdit}
+                    checked={remindersConfig.upcoming_session_reminder_enabled ?? true}
+                    onChange={e => setRemindersConfig({ ...remindersConfig, upcoming_session_reminder_enabled: e.target.checked })}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span className="slider round" style={{
+                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: (remindersConfig.upcoming_session_reminder_enabled ?? true) ? 'var(--color-primary)' : '#ccc',
+                    transition: '0.4s', borderRadius: '34px'
+                  }}>
+                    <span style={{
+                      position: 'absolute', content: '""', height: '16px', width: '16px', left: (remindersConfig.upcoming_session_reminder_enabled ?? true) ? '20px' : '4px', bottom: '3px',
                       backgroundColor: 'white', transition: '0.4s', borderRadius: '50%'
                     }} />
                   </span>
@@ -4000,7 +4445,7 @@ export default function ProjectsPage() {
         {campaignDrawerTab === 'changelog' && (
           /* Changelog Tab View */
           <div style={{
-            background: 'var(--color-surface)',
+            background: '#ffffff',
             border: '1px solid var(--color-border-light)',
             borderRadius: '16px',
             padding: '1.5rem',
@@ -4026,20 +4471,26 @@ export default function ProjectsPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingLeft: '8px' }}>
                 {campaignStats.logs.map((log: any, idx: number) => (
-                  <div key={log.id} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+                  <div key={log.id} style={{ display: 'flex', gap: '14px', position: 'relative', alignItems: 'flex-start' }}>
                     {idx !== campaignStats.logs.length - 1 && (
-                      <div style={{ position: 'absolute', top: '16px', left: '7px', bottom: '-24px', width: '2px', background: 'var(--color-border-light)' }} />
+                      <div style={{ position: 'absolute', top: '28px', left: '14px', bottom: '-20px', width: '2px', background: 'var(--color-border-light)' }} />
                     )}
-                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--color-primary)', border: '4px solid #ffffff', boxShadow: '0 0 0 1px var(--color-border-light)', flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                      <Avatar 
+                        name={log.user_name || 'Hệ thống'} 
+                        src={log.avatar_url ? resolveAttachmentUrl(log.avatar_url) : undefined} 
+                        size={28} 
+                      />
+                    </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.85rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 800, color: 'var(--color-text)' }}>{log.user_name || 'Hệ thống'}</span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600 }}>
-                          {new Date(log.created_at).toLocaleString('vi-VN')}
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                          {new Date(log.created_at.replace(' ', 'T')).toLocaleString('vi-VN')}
                         </span>
                       </div>
-                      <p style={{ margin: 0, color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
+                      <p style={{ margin: 0, color: 'var(--color-text-muted)', lineHeight: 1.4, fontWeight: 550 }}>
                         {log.new_data || log.action}
                       </p>
                     </div>
@@ -5130,28 +5581,22 @@ export default function ProjectsPage() {
                         )}
                       </div>
 
-
-
                       {/* Roster, Docs, Campaigns Info Badges */}
                       <div
                         style={{
                           display: 'flex',
-                          gap: screenWidth <= 640 ? '4px' : '6px',
+                          flexDirection: 'column',
+                          gap: screenWidth <= 640 ? '8px' : '10px',
                           fontSize: screenWidth <= 640 ? '0.68rem' : '0.72rem',
-                          color: 'var(--color-text-muted)',
-                          flexWrap: screenWidth <= 640 ? 'nowrap' : 'wrap',
-                          alignItems: 'center',
-                          overflowX: screenWidth <= 640 ? 'auto' : 'visible',
-                          width: '100%'
+                          color: 'var(--color-text-muted)'
                         }}
-                        className="no-scrollbar"
                       >
                         <span
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenDocs(proj.id);
                           }}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
+                          style={{ display: 'inline-flex', width: 'fit-content', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
                           onMouseEnter={e => {
                             e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
                             e.currentTarget.style.transform = 'scale(1.03)';
@@ -5171,7 +5616,7 @@ export default function ProjectsPage() {
                                 e.stopPropagation();
                                 handleOpenQuickCampaigns(proj, linkedCamps);
                               }}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
+                              style={{ display: 'inline-flex', width: 'fit-content', alignItems: 'center', gap: '4px', background: 'rgba(100, 116, 139, 0.06)', border: '1px solid rgba(100, 116, 139, 0.12)', padding: screenWidth <= 640 ? '4px 8px' : '6px 10px', borderRadius: '100px', fontWeight: 700, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0, whiteSpace: 'nowrap' }}
                               onMouseEnter={e => {
                                 e.currentTarget.style.background = 'rgba(100, 116, 139, 0.12)';
                                 e.currentTarget.style.transform = 'scale(1.03)';
@@ -5376,6 +5821,22 @@ export default function ProjectsPage() {
                     const docCount = parseIds(camp.document_ids).length;
                     const staffCount = parseIds(camp.user_ids).length;
 
+                    const subs = camp.subjects_json
+                      ? (typeof camp.subjects_json === 'string'
+                        ? JSON.parse(camp.subjects_json)
+                        : camp.subjects_json)
+                      : [];
+                    const totalSubjects = subs.length;
+                    const totalSeminars = subs.reduce((acc: number, s: any) => acc + (s.seminars?.length || 0), 0);
+                    const totalAssignments = subs.reduce((acc: number, s: any) => acc + (s.assignments?.length || 0), 0);
+
+                    const thesisMs = camp.thesis_milestones_json
+                      ? (typeof camp.thesis_milestones_json === 'string'
+                        ? JSON.parse(camp.thesis_milestones_json)
+                        : camp.thesis_milestones_json)
+                      : [];
+                    const totalThesis = thesisMs.length;
+
                     return (
                       <div
                         key={camp.id}
@@ -5452,11 +5913,40 @@ export default function ProjectsPage() {
                             </div>
 
                             {(camp.start_date || camp.end_date) && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Calendar size={13} /></span>
-                                <span>Thời gian: <strong>{camp.start_date || '...'}</strong> đến <strong>{camp.end_date || '...'}</strong></span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ color: 'var(--color-text-light)', display: 'inline-flex' }}><Calendar size={13} /></span>
+                                  <span>Thời gian: <strong>{camp.start_date || '...'}</strong> đến <strong>{camp.end_date || '...'}</strong></span>
+                                </div>
+                                {(() => {
+                                  const getTimelineProgress = (start: string, end: string) => {
+                                    if (!start || !end) return 0;
+                                    const startDate = new Date(start);
+                                    const endDate = new Date(end);
+                                    const today = new Date();
+                                    if (today < startDate) return 0;
+                                    if (today > endDate) return 100;
+                                    const total = endDate.getTime() - startDate.getTime();
+                                    const current = today.getTime() - startDate.getTime();
+                                    return total > 0 ? Math.round((current / total) * 100) : 0;
+                                  };
+                                  const progressVal = getTimelineProgress(camp.start_date, camp.end_date);
+                                  if (progressVal > 0 && progressVal < 100) {
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
+                                        <div style={{ width: '100%', height: '4px', background: 'var(--color-bg-light)', borderRadius: '2px', overflow: 'hidden' }}>
+                                          <div style={{ width: `${progressVal}%`, height: '100%', background: '#10b981', borderRadius: '2px' }} />
+                                        </div>
+                                        <span style={{ fontSize: '0.62rem', color: 'var(--color-text-light)', fontStyle: 'italic', textAlign: 'right' }}>Tiến độ: {progressVal}% thời gian</span>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                             )}
+
+
 
                           {/* Last updated timestamp */}
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -5468,11 +5958,33 @@ export default function ProjectsPage() {
 
                         {/* Footer Stats Bar */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
                               <Folder size={12} style={{ color: 'var(--color-text-light)' }} />
                               {docCount} Tài liệu
                             </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                              <BookOpen size={12} style={{ color: 'var(--color-text-light)' }} />
+                              {totalSubjects} Môn học
+                            </span>
+                            {totalSeminars > 0 && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                                <Layers size={12} style={{ color: 'var(--color-text-light)' }} />
+                                {totalSeminars} Chuyên đề
+                              </span>
+                            )}
+                            {totalAssignments > 0 && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                                <CheckSquare size={12} style={{ color: 'var(--color-text-light)' }} />
+                                {totalAssignments} Bài tập
+                              </span>
+                            )}
+                            {totalThesis > 0 && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.06)', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.15)', fontWeight: 600, color: '#10b981' }}>
+                                <Award size={12} />
+                                {totalThesis} Khóa luận
+                              </span>
+                            )}
                           </div>
                           {(isManagerOrLeader || canEditCampaign(camp)) && (
                             <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
@@ -6343,26 +6855,15 @@ export default function ProjectsPage() {
           </>,
           '960px',
           projectModalMode === 'view' ? (
-            <button
-              onClick={() => setProjectDrawerTab(projectDrawerTab === 'details' ? 'changelog' : 'details')}
-              style={{
-                border: 'none',
-                background: projectDrawerTab === 'changelog' ? 'rgba(163, 20, 34, 0.08)' : 'transparent',
-                cursor: 'pointer',
-                color: projectDrawerTab === 'changelog' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '6px',
-                borderRadius: '8px',
-                transition: 'all 0.2s ease',
-                outline: 'none'
-              }}
-              title={projectDrawerTab === 'details' ? 'Xem lịch sử thay đổi' : 'Xem thông tin chi tiết'}
-              className="hover-lift"
-            >
-              <History size={20} />
-            </button>
+            (user && ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'academic'].includes(user.role)) && (
+              <button
+                onClick={() => setProjectModalMode('edit')}
+                className="btn primary sm"
+                style={{ borderRadius: '100px', fontWeight: 700, background: 'var(--color-primary)', border: 'none' }}
+              >
+                Chỉnh sửa
+              </button>
+            )
           ) : (
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <button
@@ -8451,13 +8952,51 @@ export default function ProjectsPage() {
             handleUpdateSubjectInModal({ assignments: [...assignments, newAsm] });
           };
 
-          return (
-            <CustomModal
-              isOpen={!!configuringSubjectId}
-              onClose={() => setConfiguringSubjectId(null)}
-              title={`Cấu hình Lịch học: Môn ${sub.code || ''} - ${sub.name || 'Chưa đặt tên'}`}
-              width="1200px"
+          const handleSaveConfig = async () => {
+            try {
+              setIsSaving(true);
+              const res = await fetchAPI(`campaigns/${editingCampaign.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                  ...editingCampaign,
+                  subjects_json: JSON.stringify(subjects)
+                })
+              });
+              if (res.success) {
+                addToast('Lưu cấu hình môn học thành công!', 'success');
+                setEditingCampaign({
+                  ...editingCampaign,
+                  subjects_json: JSON.stringify(subjects)
+                });
+                loadCampaigns();
+                setConfiguringSubjectId(null);
+              } else {
+                addToast(res.message || 'Lỗi lưu thông tin', 'error');
+              }
+            } catch (e: any) {
+              addToast(e.message || 'Lỗi kết nối', 'error');
+            } finally {
+              setIsSaving(false);
+            }
+          };
+
+          const saveButton = (
+            <button
+              type="button"
+              className="btn primary sm"
+              style={{ borderRadius: '8px', fontWeight: 700, background: 'var(--color-primary)', border: 'none', height: '34px', display: 'flex', alignItems: 'center', gap: '4px', padding: '0 16px' }}
+              disabled={isSaving}
+              onClick={handleSaveConfig}
             >
+              {isSaving ? 'Đang lưu...' : 'Lưu cấu hình'}
+            </button>
+          );
+
+          return renderDrawer(
+            !!configuringSubjectId,
+            () => setConfiguringSubjectId(null),
+            `Cấu hình Lịch học: Môn ${sub.code || ''} - ${sub.name || 'Chưa đặt tên'}`,
+            (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0.25rem 0' }}>
 
                 {/* Modal Basic Info Inputs */}
@@ -8507,7 +9046,13 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* Modal Inner Tab Buttons */}
-                <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border-light)', gap: '6px', paddingBottom: '6px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  borderBottom: '1px solid var(--color-border-light)', 
+                  gap: '1.5rem', 
+                  paddingBottom: 0,
+                  marginBottom: '1.25rem'
+                }}>
                   {[
                     { id: 'school', label: '1. Lịch học với trường', count: sub.host_sessions?.length || 0 },
                     { id: 'seminar', label: '2. Lớp chuyên đề (IDEAS)', count: sub.seminars?.length || 0 },
@@ -8519,18 +9064,33 @@ export default function ProjectsPage() {
                       type="button"
                       onClick={() => setActiveConfigTab(t.id as any)}
                       style={{
-                        padding: '10px 20px',
-                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '0 4px 10px 4px',
                         border: 'none',
-                        fontSize: '0.88rem',
-                        fontWeight: 700,
+                        background: 'transparent',
+                        fontSize: '0.85rem',
+                        fontWeight: 750,
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        background: activeConfigTab === t.id ? 'rgba(163, 20, 34, 0.08)' : 'transparent',
+                        transition: 'all 0.2s ease',
                         color: activeConfigTab === t.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        borderBottom: activeConfigTab === t.id ? '2.5px solid var(--color-primary)' : '2.5px solid transparent'
                       }}
                     >
-                      {t.label} <span style={{ fontSize: '0.78rem', padding: '3px 8px', background: activeConfigTab === t.id ? 'var(--color-primary)' : 'var(--color-bg-light)', color: activeConfigTab === t.id ? '#ffffff' : 'var(--color-text-light)', borderRadius: '100px', marginLeft: '6px' }}>{t.count}</span>
+                      <span>{t.label}</span>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        padding: '2px 6px', 
+                        background: activeConfigTab === t.id ? 'var(--color-primary)' : 'var(--color-bg-light)', 
+                        color: activeConfigTab === t.id ? '#ffffff' : 'var(--color-text-muted)', 
+                        borderRadius: '100px', 
+                        marginLeft: '4px',
+                        fontWeight: 700 
+                      }}>
+                        {t.count}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -8556,91 +9116,103 @@ export default function ProjectsPage() {
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {sub.host_sessions.map((hs: any, hsIdx: number) => (
-                            <div key={hs.id || hsIdx} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#ffffff', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                              <input
-                                type="text"
-                                placeholder="Session..."
-                                disabled={!canEdit}
-                                value={hs.name || ''}
-                                onChange={e => {
-                                  const newSessions = [...sub.host_sessions];
-                                  newSessions[hsIdx].name = e.target.value;
-                                  handleUpdateSubjectInModal({ host_sessions: newSessions });
-                                }}
-                                style={{ width: '90px', padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px' }}
-                              />
+                          {sub.host_sessions.map((hs: any, hsIdx: number) => {
+                            const hsTime = `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`;
+                            const conflict = checkLecturerConflict(hs.lecturer_name || sub.lecturer_id, hs.date, hsTime, sub.id, hs.id || `hs_${hsIdx}`);
+                            return (
+                              <div key={hs.id || hsIdx} style={{ display: 'flex', flexDirection: 'column', background: '#ffffff', padding: '12px', borderRadius: '10px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', width: '100%' }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Session..."
+                                    disabled={!canEdit}
+                                    value={hs.name || ''}
+                                    onChange={e => {
+                                      const newSessions = [...sub.host_sessions];
+                                      newSessions[hsIdx].name = e.target.value;
+                                      handleUpdateSubjectInModal({ host_sessions: newSessions });
+                                    }}
+                                    style={{ width: '90px', padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px' }}
+                                  />
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 140px' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>Ngày:</span>
-                                <input
-                                  type="date"
-                                  disabled={!canEdit}
-                                  value={hs.date || ''}
-                                  onChange={e => {
-                                    const newSessions = [...sub.host_sessions];
-                                    newSessions[hsIdx].date = e.target.value;
-                                    handleUpdateSubjectInModal({ host_sessions: newSessions });
-                                  }}
-                                  style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px' }}
-                                />
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 140px' }}>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>Ngày:</span>
+                                    <input
+                                      type="date"
+                                      disabled={!canEdit}
+                                      value={hs.date || ''}
+                                      onChange={e => {
+                                        const newSessions = [...sub.host_sessions];
+                                        newSessions[hsIdx].date = e.target.value;
+                                        handleUpdateSubjectInModal({ host_sessions: newSessions });
+                                      }}
+                                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px' }}
+                                    />
+                                  </div>
+
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <input
+                                      type="text"
+                                      disabled={!canEdit}
+                                      value={hs.time_start || '20:00'}
+                                      onChange={e => {
+                                        const newSessions = [...sub.host_sessions];
+                                        newSessions[hsIdx].time_start = e.target.value;
+                                        handleUpdateSubjectInModal({ host_sessions: newSessions });
+                                      }}
+                                      style={{ width: '55px', padding: '6px 4px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px', textAlign: 'center' }}
+                                    />
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>-</span>
+                                    <input
+                                      type="text"
+                                      disabled={!canEdit}
+                                      value={hs.time_end || '22:00'}
+                                      onChange={e => {
+                                        const newSessions = [...sub.host_sessions];
+                                        newSessions[hsIdx].time_end = e.target.value;
+                                        handleUpdateSubjectInModal({ host_sessions: newSessions });
+                                      }}
+                                      style={{ width: '55px', padding: '6px 4px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px', textAlign: 'center' }}
+                                    />
+                                  </div>
+
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1.2 1 180px' }}>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', whiteSpace: 'nowrap' }}>Giảng viên Zoom:</span>
+                                    <input
+                                      type="text"
+                                      placeholder="Nhập tên giảng viên..."
+                                      disabled={!canEdit}
+                                      value={hs.lecturer_name || ''}
+                                      onChange={e => {
+                                        const newSessions = [...sub.host_sessions];
+                                        newSessions[hsIdx].lecturer_name = e.target.value;
+                                        handleUpdateSubjectInModal({ host_sessions: newSessions });
+                                      }}
+                                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px' }}
+                                    />
+                                  </div>
+
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleUpdateSubjectInModal({ host_sessions: sub.host_sessions.filter((_: any, idx: number) => idx !== hsIdx) });
+                                      }}
+                                      style={{ border: 'none', background: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '6px' }}
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  )}
+                                </div>
+                                {conflict && (
+                                  <div style={{ color: 'var(--color-danger)', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(239, 68, 68, 0.05)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
+                                    <AlertCircle size={12} style={{ flexShrink: 0 }} />
+                                    <span>Cảnh báo trùng lịch: Giảng viên này đã có lịch dạy lớp {conflict.type} ở khóa {conflict.course} ({conflict.subject}) vào lúc {conflict.time} cùng ngày!</span>
+                                  </div>
+                                )}
                               </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                  type="text"
-                                  disabled={!canEdit}
-                                  value={hs.time_start || '20:00'}
-                                  onChange={e => {
-                                    const newSessions = [...sub.host_sessions];
-                                    newSessions[hsIdx].time_start = e.target.value;
-                                    handleUpdateSubjectInModal({ host_sessions: newSessions });
-                                  }}
-                                  style={{ width: '55px', padding: '6px 4px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px', textAlign: 'center' }}
-                                />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>-</span>
-                                <input
-                                  type="text"
-                                  disabled={!canEdit}
-                                  value={hs.time_end || '22:00'}
-                                  onChange={e => {
-                                    const newSessions = [...sub.host_sessions];
-                                    newSessions[hsIdx].time_end = e.target.value;
-                                    handleUpdateSubjectInModal({ host_sessions: newSessions });
-                                  }}
-                                  style={{ width: '55px', padding: '6px 4px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px', textAlign: 'center' }}
-                                />
-                              </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1.2 1 180px' }}>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', whiteSpace: 'nowrap' }}>Giảng viên Zoom:</span>
-                                <input
-                                  type="text"
-                                  placeholder="Nhập tên giảng viên..."
-                                  disabled={!canEdit}
-                                  value={hs.lecturer_name || ''}
-                                  onChange={e => {
-                                    const newSessions = [...sub.host_sessions];
-                                    newSessions[hsIdx].lecturer_name = e.target.value;
-                                    handleUpdateSubjectInModal({ host_sessions: newSessions });
-                                  }}
-                                  style={{ flex: 1, padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--color-border-light)', height: '34px' }}
-                                />
-                              </div>
-
-                              {canEdit && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleUpdateSubjectInModal({ host_sessions: sub.host_sessions.filter((_: any, idx: number) => idx !== hsIdx) });
-                                  }}
-                                  style={{ border: 'none', background: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '6px' }}
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -8831,6 +9403,19 @@ export default function ProjectsPage() {
                                   </button>
                                 )}
                               </div>
+                              {(() => {
+                                const semTime = sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : '08:30 - 11:30');
+                                const conflict = checkLecturerConflict(sem.lecturer_id || sub.lecturer_id, sem.date, semTime, sub.id, sem.id || `sem_${sIdx}`);
+                                if (conflict) {
+                                  return (
+                                    <div style={{ color: 'var(--color-danger)', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(239, 68, 68, 0.05)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.15)', marginTop: '8px' }}>
+                                      <AlertCircle size={12} style={{ flexShrink: 0 }} />
+                                      <span>Cảnh báo trùng lịch: Giảng viên này đã có lịch dạy lớp {conflict.type} ở khóa {conflict.course} ({conflict.subject}) vào lúc {conflict.time} cùng ngày!</span>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           ))}
                         </div>
@@ -9075,148 +9660,14 @@ export default function ProjectsPage() {
 
                     </div>
                   )}
-
-                </div>
-
-                {/* Modal Actions */}
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  borderTop: '1px solid var(--color-border-light)', 
-                  paddingTop: '16px', 
-                  marginTop: '1.5rem',
-                  position: 'sticky',
-                  bottom: '-24px',
-                  background: 'var(--color-surface)',
-                  paddingBottom: '24px',
-                  zIndex: 10,
-                  marginLeft: '-24px',
-                  marginRight: '-24px',
-                  paddingLeft: '24px',
-                  paddingRight: '24px',
-                  boxShadow: '0 -6px 12px rgba(0,0,0,0.03)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button
-                      type="button"
-                      className="btn secondary"
-                      style={{ borderRadius: '10px', fontWeight: 700, padding: '10px 20px', fontSize: '0.88rem', height: '42px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      onClick={() => handleGenerateAnnouncement(sub)}
-                    >
-                      <Copy size={15} /> Tạo thông báo học vụ
-                    </button>
-                    {canEdit && (
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', margin: 0 }}>
-                        <input
-                          type="checkbox"
-                          checked={syncSubjectToOtherCourses}
-                          onChange={e => setSyncSubjectToOtherCourses(e.target.checked)}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                        />
-                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                          Đồng bộ lịch & giảng viên sang các khóa khác cùng môn
-                        </span>
-                      </label>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button
-                      type="button"
-                      className="btn secondary"
-                      style={{ borderRadius: '10px', fontWeight: 700, padding: '10px 20px', fontSize: '0.88rem', height: '42px' }}
-                      onClick={() => setConfiguringSubjectId(null)}
-                    >
-                      Hủy bỏ
-                    </button>
-                    <button
-                      type="button"
-                      className="btn primary"
-                      style={{ borderRadius: '10px', fontWeight: 700, padding: '10px 20px', fontSize: '0.88rem', height: '42px', background: 'var(--color-primary)', border: 'none' }}
-                      disabled={isSaving}
-                      onClick={async () => {
-                        try {
-                          setIsSaving(true);
-                          const res = await fetchAPI(`campaigns/${editingCampaign.id}`, {
-                            method: 'PUT',
-                            body: JSON.stringify({
-                              ...editingCampaign,
-                              subjects_json: JSON.stringify(subjects)
-                            })
-                          });
-                          if (res.success) {
-                            if (syncSubjectToOtherCourses && (sub.code || sub.name)) {
-                              const otherCamps = campaigns.filter(c => c.id !== editingCampaign.id && c.status === 'active');
-                              const syncPromises = otherCamps.map(async (camp) => {
-                                const campSubjects = camp.subjects_json
-                                  ? (typeof camp.subjects_json === 'string'
-                                    ? JSON.parse(camp.subjects_json)
-                                    : camp.subjects_json)
-                                  : [];
-                                let hasMatch = false;
-                                const nextCampSubjects = campSubjects.map((s: any) => {
-                                  const isMatch = (sub.code && s.code === sub.code) || (sub.name && s.name === sub.name);
-                                  if (isMatch) {
-                                    hasMatch = true;
-                                    return {
-                                      ...s,
-                                      lecturer_id: sub.lecturer_id,
-                                      host_sessions: sub.host_sessions,
-                                      seminars: sub.seminars,
-                                      assignments: sub.assignments,
-                                      zoom_shared: sub.zoom_shared,
-                                      zoom_link: sub.zoom_link,
-                                      zoom_id: sub.zoom_id,
-                                      zoom_pass: sub.zoom_pass,
-                                      school_zoom_link: sub.school_zoom_link,
-                                      school_zoom_id: sub.school_zoom_id,
-                                      school_zoom_pass: sub.school_zoom_pass,
-                                      seminar_zoom_link: sub.seminar_zoom_link,
-                                      seminar_zoom_id: sub.seminar_zoom_id,
-                                      seminar_zoom_pass: sub.seminar_zoom_pass
-                                    };
-                                  }
-                                  return s;
-                                });
-                                if (hasMatch) {
-                                  return fetchAPI(`campaigns/${camp.id}`, {
-                                    method: 'PUT',
-                                    body: JSON.stringify({
-                                      ...camp,
-                                      subjects_json: JSON.stringify(nextCampSubjects)
-                                    })
-                                  });
-                                }
-                                return null;
-                              });
-                              await Promise.all(syncPromises.filter(Boolean));
-                              addToast('Lưu và đồng bộ cấu hình môn học thành công!', 'success');
-                            } else {
-                              addToast('Lưu cấu hình môn học thành công!', 'success');
-                            }
-                            setEditingCampaign({
-                              ...editingCampaign,
-                              subjects_json: JSON.stringify(subjects)
-                            });
-                            loadCampaigns();
-                            setConfiguringSubjectId(null);
-                          } else {
-                            addToast(res.message || 'Lỗi lưu thông tin', 'error');
-                          }
-                        } catch (e: any) {
-                          addToast(e.message || 'Lỗi kết nối', 'error');
-                        } finally {
-                          setIsSaving(false);
-                        }
-                      }}
-                    >
-                      {isSaving ? 'Đang lưu...' : 'Lưu cấu hình môn'}
-                    </button>
-                  </div>
                 </div>
 
               </div>
-            </CustomModal>
+            ),
+            '1000px',
+            saveButton,
+            false,
+            true
           );
         })()}
 
@@ -9273,6 +9724,87 @@ export default function ProjectsPage() {
           </div>
         </CustomModal>
 
+        {/* Copy Subject to Other Courses Modal */}
+        <CustomModal
+          isOpen={isCopySubjectModalOpen}
+          onClose={() => {
+            setIsCopySubjectModalOpen(false);
+            setSubjectToCopy(null);
+          }}
+          title={`Sao chép môn học: ${subjectToCopy?.name || ''}`}
+          width="500px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '0.25rem 0' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: 0 }}>
+              Chọn khóa học (Campaign) đích để import cấu hình môn học này (bao gồm cả các buổi học trường, chuyên đề và bài tập).
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>Khóa học nhận môn học:</label>
+              <CustomSelect
+                options={[
+                  { value: '', label: 'Chọn khóa học...' },
+                  ...campaigns
+                    .filter(c => c.status === 'active' && (editingCampaign ? c.id !== editingCampaign.id : true))
+                    .map(c => ({ value: String(c.id), label: `${c.name} (ID: ${c.id})` }))
+                ]}
+                value={copyTargetCampaignId}
+                onChange={val => setCopyTargetCampaignId(val)}
+                placeholder="Chọn khóa học đích..."
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '1rem' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>Khi trùng mã môn học ở khóa học đích:</label>
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                  <input
+                    type="radio"
+                    name="copy-conflict-mode"
+                    checked={copyConflictMode === 'replace'}
+                    onChange={() => setCopyConflictMode('replace')}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Ghi đè (Replace)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                  <input
+                    type="radio"
+                    name="copy-conflict-mode"
+                    checked={copyConflictMode === 'add'}
+                    onChange={() => setCopyConflictMode('add')}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Thêm mới
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn secondary sm"
+                style={{ borderRadius: '8px', fontWeight: 700 }}
+                onClick={() => {
+                  setIsCopySubjectModalOpen(false);
+                  setSubjectToCopy(null);
+                }}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                className="btn primary sm"
+                style={{ borderRadius: '8px', fontWeight: 700, background: 'var(--color-primary)', border: 'none' }}
+                disabled={isCopyingSubject || !copyTargetCampaignId}
+                onClick={handleConfirmCopySubject}
+              >
+                {isCopyingSubject ? 'Đang sao chép...' : 'Xác nhận sao chép'}
+              </button>
+            </div>
+          </div>
+        </CustomModal>
+
         {selectedContactForDrawer && (
           <Suspense fallback={null}>
             <CustomerProfileDrawer
@@ -9285,6 +9817,17 @@ export default function ProjectsPage() {
               zIndex={selectedTaskForDrawer ? 1000300 : undefined}
             />
           </Suspense>
+        )}
+        {isLecturerDrawerOpen && selectedLecturerEntity && (
+          <CompanyDrawer
+            isOpen={isLecturerDrawerOpen}
+            onClose={() => {
+              setIsLecturerDrawerOpen(false);
+              setSelectedLecturerEntity(null);
+            }}
+            entity={selectedLecturerEntity}
+            onSave={() => loadProjects()}
+          />
         )}
       </div>
       );

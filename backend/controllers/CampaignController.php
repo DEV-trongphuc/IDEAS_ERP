@@ -306,6 +306,93 @@ class CampaignController {
 
         $this->propagateCampaignRoster($project_id ?: $project_ids, $user_ids);
 
+        // Diff subjects_json to log detailed subject changes
+        $oldSubs = json_decode($camp['subjects_json'] ?? '[]', true) ?: [];
+        $newSubs = json_decode($subjects_json ?? '[]', true) ?: [];
+
+        $oldSubsMap = [];
+        foreach ($oldSubs as $s) {
+            $key = !empty($s['code']) ? trim(strval($s['code'])) : (!empty($s['id']) ? trim(strval($s['id'])) : '');
+            if ($key) {
+                $oldSubsMap[strtolower($key)] = $s;
+            }
+        }
+
+        $newSubsMap = [];
+        foreach ($newSubs as $s) {
+            $key = !empty($s['code']) ? trim(strval($s['code'])) : (!empty($s['id']) ? trim(strval($s['id'])) : '');
+            if ($key) {
+                $newSubsMap[strtolower($key)] = $s;
+            }
+        }
+
+        $changes = [];
+
+        // Check for created or updated subjects
+        foreach ($newSubs as $newS) {
+            $key = !empty($newS['code']) ? trim(strval($newS['code'])) : (!empty($newS['id']) ? trim(strval($newS['id'])) : '');
+            if (!$key) continue;
+
+            $lowerKey = strtolower($key);
+            if (!isset($oldSubsMap[$lowerKey])) {
+                $changes[] = "Tạo môn học mới: " . ($newS['code'] ?? '') . " - " . ($newS['name'] ?? 'Chưa đặt tên');
+            } else {
+                $oldS = $oldSubsMap[$lowerKey];
+                $subChanges = [];
+
+                if (($newS['name'] ?? '') !== ($oldS['name'] ?? '')) {
+                    $subChanges[] = "đổi tên thành \"" . ($newS['name'] ?? '') . "\"";
+                }
+                if (($newS['lecturer_id'] ?? '') !== ($oldS['lecturer_id'] ?? '')) {
+                    $newLecName = 'Chưa phân công';
+                    if (!empty($newS['lecturer_id'])) {
+                        $stL = $this->db->prepare("SELECT name FROM companies WHERE id = ?");
+                        $stL->execute([$newS['lecturer_id']]);
+                        $newLecName = $stL->fetchColumn() ?: 'GV ID: ' . $newS['lecturer_id'];
+                    }
+                    $subChanges[] = "đổi giảng viên sang: " . $newLecName;
+                }
+
+                $oldSessions = $oldS['host_sessions'] ?? [];
+                $newSessions = $newS['host_sessions'] ?? [];
+                if (count($oldSessions) !== count($newSessions)) {
+                    $subChanges[] = "thay đổi số buổi học trường từ " . count($oldSessions) . " thành " . count($newSessions);
+                }
+
+                $oldSeminars = $oldS['seminars'] ?? [];
+                $newSeminars = $newS['seminars'] ?? [];
+                if (count($oldSeminars) !== count($newSeminars)) {
+                    $subChanges[] = "thay đổi số lớp chuyên đề từ " . count($oldSeminars) . " thành " . count($newSeminars);
+                }
+
+                $oldAsns = $oldS['assignments'] ?? [];
+                $newAsns = $newS['assignments'] ?? [];
+                if (count($oldAsns) !== count($newAsns)) {
+                    $subChanges[] = "thay đổi số bài tập từ " . count($oldAsns) . " thành " . count($newAsns);
+                }
+
+                if (!empty($subChanges)) {
+                    $changes[] = "Cập nhật môn " . ($newS['code'] ?? '') . ": " . implode(', ', $subChanges);
+                }
+            }
+        }
+
+        // Check for deleted subjects
+        foreach ($oldSubs as $oldS) {
+            $key = !empty($oldS['code']) ? trim(strval($oldS['code'])) : (!empty($oldS['id']) ? trim(strval($oldS['id'])) : '');
+            if (!$key) continue;
+
+            $lowerKey = strtolower($key);
+            if (!isset($newSubsMap[$lowerKey])) {
+                $changes[] = "Xóa môn học: " . ($oldS['code'] ?? '') . " - " . ($oldS['name'] ?? '');
+            }
+        }
+
+        // Log detailed changes
+        foreach ($changes as $cDesc) {
+            logActivity($this->db, $tenantId, $userId, 'SUBJECT_LOG', 'marketing_campaigns', $id, $cDesc);
+        }
+
         logActivity($this->db, $tenantId, $userId, 'UPDATE_CAMPAIGN', 'marketing_campaigns', $id, "Cập nhật chiến dịch: $name");
         respond(200, null, 'Cập nhật chiến dịch thành công');
     }
@@ -607,10 +694,10 @@ class CampaignController {
         
         // Audit changelog trail: last 100 actions
         $stmtLogs = $this->db->prepare("
-            SELECT a.id, a.action, a.new_data, a.created_at, u.full_name as user_name
+            SELECT a.id, a.action, a.new_data, a.created_at, u.full_name as user_name, u.avatar_url
             FROM audit_logs a
             LEFT JOIN users u ON a.user_id = u.id
-            WHERE a.resource = 'marketing_campaigns' AND a.resource_id = ? AND a.tenant_id = ?
+            WHERE a.resource = 'marketing_campaigns' AND a.resource_id = ? AND a.tenant_id = ? AND a.action = 'SUBJECT_LOG'
             ORDER BY a.created_at DESC
             LIMIT 100
         ");
