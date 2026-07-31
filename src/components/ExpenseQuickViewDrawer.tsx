@@ -1287,87 +1287,83 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
               flexDirection: 'column',
               overflow: 'hidden',
               background: 'var(--color-surface)',
-              borderLeft: '1px solid var(--color-border-light)'
+              borderLeft: '1px solid var(--color-border-light)',
+              padding: '1.25rem',
+              boxSizing: 'border-box'
             }}>
-              {/* Tabs */}
-              <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border-light)', background: 'var(--color-bg-light)', padding: '0 8px', flexShrink: 0 }}>
-                <button
-                  onClick={() => setActiveTab('comments')}
-                  style={{
-                    flex: 1,
-                    padding: '14px 10px',
-                    border: 'none',
-                    background: 'none',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: activeTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    borderBottom: activeTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <MessageSquare size={14} />
-                  Thảo luận ({comments.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('history')}
-                  style={{
-                    flex: 1,
-                    padding: '14px 10px',
-                    border: 'none',
-                    background: 'none',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: activeTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    borderBottom: activeTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Activity size={14} />
-                  Hoạt động ({historyLogs.length})
-                </button>
-              </div>
-
-              {/* Scrollable Container */}
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.25rem', paddingRight: '12px' }} className="custom-scrollbar">
+              {/* Scrollable container for stepper and feed */}
+              <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingRight: '4px' }}>
                 
-                {activeTab === 'history' ? (
-                  <>
-                    {/* Section 1: CÁC BƯỚC THỰC HIỆN */}
-                    <div>
-                      <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                        Các bước thực hiện
-                      </h3>
-                      {renderTimeline()}
-                    </div>
+                {/* Section 1: CÁC BƯỚC THỰC HIỆN */}
+                <div>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                    Các bước thực hiện
+                  </h3>
+                  {renderTimeline()}
+                </div>
 
-                    {/* Section 2: LỊCH SỬ HOẠT ĐỘNG HỆ THỐNG */}
-                    <div style={{ marginTop: '0.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                        Lịch sử hoạt động
-                      </h3>
+                {/* Section 2: THẢO LUẬN & HOẠT ĐỘNG */}
+                <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                    Thảo luận & Hoạt động
+                  </h3>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {loadingHistory ? (
-                          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                            <Loader2 size={20} className="spin text-primary" />
-                          </div>
-                        ) : historyLogs.length === 0 ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                            <Clock size={20} style={{ opacity: 0.4 }} />
-                            <span style={{ fontSize: '0.8rem' }}>Chưa ghi nhận lịch sử hoạt động nào.</span>
-                          </div>
-                        ) : (
-                          combinedFeed.filter(item => item.type === 'history').map((item) => (
+                  {/* Combined Feed Items */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {loadingComments || loadingHistory ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
+                        <Loader2 size={20} className="spin text-primary" />
+                      </div>
+                    ) : combinedFeed.length === 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
+                        <Coffee size={24} style={{ opacity: 0.4 }} />
+                        <span style={{ fontSize: '0.8rem' }}>Chưa có hoạt động hay thảo luận nào cho khoản chi này.</span>
+                      </div>
+                    ) : (
+                      combinedFeed.map((item) => {
+                        if (item.type === 'comment') {
+                          return (
+                            <div key={item.id} style={{
+                              display: 'flex',
+                              gap: '12px',
+                              padding: '12px 16px',
+                              background: 'var(--color-bg)',
+                              borderRadius: '14px',
+                              border: '1px solid var(--color-border-light)',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
+                              position: 'relative'
+                            }}>
+                              <Avatar src={item.data.avatar_url} name={item.data.user_name} size={28} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{item.data.user_name}</strong>
+                                  <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                    {new Date(item.data.created_at).toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                                {item.data.body && /<[a-z][\s\S]*>/i.test(item.data.body) ? (
+                                  <div 
+                                    className="rich-comment-content text-left"
+                                    dangerouslySetInnerHTML={{ __html: item.data.body }}
+                                    style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.45', textAlign: 'left' }}
+                                  />
+                                ) : (
+                                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{item.data.body}</p>
+                                )}
+                              </div>
+                              {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === item.data.user_id) && (
+                                <button
+                                  onClick={() => handleDeleteComment(item.data.id)}
+                                  style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '8px', top: '8px' }}
+                                  title="Xóa bình luận"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        } else {
+                          return (
                             <div key={item.id} style={{
                               display: 'flex',
                               gap: '12px',
@@ -1393,129 +1389,67 @@ export const ExpenseQuickViewDrawer: React.FC<ExpenseQuickViewDrawerProps> = ({
                                 </p>
                               </div>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  /* activeTab === 'comments' */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
-                      Thảo luận
-                    </h3>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {loadingComments ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                          <Loader2 size={20} className="spin text-primary" />
-                        </div>
-                      ) : comments.length === 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                          <Coffee size={24} style={{ opacity: 0.4 }} />
-                          <span style={{ fontSize: '0.8rem' }}>Chưa có thảo luận nào cho khoản chi này. Hãy bắt đầu thảo luận!</span>
-                        </div>
-                      ) : (
-                        combinedFeed.filter(item => item.type === 'comment').map((item) => (
-                          <div key={item.id} style={{
-                            display: 'flex',
-                            gap: '12px',
-                            padding: '12px 16px',
-                            background: 'var(--color-bg)',
-                            borderRadius: '14px',
-                            border: '1px solid var(--color-border-light)',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
-                            position: 'relative'
-                          }}>
-                            <Avatar src={item.data.avatar_url} name={item.data.user_name} size={28} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{item.data.user_name}</strong>
-                                <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                  {new Date(item.data.created_at).toLocaleString('vi-VN')}
-                                </span>
-                              </div>
-                              {item.data.body && /<[a-z][\s\S]*>/i.test(item.data.body) ? (
-                                <div 
-                                  className="rich-comment-content text-left"
-                                  dangerouslySetInnerHTML={{ __html: item.data.body }}
-                                  style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.45', textAlign: 'left' }}
-                                />
-                              ) : (
-                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{item.data.body}</p>
-                              )}
-                            </div>
-                            {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === item.data.user_id) && (
-                              <button
-                                onClick={() => handleDeleteComment(item.data.id)}
-                                style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '8px', top: '8px' }}
-                                title="Xóa bình luận"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Comment Editor Box at bottom - ONLY shown when activeTab is comments */}
-              {activeTab === 'comments' && (
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '8px', 
-                  borderTop: '1px solid var(--color-border-light)', 
-                  padding: '12px 1.25rem 1.25rem 1.25rem', 
-                  flexShrink: 0,
-                  background: 'var(--color-surface)'
-                }}>
-                  <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
-                    <MentionInput
-                      value={commentText}
-                      onChange={(e: any) => setCommentText(e.target.value)}
-                      placeholder="Viết bình luận... Gõ @ để nhắc tên"
-                      style={{ 
-                        width: '100%', 
-                        minHeight: '65px', 
-                        border: 'none',
-                        borderRadius: 0,
-                        outline: 'none', 
-                        background: 'transparent',
-                        color: 'var(--color-text)', 
-                        boxSizing: 'border-box'
-                      }}
-                      disabled={submittingComment}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px', borderTop: '1px dashed var(--color-border-light)' }}>
-                      <button
-                        disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
-                        onClick={handleAddComment}
-                        className="btn primary sm"
-                        style={{
-                          background: 'var(--color-primary)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '20px',
-                          padding: '6px 18px',
-                          cursor: 'pointer',
-                          fontSize: '0.78rem',
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px'
-                        }}
-                      >
-                        <Send size={13} />
-                        Gửi
-                      </button>
-                    </div>
+                          );
+                        }
+                      })
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Comment Editor Box at bottom */}
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '8px', 
+                borderTop: '1px solid var(--color-border-light)', 
+                paddingTop: '12px', 
+                flexShrink: 0,
+                marginTop: '1rem',
+                background: 'var(--color-surface)'
+              }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                  <MentionInput
+                    value={commentText}
+                    onChange={(e: any) => setCommentText(e.target.value)}
+                    placeholder="Viết bình luận... Gõ @ để nhắc tên"
+                    style={{ 
+                      width: '100%', 
+                      minHeight: '65px', 
+                      border: 'none',
+                      borderRadius: 0,
+                      outline: 'none', 
+                      background: 'transparent',
+                      color: 'var(--color-text)', 
+                      boxSizing: 'border-box'
+                    }}
+                    disabled={submittingComment}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px', borderTop: '1px dashed var(--color-border-light)' }}>
+                    <button
+                      disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
+                      onClick={handleAddComment}
+                      className="btn primary sm"
+                      style={{
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '20px',
+                        padding: '6px 18px',
+                        cursor: 'pointer',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      <Send size={13} />
+                      Gửi
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
