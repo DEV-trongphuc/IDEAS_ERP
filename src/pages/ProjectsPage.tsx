@@ -572,6 +572,7 @@ export default function ProjectsPage() {
   });
   const [thesisMilestones, setThesisMilestones] = useState<any[]>([]);
   const [configuringSubjectId, setConfiguringSubjectId] = useState<string | null>(null);
+  const [syncSubjectToOtherCourses, setSyncSubjectToOtherCourses] = useState(false);
   const [activeConfigTab, setActiveConfigTab] = useState<'school' | 'seminar' | 'zoom' | 'quiz'>('school');
   const [consultants, setConsultants] = useState<any[]>([]);
   const [companiesList, setCompaniesList] = useState<any[]>([]);
@@ -581,6 +582,12 @@ export default function ProjectsPage() {
   const [projectStats, setProjectStats] = useState<any>(null);
   const [campaignStats, setCampaignStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+
+  useEffect(() => {
+    if (configuringSubjectId) {
+      setSyncSubjectToOtherCourses(false);
+    }
+  }, [configuringSubjectId]);
 
   const loadProjectStats = async (id: number) => {
     setStatsLoading(true);
@@ -6314,82 +6321,7 @@ export default function ProjectsPage() {
                         />
                       </div>
 
-                      <div>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Cấu hình chia sẻ chiến dịch</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '8px', marginTop: '6px' }}>
-                          {/* Option 1: Công khai */}
-                          <div
-                            onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'public' }) : prev)}
-                            style={{
-                              border: `1px solid ${editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-                              background: editingProject?.campaign_sharing_mode === 'public' ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
-                              padding: '10px 12px',
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: editingProject?.campaign_sharing_mode === 'public' ? 'var(--color-primary)' : '#cbd5e1' }}></span>
-                              Công khai
-                            </div>
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
-                              Mọi nhân sự trong hệ thống đều thấy chiến dịch con.
-                            </span>
-                          </div>
 
-                          {/* Option 2: Nhân sự chương trình */}
-                          <div
-                            onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'project_members' }) : prev)}
-                            style={{
-                              border: `1px solid ${editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-                              background: editingProject?.campaign_sharing_mode === 'project_members' ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
-                              padding: '10px 12px',
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: editingProject?.campaign_sharing_mode === 'project_members' ? 'var(--color-primary)' : '#cbd5e1' }}></span>
-                              Nhân sự chương trình
-                            </div>
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
-                              Chỉ nhân sự thuộc roster chương trình thấy chiến dịch con.
-                            </span>
-                          </div>
-
-                          {/* Option 3: Chiến dịch độc lập */}
-                          <div
-                            onClick={() => setEditingProject(prev => prev ? ({ ...prev, campaign_sharing_mode: 'independent' }) : prev)}
-                            style={{
-                              border: `1px solid ${(!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
-                              background: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'rgba(189, 29, 45, 0.04)' : '#ffffff',
-                              padding: '10px 12px',
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.8rem', color: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: (!editingProject?.campaign_sharing_mode || editingProject?.campaign_sharing_mode === 'independent') ? 'var(--color-primary)' : '#cbd5e1' }}></span>
-                              Độc lập (Mặc định)
-                            </div>
-                            <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', lineHeight: '1.2' }}>
-                              Chỉ thành viên của riêng chiến dịch đó mới thấy.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
 
@@ -7782,18 +7714,7 @@ export default function ProjectsPage() {
                         />
                       </div>
 
-                      <div className="form-group">
-                        <label className="form-label" style={{ fontWeight: 600 }}>Nhân sự liên kết</label>
-                        <CustomSelect
-                          multiple
-                          searchable={true}
-                          showAvatars={true}
-                          options={users.map(u => ({ value: String(u.id), label: `${u.full_name || u.fullname || u.username} (${u.role})`, avatar: u.avatar_url || u.avatar }))}
-                          value={parseIds(editingCampaign?.user_ids)}
-                          onChange={val => setEditingCampaign({ ...editingCampaign, user_ids: Array.isArray(val) ? val.join(',') : String(val) })}
-                          placeholder="Chọn nhân sự..."
-                        />
-                      </div>
+
                     </div>
                   </div>
 
@@ -9010,14 +8931,29 @@ export default function ProjectsPage() {
                   paddingRight: '24px',
                   boxShadow: '0 -6px 12px rgba(0,0,0,0.03)'
                 }}>
-                  <button
-                    type="button"
-                    className="btn secondary"
-                    style={{ borderRadius: '10px', fontWeight: 700, padding: '10px 20px', fontSize: '0.88rem', height: '42px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    onClick={() => handleGenerateAnnouncement(sub)}
-                  >
-                    <Copy size={15} /> Tạo thông báo học vụ
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      style={{ borderRadius: '10px', fontWeight: 700, padding: '10px 20px', fontSize: '0.88rem', height: '42px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      onClick={() => handleGenerateAnnouncement(sub)}
+                    >
+                      <Copy size={15} /> Tạo thông báo học vụ
+                    </button>
+                    {canEdit && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', margin: 0 }}>
+                        <input
+                          type="checkbox"
+                          checked={syncSubjectToOtherCourses}
+                          onChange={e => setSyncSubjectToOtherCourses(e.target.checked)}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                          Đồng bộ lịch & giảng viên sang các khóa khác cùng môn
+                        </span>
+                      </label>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <button
                       type="button"
@@ -9043,7 +8979,45 @@ export default function ProjectsPage() {
                             })
                           });
                           if (res.success) {
-                            addToast('Lưu cấu hình môn học thành công!', 'success');
+                            if (syncSubjectToOtherCourses && (sub.code || sub.name)) {
+                              const otherCamps = campaigns.filter(c => c.id !== editingCampaign.id);
+                              const syncPromises = otherCamps.map(async (camp) => {
+                                const campSubjects = camp.subjects_json
+                                  ? (typeof camp.subjects_json === 'string'
+                                    ? JSON.parse(camp.subjects_json)
+                                    : camp.subjects_json)
+                                  : [];
+                                let hasMatch = false;
+                                const nextCampSubjects = campSubjects.map((s: any) => {
+                                  const isMatch = (sub.code && s.code === sub.code) || (sub.name && s.name === sub.name);
+                                  if (isMatch) {
+                                    hasMatch = true;
+                                    return {
+                                      ...s,
+                                      lecturer_id: sub.lecturer_id,
+                                      host_sessions: sub.host_sessions,
+                                      seminars: sub.seminars,
+                                      assignments: sub.assignments
+                                    };
+                                  }
+                                  return s;
+                                });
+                                if (hasMatch) {
+                                  return fetchAPI(`campaigns/${camp.id}`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify({
+                                      ...camp,
+                                      subjects_json: JSON.stringify(nextCampSubjects)
+                                    })
+                                  });
+                                }
+                                return null;
+                              });
+                              await Promise.all(syncPromises.filter(Boolean));
+                              addToast('Lưu và đồng bộ cấu hình môn học thành công!', 'success');
+                            } else {
+                              addToast('Lưu cấu hình môn học thành công!', 'success');
+                            }
                             setEditingCampaign({
                               ...editingCampaign,
                               subjects_json: JSON.stringify(subjects)

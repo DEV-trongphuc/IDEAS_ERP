@@ -15,7 +15,7 @@ class CampaignController {
 
         $bypassRoster = (int)($_GET['bypass_roster'] ?? 0);
         $isRosterRestricted = in_array($auth['role'], ['sale', 'sales', 'manager'], true);
-        if ($isRosterRestricted && !$bypassRoster) {
+        if (false) { // Disabled roster checks: all campaigns/courses are now public
             $where .= " AND (
                 FIND_IN_SET(?, user_ids) 
                 OR FIND_IN_SET(?, manager_ids) 
