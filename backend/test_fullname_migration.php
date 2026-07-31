@@ -45,19 +45,19 @@ $mockData = [
     'full_name' => 'John Webhook Test',
     'phone' => '0987654321',
     'email' => 'john.test@ideas-erp.com',
-    'company_name' => 'IDEAS E2E Corp',
+    'company' => 'IDEAS E2E Corp',
     'job_title' => 'QA Lead',
     'status' => 'lead'
 ];
 
-$stmt = $conn->prepare("INSERT INTO contacts (id, full_name, phone, email, company_name, job_title, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO contacts (id, full_name, phone, email, company, job_title, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
 if ($stmt) {
     $stmt->bind_param("issssss", 
         $mockData['id'], 
         $mockData['full_name'], 
         $mockData['phone'], 
         $mockData['email'], 
-        $mockData['company_name'], 
+        $mockData['company'], 
         $mockData['job_title'], 
         $mockData['status']
     );
