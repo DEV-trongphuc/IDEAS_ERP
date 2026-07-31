@@ -2006,8 +2006,8 @@ switch ($action) {
             break;
         }
 
-        // 1. Query Lead
-        $stmtL = $conn->prepare("SELECT id, name, full_name, campaign_id, phone, email, dob, citizen_id FROM leads WHERE id = ? LIMIT 1");
+        // 1. Query Contact
+        $stmtL = $conn->prepare("SELECT id, full_name, campaign_id, phone, email, dob, citizen_id FROM contacts WHERE id = ? LIMIT 1");
         $stmtL->bind_param("i", $customerId);
         $stmtL->execute();
         $lead = $stmtL->get_result()->fetch_assoc();

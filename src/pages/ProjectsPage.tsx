@@ -4372,10 +4372,22 @@ export default function ProjectsPage() {
     text += `Lớp chuyên đề của IDEAS tập trung vào môn ${sub.name || ''}, nhằm hướng dẫn và bổ sung kiến thức cho học viên ngoài các buổi học chính thức với trường UMEF.\n\n`;
 
     // 3. Zoom
-    text += `3. Thông Tin Zoom Meeting (Cho cả UMEF & IDEAS):\n`;
-    text += `·         Link:${sub.zoom_link || 'Chưa thiết lập'}\n`;
-    text += `·         Meeting ID: ${sub.zoom_id || 'Chưa thiết lập'}\n`;
-    text += `·         Passcode: ${sub.zoom_pass || 'Chưa thiết lập'}\n`;
+    if (sub.zoom_shared !== false) {
+      text += `3. Thông Tin Zoom Meeting (Dùng chung cho cả UMEF & IDEAS):\n`;
+      text += `·         Link: ${sub.zoom_link || 'Chưa thiết lập'}\n`;
+      text += `·         Meeting ID: ${sub.zoom_id || 'Chưa thiết lập'}\n`;
+      text += `·         Passcode: ${sub.zoom_pass || 'Chưa thiết lập'}\n`;
+    } else {
+      text += `3. Thông Tin Zoom Meeting:\n`;
+      text += `· Lớp học với trường (Swiss UMEF):\n`;
+      text += `   - Link: ${sub.school_zoom_link || 'Chưa thiết lập'}\n`;
+      text += `   - Meeting ID: ${sub.school_zoom_id || 'Chưa thiết lập'}\n`;
+      text += `   - Passcode: ${sub.school_zoom_pass || 'Chưa thiết lập'}\n`;
+      text += `· Lớp chuyên đề (IDEAS):\n`;
+      text += `   - Link: ${sub.seminar_zoom_link || 'Chưa thiết lập'}\n`;
+      text += `   - Meeting ID: ${sub.seminar_zoom_id || 'Chưa thiết lập'}\n`;
+      text += `   - Passcode: ${sub.seminar_zoom_pass || 'Chưa thiết lập'}\n`;
+    }
 
     // 4. Assignments
     if (Array.isArray(sub.assignments) && sub.assignments.length > 0) {
@@ -8797,45 +8809,166 @@ export default function ProjectsPage() {
                   {activeConfigTab === 'zoom' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
+                      {/* Zoom Toggle Switch */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '14px 20px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
+                        <div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)', display: 'block' }}>Tài khoản Zoom Meeting dùng chung</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'block' }}>Bật để dùng chung một Zoom cho cả lịch trường và chuyên đề. Tắt để cấu hình liên kết riêng biệt.</span>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}>
+                          <input 
+                            type="checkbox" 
+                            disabled={!canEdit}
+                            checked={sub.zoom_shared !== false} 
+                            onChange={e => handleUpdateSubjectInModal({ zoom_shared: e.target.checked })}
+                            style={{ display: 'none' }}
+                          />
+                          <div style={{
+                            width: '44px',
+                            height: '24px',
+                            backgroundColor: (sub.zoom_shared !== false) ? 'var(--color-primary)' : '#cbd5e1',
+                            borderRadius: '100px',
+                            position: 'relative',
+                            transition: 'background-color 0.2s ease',
+                          }}>
+                            <div style={{
+                              width: '18px',
+                              height: '18px',
+                              backgroundColor: '#ffffff',
+                              borderRadius: '50%',
+                              position: 'absolute',
+                              top: '3px',
+                              left: (sub.zoom_shared !== false) ? '23px' : '3px',
+                              transition: 'left 0.2s ease',
+                              boxShadow: 'var(--shadow-xs)'
+                            }} />
+                          </div>
+                        </label>
+                      </div>
+
                       {/* Zoom details */}
-                      <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>Tài khoản Zoom Meeting dùng chung</span>
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                          <div style={{ flex: '2 1 240px' }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Đường dẫn Zoom Link</label>
-                            <input
-                              type="text"
-                              placeholder="https://us02web.zoom.us/j/..."
-                              disabled={!canEdit}
-                              value={sub.zoom_link || ''}
-                              onChange={e => handleUpdateSubjectInModal({ zoom_link: e.target.value })}
-                              style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
-                            />
-                          </div>
-                          <div style={{ flex: '1 1 120px' }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Meeting ID</label>
-                            <input
-                              type="text"
-                              placeholder="306 909 7520"
-                              disabled={!canEdit}
-                              value={sub.zoom_id || ''}
-                              onChange={e => handleUpdateSubjectInModal({ zoom_id: e.target.value })}
-                              style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
-                            />
-                          </div>
-                          <div style={{ flex: '1 1 100px' }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Passcode</label>
-                            <input
-                              type="text"
-                              placeholder="umef@812"
-                              disabled={!canEdit}
-                              value={sub.zoom_pass || ''}
-                              onChange={e => handleUpdateSubjectInModal({ zoom_pass: e.target.value })}
-                              style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
-                            />
+                      {sub.zoom_shared !== false ? (
+                        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>Thông tin Zoom dùng chung</span>
+                          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '2 1 240px' }}>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Đường dẫn Zoom Link</label>
+                              <input
+                                type="text"
+                                placeholder="https://us02web.zoom.us/j/..."
+                                disabled={!canEdit}
+                                value={sub.zoom_link || ''}
+                                onChange={e => handleUpdateSubjectInModal({ zoom_link: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                              />
+                            </div>
+                            <div style={{ flex: '1 1 120px' }}>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Meeting ID</label>
+                              <input
+                                type="text"
+                                placeholder="306 909 7520"
+                                disabled={!canEdit}
+                                value={sub.zoom_id || ''}
+                                onChange={e => handleUpdateSubjectInModal({ zoom_id: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                              />
+                            </div>
+                            <div style={{ flex: '1 1 100px' }}>
+                              <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Passcode</label>
+                              <input
+                                type="text"
+                                placeholder="umef@812"
+                                disabled={!canEdit}
+                                value={sub.zoom_pass || ''}
+                                onChange={e => handleUpdateSubjectInModal({ zoom_pass: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                          {/* School Zoom Account */}
+                          <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>1. Zoom Lớp học với trường (Swiss UMEF)</span>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                              <div style={{ flex: '2 1 240px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Đường dẫn Zoom Link (Trường)</label>
+                                <input
+                                  type="text"
+                                  placeholder="https://us02web.zoom.us/j/..."
+                                  disabled={!canEdit}
+                                  value={sub.school_zoom_link || ''}
+                                  onChange={e => handleUpdateSubjectInModal({ school_zoom_link: e.target.value })}
+                                  style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                                />
+                              </div>
+                              <div style={{ flex: '1 1 120px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Meeting ID</label>
+                                <input
+                                  type="text"
+                                  placeholder="306 909 7520"
+                                  disabled={!canEdit}
+                                  value={sub.school_zoom_id || ''}
+                                  onChange={e => handleUpdateSubjectInModal({ school_zoom_id: e.target.value })}
+                                  style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                                />
+                              </div>
+                              <div style={{ flex: '1 1 100px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Passcode</label>
+                                <input
+                                  type="text"
+                                  placeholder="umef@812"
+                                  disabled={!canEdit}
+                                  value={sub.school_zoom_pass || ''}
+                                  onChange={e => handleUpdateSubjectInModal({ school_zoom_pass: e.target.value })}
+                                  style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Seminar Zoom Account */}
+                          <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#6b21a8', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>2. Zoom Lớp chuyên đề (IDEAS)</span>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                              <div style={{ flex: '2 1 240px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Đường dẫn Zoom Link (Chuyên đề)</label>
+                                <input
+                                  type="text"
+                                  placeholder="https://us02web.zoom.us/j/..."
+                                  disabled={!canEdit}
+                                  value={sub.seminar_zoom_link || ''}
+                                  onChange={e => handleUpdateSubjectInModal({ seminar_zoom_link: e.target.value })}
+                                  style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                                />
+                              </div>
+                              <div style={{ flex: '1 1 120px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Meeting ID</label>
+                                <input
+                                  type="text"
+                                  placeholder="306 909 7520"
+                                  disabled={!canEdit}
+                                  value={sub.seminar_zoom_id || ''}
+                                  onChange={e => handleUpdateSubjectInModal({ seminar_zoom_id: e.target.value })}
+                                  style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                                />
+                              </div>
+                              <div style={{ flex: '1 1 100px' }}>
+                                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'block', marginBottom: '4px' }}>Passcode</label>
+                                <input
+                                  type="text"
+                                  placeholder="umef@812"
+                                  disabled={!canEdit}
+                                  value={sub.seminar_zoom_pass || ''}
+                                  onChange={e => handleUpdateSubjectInModal({ seminar_zoom_pass: e.target.value })}
+                                  style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', borderRadius: '8px', border: '1px solid var(--color-border-light)', height: '38px' }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -8997,7 +9130,17 @@ export default function ProjectsPage() {
                                       lecturer_id: sub.lecturer_id,
                                       host_sessions: sub.host_sessions,
                                       seminars: sub.seminars,
-                                      assignments: sub.assignments
+                                      assignments: sub.assignments,
+                                      zoom_shared: sub.zoom_shared,
+                                      zoom_link: sub.zoom_link,
+                                      zoom_id: sub.zoom_id,
+                                      zoom_pass: sub.zoom_pass,
+                                      school_zoom_link: sub.school_zoom_link,
+                                      school_zoom_id: sub.school_zoom_id,
+                                      school_zoom_pass: sub.school_zoom_pass,
+                                      seminar_zoom_link: sub.seminar_zoom_link,
+                                      seminar_zoom_id: sub.seminar_zoom_id,
+                                      seminar_zoom_pass: sub.seminar_zoom_pass
                                     };
                                   }
                                   return s;

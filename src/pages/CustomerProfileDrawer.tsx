@@ -7560,23 +7560,25 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                           gap: '12px'
                                         }}>
                                           {/* Zoom Link Section */}
-                                          {(sub.zoom_link || sub.zoom_id || sub.zoom_pass) ? (
-                                            <div style={{ padding: '10px 12px', background: '#e0f2fe', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.78rem' }}>
-                                              <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '4px' }}>
-                                                Zoom Meeting
+                                          {sub.zoom_shared !== false ? (
+                                            (sub.zoom_link || sub.zoom_id || sub.zoom_pass) ? (
+                                              <div style={{ padding: '10px 12px', background: '#e0f2fe', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.78rem' }}>
+                                                <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '4px' }}>
+                                                  Zoom Meeting (Dùng chung)
+                                                </div>
+                                                {sub.zoom_link && (
+                                                  <div style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
+                                                    Link: <a href={sub.zoom_link} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 700, textDecoration: 'underline' }}>{sub.zoom_link}</a>
+                                                  </div>
+                                                )}
+                                                {(sub.zoom_id || sub.zoom_pass) && (
+                                                  <div style={{ color: '#0c4a6e' }}>
+                                                    {sub.zoom_id && <>ID: <strong>{sub.zoom_id}</strong></>}
+                                                    {sub.zoom_pass && <>&nbsp;&nbsp;|&nbsp;&nbsp;Pass: <strong>{sub.zoom_pass}</strong></>}
+                                                  </div>
+                                                )}
                                               </div>
-                                              {sub.zoom_link && (
-                                                <div style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
-                                                  Link: <a href={sub.zoom_link} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 700, textDecoration: 'underline' }}>{sub.zoom_link}</a>
-                                                </div>
-                                              )}
-                                              {(sub.zoom_id || sub.zoom_pass) && (
-                                                <div style={{ color: '#0c4a6e' }}>
-                                                  {sub.zoom_id && <>ID: <strong>{sub.zoom_id}</strong></>}
-                                                  {sub.zoom_pass && <>&nbsp;&nbsp;|&nbsp;&nbsp;Pass: <strong>{sub.zoom_pass}</strong></>}
-                                                </div>
-                                              )}
-                                            </div>
+                                            ) : null
                                           ) : null}
 
                                           {/* Host Sessions Section */}
@@ -7585,6 +7587,26 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                               <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                                                 Lịch học với trường ({sub.host_sessions.length})
                                               </div>
+                                              
+                                              {sub.zoom_shared === false && (sub.school_zoom_link || sub.school_zoom_id || sub.school_zoom_pass) && (
+                                                <div style={{ padding: '10px 12px', background: '#e0f2fe', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.78rem' }}>
+                                                  <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '4px' }}>
+                                                    Zoom Lớp học với trường (Swiss UMEF)
+                                                  </div>
+                                                  {sub.school_zoom_link && (
+                                                    <div style={{ marginBottom: '2px', wordBreak: 'break-all' }}>
+                                                      Link: <a href={sub.school_zoom_link} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 700, textDecoration: 'underline' }}>{sub.school_zoom_link}</a>
+                                                    </div>
+                                                  )}
+                                                  {(sub.school_zoom_id || sub.school_zoom_pass) && (
+                                                    <div style={{ color: '#0c4a6e' }}>
+                                                      {sub.school_zoom_id && <>ID: <strong>{sub.school_zoom_id}</strong></>}
+                                                      {sub.school_zoom_pass && <>&nbsp;&nbsp;|&nbsp;&nbsp;Pass: <strong>{sub.school_zoom_pass}</strong></>}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
+
                                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 {sub.host_sessions.map((hs: any, sidx: number) => (
                                                   <div key={sidx} style={{ padding: '8px 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid var(--color-border-light)', fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

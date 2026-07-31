@@ -94,6 +94,7 @@ export const PublicSchedulePage: React.FC = () => {
     if (Array.isArray(sub.host_sessions)) {
       sub.host_sessions.forEach((hs: any, hsIdx: number) => {
         if (hs.date) {
+          const isShared = sub.zoom_shared !== false;
           allEvents.push({
             type: 'school',
             date: hs.date,
@@ -103,9 +104,9 @@ export const PublicSchedulePage: React.FC = () => {
             time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
             lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
             location: hs.location || 'Online',
-            zoom_link: sub.zoom_link || '',
-            zoom_id: sub.zoom_id || '',
-            zoom_pass: sub.zoom_pass || ''
+            zoom_link: (isShared ? sub.zoom_link : sub.school_zoom_link) || '',
+            zoom_id: (isShared ? sub.zoom_id : sub.school_zoom_id) || '',
+            zoom_pass: (isShared ? sub.zoom_pass : sub.school_zoom_pass) || ''
           });
         }
       });
@@ -115,6 +116,7 @@ export const PublicSchedulePage: React.FC = () => {
     if (Array.isArray(sub.seminars)) {
       sub.seminars.forEach((sem: any) => {
         if (sem.date) {
+          const isShared = sub.zoom_shared !== false;
           allEvents.push({
             type: 'seminar',
             date: sem.date,
@@ -124,9 +126,9 @@ export const PublicSchedulePage: React.FC = () => {
             time: sem.time_slot || 'Chưa cấu hình giờ',
             lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
             location: sem.location || 'Online',
-            zoom_link: sub.zoom_link || '',
-            zoom_id: sub.zoom_id || '',
-            zoom_pass: sub.zoom_pass || ''
+            zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
+            zoom_id: (isShared ? sub.zoom_id : sub.seminar_zoom_id) || '',
+            zoom_pass: (isShared ? sub.zoom_pass : sub.seminar_zoom_pass) || ''
           });
         }
       });
