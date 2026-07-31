@@ -216,6 +216,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [activeAssigneeDropdownId, setActiveAssigneeDropdownId] = useState<string | null>(null);
   const [deleteSubtaskTarget, setDeleteSubtaskTarget] = useState<{ id: string; title: string } | null>(null);
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
+  const [showTeamDropdown, setShowTeamDropdown] = useState(false);
 
   const [allowedProjects, setAllowedProjects] = useState<any[]>([]);
   const [allowedCampaigns, setAllowedCampaigns] = useState<any[]>([]);
@@ -790,6 +791,19 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     }
     
     return { isValid: true };
+  };
+
+  const linkifyHtml = (html: string) => {
+    if (!html) return '';
+    return html.replace(/<a\b[^>]*>([\s\S]*?)<\/a>|(<[^>]+>)|(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi, (match, aContent, htmlTag, url) => {
+      if (aContent) return match;
+      if (htmlTag) return match;
+      if (url) {
+        const href = url.startsWith('www.') ? `https://${url}` : url;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary); text-decoration: underline; word-break: break-all;">${url}</a>`;
+      }
+      return match;
+    });
   };
 
   const renderCommentContent = (text: string) => {
@@ -2973,7 +2987,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                           {comment.content && /<[a-z][\s\S]*>/i.test(comment.content) ? (
                                             <div 
                                               className="rich-comment-content"
-                                              dangerouslySetInnerHTML={{ __html: comment.content }}
+                                              dangerouslySetInnerHTML={{ __html: linkifyHtml(comment.content) }}
                                               style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.4' }}
                                             />
                                           ) : (
@@ -3473,7 +3487,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   {comment.content && /<[a-z][\s\S]*>/i.test(comment.content) ? (
                                     <div 
                                       className="rich-text-editor-content"
-                                      dangerouslySetInnerHTML={{ __html: comment.content }}
+                                      dangerouslySetInnerHTML={{ __html: linkifyHtml(comment.content) }}
                                       style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45' }}
                                     />
                                   ) : (
@@ -4314,6 +4328,172 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               )}
             </div>
 
+            {/* Liên kết team */}
+            <div className="card" style={cardStyle}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                {t('Liên kết team')}
+              </div>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                {/* Selected team pills */}
+                {(() => {
+                  const selectedTeamIds = erpMeta?.team_ids || (erpMeta?.team_id ? [erpMeta.team_id] : []);
+                  const selectedTeams = allowedTeams.filter(t => selectedTeamIds.includes(t.id) || selectedTeamIds.includes(String(t.id)) || selectedTeamIds.includes(Number(t.id)));
+                  
+                  return (
+                    <>
+                      {selectedTeams.map(t => (
+                        <span 
+                          key={t.id}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            background: 'rgba(59, 130, 246, 0.08)',
+                            color: 'var(--color-primary)',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            borderRadius: '12px',
+                            border: '1px solid rgba(59, 130, 246, 0.15)'
+                          }}
+                        >
+                          {t.name}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextTeamIds = selectedTeamIds.filter(id => String(id) !== String(t.id));
+                              const nextMeta = { ...erpMeta, team_ids: nextTeamIds, team_id: nextTeamIds[0] || null };
+                              setErpMeta(nextMeta);
+                              handleSaveMeta(nextMeta);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--color-primary)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              padding: 0,
+                              fontSize: '0.75rem',
+                              marginLeft: '2px'
+                            }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </>
+                  );
+                })()}
+
+                {/* Dash add button for teams */}
+                <button
+                  type="button"
+                  onClick={() => setShowTeamDropdown(!showTeamDropdown)}
+                  style={{
+                    border: '1px dashed var(--color-primary)',
+                    background: 'rgba(163, 20, 34, 0.04)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'all 0.15s ease'
+                  }}
+                  className="hover-scale"
+                  title={t('Liên kết thêm team')}
+                >
+                  <Plus size={14} color="var(--color-primary)" />
+                </button>
+
+                {/* Dropdown list of teams */}
+                {showTeamDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: '6px',
+                    zIndex: 9999,
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                    minWidth: '220px',
+                    maxHeight: '230px',
+                    overflowY: 'auto',
+                    padding: '6px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px'
+                  }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
+                      {t('Chọn team liên kết:')}
+                    </div>
+                    {allowedTeams.map((tItem: any) => {
+                      const selectedTeamIds = erpMeta?.team_ids || (erpMeta?.team_id ? [erpMeta.team_id] : []);
+                      const isSelected = selectedTeamIds.some(id => String(id) === String(tItem.id));
+                      
+                      return (
+                        <div
+                          key={tItem.id}
+                          onClick={() => {
+                            let nextTeamIds = [...selectedTeamIds];
+                            if (isSelected) {
+                              nextTeamIds = nextTeamIds.filter(id => String(id) !== String(tItem.id));
+                            } else {
+                              nextTeamIds.push(tItem.id);
+                              
+                              // Automatically add all members of this team to related users!
+                              const teamUsers = users.filter(u => Number(u.team_id) === Number(tItem.id));
+                              if (teamUsers.length > 0) {
+                                const currentP = getParticipantIds(formData.participant_ids);
+                                const nextP = [...currentP];
+                                let addedCount = 0;
+                                teamUsers.forEach(u => {
+                                  const uidStr = String(u.id);
+                                  if (!nextP.includes(uidStr)) {
+                                    nextP.push(uidStr);
+                                    addedCount++;
+                                  }
+                                });
+                                if (addedCount > 0) {
+                                  const nextPString = nextP.join(',');
+                                  setFormData((prev: any) => ({ ...prev, participant_ids: nextPString }));
+                                  handleUpdateField('participant_ids', nextPString);
+                                  toast.success(t('Đã tự động thêm {count} nhân sự thuộc phòng ban vào người liên quan.').replace('{count}', String(addedCount)));
+                                }
+                              }
+                            }
+                            const nextMeta = { ...erpMeta, team_ids: nextTeamIds, team_id: nextTeamIds[0] || null };
+                            setErpMeta(nextMeta);
+                            handleSaveMeta(nextMeta);
+                          }}
+                          style={{
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                            color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                            fontWeight: isSelected ? 600 : 400
+                          }}
+                          className="hover-bg-alt"
+                        >
+                          <span>{tItem.name}</span>
+                          {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Người thực hiện & Người liên quan */}
             <div className="card" style={cardStyle}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -4446,32 +4626,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               </div>
             </div>
 
-            {/* Nhóm / Team liên quan */}
-            <div className="card" style={cardStyle}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                {t('Liên kết Nhóm / Team')}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <CustomSelect
-                    searchable
-                    showAvatars
-                    options={[
-                      { value: '', label: t('Chọn nhóm...') },
-                      ...allowedTeams.map(t => ({ value: String(t.id), label: t.name }))
-                    ]}
-                    value={erpMeta.team_id ? String(erpMeta.team_id) : ''}
-                    onChange={val => {
-                      const nextTeam = val ? Number(val) : null;
-                      const nextMeta = { ...erpMeta, team_id: nextTeam };
-                      setErpMeta(nextMeta);
-                      handleSaveMeta(nextMeta);
-                    }}
-                    placeholder={t('Chọn nhóm...')}
-                  />
-                </div>
-              </div>
-            </div>
+
 
 
 
