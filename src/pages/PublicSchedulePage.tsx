@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams } from 'react-router-dom';
 import { 
   Calendar as CalendarIcon, 
@@ -155,6 +156,49 @@ export const PublicSchedulePage: React.FC = () => {
       });
     }
   });
+
+  // Deduplicate merged/shared classes (same date, lecturer, subjectCode, time)
+  const dedupedEvents: any[] = [];
+  allEvents.forEach(evt => {
+    const existing = dedupedEvents.find(e => 
+      e.date === evt.date && 
+      e.lecturer === evt.lecturer && 
+      e.subjectCode === evt.subjectCode && 
+      e.time === evt.time &&
+      e.type === evt.type
+    );
+    
+    if (existing) {
+      const getCourseName = (fullName: string) => {
+        const match = fullName.match(/\(([^)]+)\)$/);
+        return match ? match[1] : '';
+      };
+      
+      const getBaseName = (fullName: string) => {
+        return fullName.replace(/\s*\([^)]+\)$/, '').trim();
+      };
+      
+      const course1 = getCourseName(existing.subjectName);
+      const course2 = getCourseName(evt.subjectName);
+      const baseName = getBaseName(existing.subjectName);
+      
+      if (course1 && course2 && course1 !== course2) {
+        const courses = Array.from(new Set([...course1.split(', '), ...course2.split(', ')]));
+        existing.subjectName = `${baseName} (${courses.join(', ')})`;
+      } else if (!course1 && course2) {
+        existing.subjectName = `${existing.subjectName} (${course2})`;
+      }
+      
+      if (existing.title !== evt.title) {
+        const titles = Array.from(new Set([existing.title, evt.title]));
+        existing.title = titles.join(' / ');
+      }
+    } else {
+      dedupedEvents.push({ ...evt });
+    }
+  });
+  allEvents.length = 0;
+  allEvents.push(...dedupedEvents);
 
   // Calculate nearest class and assignment/milestone
   const calculateNearestDeadlines = () => {
@@ -739,7 +783,7 @@ export const PublicSchedulePage: React.FC = () => {
       </div>
 
       {/* 3. Detailed Day Dialog Modal */}
-      {isModalOpen && (
+      {isModalOpen && createPortal(
         <div style={{ 
           position: 'fixed', 
           top: 0, 
@@ -751,7 +795,7 @@ export const PublicSchedulePage: React.FC = () => {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
-          zIndex: 2000,
+          zIndex: 2147483647,
           padding: '1rem',
           animation: 'fadeIn 0.2s ease'
         }}>
@@ -920,7 +964,7 @@ export const PublicSchedulePage: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Global CSS Styles for fade animations */}
       <style>{`

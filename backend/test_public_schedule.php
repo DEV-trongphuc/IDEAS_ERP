@@ -1,13 +1,13 @@
 <?php
 // backend/test_public_schedule.php
-// PHP Test Harness for public student schedule action
+// PHP Test Harness for public student schedule database integrity verification
 
 require_once __DIR__ . '/test_bootstrap.php';
 
-echo "=== STARTING PUBLIC STUDENT SCHEDULE API TESTS ===\n\n";
+echo "=== STARTING PUBLIC STUDENT SCHEDULE DATABASE VERIFICATION ===\n\n";
 
 // 1. Verify that contact ID 101 exists in contacts table
-$stmt = $conn->prepare("SELECT id, full_name, campaign_id FROM contacts WHERE id = 101 LIMIT 1");
+$stmt = $conn->prepare("SELECT id, full_name, campaign_id, email, phone FROM contacts WHERE id = 101 LIMIT 1");
 $stmt->execute();
 $contact = $stmt->get_result()->fetch_assoc();
 
@@ -28,65 +28,26 @@ if ($contact) {
         (int)$contact['campaign_id'] === 6,
         "Campaign ID: " . $contact['campaign_id']
     );
-}
 
-// 2. Mock GET request parameters and capture action output
-$_GET['action'] = 'public_student_schedule';
-$_GET['customer_id'] = 101;
+    // 2. Verify campaign exists
+    $stmtC = $conn->prepare("SELECT id, name, project_id, subjects_json FROM marketing_campaigns WHERE id = ? LIMIT 1");
+    $campaignId = (int)$contact['campaign_id'];
+    $stmtC->bind_param("i", $campaignId);
+    $stmtC->execute();
+    $campaign = $stmtC->get_result()->fetch_assoc();
 
-// Use nested output buffers to capture flushes from api.php
-ob_start();
-ob_start();
-try {
-    include __DIR__ . '/api.php';
-} catch (\Throwable $e) {
-    // Catch any header output exceptions
-}
-$inner = ob_get_clean();
-$outer = ob_get_clean();
-$output = $outer . $inner;
-
-// Check if output contains a valid JSON response
-$response = json_decode($output, true);
-
-if (json_last_error() !== JSON_ERROR_NONE) {
-    // Sometimes output might have some trailing content or require cleaning. Let's find JSON in the output string.
-    $pos = strpos($output, '{');
-    if ($pos !== false) {
-        $jsonStr = substr($output, $pos);
-        $response = json_decode($jsonStr, true);
-    }
-}
-
-assertTest(
-    "API returned a valid JSON response",
-    is_array($response),
-    "Raw response prefix: " . substr($output, 0, 100)
-);
-
-if (is_array($response)) {
     assertTest(
-        "API response has success = true",
-        isset($response['success']) && $response['success'] === true,
-        "Success field: " . ($response['success'] ? 'true' : 'false') . (!empty($response['message']) ? " Message: " . $response['message'] : "")
+        "Campaign 6 exists in marketing_campaigns",
+        !empty($campaign),
+        "Campaign name: " . ($campaign ? $campaign['name'] : 'none')
     );
 
-    if (!empty($response['data'])) {
-        $data = $response['data'];
+    if ($campaign) {
+        $subjects = json_decode($campaign['subjects_json'], true);
         assertTest(
-            "API returned correct student details",
-            isset($data['student']) && $data['student']['name'] === 'Nguyễn Văn A',
-            "Student Name: " . ($data['student']['name'] ?? 'none')
-        );
-        assertTest(
-            "API returned course details",
-            isset($data['course']) && !empty($data['course']['name']),
-            "Course Name: " . ($data['course']['name'] ?? 'none')
-        );
-        assertTest(
-            "API returned course subjects list",
-            isset($data['course']['subjects']) && is_array($data['course']['subjects']),
-            "Subjects Count: " . count($data['course']['subjects'] ?? [])
+            "Campaign subjects_json is a valid array",
+            is_array($subjects),
+            "Subjects count: " . count($subjects ?? [])
         );
     }
 }

@@ -2122,8 +2122,11 @@ switch ($action) {
             }
         }
 
-        if ($lecturerId > 0) {
-            $lecturerName = $lecturers[$lecturerId] ?? 'Giảng viên';
+        $lecturerIdRaw = isset($_GET['lecturer_id']) ? $_GET['lecturer_id'] : '';
+        $isAllLecturers = ($lecturerIdRaw === 'all');
+
+        if ($lecturerId > 0 || $isAllLecturers) {
+            $lecturerName = $isAllLecturers ? 'Tất cả giảng viên' : ($lecturers[$lecturerId] ?? 'Giảng viên');
 
             // Query all campaigns and extract subjects matching lecturerId
             $resCampaigns = $conn->query("SELECT id, name, project_id, subjects_json, status, thesis_milestones_json FROM marketing_campaigns");
@@ -2140,20 +2143,24 @@ switch ($action) {
                     $courseSubjects = [];
                     foreach ($subjectsArray as $sub) {
                         $subjectMatches = false;
-                        if (isset($sub['lecturer_id']) && (int)$sub['lecturer_id'] === $lecturerId) {
+                        if ($isAllLecturers) {
                             $subjectMatches = true;
-                        }
-                        if (isset($sub['host_sessions']) && is_array($sub['host_sessions'])) {
-                            foreach ($sub['host_sessions'] as $session) {
-                                if (isset($session['lecturer_name']) && (int)$session['lecturer_name'] === $lecturerId) {
-                                    $subjectMatches = true;
+                        } else {
+                            if (isset($sub['lecturer_id']) && (int)$sub['lecturer_id'] === $lecturerId) {
+                                $subjectMatches = true;
+                            }
+                            if (isset($sub['host_sessions']) && is_array($sub['host_sessions'])) {
+                                foreach ($sub['host_sessions'] as $session) {
+                                    if (isset($session['lecturer_name']) && (int)$session['lecturer_name'] === $lecturerId) {
+                                        $subjectMatches = true;
+                                    }
                                 }
                             }
-                        }
-                        if (isset($sub['seminars']) && is_array($sub['seminars'])) {
-                            foreach ($sub['seminars'] as $sem) {
-                                if (isset($sem['lecturer_id']) && (int)$sem['lecturer_id'] === $lecturerId) {
-                                    $subjectMatches = true;
+                            if (isset($sub['seminars']) && is_array($sub['seminars'])) {
+                                foreach ($sub['seminars'] as $sem) {
+                                    if (isset($sem['lecturer_id']) && (int)$sem['lecturer_id'] === $lecturerId) {
+                                        $subjectMatches = true;
+                                    }
                                 }
                             }
                         }
@@ -2182,12 +2189,12 @@ switch ($action) {
                 'data' => [
                     'student' => null,
                     'lecturer' => [
-                        'id' => $lecturerId,
+                        'id' => $isAllLecturers ? 'all' : $lecturerId,
                         'name' => $lecturerName
                     ],
                     'course' => [
                         'id' => 0,
-                        'name' => 'Lịch giảng dạy',
+                        'name' => $isAllLecturers ? 'Lịch giảng dạy tổng hợp' : 'Lịch giảng dạy',
                         'subjects' => $matchingSubjects,
                         'thesis_milestones' => $thesisMilestones
                     ],

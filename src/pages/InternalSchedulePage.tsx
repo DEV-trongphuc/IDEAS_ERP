@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { 
-  Calendar, BookOpen, User, Copy, ExternalLink, 
+  Calendar, BookOpen, User, Users, Copy, ExternalLink, 
   ChevronLeft, ChevronRight, Clock, MapPin, 
-  AlertCircle, CalendarDays, Award, Briefcase, FileText
+  AlertCircle, CalendarDays, Award, Briefcase, FileText,
+  Video
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 export const InternalSchedulePage: React.FC = () => {
-  const [viewType, setViewType] = useState<'course' | 'lecturer'>('course');
+  const [viewType, setViewType] = useState<'course' | 'lecturer'>('lecturer');
   
   // Selection States
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
-  const [selectedLecturerId, setSelectedLecturerId] = useState<string>('');
+  const [selectedLecturerId, setSelectedLecturerId] = useState<string>('all');
   
   // Calendar Data States
   const [loading, setLoading] = useState(false);
@@ -157,6 +159,56 @@ export const InternalSchedulePage: React.FC = () => {
       });
     }
   });
+
+  // Deduplicate merged/shared classes (same date, lecturer, subjectCode, time)
+  try {
+    const dedupedEvents: any[] = [];
+    allEvents.forEach(evt => {
+      if (!evt) return;
+      const existing = dedupedEvents.find(e => 
+        e.date === evt.date && 
+        e.lecturer === evt.lecturer && 
+        e.subjectCode === evt.subjectCode && 
+        e.time === evt.time &&
+        e.type === evt.type
+      );
+      
+      if (existing) {
+        const getCourseName = (fullName: string) => {
+          if (!fullName) return '';
+          const match = fullName.match(/\(([^)]+)\)$/);
+          return match ? match[1] : '';
+        };
+        
+        const getBaseName = (fullName: string) => {
+          if (!fullName) return '';
+          return fullName.replace(/\s*\([^)]+\)$/, '').trim();
+        };
+        
+        const course1 = getCourseName(existing.subjectName || '');
+        const course2 = getCourseName(evt.subjectName || '');
+        const baseName = getBaseName(existing.subjectName || '');
+        
+        if (course1 && course2 && course1 !== course2) {
+          const courses = Array.from(new Set([...course1.split(', '), ...course2.split(', ')]));
+          existing.subjectName = `${baseName} (${courses.join(', ')})`;
+        } else if (!course1 && course2) {
+          existing.subjectName = `${existing.subjectName} (${course2})`;
+        }
+        
+        if (existing.title !== evt.title && evt.title) {
+          const titles = Array.from(new Set([existing.title, evt.title].filter(Boolean)));
+          existing.title = titles.join(' / ');
+        }
+      } else {
+        dedupedEvents.push({ ...evt });
+      }
+    });
+    allEvents.length = 0;
+    allEvents.push(...dedupedEvents);
+  } catch (err) {
+    console.error('Error during events deduplication:', err);
+  }
 
   // Calculate nearest class and assignment/milestone
   const todayDate = new Date();
@@ -357,12 +409,12 @@ export const InternalSchedulePage: React.FC = () => {
 
         {/* Dropdowns and Action Buttons */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
-          <div style={{ flex: '1 1 300px' }}>
+          <div style={{ width: '320px', maxWidth: '100%' }}>
             {viewType === 'course' ? (
               <CustomSelect
                 options={[
                   { value: '', label: '-- Chọn Khóa học / Campaign --' },
-                  ...campaigns.map(c => ({ value: String(c.id), label: c.name }))
+                  ...campaigns.filter(c => c.status === 'active').map(c => ({ value: String(c.id), label: c.name }))
                 ]}
                 value={selectedCampaignId}
                 onChange={(val) => setSelectedCampaignId(val as string)}
@@ -373,12 +425,14 @@ export const InternalSchedulePage: React.FC = () => {
               <CustomSelect
                 options={[
                   { value: '', label: '-- Chọn Giảng viên --' },
+                  { value: 'all', label: 'Tất cả giảng viên (Lịch tổng hợp)', icon: <Users size={14} /> },
                   ...companies.map(c => ({ value: String(c.id), label: c.name }))
                 ]}
                 value={selectedLecturerId}
                 onChange={(val) => setSelectedLecturerId(val as string)}
                 placeholder="Chọn giảng viên..."
                 searchable
+                showAvatars
               />
             )}
           </div>
@@ -530,7 +584,7 @@ export const InternalSchedulePage: React.FC = () => {
               }}>
                 <Award size={16} style={{ color: '#d97706' }} />
                 <div>
-                  <div style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Trường cấp bằng</div>
+                  <div style={{ fontSize: '0.625rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Đơn vị</div>
                   <div style={{ fontSize: '0.78rem', fontWeight: 750, color: 'var(--color-text)' }}>{program.degree_awarding_body}</div>
                 </div>
               </div>
@@ -759,8 +813,11 @@ export const InternalSchedulePage: React.FC = () => {
                               overflow: 'hidden',
                               textOverflow: 'ellipsis'
                             }}
+                            title={`${evt.lecturer} - ${evt.subjectCode}: ${evt.title} (${evt.time})`}
                           >
-                            {evt.subjectCode}: {evt.title}
+                            {selectedLecturerId === 'all' 
+                              ? `${evt.lecturer}: ${evt.subjectCode}`
+                              : `${evt.subjectCode}: ${evt.title}`}
                           </div>
                         ))}
 
@@ -799,7 +856,7 @@ export const InternalSchedulePage: React.FC = () => {
       )}
 
       {/* Calendar Day Details Modal */}
-      {isModalOpen && selectedDateStr && (
+      {isModalOpen && selectedDateStr && createPortal(
         <div style={{
           position: 'fixed',
           inset: 0,
@@ -807,7 +864,7 @@ export const InternalSchedulePage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 20000,
+          zIndex: 2147483647,
           backdropFilter: 'blur(4px)'
         }}>
           <div style={{
@@ -882,6 +939,85 @@ export const InternalSchedulePage: React.FC = () => {
                             <div>Giảng viên: <strong style={{ color: 'var(--color-text)' }}>{evt.lecturer}</strong></div>
                             <div>Địa điểm: <strong style={{ color: 'var(--color-text)' }}>{evt.location}</strong></div>
                           </div>
+                          {evt.zoom_link && (
+                            <div style={{ 
+                              marginTop: '8px', 
+                              background: 'var(--color-primary-light)', 
+                              border: '1px solid var(--color-border-light)', 
+                              borderRadius: '8px', 
+                              padding: '8px 10px', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: '6px' 
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Video size={13} /> Phòng Zoom Trực tuyến
+                                </span>
+                                <button
+                                  onClick={() => window.open(evt.zoom_link, '_blank')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    background: 'var(--color-primary)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '4px 8px',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 750,
+                                    cursor: 'pointer',
+                                    boxShadow: 'var(--shadow-xs)'
+                                  }}
+                                  className="hover-lift"
+                                >
+                                  Vào học Zoom <ExternalLink size={11} />
+                                </button>
+                              </div>
+                              
+                              <div style={{ 
+                                display: 'flex', 
+                                gap: '10px', 
+                                fontSize: '0.68rem', 
+                                color: 'var(--color-text)', 
+                                background: '#ffffff', 
+                                padding: '4px 6px', 
+                                borderRadius: '4px', 
+                                border: '1px solid var(--color-border-light)',
+                                flexWrap: 'wrap'
+                              }}>
+                                {evt.zoom_id && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span>ID: <strong>{evt.zoom_id}</strong></span>
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(evt.zoom_id);
+                                        toast.success('Đã copy Zoom ID!');
+                                      }}
+                                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)' }}
+                                    >
+                                      <Copy size={11} />
+                                    </button>
+                                  </div>
+                                )}
+                                {evt.zoom_pass && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--color-border-light)', paddingLeft: '10px' }}>
+                                    <span>Pass: <strong>{evt.zoom_pass}</strong></span>
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(evt.zoom_pass);
+                                        toast.success('Đã copy Zoom Pass!');
+                                      }}
+                                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)' }}
+                                    >
+                                      <Copy size={11} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -914,7 +1050,7 @@ export const InternalSchedulePage: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 };
