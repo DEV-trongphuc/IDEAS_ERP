@@ -7,6 +7,10 @@ error_reporting(E_ALL);
 define('DIAG_TOKEN', 'Ideas_Diag_Secure_Token_2026_9e88d6c701fbc6b7');
 require_once __DIR__ . '/test_bootstrap.php';
 
+header('Content-Type: text/plain; charset=utf-8');
+ob_implicit_flush(true);
+while (ob_get_level()) ob_end_clean();
+
 class RespondException extends Exception {
     public function __construct(int $code, string $message) {
         parent::__construct($message, $code);

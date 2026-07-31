@@ -217,6 +217,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [deleteSubtaskTarget, setDeleteSubtaskTarget] = useState<{ id: string; title: string } | null>(null);
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
   const [showTeamDropdown, setShowTeamDropdown] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
   const [allowedProjects, setAllowedProjects] = useState<any[]>([]);
   const [allowedCampaigns, setAllowedCampaigns] = useState<any[]>([]);
@@ -574,6 +575,22 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       console.error(e);
     } finally {
       setLoadingComments(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!task?.id || task.id === 'new') return;
+    try {
+      const res = await api.delete(`/activities/comments/${commentId}`);
+      if (res.data && res.data.success) {
+        loadComments(task.id);
+        loadTimeline(task.id);
+        toast.success(t('Đã xóa bình luận!'));
+      } else {
+        toast.error(res.data?.message || t('Không thể xóa bình luận'));
+      }
+    } catch (e: any) {
+      toast.error(t('Lỗi khi xóa bình luận: ') + e.message);
     }
   };
 
@@ -3600,30 +3617,59 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                     </div>
                                   )}
                                   
-                                  {!isReply && (
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                                      <button
-                                        onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp', avatar: comment.avatar_url || commUser?.avatar || commUser?.avatar_url })}
-                                        style={{ 
-                                          background: 'rgba(163, 20, 34, 0.05)', 
-                                          border: 'none', 
-                                          color: 'var(--color-primary)', 
-                                          fontSize: '0.7rem', 
-                                          padding: '4px 10px', 
-                                          borderRadius: '12px',
-                                          cursor: 'pointer', 
-                                          fontWeight: 700, 
-                                          display: 'flex', 
-                                          alignItems: 'center', 
-                                          gap: '4px' 
-                                        }}
-                                        className="hover-scale"
-                                      >
-                                        <MessageSquare size={11} />
-                                        <span>Phản hồi</span>
-                                      </button>
-                                    </div>
-                                  )}
+                                  {(() => {
+                                    const isCurrentUserAdmin = ['admin', 'superadmin', 'super_admin', 'director'].includes(currentUser?.role || '');
+                                    const isCommentAuthor = currentUser?.id && String(currentUser.id) === String(comment.user_id);
+                                    const canDeleteComment = isCurrentUserAdmin || isCommentAuthor;
+
+                                    if (!isReply || canDeleteComment) {
+                                      return (
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+                                          {canDeleteComment && (
+                                            <button
+                                              onClick={() => setCommentToDelete(comment.id)}
+                                              style={{ 
+                                                background: 'none', 
+                                                border: 'none', 
+                                                color: 'var(--color-danger, #ef4444)', 
+                                                cursor: 'pointer', 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                padding: '4px' 
+                                              }}
+                                              className="hover-scale"
+                                              title={t('Xóa bình luận')}
+                                            >
+                                              <Trash2 size={12} />
+                                            </button>
+                                          )}
+                                          {!isReply && (
+                                            <button
+                                              onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp', avatar: comment.avatar_url || commUser?.avatar || commUser?.avatar_url })}
+                                              style={{ 
+                                                background: 'rgba(163, 20, 34, 0.05)', 
+                                                border: 'none', 
+                                                color: 'var(--color-primary)', 
+                                                fontSize: '0.7rem', 
+                                                padding: '4px 10px', 
+                                                borderRadius: '12px',
+                                                cursor: 'pointer', 
+                                                fontWeight: 700, 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '4px' 
+                                              }}
+                                              className="hover-scale"
+                                            >
+                                              <MessageSquare size={11} />
+                                              <span>Phản hồi</span>
+                                            </button>
+                                          )}
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                               </div>
                             );
@@ -5708,6 +5754,23 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             message={t(`Bạn có chắc chắn muốn xóa việc con "${deleteSubtaskTarget?.title || ''}" không? Hành động này không thể hoàn tác.`)}
             confirmText={t('Xóa việc con')}
             cancelText={t('Quay lại')}
+            confirmType="danger"
+          />
+
+          {/* Confirm Comment Deletion Modal */}
+          <ConfirmModal
+            isOpen={commentToDelete !== null}
+            onClose={() => setCommentToDelete(null)}
+            onConfirm={async () => {
+              if (commentToDelete !== null) {
+                await handleDeleteComment(commentToDelete);
+                setCommentToDelete(null);
+              }
+            }}
+            title={t('Xác nhận xóa bình luận')}
+            message={t('Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.')}
+            confirmText={t('Xóa')}
+            cancelText={t('Hủy')}
             confirmType="danger"
           />
     </>,

@@ -4224,6 +4224,20 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     }
   };
 
+  const getDeleteCommentEndpoint = (type: string, commentId: number) => {
+    switch (type) {
+      case 'expense':
+        return `/expenses/comments/${commentId}`;
+      case 'leave':
+      case 'advance':
+        return `/hrm/comments/${commentId}`;
+      case 'checkin':
+        return `/check-ins/comments/${commentId}`;
+      default:
+        return null;
+    }
+  };
+
   const fetchComments = async () => {
     const endpoint = getCommentsEndpoint(item.type, item.id);
     if (!endpoint) return;
@@ -4235,6 +4249,7 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
         id: c.id,
         author: c.user_name || t('Tôi'),
         avatar: c.avatar_url || c.avatar || c.user_avatar || c.user_avatar_url,
+        user_id: c.user_id,
         time: new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         text: c.body || '',
         attachments: c.attachments || [],
@@ -5501,6 +5516,21 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
                   });
                   toast.success(t('Thêm bình luận thành công'));
                   fetchComments();
+                }}
+                onDeleteComment={async (commentId) => {
+                  const endpoint = getDeleteCommentEndpoint(item.type, Number(commentId));
+                  if (!endpoint) {
+                    setLocalComments(localComments.filter((c: any) => c.id !== commentId));
+                    toast.success(t('Đã xóa bình luận'));
+                    return;
+                  }
+                  try {
+                    await api.delete(endpoint);
+                    toast.success(t('Đã xóa bình luận'));
+                    fetchComments();
+                  } catch (err: any) {
+                    toast.error(err?.response?.data?.message || t('Lỗi khi xóa bình luận'));
+                  }
                 }}
               />
             </div>

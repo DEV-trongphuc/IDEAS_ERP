@@ -818,12 +818,11 @@ export default function ProjectsPage() {
               {canDelete && (
                 <button
                   onClick={() => handleDeleteDetailComment(entityType, entityId, comment.id)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '2px', display: 'inline-flex', alignItems: 'center' }}
                   className="hover-lift"
-                  title="Xóa bình luận"
+                  title={t('Xóa')}
                 >
-                  <Trash2 size={11} />
-                  <span>Xóa</span>
+                  <Trash2 size={12} />
                 </button>
               )}
             </div>

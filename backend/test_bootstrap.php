@@ -26,20 +26,41 @@ require_once __DIR__ . '/NotificationService.php';
 // 3. Khởi tạo đối tượng PDO từ kết nối MySQLi $conn
 $pdo = null;
 try {
-    $dbHost = $_ENV['DB_HOST'] ?? ($servername ?? 'localhost');
-    $dbUser = $_ENV['DB_USER'] ?? ($username ?? '');
-    $dbPass = $_ENV['DB_PASS'] ?? ($password ?? '');
-    $dbName = $_ENV['DB_NAME'] ?? ($dbname ?? '');
+    $dbHost = !empty($_ENV['DB_HOST']) ? $_ENV['DB_HOST'] : ($servername ?? 'localhost');
+    $dbUser = !empty($_ENV['DB_USER']) ? $_ENV['DB_USER'] : ($username ?? '');
+    $dbPass = !empty($_ENV['DB_PASS']) ? $_ENV['DB_PASS'] : ($password ?? '');
+    $dbName = !empty($_ENV['DB_NAME']) ? $_ENV['DB_NAME'] : ($dbname ?? '');
     
     if (!empty($dbName)) {
-        $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
+        try {
+            $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+        } catch (\Throwable $ex) {
+            if ($dbHost === 'localhost' || $dbHost === '127.0.0.1') {
+                $fallbackHost = ($dbHost === 'localhost') ? '127.0.0.1' : 'localhost';
+                $pdo = new PDO("mysql:host={$fallbackHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                ]);
+            } else {
+                throw $ex;
+            }
+        }
         $pdo->exec("SET time_zone = '+07:00'");
     }
 } catch (\Throwable $e) {
     error_log("PDO Connection warning: " . $e->getMessage());
+}
+
+if (!$pdo && !$isCli) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: PDO is null']);
+    exit;
+} elseif (!$pdo) {
+    echo "Database connection failed: PDO is null\n";
+    exit(1);
 }
 
 // 4. Các hàm tiện ích kiểm thử (Test Utility Helper Functions)

@@ -20,6 +20,7 @@ import { AssignedAssetsSection, type AssignedAsset } from './ui/AssignedAssetsSe
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import styles from '../pages/EntityDrawer.module.css';
+import { numberToVietnameseText } from '../utils/numberToText';
 
 interface Props {
   isOpen: boolean;
@@ -217,6 +218,18 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
     schedule: true,
     documents: true
   });
+
+  const formatMoneyInput = (val: string | number): string => {
+    if (val === "" || val === null || val === undefined || Number(val) === 0) return "";
+    const numStr = String(val).replace(/[^0-9]/g, "");
+    if (!numStr) return "";
+    return Number(numStr).toLocaleString('en-US');
+  };
+
+  const handleMoneyChange = (val: string, setter: (n: number) => void) => {
+    const numStr = val.replace(/[^0-9]/g, "");
+    setter(numStr ? Number(numStr) : 0);
+  };
 
   const toggleSection = (sec: string) => {
     setOpenSections(prev => ({ ...prev, [sec]: !prev[sec] }));
@@ -4188,22 +4201,32 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         <div className="form-group">
                           <label className="form-label" style={{ fontWeight: 600 }}>{t('Lương Net thực tế')}</label>
                           <input
-                            type="number"
+                            type="text"
                             className="form-input"
-                            value={dealSalary}
-                            onChange={e => setDealSalary(Number(e.target.value))}
+                            value={formatMoneyInput(dealSalary)}
+                            onChange={e => handleMoneyChange(e.target.value, setDealSalary)}
                             disabled={!canEditSalary}
                           />
+                          {Number(dealSalary) > 0 && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                              {numberToVietnameseText(dealSalary, 'VND', false)}
+                            </div>
+                          )}
                         </div>
                         <div className="form-group">
                           <label className="form-label" style={{ fontWeight: 600 }}>{t('Chỉ tiêu doanh số KPI tối thiểu')}</label>
                           <input
-                            type="number"
+                            type="text"
                             className="form-input"
-                            value={kpiTarget}
-                            onChange={e => setKpiTarget(Number(e.target.value))}
+                            value={formatMoneyInput(kpiTarget)}
+                            onChange={e => handleMoneyChange(e.target.value, setKpiTarget)}
                             disabled={!canEditSalary}
                           />
+                          {Number(kpiTarget) > 0 && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                              {numberToVietnameseText(kpiTarget, 'VND', false)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -4222,32 +4245,47 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         <div className="form-group">
                           <label className="form-label" style={{ fontWeight: 600 }}>{t('Phụ cấp ăn trưa')}</label>
                           <input
-                            type="number"
+                            type="text"
                             className="form-input"
-                            value={allowanceMeal}
-                            onChange={e => setAllowanceMeal(Number(e.target.value))}
+                            value={formatMoneyInput(allowanceMeal)}
+                            onChange={e => handleMoneyChange(e.target.value, setAllowanceMeal)}
                             disabled={!canEditSalary}
                           />
+                          {Number(allowanceMeal) > 0 && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                              {numberToVietnameseText(allowanceMeal, 'VND', false)}
+                            </div>
+                          )}
                         </div>
                         <div className="form-group">
                           <label className="form-label" style={{ fontWeight: 600 }}>{t('Phụ cấp xăng xe')}</label>
                           <input
-                            type="number"
+                            type="text"
                             className="form-input"
-                            value={allowanceTravel}
-                            onChange={e => setAllowanceTravel(Number(e.target.value))}
+                            value={formatMoneyInput(allowanceTravel)}
+                            onChange={e => handleMoneyChange(e.target.value, setAllowanceTravel)}
                             disabled={!canEditSalary}
                           />
+                          {Number(allowanceTravel) > 0 && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                              {numberToVietnameseText(allowanceTravel, 'VND', false)}
+                            </div>
+                          )}
                         </div>
                         <div className="form-group">
                           <label className="form-label" style={{ fontWeight: 600 }}>{t('Phụ cấp điện thoại')}</label>
                           <input
-                            type="number"
+                            type="text"
                             className="form-input"
-                            value={allowancePhone}
-                            onChange={e => setAllowancePhone(Number(e.target.value))}
+                            value={formatMoneyInput(allowancePhone)}
+                            onChange={e => handleMoneyChange(e.target.value, setAllowancePhone)}
                             disabled={!canEditSalary}
                           />
+                          {Number(allowancePhone) > 0 && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                              {numberToVietnameseText(allowancePhone, 'VND', false)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -4263,16 +4301,13 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           {t('Bảo Hiểm Xã Hội')}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <input
-                            type="checkbox"
-                            id="drawer_has_insurance"
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <ToggleSwitch
                             checked={hasInsurance}
-                            onChange={e => setHasInsurance(e.target.checked)}
+                            onChange={checked => setHasInsurance(checked)}
                             disabled={!canEditSalary}
-                            style={{ width: '15px', height: '15px', cursor: canEditSalary ? 'pointer' : 'default' }}
                           />
-                          <label htmlFor="drawer_has_insurance" style={{ fontWeight: 700, fontSize: '0.8rem', cursor: canEditSalary ? 'pointer' : 'default', color: 'var(--color-text)' }}>
+                          <label style={{ fontWeight: 700, fontSize: '0.8rem', cursor: canEditSalary ? 'pointer' : 'default', color: 'var(--color-text)', marginBottom: 0 }}>
                             {t('Đóng bảo hiểm xã hội bắt buộc')}
                           </label>
                         </div>
@@ -4284,13 +4319,18 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                             <div className="form-group">
                               <label className="form-label" style={{ fontWeight: 600 }}>{t('Mức lương đóng BHXH')}</label>
                               <input
-                                type="number"
+                                type="text"
                                 className="form-input"
-                                value={baseSalary}
-                                onChange={e => setBaseSalary(Number(e.target.value))}
+                                value={formatMoneyInput(baseSalary)}
+                                onChange={e => handleMoneyChange(e.target.value, setBaseSalary)}
                                 disabled={!canEditSalary}
                                 placeholder={t('Nhập mức lương đóng bảo hiểm')}
                               />
+                              {Number(baseSalary) > 0 && (
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '4px', fontStyle: 'italic' }}>
+                                  {numberToVietnameseText(baseSalary, 'VND', false)}
+                                </div>
+                              )}
                             </div>
                             <div className="form-group">
                               <label className="form-label" style={{ fontWeight: 600 }}>{t('Tỷ lệ BHXH (%)')}</label>
@@ -4395,45 +4435,53 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {customAllowances.map((item, index) => (
-                            <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <input
-                                type="text"
-                                className="form-input"
-                                style={{ flex: 2, height: '34px', fontSize: '0.8125rem' }}
-                                value={item.name}
-                                onChange={e => {
-                                  const updated = [...customAllowances];
-                                  updated[index].name = e.target.value;
-                                  setCustomAllowances(updated);
-                                }}
-                                placeholder={t('Tên phụ cấp/chỉ số (ví dụ: Độc hại, Thâm niên)')}
-                                disabled={!canEditSalary}
-                              />
-                              <input
-                                type="number"
-                                className="form-input"
-                                style={{ flex: 1, height: '34px', fontSize: '0.8125rem' }}
-                                value={item.value || ''}
-                                onChange={e => {
-                                  const updated = [...customAllowances];
-                                  updated[index].value = Number(e.target.value);
-                                  setCustomAllowances(updated);
-                                }}
-                                placeholder={t('Số tiền')}
-                                disabled={!canEditSalary}
-                              />
-                              {canEditSalary && (
-                                <button
-                                  type="button"
-                                  className="btn outline sm"
-                                  onClick={() => {
-                                    const updated = customAllowances.filter((_, i) => i !== index);
+                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input
+                                  type="text"
+                                  className="form-input"
+                                  style={{ flex: 2, height: '34px', fontSize: '0.8125rem' }}
+                                  value={item.name}
+                                  onChange={e => {
+                                    const updated = [...customAllowances];
+                                    updated[index].name = e.target.value;
                                     setCustomAllowances(updated);
                                   }}
-                                  style={{ padding: '6px', borderRadius: '6px', minWidth: 'auto', height: '34px', color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
+                                  placeholder={t('Tên phụ cấp/chỉ số (ví dụ: Độc hại, Thâm niên)')}
+                                  disabled={!canEditSalary}
+                                />
+                                <input
+                                  type="text"
+                                  className="form-input"
+                                  style={{ flex: 1, height: '34px', fontSize: '0.8125rem' }}
+                                  value={formatMoneyInput(item.value)}
+                                  onChange={e => {
+                                    const updated = [...customAllowances];
+                                    const numStr = e.target.value.replace(/[^0-9]/g, "");
+                                    updated[index].value = numStr ? Number(numStr) : 0;
+                                    setCustomAllowances(updated);
+                                  }}
+                                  placeholder={t('Số tiền')}
+                                  disabled={!canEditSalary}
+                                />
+                                {canEditSalary && (
+                                  <button
+                                    type="button"
+                                    className="btn outline sm"
+                                    onClick={() => {
+                                      const updated = customAllowances.filter((_, i) => i !== index);
+                                      setCustomAllowances(updated);
+                                    }}
+                                    style={{ padding: '6px', borderRadius: '6px', minWidth: 'auto', height: '34px', color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                              {Number(item.value) > 0 && (
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600, fontStyle: 'italic', paddingLeft: '8px' }}>
+                                  {numberToVietnameseText(item.value, 'VND', false)}
+                                </div>
                               )}
                             </div>
                           ))}

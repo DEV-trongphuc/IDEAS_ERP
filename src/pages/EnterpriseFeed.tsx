@@ -13,6 +13,8 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { compressToWebP } from '../utils/imageCompress';
 import { CustomModal } from '../components/ui/CustomModal';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { MentionInput } from '../components/ui/MentionInput';
 
 // Reaction Types Constants
 const REACTION_TYPES = [
@@ -87,6 +89,7 @@ export const EnterpriseFeed: React.FC = () => {
   const [commentsMap, setCommentsMap] = useState<Record<number, Comment[]>>({});
   const [newCommentText, setNewCommentText] = useState<Record<number, string>>({});
   const [replyToCommentId, setReplyToCommentId] = useState<Record<number, number | null>>({});
+  const [commentToDelete, setCommentToDelete] = useState<{ postId: number; commentId: number } | null>(null);
 
   // Floating reactions active state per post
   const [hoveredPostId, setHoveredPostId] = useState<number | null>(null);
@@ -345,7 +348,8 @@ export const EnterpriseFeed: React.FC = () => {
   // Handle post submit
   const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && attachments.length === 0) return;
+    const hasText = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim().length > 0;
+    if (!hasText && attachments.length === 0) return;
     if (visibility === 'team' && !selectedTeamId) {
       toast.error(t('Vui lòng chọn phòng ban đăng bài'));
       return;
@@ -442,12 +446,13 @@ export const EnterpriseFeed: React.FC = () => {
 
   // Handle add comment / reply
   const handleAddComment = async (postId: number, parentId: number | null = null) => {
-    const text = newCommentText[postId]?.trim();
-    if (!text) return;
+    const rawText = newCommentText[postId] || '';
+    const hasText = rawText.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim().length > 0;
+    if (!hasText) return;
 
     try {
       const res = await api.post(`/posts/${postId}/comments`, {
-        content: text,
+        content: rawText.trim(),
         parent_id: parentId
       });
 
@@ -553,6 +558,57 @@ export const EnterpriseFeed: React.FC = () => {
         return subPart;
       });
     });
+  };
+
+  const renderPostContent = (content: string) => {
+    if (!content) return null;
+    const isHtml = /<[a-z][\s\S]*>/i.test(content);
+    if (isHtml) {
+      return (
+        <div 
+          className="rich-text-content"
+          dangerouslySetInnerHTML={{ __html: content }} 
+          style={{ fontSize: '0.9rem', color: 'var(--color-text)', wordBreak: 'break-word' }}
+          onClick={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'SPAN' && target.textContent?.startsWith('#')) {
+               const tag = target.textContent.replace('#', '');
+               setActiveTag(tag);
+            }
+          }}
+        />
+      );
+    }
+    return (
+      <p style={{
+        margin: 0,
+        fontSize: '0.9rem',
+        lineHeight: '1.5',
+        color: 'var(--color-text)',
+        whiteSpace: 'pre-wrap'
+      }}>
+        {formatText(content)}
+      </p>
+    );
+  };
+
+  const renderCommentContent = (content: string) => {
+    if (!content) return null;
+    const isHtml = /<[a-z][\s\S]*>/i.test(content);
+    if (isHtml) {
+      return (
+        <div 
+          className="rich-text-content" 
+          dangerouslySetInnerHTML={{ __html: content }} 
+          style={{ fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.4, wordBreak: 'break-word' }}
+        />
+      );
+    }
+    return (
+      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.4 }}>
+        {content}
+      </p>
+    );
   };
 
   // Reactions Popover Hover Handlers
@@ -814,23 +870,23 @@ export const EnterpriseFeed: React.FC = () => {
             name={user?.name || 'User'} 
             size={40} 
           />
-          <textarea 
-            placeholder={`${t('Bạn đang nghĩ gì thế')}, ${user?.name || ''}?`}
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            style={{
-              width: '100%',
-              minHeight: '80px',
-              border: 'none',
-              outline: 'none',
-              resize: 'none',
-              background: 'transparent',
-              fontSize: '0.9rem',
-              color: 'var(--color-text)',
-              paddingTop: '8px'
-            }}
-            required
-          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <MentionInput
+              placeholder={`${t('Bạn đang nghĩ gì thế')}, ${user?.name || ''}?`}
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              style={{
+                width: '100%',
+                minHeight: '80px',
+                border: 'none',
+                boxShadow: 'none',
+                background: 'transparent',
+                fontSize: '0.9rem',
+                color: 'var(--color-text)'
+              }}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         {/* Attachment Previews */}
@@ -1042,15 +1098,7 @@ export const EnterpriseFeed: React.FC = () => {
                 </div>
 
                 {/* Post Content */}
-                <p style={{
-                  margin: 0,
-                  fontSize: '0.9rem',
-                  lineHeight: '1.5',
-                  color: 'var(--color-text)',
-                  whiteSpace: 'pre-wrap'
-                }}>
-                  {formatText(post.content)}
-                </p>
+                {renderPostContent(post.content)}
 
                 {/* Scraped Link Preview */}
                 {post.link_metadata && (
@@ -1268,74 +1316,61 @@ export const EnterpriseFeed: React.FC = () => {
                     gap: '12px'
                   }}>
                     {/* Add Comment Input */}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', width: '100%' }}>
                       <Avatar 
                         src={user?.avatar_url || user?.avatar} 
                         name={user?.name || 'User'} 
                         size={32} 
+                        style={{ marginTop: '4px' }}
                       />
-                      <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-                        <input 
-                          type="text" 
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minWidth: 0 }}>
+                        <MentionInput
                           placeholder={
                             replyToCommentId[post.id] 
                               ? `${t('Phản hồi bình luận')}...` 
                               : `${t('Viết bình luận')}...`
                           }
                           value={newCommentText[post.id] || ''}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setNewCommentText(prev => ({ ...prev, [post.id]: val }));
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') handleAddComment(post.id, replyToCommentId[post.id]);
+                          onChange={val => {
+                            setNewCommentText(prev => ({ ...prev, [post.id]: val.target.value }));
                           }}
                           style={{
                             width: '100%',
-                            background: 'var(--color-bg)',
-                            border: '1px solid var(--color-border-light)',
-                            borderRadius: '20px',
-                            padding: '0 40px 0 16px',
-                            height: '34px',
-                            fontSize: '0.8rem',
-                            outline: 'none',
-                            color: 'var(--color-text)'
+                            minHeight: '48px',
+                            fontSize: '0.8rem'
                           }}
                         />
-                        <button 
-                          onClick={() => handleAddComment(post.id, replyToCommentId[post.id])}
-                          style={{
-                            position: 'absolute',
-                            right: '6px',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'var(--color-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '26px',
-                            height: '26px'
-                          }}
-                        >
-                          <Send size={14} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button 
+                            onClick={() => handleAddComment(post.id, replyToCommentId[post.id])}
+                            style={{
+                              padding: '4px 12px',
+                              borderRadius: '20px',
+                              fontSize: '0.72rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            className="btn primary sm"
+                          >
+                            <Send size={11} />
+                            <span>{t('Gửi')}</span>
+                          </button>
+                          {replyToCommentId[post.id] && (
+                            <button 
+                              onClick={() => setReplyToCommentId(prev => ({ ...prev, [post.id]: null }))}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '20px',
+                                fontSize: '0.72rem'
+                              }}
+                              className="btn outline sm"
+                            >
+                              {t('Hủy')}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      {replyToCommentId[post.id] && (
-                        <button 
-                          onClick={() => setReplyToCommentId(prev => ({ ...prev, [post.id]: null }))}
-                          style={{
-                            background: 'var(--color-bg)',
-                            border: '1px solid var(--color-border-light)',
-                            borderRadius: '20px',
-                            padding: '6px 10px',
-                            fontSize: '0.7rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          &times; {t('Hủy')}
-                        </button>
-                      )}
                     </div>
 
                     {/* Comments List */}
@@ -1367,9 +1402,7 @@ export const EnterpriseFeed: React.FC = () => {
                                       {new Date(comment.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                   </div>
-                                  <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.4 }}>
-                                    {comment.content}
-                                  </p>
+                                  {renderCommentContent(comment.content)}
                                 </div>
                                 
                                 {/* Comment Actions */}
@@ -1380,12 +1413,13 @@ export const EnterpriseFeed: React.FC = () => {
                                   >
                                     {t('Phản hồi')}
                                   </button>
-                                  {(user?.id === comment.user_id || ['admin', 'superadmin', 'super_admin'].includes(user?.role || '')) && (
+                                  {(user?.id === comment.user_id || ['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role || '')) && (
                                     <button 
-                                      onClick={() => handleDeleteComment(post.id, comment.id)}
-                                      style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: 0 }}
+                                      onClick={() => setCommentToDelete({ postId: post.id, commentId: comment.id })}
+                                      style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}
+                                      title={t('Xóa')}
                                     >
-                                      {t('Xóa')}
+                                      <Trash2 size={12} />
                                     </button>
                                   )}
                                 </div>
@@ -1413,17 +1447,16 @@ export const EnterpriseFeed: React.FC = () => {
                                         {new Date(reply.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                       </span>
                                     </div>
-                                    <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.4 }}>
-                                      {reply.content}
-                                    </p>
+                                    {renderCommentContent(reply.content)}
                                   </div>
                                   <div style={{ display: 'flex', gap: '12px', fontSize: '0.7rem', color: 'var(--color-text-muted)', padding: '2px 8px 0 8px' }}>
-                                    {(user?.id === reply.user_id || ['admin', 'superadmin', 'super_admin'].includes(user?.role || '')) && (
+                                    {(user?.id === reply.user_id || ['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role || '')) && (
                                       <button 
-                                        onClick={() => handleDeleteComment(post.id, reply.id)}
-                                        style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: 0 }}
+                                        onClick={() => setCommentToDelete({ postId: post.id, commentId: reply.id })}
+                                        style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }}
+                                        title={t('Xóa')}
                                       >
-                                        {t('Xóa')}
+                                        <Trash2 size={12} />
                                       </button>
                                     )}
                                   </div>
@@ -1996,7 +2029,25 @@ export const EnterpriseFeed: React.FC = () => {
           )}
         </div>
       </CustomModal>
-</div>
+
+      {commentToDelete !== null && (
+        <ConfirmModal
+          isOpen={commentToDelete !== null}
+          onClose={() => setCommentToDelete(null)}
+          onConfirm={async () => {
+            if (commentToDelete) {
+              await handleDeleteComment(commentToDelete.postId, commentToDelete.commentId);
+              setCommentToDelete(null);
+            }
+          }}
+          title={t('Xác nhận xóa bình luận')}
+          message={t('Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.')}
+          confirmText={t('Xóa')}
+          cancelText={t('Hủy')}
+          confirmType="danger"
+        />
+      )}
+    </div>
   );
 };
 

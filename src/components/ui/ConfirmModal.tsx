@@ -25,7 +25,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmText = 'Xóa',
   cancelText = 'Hủy',
   confirmType = 'danger',
-  width,
+  width = 440,
   children
 }) => {
   const { t } = useLanguage();

@@ -932,6 +932,8 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
       const viewParam = searchParams.get('view');
       if (viewParam === 'databank') {
         setLocalViewMode('databank');
+      } else if (viewParam === 'calendar') {
+        setLocalViewMode('calendar');
       } else {
         setLocalViewMode('list');
       }
@@ -1604,6 +1606,24 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
             <>
               <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Calendar size={24} color="var(--color-primary)" /> {t('Lịch trình Tài chính')}
+                <button
+                  type="button"
+                  className="btn primary sm"
+                  onClick={() => navigate('/calendar')}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    fontWeight: 600, 
+                    marginLeft: '12px',
+                    padding: '4px 10px',
+                    fontSize: '0.78rem',
+                    borderRadius: '6px'
+                  }}
+                >
+                  <Calendar size={13} />
+                  {t('Xem Lịch trình Cá nhân')}
+                </button>
               </h1>
               <p className="page-subtitle">{t('Xem lịch trình, theo dõi tiến trình phát sinh Sales Order & Purchase Order.')}</p>
             </>
@@ -1673,7 +1693,11 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                   className={`btn-toggle-view ${viewMode === 'list' ? 'active' : ''}`}
                   onClick={() => {
                     setLocalViewMode('list');
-                    navigate('/data');
+                    setSearchParams((prev: any) => {
+                      const next = new URLSearchParams(prev);
+                      next.set('view', 'list');
+                      return next;
+                    });
                   }}
                   style={{
                     display: 'flex',
@@ -1698,7 +1722,11 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                   className={`btn-toggle-view ${viewMode === 'calendar' ? 'active' : ''}`}
                   onClick={() => {
                     setLocalViewMode('calendar');
-                    navigate('/calendar');
+                    setSearchParams((prev: any) => {
+                      const next = new URLSearchParams(prev);
+                      next.set('view', 'calendar');
+                      return next;
+                    });
                   }}
                   style={{
                     display: 'flex',
@@ -1720,33 +1748,6 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 </button>
                 {/* databank tab disabled */}
               </div>
-
-              {/* Separator line */}
-              <div style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
-
-              {/* Compact Check Duplicate Button */}
-              <button
-                type="button"
-                onClick={() => setShowDupCheckModal(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '0 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--color-primary)',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  height: '28px'
-                }}
-                className="btn-export-csv-compact"
-              >
-                <Search size={13} /> <span>{t('Check trùng')}</span>
-              </button>
 
               {/* Separator line */}
               <div style={{ width: '1px', height: '16px', background: 'var(--color-border)', margin: '0 6px' }} />
@@ -6997,4 +6998,4 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   );
 };
 
-export const DataList = withRouterFreezer(DataListInner, (path) => path === '/data' || path === '/calendar');
+export const DataList = withRouterFreezer(DataListInner, (path) => path === '/data');

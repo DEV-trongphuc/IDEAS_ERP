@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 207;
+$targetVersion = 208;
 $currentVersion = 186;
 
 // Query current DB version
@@ -445,6 +445,7 @@ try {
         `start_date` DATETIME NOT NULL,
         `end_date` DATETIME NOT NULL,
         `total_days` DECIMAL(3,1) DEFAULT 1.0,
+        `unpaid_days` DECIMAL(3,1) DEFAULT 0.0,
         `reason` TEXT NULL,
         `status` VARCHAR(20) DEFAULT 'pending',
         `approved_by` INT NULL,
@@ -1099,9 +1100,43 @@ try {
         $logMsg("Nâng cấp lên phiên bản 207 hoàn tất.", "success");
     }
 
-    // 14. Update DB version in system_settings
-    $targetVersion = 207;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '207') ON DUPLICATE KEY UPDATE setting_value = '207'");
+    // 14. Upgrade to 208: Add unpaid_days column to hrm_leave_requests
+    if ($currentVersion < 208) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 208...", "info");
+        try {
+            $chkCol = $conn->query("SHOW COLUMNS FROM `hrm_leave_requests` LIKE 'unpaid_days'");
+            if (!$chkCol || $chkCol->num_rows === 0) {
+                $conn->query("ALTER TABLE hrm_leave_requests ADD COLUMN unpaid_days DECIMAL(3,1) DEFAULT 0.0 AFTER total_days");
+                $logMsg("Đã bổ sung cột unpaid_days vào bảng hrm_leave_requests.", "success");
+            } else {
+                $logMsg("Cột unpaid_days đã tồn tại.", "info");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi di trú cột unpaid_days: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 208 hoàn tất.", "success");
+    }
+
+    // 15. Upgrade to 209: Add composite index for timeline queries in enterprise_posts
+    if ($currentVersion < 209) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 209...", "info");
+        try {
+            $chkIdx = $conn->query("SHOW INDEX FROM `enterprise_posts` WHERE Key_name = 'idx_post_feed_list'");
+            if (!$chkIdx || $chkIdx->num_rows === 0) {
+                $conn->query("ALTER TABLE `enterprise_posts` ADD INDEX `idx_post_feed_list` (`tenant_id`, `deleted_at`, `created_at` DESC)");
+                $logMsg("Đã bổ sung chỉ mục idx_post_feed_list vào bảng enterprise_posts.", "success");
+            } else {
+                $logMsg("Chỉ mục idx_post_feed_list đã tồn tại.", "info");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi tạo chỉ mục idx_post_feed_list: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 209 hoàn tất.", "success");
+    }
+
+    // 16. Update DB version in system_settings
+    $targetVersion = 209;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '209') ON DUPLICATE KEY UPDATE setting_value = '209'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

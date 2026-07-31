@@ -617,7 +617,7 @@ export default function HRM() {
       if (field === 'lateness_minutes') {
         // Fetch grace minutes based on profile gender
         const gender = (profile?.gender || '').toLowerCase().trim();
-        const grace = (gender === 'male' || gender === 'nam') ? 15 : 30;
+        const grace = (gender === 'male' || gender === 'nam') ? 30 : 60;
         const penalized = Math.max(0, value - grace);
         updated.lateness_penalty = penalized * 5000;
       }

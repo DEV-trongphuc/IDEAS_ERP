@@ -89,59 +89,100 @@ class PostController {
         }
 
         // Hydrate posts with comments, reactions counts and user's reaction
-        foreach ($posts as &$post) {
-            $postId = (int)$post['id'];
-            
-            // Format arrays
-            $post['attachments'] = json_decode($post['attachments_json'] ?? '[]', true) ?: [];
-            $post['tags'] = json_decode($post['tags_json'] ?? '[]', true) ?: [];
-            $post['link_metadata'] = json_decode($post['link_metadata_json'] ?? 'null', true);
-            
-            unset($post['attachments_json'], $post['tags_json'], $post['link_metadata_json']);
+        if (!empty($posts)) {
+            $postIds = array_map(function($p) { return (int)$p['id']; }, $posts);
+            $placeholders = implode(',', array_fill(0, count($postIds), '?'));
 
-            // Get reactions stats
+            // 1. Reactions summary batch
             $reactStmt = $this->db->prepare("
-                SELECT reaction_type, COUNT(*) as count 
+                SELECT ref_id, reaction_type, COUNT(*) as count 
                 FROM enterprise_reactions 
-                WHERE ref_type = 'post' AND ref_id = ? 
-                GROUP BY reaction_type
+                WHERE ref_type = 'post' AND ref_id IN ($placeholders) 
+                GROUP BY ref_id, reaction_type
             ");
-            $reactStmt->execute([$postId]);
+            $reactStmt->execute($postIds);
             $reacts = $reactStmt->fetchAll(PDO::FETCH_ASSOC);
             
-            $post['reactions_summary'] = [];
-            $post['reactions_count'] = 0;
+            $reactionsMap = [];
             foreach ($reacts as $r) {
-                $post['reactions_summary'][$r['reaction_type']] = (int)$r['count'];
-                $post['reactions_count'] += (int)$r['count'];
+                $pid = (int)$r['ref_id'];
+                $reactionsMap[$pid][$r['reaction_type']] = (int)$r['count'];
             }
 
-            // Current user reaction
+            // 2. User reactions batch
             $userReactStmt = $this->db->prepare("
-                SELECT reaction_type FROM enterprise_reactions 
-                WHERE ref_type = 'post' AND ref_id = ? AND user_id = ? LIMIT 1
+                SELECT ref_id, reaction_type 
+                FROM enterprise_reactions 
+                WHERE ref_type = 'post' AND user_id = ? AND ref_id IN ($placeholders)
             ");
-            $userReactStmt->execute([$postId, $currentUserId]);
-            $post['user_reaction'] = $userReactStmt->fetchColumn() ?: null;
+            $userReactStmt->execute(array_merge([$currentUserId], $postIds));
+            $userReacts = $userReactStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $userReactionsMap = [];
+            foreach ($userReacts as $ur) {
+                $userReactionsMap[(int)$ur['ref_id']] = $ur['reaction_type'];
+            }
 
-            // Comment count
+            // 3. Comments count batch
             $cmtCountStmt = $this->db->prepare("
-                SELECT COUNT(*) FROM enterprise_comments 
-                WHERE post_id = ? AND deleted_at IS NULL
+                SELECT post_id, COUNT(*) as count 
+                FROM enterprise_comments 
+                WHERE deleted_at IS NULL AND post_id IN ($placeholders)
+                GROUP BY post_id
             ");
-            $cmtCountStmt->execute([$postId]);
-            $post['comments_count'] = (int)$cmtCountStmt->fetchColumn();
+            $cmtCountStmt->execute($postIds);
+            $cmtCounts = $cmtCountStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $commentsCountMap = [];
+            foreach ($cmtCounts as $cc) {
+                $commentsCountMap[(int)$cc['post_id']] = (int)$cc['count'];
+            }
 
-            // Fetch top 3 comments
+            // 4. Top 3 comments batch (using ROW_NUMBER() CTE)
             $cmtStmt = $this->db->prepare("
-                SELECT c.*, u.full_name as author_name, u.avatar_url as author_avatar
-                FROM enterprise_comments c
-                JOIN users u ON c.user_id = u.id
-                WHERE c.post_id = ? AND c.parent_id IS NULL AND c.deleted_at IS NULL
-                ORDER BY c.created_at ASC LIMIT 3
+                WITH RankedComments AS (
+                    SELECT c.*, u.full_name as author_name, u.avatar_url as author_avatar,
+                           ROW_NUMBER() OVER (PARTITION BY c.post_id ORDER BY c.created_at ASC) as rn
+                    FROM enterprise_comments c
+                    JOIN users u ON c.user_id = u.id
+                    WHERE c.post_id IN ($placeholders) AND c.parent_id IS NULL AND c.deleted_at IS NULL
+                )
+                SELECT * FROM RankedComments WHERE rn <= 3
             ");
-            $cmtStmt->execute([$postId]);
-            $post['top_comments'] = $cmtStmt->fetchAll(PDO::FETCH_ASSOC);
+            $cmtStmt->execute($postIds);
+            $topComments = $cmtStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $topCommentsMap = [];
+            foreach ($topComments as $tc) {
+                $pid = (int)$tc['post_id'];
+                $topCommentsMap[$pid][] = $tc;
+            }
+
+            // Hydrate posts
+            foreach ($posts as &$post) {
+                $postId = (int)$post['id'];
+                
+                $post['attachments'] = json_decode($post['attachments_json'] ?? '[]', true) ?: [];
+                $post['tags'] = json_decode($post['tags_json'] ?? '[]', true) ?: [];
+                $post['link_metadata'] = json_decode($post['link_metadata_json'] ?? 'null', true);
+                unset($post['attachments_json'], $post['tags_json'], $post['link_metadata_json']);
+
+                // Reactions
+                $post['reactions_summary'] = isset($reactionsMap[$postId]) ? $reactionsMap[$postId] : [];
+                $post['reactions_count'] = 0;
+                foreach ($post['reactions_summary'] as $count) {
+                    $post['reactions_count'] += $count;
+                }
+
+                // User reaction
+                $post['user_reaction'] = isset($userReactionsMap[$postId]) ? $userReactionsMap[$postId] : null;
+
+                // Comments count
+                $post['comments_count'] = isset($commentsCountMap[$postId]) ? $commentsCountMap[$postId] : 0;
+
+                // Top comments
+                $post['top_comments'] = isset($topCommentsMap[$postId]) ? $topCommentsMap[$postId] : [];
+            }
         }
 
         respond(200, [

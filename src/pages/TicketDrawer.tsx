@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { 
   X, MessageSquare, Clock, AlertCircle, User, Paperclip, Send, CheckCircle2, 
-  XCircle, Inbox, Image as ImageIcon, FileText, ExternalLink, Loader2, Lock, Eye, Calendar
+  XCircle, Inbox, Image as ImageIcon, FileText, ExternalLink, Loader2, Lock, Eye, Calendar, Trash2
 } from 'lucide-react';
 import { Avatar } from '../components/ui/Avatar';
 import { useUIStore } from '../store/uiStore';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import api from '../api/axios';
 import { createPortal } from 'react-dom';
 import { StatRowSkeleton } from '../components/ui/Skeleton';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import styles from './EntityDrawer.module.css'; 
 
 interface Props {
@@ -40,6 +42,7 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
   }, []);
 
   const { addToast } = useUIStore();
+  const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   const isAdminOrManager = currentUser && ['admin', 'superadmin', 'super_admin', 'manager', 'director'].includes((currentUser.role || '').toLowerCase());
 
@@ -55,6 +58,7 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: number; userName: string } | null>(null);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [prevTicketId, setPrevTicketId] = useState<number | null>(null);
@@ -78,6 +82,17 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
       console.error('Failed to fetch ticket comments', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!ticket?.id) return;
+    try {
+      await api.delete(`/tickets/${ticket.id}/comments/${commentId}`);
+      addToast(t('Đã xóa bình luận!'), 'success');
+      fetchComments();
+    } catch (err: any) {
+      addToast(t('Lỗi khi xóa bình luận: ') + (err.response?.data?.message || err.message), 'error');
     }
   };
 
@@ -502,15 +517,38 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
                           }}>
                             {msg.body || msg.text}
                           </div>
-                          {!isReply && (
-                            <button
-                              onClick={() => setReplyTo({ id: msg.id, userName: msg.user_name || msg.user || 'Đồng nghiệp' })}
-                              style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: '4px 0 0 0', cursor: 'pointer', fontWeight: 700 }}
-                              className="hover-lift"
-                            >
-                              Phản hồi
-                            </button>
-                          )}
+                          {(() => {
+                            const isCurrentUserAdmin = currentUser && ['admin', 'superadmin', 'super_admin', 'director'].includes((currentUser.role || '').toLowerCase());
+                            const isCommentAuthor = currentUser?.id && String(currentUser.id) === String(msg.user_id);
+                            const canDeleteComment = isCurrentUserAdmin || isCommentAuthor;
+
+                            if (!isReply || canDeleteComment) {
+                              return (
+                                <div style={{ display: 'flex', gap: '8px', flexDirection: isSelf ? 'row-reverse' : 'row' }}>
+                                  {!isReply && (
+                                    <button
+                                      onClick={() => setReplyTo({ id: msg.id, userName: msg.user_name || msg.user || 'Đồng nghiệp' })}
+                                      style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: '4px 0 0 0', cursor: 'pointer', fontWeight: 700 }}
+                                      className="hover-lift"
+                                    >
+                                      Phản hồi
+                                    </button>
+                                  )}
+                                  {canDeleteComment && (
+                                    <button
+                                      onClick={() => setCommentToDelete(msg.id)}
+                                      style={{ background: 'transparent', border: 'none', color: 'var(--color-danger, #ef4444)', display: 'inline-flex', alignItems: 'center', cursor: 'pointer', padding: '4px 0 0 0' }}
+                                      className="hover-lift"
+                                      title={t('Xóa bình luận')}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                       </div>
                     );
@@ -790,6 +828,24 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
             </div>
           </div>
         </div>
+      )}
+
+      {commentToDelete !== null && (
+        <ConfirmModal
+          isOpen={commentToDelete !== null}
+          onClose={() => setCommentToDelete(null)}
+          onConfirm={async () => {
+            if (commentToDelete !== null) {
+              await handleDeleteComment(commentToDelete);
+              setCommentToDelete(null);
+            }
+          }}
+          title={t('Xác nhận xóa bình luận')}
+          message={t('Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.')}
+          confirmText={t('Xóa')}
+          cancelText={t('Hủy')}
+          confirmType="danger"
+        />
       )}
     </>,
     document.body

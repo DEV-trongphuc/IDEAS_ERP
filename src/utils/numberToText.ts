@@ -1,11 +1,11 @@
 /**
  * Chuyển đổi số thành chữ tiếng Việt (hỗ trợ tối đa 9999 tỷ)
  */
-export const numberToText = (number: number | string, currency: string = 'VND'): string => {
-  return numberToVietnameseText(number, currency);
+export const numberToText = (number: number | string, currency: string = 'VND', showSuffix: boolean = true): string => {
+  return numberToVietnameseText(number, currency, showSuffix);
 };
 
-export const numberToVietnameseText = (number: number | string, currency: string = 'VND'): string => {
+export const numberToVietnameseText = (number: number | string, currency: string = 'VND', showSuffix: boolean = true): string => {
   if (number === "" || number === null || number === undefined) return "";
   
   const str = String(number).replace(/[^0-9]/g, "");
@@ -83,6 +83,8 @@ export const numberToVietnameseText = (number: number | string, currency: string
   if (!result) return "";
   
   result = result.charAt(0).toUpperCase() + result.slice(1);
+
+  if (!showSuffix) return result;
 
   let suffix = "đồng";
   if (currency === 'USD') suffix = "đô la Mỹ";

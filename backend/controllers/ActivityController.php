@@ -452,7 +452,7 @@ class ActivityController {
             $this->notifyUser(
                 (int)$targetUserId,
                 'Bạn có nhiệm vụ mới được giao',
-                'Bạn được giao nhiệm vụ mới: "' . $b['subject'] . '" bởi ' . $auth['full_name'] . '.',
+                'Bạn được giao nhiệm vụ mới: "' . $b['subject'] . '" bởi ' . ($auth['full_name'] ?? 'Hệ thống') . '.',
                 'task_assignment',
                 "/activities/{$actId}"
             );
@@ -461,7 +461,7 @@ class ActivityController {
             $this->notifyUser(
                 (int)$b['approver_id'],
                 'Yêu cầu phê duyệt hoàn thành công việc',
-                $auth['full_name'] . ' đã hoàn thành công việc "' . $b['subject'] . '" và đang chờ bạn phê duyệt.',
+                ($auth['full_name'] ?? 'Nhân viên') . ' đã hoàn thành công việc "' . $b['subject'] . '" và đang chờ bạn phê duyệt.',
                 'approval_request',
                 "/activities/{$actId}"
             );
@@ -473,7 +473,7 @@ class ActivityController {
                 $this->notifyUser(
                     $pId,
                     'Bạn được thêm vào danh sách người liên quan',
-                    $auth['full_name'] . ' đã thêm bạn làm người liên quan trong công việc "' . $b['subject'] . '".',
+                    ($auth['full_name'] ?? 'Nhân viên') . ' đã thêm bạn làm người liên quan trong công việc "' . $b['subject'] . '".',
                     'task_participant',
                     "/activities/{$actId}"
                 );
@@ -721,7 +721,7 @@ class ActivityController {
             $this->notifyUser(
                 (int)$b['user_id'],
                 'Bạn có nhiệm vụ mới được giao',
-                'Nhiệm vụ "' . $activity['subject'] . '" đã được chuyển giao cho bạn bởi ' . $auth['full_name'] . '.',
+                'Nhiệm vụ "' . $activity['subject'] . '" đã được chuyển giao cho bạn bởi ' . ($auth['full_name'] ?? 'Hệ thống') . '.',
                 'task_assignment',
                 "/activities/{$id}"
             );
@@ -736,7 +736,7 @@ class ActivityController {
                 $this->notifyUser(
                     $currentApprover,
                     'Yêu cầu phê duyệt hoàn thành công việc',
-                    $auth['full_name'] . ' đã hoàn thành công việc "' . $activity['subject'] . '" và đang chờ bạn phê duyệt.',
+                    ($auth['full_name'] ?? 'Nhân viên') . ' đã hoàn thành công việc "' . $activity['subject'] . '" và đang chờ bạn phê duyệt.',
                     'approval_request',
                     "/activities/{$id}"
                 );
@@ -749,7 +749,7 @@ class ActivityController {
                 $this->notifyUser(
                     $assignee,
                     'Nhiệm vụ được phê duyệt hoàn thành',
-                    'Công việc "' . $activity['subject'] . '" của bạn đã được phê duyệt hoàn thành bởi ' . $auth['full_name'] . '.',
+                    'Công việc "' . $activity['subject'] . '" của bạn đã được phê duyệt hoàn thành bởi ' . ($auth['full_name'] ?? 'Người phê duyệt') . '.',
                     'approval_status',
                     "/activities/{$id}"
                 );
@@ -757,7 +757,7 @@ class ActivityController {
                 $this->notifyUser(
                     $assignee,
                     'Yêu cầu hoàn thành nhiệm vụ bị từ chối',
-                    'Yêu cầu hoàn thành công việc "' . $activity['subject'] . '" của bạn đã bị từ chối bởi ' . $auth['full_name'] . '.',
+                    'Yêu cầu hoàn thành công việc "' . $activity['subject'] . '" của bạn đã bị từ chối bởi ' . ($auth['full_name'] ?? 'Người phê duyệt') . '.',
                     'approval_status',
                     "/activities/{$id}"
                 );
@@ -773,7 +773,7 @@ class ActivityController {
                 $this->notifyUser(
                     $pId,
                     'Bạn được thêm vào danh sách người liên quan',
-                    $auth['full_name'] . ' đã thêm bạn làm người liên quan trong công việc "' . $activity['subject'] . '".',
+                    ($auth['full_name'] ?? 'Nhân viên') . ' đã thêm bạn làm người liên quan trong công việc "' . $activity['subject'] . '".',
                     'task_participant',
                     "/activities/{$id}"
                 );

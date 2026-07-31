@@ -15369,7 +15369,20 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {/* Title */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <h1 className="page-title" style={{ margin: 0 }}>{t('Lịch trình công việc')}</h1>
+                    <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                      <Calendar size={24} color="var(--color-primary)" /> {t('Lịch trình công việc')}
+                    </h1>
+                    {['accountant', 'admin', 'superadmin', 'super_admin', 'director', 'manager'].includes(String(user?.role).toLowerCase()) && (
+                      <button
+                        type="button"
+                        className="btn primary sm"
+                        onClick={() => navigate('/data?view=calendar')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                      >
+                        <Calendar size={14} />
+                        {t('Xem Lịch trình Tài chính')}
+                      </button>
+                    )}
                   </div>
 
                   {/* 4 StatCards */}

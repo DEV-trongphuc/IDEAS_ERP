@@ -285,6 +285,7 @@ const ConsultantsInner = () => {
   const [teamReplyTo, setTeamReplyTo] = useState<{ id: number; userName: string } | null>(null);
   const [teamCommentAttachments, setTeamCommentAttachments] = useState<any[]>([]);
   const [isUploadingCommentFile, setIsUploadingCommentFile] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   
   const [consultantsPage, setConsultantsPage] = useState(1);
   const [teamsPage, setTeamsPage] = useState(1);
@@ -519,6 +520,21 @@ const ConsultantsInner = () => {
     } finally {
       setIsSubmittingTeamComment(false);
       setIsUploadingCommentFile(false);
+    }
+  };
+
+  const handleDeleteTeamComment = async (commentId: number) => {
+    if (!editingTeam?.id) return;
+    try {
+      const res = await api.delete(`/teams/comments/${commentId}`);
+      if (res.data?.success) {
+        toast.success(t('Đã xóa bình luận!'));
+        fetchTeamComments(editingTeam.id);
+      } else {
+        toast.error(res.data?.message || t('Không thể xóa bình luận'));
+      }
+    } catch (e: any) {
+      toast.error(t('Lỗi khi xóa bình luận: ') + (e.response?.data?.message || e.message));
     }
   };
 
@@ -3556,16 +3572,41 @@ const ConsultantsInner = () => {
                                   </div>
                                 )}
 
-                                {!isReply && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setTeamReplyTo({ id: comment.id, userName: comment.user_name || 'Thành viên' })}
-                                    style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: '4px 0 0 0', cursor: 'pointer', fontWeight: 700, textAlign: 'left', width: 'fit-content' }}
-                                    className="hover-lift"
-                                  >
-                                    Phản hồi
-                                  </button>
-                                )}
+                                {(() => {
+                                   const userRole = String(user?.role || '').toLowerCase();
+                                   const isAdmin = ['admin', 'superadmin', 'super_admin', 'director'].includes(userRole);
+                                   const isOwner = Number(comment.user_id) === Number(user?.id);
+                                   const canDelete = isAdmin || isOwner;
+
+                                   if (!isReply || canDelete) {
+                                     return (
+                                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '4px' }}>
+                                         {!isReply && (
+                                           <button
+                                             type="button"
+                                             onClick={() => setTeamReplyTo({ id: comment.id, userName: comment.user_name || 'Thành viên' })}
+                                             style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, textAlign: 'left', width: 'fit-content' }}
+                                             className="hover-lift"
+                                           >
+                                             Phản hồi
+                                           </button>
+                                         )}
+                                         {canDelete && (
+                                           <button
+                                             type="button"
+                                             onClick={() => setCommentToDelete(comment.id)}
+                                             style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '2px', display: 'inline-flex', alignItems: 'center' }}
+                                             className="hover-lift"
+                                             title={t('Xóa')}
+                                           >
+                                             <Trash2 size={12} />
+                                           </button>
+                                         )}
+                                       </div>
+                                     );
+                                   }
+                                   return null;
+                                 })()}
                               </div>
                             </div>
                           );
@@ -4037,6 +4078,24 @@ const ConsultantsInner = () => {
             </div>
           </div>
         </CustomModal>
+      )}
+
+      {commentToDelete !== null && (
+        <ConfirmModal
+          isOpen={commentToDelete !== null}
+          onClose={() => setCommentToDelete(null)}
+          onConfirm={async () => {
+            if (commentToDelete !== null) {
+              await handleDeleteTeamComment(commentToDelete);
+              setCommentToDelete(null);
+            }
+          }}
+          title={t('Xác nhận xóa bình luận')}
+          message={t('Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.')}
+          confirmText={t('Xóa')}
+          cancelText={t('Hủy')}
+          confirmType="danger"
+        />
       )}
     </div>
   );

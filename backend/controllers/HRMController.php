@@ -139,7 +139,11 @@ class HRMController {
 
     public function createLeave(array $auth): void {
         $b = getBody();
-        if (empty($b['start_date']) || empty($b['end_date']) || empty($b['leave_type'])) {
+        // Support frontend key names from_date & to_date as fallbacks
+        $startDate = $b['start_date'] ?? $b['from_date'] ?? null;
+        $endDate = $b['end_date'] ?? $b['to_date'] ?? null;
+
+        if (empty($startDate) || empty($endDate) || empty($b['leave_type'])) {
             respond(400, null, 'Thiếu thông tin đăng ký nghỉ phép', false);
         }
 
@@ -154,8 +158,8 @@ class HRMController {
         $stmt->execute([
             $auth['user_id'],
             $b['leave_type'],
-            $b['start_date'],
-            $b['end_date'],
+            $startDate,
+            $endDate,
             (float)($b['total_days'] ?? 1.0),
             $b['reason'] ?? '',
             $approverId,
@@ -305,8 +309,8 @@ class HRMController {
                 if ($deductUnpaid > 0) $parts[] = "-{$deductUnpaid} ngày không lương";
                 
                 $deductionLog = " [Khấu trừ thực tế: " . implode(', ', $parts) . "]";
-                $updReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?) WHERE id = ?");
-                $updReason->execute([$deductionLog, (int)$leaveRow['id']]);
+                $updReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?), unpaid_days = ? WHERE id = ?");
+                $updReason->execute([$deductionLog, $deductUnpaid, (int)$leaveRow['id']]);
             }
 
             // Sync to consultant_leaves so the lead assignment / check-in rotation excludes this user when on leave
@@ -659,7 +663,7 @@ class HRMController {
                 $paidLeaveDays = 0;
             } else {
                 $lvStmt = $this->db->prepare("
-                    SELECT SUM(total_days) as paid_days
+                    SELECT SUM(total_days - unpaid_days) as paid_days
                     FROM hrm_leave_requests
                     WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'remote_work')
                       AND DATE_FORMAT(start_date, '%Y-%m') = ?

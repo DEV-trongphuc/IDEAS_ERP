@@ -12,6 +12,7 @@ import { CurrencyInput } from './ui/CurrencyInput';
 import { Avatar } from './ui/Avatar';
 import { MentionInput } from './ui/MentionInput';
 import { CustomModal } from './ui/CustomModal';
+import { ConfirmModal } from './ui/ConfirmModal';
 import { compressToWebP } from '../utils/imageCompress';
 import { fetchAPI } from '../utils/api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -74,6 +75,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   const [comments, setComments] = useState<any[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const [historyLogs, setHistoryLogs] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -156,6 +158,21 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
       console.error("Error loading comments:", err);
     } finally {
       setLoadingComments(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    if (!selectedDepForManage?.id) return;
+    try {
+      const res = await fetchAPI(`deposits/comments/${commentId}`, { method: 'DELETE' });
+      if (res.success) {
+        addToast(t('Đã xóa bình luận!'), 'success');
+        loadComments();
+      } else {
+        addToast(res.message || t('Không thể xóa bình luận'), 'error');
+      }
+    } catch (err: any) {
+      addToast(t('Lỗi khi xóa bình luận: ') + err.message, 'error');
     }
   };
 
@@ -1542,7 +1559,25 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                 <Avatar src={c.avatar_url} name={c.user_name} size="sm" />
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.user_name}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.user_name}</span>
+                                      {(() => {
+                                        const isCurrentUserAdmin = user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role);
+                                        const isCommentAuthor = user?.id && String(user.id) === String(c.user_id);
+                                        if (isCurrentUserAdmin || isCommentAuthor) {
+                                          return (
+                                            <button
+                                              onClick={() => setCommentToDelete(c.id)}
+                                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-danger, #ef4444)', display: 'inline-flex', alignItems: 'center' }}
+                                              title={t('Xóa bình luận')}
+                                            >
+                                              <Trash2 size={11} />
+                                            </button>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
+                                    </div>
                                     <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
                                       {new Date(c.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                                     </span>
@@ -1826,6 +1861,20 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
           );
         })()}
       </CustomModal>
+      {commentToDelete !== null && (
+        <ConfirmModal
+          isOpen={commentToDelete !== null}
+          onClose={() => setCommentToDelete(null)}
+          onConfirm={async () => {
+            if (commentToDelete !== null) {
+              await handleDeleteComment(commentToDelete);
+              setCommentToDelete(null);
+            }
+          }}
+          title="Xác nhận xóa bình luận"
+          message="Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác."
+        />
+      )}
     </>,
     document.body
   );

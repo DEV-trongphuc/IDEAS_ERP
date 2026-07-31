@@ -1,6 +1,10 @@
 <?php
 // backend/test_activities_optimizations.php
 require_once __DIR__ . '/test_bootstrap.php';
+
+header('Content-Type: text/plain; charset=utf-8');
+ob_implicit_flush(true);
+while (ob_get_level()) ob_end_clean();
 require_once __DIR__ . '/controllers/ActivityController.php';
 
 // Safe mock function for respond in CLI mode

@@ -3,6 +3,7 @@ import { MessageSquare, Activity, Info, Clock, Coffee, Trash2, Send, Paperclip, 
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Avatar } from './Avatar';
 import { MentionInput } from './MentionInput';
+import { ConfirmModal } from './ConfirmModal';
 
 export interface ProcessFeedComment {
   id: string | number;
@@ -60,6 +61,7 @@ export const ProcessFeed: React.FC<ProcessFeedProps> = ({
   const [commentText, setCommentText] = useState('');
   const [attachments, setAttachments] = useState<any[]>([]);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | number | null>(null);
 
   const handleSend = async () => {
     if (!commentText.trim() && attachments.length === 0) return;
@@ -253,7 +255,7 @@ export const ProcessFeed: React.FC<ProcessFeedProps> = ({
                   </div>
                   {showDelete && (
                     <button
-                      onClick={() => onDeleteComment(item.id)}
+                      onClick={() => setCommentToDelete(item.id)}
                       style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '8px', top: '8px' }}
                       title={t('Xóa bình luận')}
                     >
@@ -426,6 +428,20 @@ export const ProcessFeed: React.FC<ProcessFeedProps> = ({
             </div>
           </div>
         </div>
+      )}
+      {commentToDelete !== null && (
+        <ConfirmModal
+          isOpen={commentToDelete !== null}
+          onClose={() => setCommentToDelete(null)}
+          onConfirm={async () => {
+            if (commentToDelete !== null && onDeleteComment) {
+              await onDeleteComment(commentToDelete);
+              setCommentToDelete(null);
+            }
+          }}
+          title="Xác nhận xóa bình luận"
+          message="Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác."
+        />
       )}
     </div>
   );

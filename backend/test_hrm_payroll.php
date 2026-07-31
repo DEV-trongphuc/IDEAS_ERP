@@ -5,6 +5,8 @@ require_once __DIR__ . '/controllers/HRMController.php';
 require_once __DIR__ . '/controllers/CheckInController.php';
 
 header('Content-Type: text/plain; charset=utf-8');
+ob_implicit_flush(true);
+while (ob_get_level()) ob_end_clean();
 
 echo "=== STARTING HRM & PAYROLL SYSTEM INTEGRATION TEST ===\n\n";
 
@@ -102,6 +104,7 @@ try {
     $pdo->prepare("DELETE FROM hrm_salary_advances WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM monthly_payslips WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_profiles WHERE user_id = ?")->execute([$testUserId]);
+    $pdo->prepare("DELETE FROM consultant_leaves WHERE consultant_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$testUserId]);
 
     // Insert dummy user
@@ -114,7 +117,7 @@ try {
     // Insert dummy profile with leave balances (12.0 total annual, 0.0 used)
     $insProfile = $pdo->prepare("
         INSERT INTO hrm_profiles (user_id, joined_date, base_salary, deal_salary, has_insurance, allowance_meal, allowance_travel, allowance_phone, kpi_target, annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used)
-        VALUES (?, '2026-01-15', 10000000.00, 20000000.00, 1, 800000.00, 500000.00, 300000.00, 50000000.00, 12.0, 0.0, 5.0, 0.0)
+        VALUES (?, '2026-01-15', 10000000.00, 20000000.00, 1, 800000.00, 500000.00, 300000.00, 50000000.00, 12.0, 0.0, 0.0, 0.0)
     ");
     $insProfile->execute([$testUserId]);
 
@@ -128,7 +131,7 @@ try {
     // Create leave request: 2.0 days of type 'annual'
     $insLeave = $pdo->prepare("
         INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status, approver_id, status_level_1, status_level_2)
-        VALUES (?, 'annual', '2026-07-21 08:00:00', '2026-07-22 17:30:00', 2.0, 'pending', 1, 'pending', 'pending')
+        VALUES (?, 'annual', '2026-07-10 08:00:00', '2026-07-11 17:30:00', 2.0, 'pending', 1, 'pending', 'pending')
     ");
     $insLeave->execute([$testUserId]);
     $leaveId = $pdo->lastInsertId();
@@ -141,13 +144,40 @@ try {
     ];
     try {
         $hrmCtrl->approveLeave($adminAuth);
-    } catch (RespondException $e) {}
+    } catch (RespondException $e) { echo "[CASE A1 Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
     
     // Check if leave deduction occurred
     $profileStmt = $pdo->prepare("SELECT annual_leave_used FROM hrm_profiles WHERE user_id = ?");
     $profileStmt->execute([$testUserId]);
     $profile = $profileStmt->fetch();
     assertTest("Đã tự động khấu trừ 2.0 ngày phép năm khi được duyệt", (float)$profile['annual_leave_used'] === 2.0);
+
+    // Overdraft Leave Test: Create a leave request of 15.0 days
+    // Remaining balance: 12.0 - 2.0 = 10.0. Excess = 5.0 days should be unpaid.
+    $insOverdraftLeave = $pdo->prepare("
+        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, status, approver_id, status_level_1, status_level_2)
+        VALUES (?, 'annual', '2026-07-23 08:00:00', '2026-07-28 17:30:00', 15.0, 'pending', 1, 'pending', 'pending')
+    ");
+    $insOverdraftLeave->execute([$testUserId]);
+    $overdraftLeaveId = $pdo->lastInsertId();
+
+    $mockPayload = [
+        'id' => $overdraftLeaveId,
+        'status' => 'approved',
+        'note' => 'Duyệt phép năm vượt hạn mức'
+    ];
+    try {
+        $hrmCtrl->approveLeave($adminAuth);
+    } catch (RespondException $e) { echo "[CASE A2 Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
+
+    $profileStmt->execute([$testUserId]);
+    $profile2 = $profileStmt->fetch();
+    assertTest("Tổng phép năm đã sử dụng chạm trần tối đa (12.0)", (float)$profile2['annual_leave_used'] === 12.0);
+
+    $overdraftLeaveStmt = $pdo->prepare("SELECT unpaid_days FROM hrm_leave_requests WHERE id = ?");
+    $overdraftLeaveStmt->execute([$overdraftLeaveId]);
+    $overdraftLeave = $overdraftLeaveStmt->fetch();
+    assertTest("Số ngày phép vượt quá (5.0 ngày) được ghi nhận chính xác vào unpaid_days", (float)$overdraftLeave['unpaid_days'] === 5.0);
 
 
     // --- CASE B: AFTERNOON SHIFT LATENESS EXEMPTION ---
@@ -167,7 +197,7 @@ try {
     ];
     try {
         $checkInCtrl->store($authPayload);
-    } catch (RespondException $e) {}
+    } catch (RespondException $e) { echo "[CASE B Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
 
     // 3. Verify late_minutes is 0 (not late)
     $checkInStmt = $pdo->prepare("SELECT late_minutes FROM check_ins WHERE user_id = ? AND check_in_date = '2026-07-21'");
@@ -193,7 +223,7 @@ try {
     ];
     try {
         $checkInCtrl->store($authPayload);
-    } catch (RespondException $e) {}
+    } catch (RespondException $e) { echo "[CASE C Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
 
     // 3. Verify early_minutes is 0
     $checkOutStmt = $pdo->prepare("SELECT early_minutes FROM check_ins WHERE user_id = ? AND check_in_date = '2026-07-21'");
@@ -203,15 +233,24 @@ try {
 
 
     // --- CASE D: OVERTIME & DILIGENCE PAYROLL CALCULATION ---
-    // 1. Clear check-ins and mock 26 days of on-time attendance
+    // 1. Clear check-ins, leaves, consultant_leaves and mock 21 days of on-time attendance
     $pdo->prepare("DELETE FROM check_ins WHERE user_id = ?")->execute([$testUserId]);
-    for ($d = 1; $d <= 26; $d++) {
+    $pdo->prepare("DELETE FROM hrm_leave_requests WHERE user_id = ?")->execute([$testUserId]);
+    $pdo->prepare("DELETE FROM consultant_leaves WHERE consultant_id = ?")->execute([$testUserId]);
+    for ($d = 1; $d <= 21; $d++) {
         $dayStr = sprintf('%02d', $d);
         $pdo->prepare("
             INSERT INTO check_ins (user_id, check_in_date, check_in_time, status, late_minutes, early_minutes)
             VALUES (?, '2026-07-{$dayStr}', '08:00:00', 'approved', 0, 0)
         ")->execute([$testUserId]);
     }
+
+    // 1b. Mock leaves with unpaid days: 5.0 total days, 2.0 unpaid days (meaning 3.0 paid days)
+    // Total work days = 21 worked + 3.0 paid leave = 24.0 days
+    $pdo->prepare("
+        INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, unpaid_days, status)
+        VALUES (?, 'annual', '2026-07-23 08:00:00', '2026-07-27 17:30:00', 5.0, 2.0, 'approved')
+    ")->execute([$testUserId]);
 
     // 2. Add approved overtime request: 3.0 days
     $pdo->prepare("
@@ -226,7 +265,7 @@ try {
     ];
     try {
         $hrmCtrl->calculatePayroll($adminAuth);
-    } catch (RespondException $e) {}
+    } catch (RespondException $e) { echo "[CASE D Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
 
     // 4. Query generated payslip and assert results
     $payslipStmt = $pdo->prepare("SELECT * FROM monthly_payslips WHERE user_id = ? AND month_year = ?");
@@ -239,11 +278,33 @@ try {
     $expectedOtSalary = (20000000.00 / 26) * 3.0 * 1.5;
     assertTest("Tính toán lương tăng ca chính xác (1.5x)", round((float)$payslip['overtime_salary'], 2) === round($expectedOtSalary, 2), "Lương tăng ca thực tế: " . $payslip['overtime_salary']);
 
-    // Diligence Bonus: 500,000 VND since they worked 26 days and had 0 lateness minutes
-    assertTest("Thưởng chuyên cần 500,000 VND được cộng tự động", (float)$payslip['diligence_bonus'] === 500000.00);
+    // Basic Salary Calculated: (deal_salary / 26) * 24 = 18,461,538.46
+    $expectedBasicSalary = (20000000.00 / 26) * 24.0;
+    assertTest("Tính toán lương cơ bản khấu trừ ngày phép không lương chính xác", round((float)$payslip['salary_basic_calculated'], 2) === round($expectedBasicSalary, 2), "Lương cơ bản thực tế: " . $payslip['salary_basic_calculated']);
 
-    // PIT Tax should account for overtime salary and diligence bonus!
-    assertTest("Bảng lương được lưu thành công dạng bản nháp (draft)", $payslip['status'] === 'draft');
+    // Diligence Bonus: should be 0 since totalWorkDays (24) < 26
+    assertTest("Không được thưởng chuyên cần do nghỉ không lương", (float)$payslip['diligence_bonus'] === 0.0);
+
+    // --- CASE E: FULL ATTENDANCE DILIGENCE BONUS WITH LEAVES ---
+    // Update checkins to 23 days (total work days = 23 worked + 3.0 paid leave = 26.0 days)
+    for ($d = 22; $d <= 23; $d++) {
+        $dayStr = sprintf('%02d', $d);
+        $pdo->prepare("
+            INSERT INTO check_ins (user_id, check_in_date, check_in_time, status, late_minutes, early_minutes)
+            VALUES (?, '2026-07-{$dayStr}', '08:00:00', 'approved', 0, 0)
+        ")->execute([$testUserId]);
+    }
+    
+    // Recalculate payroll
+    try {
+        $hrmCtrl->calculatePayroll($adminAuth);
+    } catch (RespondException $e) { echo "[CASE E Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
+
+    $payslipStmt->execute([$testUserId, $monthYear]);
+    $payslipFull = $payslipStmt->fetch();
+
+    assertTest("Thưởng chuyên cần 500,000 VND được cộng khi đạt đủ 26 ngày công", (float)$payslipFull['diligence_bonus'] === 500000.00);
+    assertTest("Bảng lương được lưu thành công dạng bản nháp (draft)", $payslipFull['status'] === 'draft');
 
 
     // --- CLEAN UP ---
@@ -252,6 +313,7 @@ try {
     $pdo->prepare("DELETE FROM hrm_salary_advances WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM monthly_payslips WHERE user_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM hrm_profiles WHERE user_id = ?")->execute([$testUserId]);
+    $pdo->prepare("DELETE FROM consultant_leaves WHERE consultant_id = ?")->execute([$testUserId]);
     $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$testUserId]);
 
     $pdo->exec("SET FOREIGN_KEY_CHECKS=1;");
