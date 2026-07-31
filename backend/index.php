@@ -984,6 +984,7 @@ switch ($resource) {
         elseif ($resourceId  && $method === 'PUT')    $ctrl->update($auth, (int)$resourceId);
         elseif ($resourceId  && $method === 'DELETE') $ctrl->destroy($auth, (int)$resourceId);
         elseif ($subResource === 'receive' && $method === 'POST') $ctrl->receive($auth, (int)$resourceId);
+        elseif ($subResource === 'approve' && $method === 'POST') $ctrl->approve($auth, (int)$resourceId);
         else respond(404, null, 'Route không tồn tại', false);
         break;
 

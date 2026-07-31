@@ -8,20 +8,32 @@ class PurchaseOrderController {
         $supplierId = (int)($_GET['supplier_id'] ?? 0);
         if ($supplierId > 0) {
             $stmt = $this->db->prepare("
-                SELECT po.*, s.name as supplier_name, u.full_name as creator_name
+                SELECT po.*, s.name as supplier_name, u.full_name as creator_name,
+                       app1.full_name as approver_name_1, app1.email as approver_email_1,
+                       app2.full_name as approver_name_2, app2.email as approver_email_2,
+                       app3.full_name as approver_name_3, app3.email as approver_email_3
                 FROM purchase_orders po
                 LEFT JOIN suppliers s ON po.supplier_id = s.id
                 LEFT JOIN users u ON po.created_by = u.id
+                LEFT JOIN users app1 ON po.approver_id = app1.id
+                LEFT JOIN users app2 ON po.approver_id_2 = app2.id
+                LEFT JOIN users app3 ON po.approver_id_3 = app3.id
                 WHERE po.tenant_id = ? AND po.supplier_id = ?
                 ORDER BY po.created_at DESC
             ");
             $stmt->execute([$tid, $supplierId]);
         } else {
             $stmt = $this->db->prepare("
-                SELECT po.*, s.name as supplier_name, u.full_name as creator_name
+                SELECT po.*, s.name as supplier_name, u.full_name as creator_name,
+                       app1.full_name as approver_name_1, app1.email as approver_email_1,
+                       app2.full_name as approver_name_2, app2.email as approver_email_2,
+                       app3.full_name as approver_name_3, app3.email as approver_email_3
                 FROM purchase_orders po
                 LEFT JOIN suppliers s ON po.supplier_id = s.id
                 LEFT JOIN users u ON po.created_by = u.id
+                LEFT JOIN users app1 ON po.approver_id = app1.id
+                LEFT JOIN users app2 ON po.approver_id_2 = app2.id
+                LEFT JOIN users app3 ON po.approver_id_3 = app3.id
                 WHERE po.tenant_id = ?
                 ORDER BY po.created_at DESC
             ");
@@ -73,14 +85,31 @@ class PurchaseOrderController {
         try {
             $po_number = 'PO-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
             
+            $approver_id = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;
+            $approver_id_2 = !empty($b['approver_id_2']) ? (int)$b['approver_id_2'] : null;
+            $approver_id_3 = !empty($b['approver_id_3']) ? (int)$b['approver_id_3'] : null;
+
+            $status_level_1 = $approver_id ? 'pending' : 'none';
+            $status_level_2 = $approver_id_2 ? 'pending' : 'none';
+            $status_level_3 = $approver_id_3 ? 'pending' : 'none';
+            $approval_status = $approver_id ? 'pending' : 'approved';
+            $status = $approver_id ? 'pending_approval' : 'ordered';
+
             $stmt = $this->db->prepare("
-                INSERT INTO purchase_orders (tenant_id, supplier_id, created_by, po_number, order_date, status, subtotal, tax, total, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO purchase_orders (
+                    tenant_id, supplier_id, created_by, po_number, order_date, 
+                    status, subtotal, tax, total, notes, 
+                    approver_id, approver_id_2, approver_id_3, 
+                    status_level_1, status_level_2, status_level_3, approval_status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $auth['tenant_id'], $b['supplier_id'], $auth['user_id'], $po_number,
-                empty($b['order_date']) ? date('Y-m-d') : $b['order_date'], 'ordered',
-                $b['subtotal'] ?? 0, $b['tax'] ?? 0, $b['total'] ?? 0, $b['notes'] ?? null
+                empty($b['order_date']) ? date('Y-m-d') : $b['order_date'], $status,
+                $b['subtotal'] ?? 0, $b['tax'] ?? 0, $b['total'] ?? 0, $b['notes'] ?? null,
+                $approver_id, $approver_id_2, $approver_id_3,
+                $status_level_1, $status_level_2, $status_level_3, $approval_status
             ]);
             $poId = (int)$this->db->lastInsertId();
 
@@ -111,19 +140,48 @@ class PurchaseOrderController {
 
             $this->db->commit();
             logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'Tạo đơn nhập hàng', 'purchase_order', $poId, $po_number);
+
+            // Send notification to first approver if any
+            if ($approver_id) {
+                try {
+                    require_once __DIR__ . '/../NotificationService.php';
+                    NotificationService::send($this->db, $auth['tenant_id'], 'PO_WAITING_APPROVAL', [
+                        'po_id' => $poId,
+                        'po_number' => $po_number,
+                        'current_level' => 1,
+                        'status' => 'pending',
+                        'next_approval_status' => 'pending',
+                        'creator_id' => $auth['user_id'],
+                        'target_user_id' => $approver_id
+                    ]);
+                } catch (\Throwable $notifEx) {
+                    error_log("PO Notification Error: " . $notifEx->getMessage());
+                }
+            }
+
             $this->show($auth, $poId);
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if (get_class($e) === 'ResponseException') {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                throw $e;
+            }
+            if ($this->db->inTransaction()) $this->db->rollBack();
             respond(500, null, 'Lỗi khi tạo đơn nhập hàng: ' . $e->getMessage(), false);
         }
     }
 
     public function show(array $auth, int $id): void {
         $stmt = $this->db->prepare("
-            SELECT po.*, s.name as supplier_name, u.full_name as creator_name
+            SELECT po.*, s.name as supplier_name, u.full_name as creator_name,
+                   app1.full_name as approver_name_1, app1.email as approver_email_1,
+                   app2.full_name as approver_name_2, app2.email as approver_email_2,
+                   app3.full_name as approver_name_3, app3.email as approver_email_3
             FROM purchase_orders po
             LEFT JOIN suppliers s ON po.supplier_id = s.id
             LEFT JOIN users u ON po.created_by = u.id
+            LEFT JOIN users app1 ON po.approver_id = app1.id
+            LEFT JOIN users app2 ON po.approver_id_2 = app2.id
+            LEFT JOIN users app3 ON po.approver_id_3 = app3.id
             WHERE po.id = ? AND po.tenant_id = ?
         ");
         $stmt->execute([$id, $auth['tenant_id']]);
@@ -142,11 +200,14 @@ class PurchaseOrderController {
         $this->db->beginTransaction();
         try {
             // 1. Get PO and items
-            $stmt = $this->db->prepare("SELECT status FROM purchase_orders WHERE id = ? AND tenant_id = ? FOR UPDATE");
+            $stmt = $this->db->prepare("SELECT status, approval_status FROM purchase_orders WHERE id = ? AND tenant_id = ? FOR UPDATE");
             $stmt->execute([$id, $auth['tenant_id']]);
             $po = $stmt->fetch();
             if (!$po) respond(404, null, 'Không tìm thấy đơn hàng', false);
             if ($po['status'] === 'received') respond(422, null, 'Đơn hàng này đã được nhập kho rồi', false);
+            if ($po['approval_status'] !== 'approved') {
+                respond(422, null, 'Đơn hàng chưa được phê duyệt đầy đủ, không thể nhập kho', false);
+            }
 
             // 2. Update status
             $this->db->prepare("UPDATE purchase_orders SET status = 'received' WHERE id = ? AND tenant_id = ?")->execute([$id, $auth['tenant_id']]);
@@ -200,14 +261,172 @@ class PurchaseOrderController {
             logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'Nhập kho từ PO', 'purchase_order', $id, $poInfo['po_number']);
             respond(200, null, 'Đã nhập kho thành công, đã tạo lô hàng và cập nhật số lượng tồn kho');
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if (get_class($e) === 'ResponseException') {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                throw $e;
+            }
+            if ($this->db->inTransaction()) $this->db->rollBack();
             respond(500, null, 'Lỗi khi nhập kho: ' . $e->getMessage(), false);
+        }
+    }
+
+    public function approve(array $auth, int $id): void {
+        $b = getBody();
+        $statusInput = $b['status'] ?? ''; // 'approved' or 'rejected'
+        if (!in_array($statusInput, ['approved', 'rejected'], true)) {
+            respond(400, null, 'Trạng thái phê duyệt không hợp lệ', false);
+        }
+
+        $userId = $auth['user_id'];
+        $tid = $auth['tenant_id'];
+
+        $this->db->beginTransaction();
+        try {
+            // Fetch PO details
+            $stmt = $this->db->prepare("
+                SELECT * FROM purchase_orders 
+                WHERE id = ? AND tenant_id = ? AND status = 'pending_approval'
+                FOR UPDATE
+            ");
+            $stmt->execute([$id, $tid]);
+            $po = $stmt->fetch();
+            if (!$po) {
+                respond(404, null, 'Không tìm thấy đơn hàng đang chờ duyệt hoặc đơn hàng đã xử lý', false);
+            }
+
+            // Determine which level needs to be approved next
+            $currentLevel = 0;
+            if ($po['status_level_1'] === 'pending') {
+                $currentLevel = 1;
+            } elseif ($po['status_level_1'] === 'approved' && $po['status_level_2'] === 'pending') {
+                $currentLevel = 2;
+            } elseif ($po['status_level_1'] === 'approved' && $po['status_level_2'] === 'approved' && $po['status_level_3'] === 'pending') {
+                $currentLevel = 3;
+            }
+
+            if ($currentLevel === 0) {
+                respond(422, null, 'Đơn hàng đã được duyệt hoặc từ chối đầy đủ rồi', false);
+            }
+
+            // Check if current user is the authorized approver for this level
+            $expectedApproverId = (int)$po["approver_id" . ($currentLevel > 1 ? "_" . $currentLevel : "")];
+            if ($expectedApproverId !== (int)$userId && !in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'director'], true)) {
+                respond(403, null, 'Bạn không có quyền phê duyệt cấp này', false);
+            }
+
+            // Update status of the current level
+            $levelStatusField = "status_level_" . $currentLevel;
+            $approvedByField = "approved_by" . ($currentLevel > 1 ? "_" . $currentLevel : "");
+            
+            $updateFields = ["$levelStatusField = ?"];
+            $updateParams = [$statusInput];
+            
+            if ($currentLevel === 1) {
+                $updateFields[] = "approved_by = ?";
+                $updateParams[] = $userId;
+            } elseif ($currentLevel === 2) {
+                $updateFields[] = "approved_by_2 = ?";
+                $updateParams[] = $userId;
+            }
+
+            // Determine overall PO status
+            $nextApprovalStatus = $po['approval_status'];
+            $nextPoStatus = $po['status'];
+
+            if ($statusInput === 'rejected') {
+                $nextApprovalStatus = 'rejected';
+                $nextPoStatus = 'cancelled';
+            } else {
+                // Check if next levels are specified
+                $hasLevel2 = !empty($po['approver_id_2']) && $po['status_level_2'] !== 'none';
+                $hasLevel3 = !empty($po['approver_id_3']) && $po['status_level_3'] !== 'none';
+
+                if ($currentLevel === 1) {
+                    if ($hasLevel2) {
+                        $nextApprovalStatus = 'pending';
+                        $nextPoStatus = 'pending_approval';
+                    } else {
+                        $nextApprovalStatus = 'approved';
+                        $nextPoStatus = 'ordered';
+                    }
+                } elseif ($currentLevel === 2) {
+                    if ($hasLevel3) {
+                        $nextApprovalStatus = 'pending';
+                        $nextPoStatus = 'pending_approval';
+                    } else {
+                        $nextApprovalStatus = 'approved';
+                        $nextPoStatus = 'ordered';
+                    }
+                } elseif ($currentLevel === 3) {
+                    $nextApprovalStatus = 'approved';
+                    $nextPoStatus = 'ordered';
+                }
+            }
+
+            $updateFields[] = "approval_status = ?";
+            $updateParams[] = $nextApprovalStatus;
+            
+            $updateFields[] = "status = ?";
+            $updateParams[] = $nextPoStatus;
+
+            $updateParams[] = $id;
+            $updateParams[] = $tid;
+
+            $updateSql = "UPDATE purchase_orders SET " . implode(', ', $updateFields) . " WHERE id = ? AND tenant_id = ?";
+            $this->db->prepare($updateSql)->execute($updateParams);
+
+            $this->db->commit();
+
+            // Log activity
+            $actionLabel = $statusInput === 'approved' ? 'Phê duyệt PO Cấp ' . $currentLevel : 'Từ chối PO Cấp ' . $currentLevel;
+            logActivity($this->db, $tid, $userId, $actionLabel, 'purchase_order', $id, $po['po_number']);
+
+            // Send notification
+            try {
+                require_once __DIR__ . '/../NotificationService.php';
+                $eventPayload = [
+                    'po_id' => $id,
+                    'po_number' => $po['po_number'],
+                    'current_level' => $currentLevel,
+                    'status' => $statusInput,
+                    'next_approval_status' => $nextApprovalStatus,
+                    'creator_id' => $po['created_by']
+                ];
+                
+                $nextApproverId = null;
+                $hasLevel2 = !empty($po['approver_id_2']) && $po['status_level_2'] !== 'none';
+                $hasLevel3 = !empty($po['approver_id_3']) && $po['status_level_3'] !== 'none';
+                
+                if ($statusInput === 'approved') {
+                    if ($currentLevel === 1 && $hasLevel2) {
+                        $nextApproverId = (int)$po['approver_id_2'];
+                    } elseif ($currentLevel === 2 && $hasLevel3) {
+                        $nextApproverId = (int)$po['approver_id_3'];
+                    }
+                }
+                
+                if ($nextApproverId) {
+                    NotificationService::send($this->db, $tid, 'PO_WAITING_APPROVAL', array_merge($eventPayload, ['target_user_id' => $nextApproverId]));
+                } else {
+                    NotificationService::send($this->db, $tid, $statusInput === 'approved' ? 'PO_APPROVED' : 'PO_REJECTED', array_merge($eventPayload, ['target_user_id' => $po['created_by']]));
+                }
+            } catch (\Throwable $notifEx) {
+                error_log("PO Notification Error: " . $notifEx->getMessage());
+            }
+
+            respond(200, null, 'Phản hồi phê duyệt đơn hàng thành công');
+        } catch (Exception $e) {
+            if (get_class($e) === 'ResponseException') {
+                if ($this->db->inTransaction()) $this->db->rollBack();
+                throw $e;
+            }
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            respond(500, null, 'Lỗi khi phê duyệt: ' . $e->getMessage(), false);
         }
     }
 
     public function update(array $auth, int $id): void {
         if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director'], true)) respond(403, null, 'Bạn không có quyền cập nhật đơn nhập hàng', false);
-        // Simple update for fields like notes or status (not receive)
         $b = getBody();
         $fields = ['status', 'payment_status', 'paid_amount', 'notes'];
         $sets = []; $params = [];

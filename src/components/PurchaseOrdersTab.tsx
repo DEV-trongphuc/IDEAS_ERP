@@ -33,13 +33,17 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
   
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     supplier_id: '', 
     order_date: new Date().toISOString().split('T')[0], 
     notes: '', 
     items: [] as any[],
-    tax_rate: 0
+    tax_rate: 0,
+    approver_id: '',
+    approver_id_2: '',
+    approver_id_3: ''
   });
 
   const fetchOrders = async () => {
@@ -55,14 +59,17 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
 
   const fetchSuppliersAndProducts = async () => {
     try {
-      const [sRes, pRes] = await Promise.all([
+      const [sRes, pRes, uRes] = await Promise.all([
         api.get('/suppliers'),
-        api.get('/products')
+        api.get('/products'),
+        api.get('/users?all=1')
       ]);
       const sData = sRes.data.data;
       const pData = pRes.data.data;
+      const uData = uRes.data.data || uRes.data;
       setSuppliers(Array.isArray(sData) ? sData : (sData?.items || []));
       setProducts(Array.isArray(pData) ? pData : (pData?.items || []));
+      setUsers(Array.isArray(uData) ? uData : (uData?.items || []));
     } catch (err) {
       console.error(err);
     }
@@ -109,6 +116,19 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
 
   const calculateTotal = () => formData.items.reduce((acc, i) => acc + (Number(i.subtotal) || 0), 0);
 
+  const handleApprove = async (id: number, status: 'approved' | 'rejected') => {
+    setIsSubmitting(true);
+    try {
+      await api.post(`/purchase-orders/${id}/approve`, { status });
+      addToast(status === 'approved' ? 'Đã duyệt đơn hàng thành công' : 'Đã từ chối đơn hàng', 'success');
+      fetchOrders();
+    } catch (err: any) {
+      addToast(err.response?.data?.message || 'Lỗi khi phê duyệt', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.supplier_id) return addToast('Vui lòng chọn nhà cung cấp', 'error');
@@ -129,11 +149,14 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
         items: formData.items.map(i => ({ product_id: i.product_id, name: i.name, quantity: i.quantity, unit_cost: i.unit_cost, subtotal: i.subtotal })),
         subtotal,
         tax,
-        total
+        total,
+        approver_id: formData.approver_id ? Number(formData.approver_id) : null,
+        approver_id_2: formData.approver_id_2 ? Number(formData.approver_id_2) : null,
+        approver_id_3: formData.approver_id_3 ? Number(formData.approver_id_3) : null
       });
       addToast('Đã tạo đơn nhập hàng mới', 'success');
       setShowModal(false);
-      setFormData({ supplier_id: '', order_date: new Date().toISOString().split('T')[0], notes: '', items: [], tax_rate: 0 });
+      setFormData({ supplier_id: '', order_date: new Date().toISOString().split('T')[0], notes: '', items: [], tax_rate: 0, approver_id: '', approver_id_2: '', approver_id_3: '' });
       fetchOrders();
     } catch (err: any) {
       addToast(err.response?.data?.message || 'Lỗi khi lưu đơn hàng', 'error');
@@ -199,8 +222,31 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
                 </thead>
                 <tbody>
                   {orders.map(o => {
-                    const statusClass = o.status === 'received' ? 'success' : o.status === 'ordered' ? 'warning' : 'info';
-                    const statusLabel = o.status === 'received' ? 'Đã nhập kho' : o.status === 'ordered' ? 'Đã đặt hàng' : 'Nháp';
+                    let statusClass = o.status === 'received' ? 'success' : o.status === 'ordered' ? 'warning' : 'info';
+                    let statusLabel = o.status === 'received' ? 'Đã nhập kho' : o.status === 'ordered' ? 'Đã đặt hàng' : 'Nháp';
+                    if (o.status === 'pending_approval') {
+                      statusClass = 'warning';
+                      statusLabel = 'Chờ duyệt';
+                    } else if (o.status === 'cancelled') {
+                      statusClass = 'danger';
+                      statusLabel = 'Từ chối';
+                    }
+
+                    // Check if current user is the expected active approver
+                    let isActiveApprover = false;
+                    const curUserId = Number(user?.id);
+                    const isAdmin = ['admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase());
+                    
+                    if (o.status === 'pending_approval') {
+                      if (o.status_level_1 === 'pending') {
+                        if (Number(o.approver_id) === curUserId || isAdmin) isActiveApprover = true;
+                      } else if (o.status_level_1 === 'approved' && o.status_level_2 === 'pending') {
+                        if (Number(o.approver_id_2) === curUserId || isAdmin) isActiveApprover = true;
+                      } else if (o.status_level_1 === 'approved' && o.status_level_2 === 'approved' && o.status_level_3 === 'pending') {
+                        if (Number(o.approver_id_3) === curUserId || isAdmin) isActiveApprover = true;
+                      }
+                    }
+
                     return (
                       <tr key={o.id} className="table-row-hover group">
                         <td>
@@ -211,7 +257,10 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
                             <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                               <Truck size={16} />
                             </div>
-                            <span className="font-bold text-sm" style={{ color: 'var(--color-text)' }}>{o.supplier_name}</span>
+                            <div>
+                              <span className="font-bold text-sm" style={{ color: 'var(--color-text)' }}>{o.supplier_name}</span>
+                              <div className="text-[10px] text-muted-light mt-0.5">Tạo bởi: {o.creator_name || '...'}</div>
+                            </div>
                           </div>
                         </td>
                         <td>
@@ -225,19 +274,83 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
                           </div>
                         </td>
                         <td>
-                          <span className={`badge ${statusClass}`}>{statusLabel}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`badge ${statusClass}`} style={{ alignSelf: 'flex-start' }}>{statusLabel}</span>
+                            
+                            {/* Render levels info */}
+                            {o.approver_id && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ 
+                                    fontWeight: 700,
+                                    color: o.status_level_1 === 'approved' ? 'var(--color-success)' : o.status_level_1 === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'
+                                  }}>
+                                    Cấp 1: {o.approver_name_1 || '...'} ({o.status_level_1 === 'approved' ? 'Đã duyệt' : o.status_level_1 === 'rejected' ? 'Từ chối' : 'Chờ duyệt'})
+                                  </span>
+                                </div>
+                                {o.approver_id_2 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ 
+                                      fontWeight: 700,
+                                      color: o.status_level_2 === 'approved' ? 'var(--color-success)' : o.status_level_2 === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'
+                                    }}>
+                                      Cấp 2: {o.approver_name_2 || '...'} ({o.status_level_2 === 'approved' ? 'Đã duyệt' : o.status_level_2 === 'rejected' ? 'Từ chối' : 'Chờ duyệt'})
+                                    </span>
+                                  </div>
+                                )}
+                                {o.approver_id_3 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ 
+                                      fontWeight: 700,
+                                      color: o.status_level_3 === 'approved' ? 'var(--color-success)' : o.status_level_3 === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'
+                                    }}>
+                                      Cấp 3: {o.approver_name_3 || '...'} ({o.status_level_3 === 'approved' ? 'Đã duyệt' : o.status_level_3 === 'rejected' ? 'Từ chối' : 'Chờ duyệt'})
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          {o.status === 'ordered' && (
-                            <button className="btn primary sm inline-flex items-center justify-center gap-2" onClick={() => handleReceive(o.id)}>
-                              <Package size={14} /> Nhập kho
-                            </button>
-                          )}
-                          {o.status === 'received' && (
-                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-success">
-                              <CheckCircle2 size={14} /> Hoàn tất
-                            </div>
-                          )}
+                          <div className="flex flex-col gap-1.5 items-end">
+                            {o.status === 'ordered' && (
+                              <button className="btn primary sm inline-flex items-center justify-center gap-2" onClick={() => handleReceive(o.id)}>
+                                <Package size={14} /> Nhập kho
+                              </button>
+                            )}
+                            {o.status === 'received' && (
+                              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-success">
+                                <CheckCircle2 size={14} /> Hoàn tất
+                              </div>
+                            )}
+                            {o.status === 'cancelled' && (
+                              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-danger">
+                                <XCircle size={14} /> Bị từ chối
+                              </div>
+                            )}
+                            
+                            {isActiveApprover && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <button 
+                                  className="btn success sm" 
+                                  onClick={() => handleApprove(o.id, 'approved')}
+                                  disabled={isSubmitting}
+                                  style={{ padding: '2px 8px', fontSize: '11px', height: '24px', minHeight: 'unset' }}
+                                >
+                                  Duyệt
+                                </button>
+                                <button 
+                                  className="btn danger sm" 
+                                  onClick={() => handleApprove(o.id, 'rejected')}
+                                  disabled={isSubmitting}
+                                  style={{ padding: '2px 8px', fontSize: '11px', height: '24px', minHeight: 'unset' }}
+                                >
+                                  Từ chối
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -322,6 +435,46 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
                           value={String(formData.tax_rate || 0)} 
                           onChange={val => setFormData({...formData, tax_rate: Number(val)})}
                           placeholder="Chọn thuế suất"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Approver levels */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', borderTop: '1px dashed var(--color-border)', paddingTop: '1.25rem', marginTop: '0.25rem' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                          <CheckCircle2 size={13} /> Người duyệt Cấp 1
+                        </label>
+                        <CustomSelect 
+                          options={users.map(u => ({ value: String(u.id), label: u.full_name }))}
+                          value={formData.approver_id} 
+                          onChange={val => setFormData({...formData, approver_id: String(val)})}
+                          placeholder="-- Không cần duyệt --"
+                          searchable
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                          <CheckCircle2 size={13} /> Người duyệt Cấp 2
+                        </label>
+                        <CustomSelect 
+                          options={users.map(u => ({ value: String(u.id), label: u.full_name }))}
+                          value={formData.approver_id_2} 
+                          onChange={val => setFormData({...formData, approver_id_2: String(val)})}
+                          placeholder="-- Không có --"
+                          searchable
+                        />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                          <CheckCircle2 size={13} /> Người duyệt Cấp 3
+                        </label>
+                        <CustomSelect 
+                          options={users.map(u => ({ value: String(u.id), label: u.full_name }))}
+                          value={formData.approver_id_3} 
+                          onChange={val => setFormData({...formData, approver_id_3: String(val)})}
+                          placeholder="-- Không có --"
+                          searchable
                         />
                       </div>
                     </div>
