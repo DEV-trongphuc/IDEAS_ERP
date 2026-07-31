@@ -1165,7 +1165,8 @@ class HRMController {
 
         // 3. Pending Expenses
         $stmtExpenses = $this->db->prepare("
-            SELECT e.id, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at, e.approver_id
+            SELECT e.id, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at,
+                   e.approver_id, e.approver_id_2, e.approver_id_3, e.status_level_1, e.status_level_2, e.status_level_3
             FROM expenses e
             JOIN users u ON e.created_by = u.id
             WHERE e.tenant_id = ? AND e.status = 'pending' AND e.deleted_at IS NULL
@@ -1174,10 +1175,30 @@ class HRMController {
         $expenses = $stmtExpenses->fetchAll(PDO::FETCH_ASSOC);
         foreach ($expenses as $e) {
             $shouldShow = false;
-            if ($e['approver_id'] == $userId) {
-                $shouldShow = true;
-            } else if (empty($e['approver_id']) && in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr', 'accountant'])) {
-                $shouldShow = true;
+            $levelText = '';
+            
+            $lvl1 = $e['status_level_1'] ?? 'pending';
+            $lvl2 = $e['status_level_2'] ?? 'none';
+            $lvl3 = $e['status_level_3'] ?? 'none';
+
+            if ($lvl1 === 'pending') {
+                if ($e['approver_id'] == $userId) {
+                    $shouldShow = true;
+                    $levelText = ' - Cấp 1';
+                } elseif (empty($e['approver_id']) && in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr', 'accountant'])) {
+                    $shouldShow = true;
+                    $levelText = '';
+                }
+            } elseif ($lvl1 === 'approved' && $lvl2 === 'pending') {
+                if ($e['approver_id_2'] == $userId) {
+                    $shouldShow = true;
+                    $levelText = ' - Cấp 2';
+                }
+            } elseif ($lvl1 === 'approved' && $lvl2 === 'approved' && $lvl3 === 'pending') {
+                if ($e['approver_id_3'] == $userId) {
+                    $shouldShow = true;
+                    $levelText = ' - Cấp 3';
+                }
             }
 
             if ($shouldShow) {
@@ -1185,7 +1206,7 @@ class HRMController {
                     'id' => (int)$e['id'],
                     'type' => 'expense',
                     'employee_name' => $e['employee_name'],
-                    'title' => 'Yêu cầu chi phí: ' . $e['title'],
+                    'title' => 'Yêu cầu chi phí' . $levelText . ': ' . $e['title'],
                     'description' => 'Số tiền: ' . number_format($e['amount'], 0, ',', '.') . 'đ. Ghi chú: "' . $e['notes'] . '"',
                     'created_at' => $e['created_at']
                 ];

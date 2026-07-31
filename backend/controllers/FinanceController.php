@@ -875,12 +875,47 @@ class FinanceController
             $statusVal = 'pending';
         }
 
+        $approver_id = !empty($data['approver_id']) ? (int)$data['approver_id'] : null;
+        $approver_id_2 = !empty($data['approver_id_2']) ? (int)$data['approver_id_2'] : null;
+        $approver_id_3 = !empty($data['approver_id_3']) ? (int)$data['approver_id_3'] : null;
+
+        // Fetch threshold for 3-level approval
+        $threshold = 5000000;
+        $thQuery = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'po_three_level_threshold' LIMIT 1");
+        if ($thQuery) {
+            $thRow = $thQuery->fetch();
+            if ($thRow && is_numeric($thRow['setting_value'])) {
+                $threshold = (float)$thRow['setting_value'];
+            }
+        }
+
+        if ($totalAmount >= $threshold && $statusVal === 'pending') {
+            if (empty($approver_id) || empty($approver_id_2) || empty($approver_id_3)) {
+                respond(422, null, 'Chi phí từ ' . number_format($threshold, 0, ',', '.') . ' VND trở lên bắt buộc phải phê duyệt 3 cấp, vui lòng chọn đầy đủ người duyệt.', false);
+            }
+        }
+
+        $status_level_1 = $approver_id ? 'pending' : 'none';
+        $status_level_2 = $approver_id_2 ? 'pending' : 'none';
+        $status_level_3 = $approver_id_3 ? 'pending' : 'none';
+        $approval_status = $approver_id ? 'pending' : 'approved';
+        if ($statusVal === 'approved') {
+            $status_level_1 = 'approved';
+            $status_level_2 = $approver_id_2 ? 'approved' : 'none';
+            $status_level_3 = $approver_id_3 ? 'approved' : 'none';
+            $approval_status = 'approved';
+        }
+
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare("
-                INSERT INTO expenses (tenant_id,created_by,title,category,amount,vat_amount,date,status,notes,
-                    vendor_name,has_vat_invoice,is_vat_inclusive,image_url)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                INSERT INTO expenses (
+                    tenant_id, created_by, title, category, amount, vat_amount, date, status, notes,
+                    vendor_name, has_vat_invoice, is_vat_inclusive, image_url,
+                    approver_id, approver_id_2, approver_id_3,
+                    status_level_1, status_level_2, status_level_3, approval_status
+                )
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ");
             $stmt->execute([
                 $auth['tenant_id'],
@@ -895,12 +930,19 @@ class FinanceController
                 $data['vendor_name'] ?? null,
                 $data['has_vat_invoice'] ?? 0,
                 $data['is_vat_inclusive'] ?? 0,
-                $data['image_url'] ?? null
+                $data['image_url'] ?? null,
+                $approver_id,
+                $approver_id_2,
+                $approver_id_3,
+                $status_level_1,
+                $status_level_2,
+                $status_level_3,
+                $approval_status
             ]);
             $expId = (int) $this->db->lastInsertId();
 
             if ($statusVal === 'approved') {
-                $stmtApprove = $this->db->prepare("UPDATE expenses SET approver_id = ?, approved_at = NOW() WHERE id = ?");
+                $stmtApprove = $this->db->prepare("UPDATE expenses SET approver_id = ?, approved_at = NOW(), status_level_1='approved', approval_status='approved' WHERE id = ?");
                 $stmtApprove->execute([$auth['user_id'], $expId]);
             }
 
@@ -979,7 +1021,14 @@ class FinanceController
             'vendor_name',
             'has_vat_invoice',
             'is_vat_inclusive',
-            'image_url'
+            'image_url',
+            'approver_id',
+            'approver_id_2',
+            'approver_id_3',
+            'status_level_1',
+            'status_level_2',
+            'status_level_3',
+            'approval_status'
         ];
         $isAdminOrDirector = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director'], true);
         if ($isAdminOrDirector) {
@@ -1185,7 +1234,7 @@ class FinanceController
         requireRole($auth, ['admin', 'manager', 'super_admin', 'superadmin', 'director', 'accountant', 'hr', 'sale_admin', 'saleadmin']);
 
         // Find creator of the expense
-        $stmtExp = $this->db->prepare("SELECT created_by, title, amount FROM expenses WHERE id=? AND tenant_id=?");
+        $stmtExp = $this->db->prepare("SELECT * FROM expenses WHERE id=? AND tenant_id=?");
         $stmtExp->execute([$id, $auth['tenant_id']]);
         $expenseRow = $stmtExp->fetch();
         if (!$expenseRow) respond(404, null, 'Không tìm thấy chi phí', false);
@@ -1208,39 +1257,116 @@ class FinanceController
         }
 
         $data = getBody();
-        $status = $data['status'] ?? 'approved';
-        if ($status === 'approved') {
-            $this->db->prepare("UPDATE expenses SET status=?, approver_id=?, approved_at=NOW(), reject_reason=NULL WHERE id=? AND tenant_id=?")
-                ->execute([$status, $auth['user_id'], $id, $auth['tenant_id']]);
-        } else {
-            $this->db->prepare("UPDATE expenses SET status=?, approver_id=?, approved_at=NOW(), reject_reason=? WHERE id=? AND tenant_id=?")
-                ->execute([$status, $auth['user_id'], $data['reject_reason'] ?? null, $id, $auth['tenant_id']]);
+        $statusInput = $data['status'] ?? 'approved'; // 'approved' or 'rejected'
+        if (!in_array($statusInput, ['approved', 'rejected'], true)) {
+            respond(400, null, 'Trạng thái phê duyệt không hợp lệ', false);
         }
 
-        // Email creator of the expense
-        $stmtExp = $this->db->prepare("SELECT created_by, title, amount FROM expenses WHERE id=? AND tenant_id=?");
-        $stmtExp->execute([$id, $auth['tenant_id']]);
-        $expenseRow = $stmtExp->fetch();
-        if ($expenseRow) {
-            $creatorId = (int)$expenseRow['created_by'];
-            $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id=?");
-            $stmtUser->execute([$creatorId]);
-            $creatorRow = $stmtUser->fetch();
-            if ($creatorRow && !empty($creatorRow['email'])) {
-                require_once __DIR__ . '/../mailer.php';
-                $emailSubject = "[IDEAS] Chi phí của bạn đã được " . ($status === 'approved' ? 'duyệt' : 'từ chối');
-                $emailTitle = "PHẢN HỒI YÊU CẦU CHI PHÍ";
-                $emailContent = "Chào <strong>" . htmlspecialchars($creatorRow['full_name']) . "</strong>,<br/><br/>" .
-                                "Yêu cầu thanh toán chi phí của bạn cho mục <strong>" . htmlspecialchars($expenseRow['title']) . "</strong> đã được cập nhật.<br/>" .
-                                "Số tiền: <strong>" . number_format($expenseRow['amount'] ?? 0, 0, ',', '.') . "đ</strong>.<br/>" .
-                                "Trạng thái mới: <strong style='color: " . ($status === 'approved' ? '#22c55e' : '#ef4444') . ";'>" . ($status === 'approved' ? 'Đã duyệt' : 'Từ chối') . "</strong> bởi quản trị viên.<br/>" .
-                                "Vui lòng đăng nhập hệ thống IDEAS CRM để xem chi tiết.";
-                sendEmailNotification($creatorRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
+        $userId = $auth['user_id'];
+
+        $this->db->beginTransaction();
+        try {
+            // Determine which level needs to be approved next
+            $currentLevel = 0;
+            if ($expenseRow['status_level_1'] === 'pending') {
+                $currentLevel = 1;
+            } elseif ($expenseRow['status_level_1'] === 'approved' && $expenseRow['status_level_2'] === 'pending') {
+                $currentLevel = 2;
+            } elseif ($expenseRow['status_level_1'] === 'approved' && $expenseRow['status_level_2'] === 'approved' && $expenseRow['status_level_3'] === 'pending') {
+                $currentLevel = 3;
             }
-        }
 
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE', 'expense', $id, json_encode(['status' => $status]));
-        respond(200, null, 'Đã cập nhật trạng thái');
+            // Fallback for old records without levels
+            if ($currentLevel === 0 && $expenseRow['status'] === 'pending') {
+                $currentLevel = 1;
+            }
+
+            if ($currentLevel === 0) {
+                respond(422, null, 'Khoản chi đã được duyệt hoặc từ chối đầy đủ rồi', false);
+            }
+
+            // Check if current user is the expected approver for this level
+            $expectedApproverId = 0;
+            if ($currentLevel === 1) {
+                $expectedApproverId = (int)($expenseRow['approver_id'] ?? 0);
+            } elseif ($currentLevel === 2) {
+                $expectedApproverId = (int)($expenseRow['approver_id_2'] ?? 0);
+            } elseif ($currentLevel === 3) {
+                $expectedApproverId = (int)($expenseRow['approver_id_3'] ?? 0);
+            }
+
+            if ($expectedApproverId > 0 && $expectedApproverId !== (int)$userId && !in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'director'], true)) {
+                respond(403, null, 'Bạn không có quyền phê duyệt cấp này', false);
+            }
+
+            // Update status of current level
+            $levelStatusField = "status_level_" . $currentLevel;
+            $nextApprovalStatus = $expenseRow['approval_status'];
+            $nextStatus = $expenseRow['status'];
+
+            if ($statusInput === 'rejected') {
+                $nextApprovalStatus = 'rejected';
+                $nextStatus = 'rejected';
+                
+                $this->db->prepare("UPDATE expenses SET status=?, approval_status=?, $levelStatusField=?, approver_id=?, approved_at=NOW(), reject_reason=? WHERE id=?")
+                    ->execute(['rejected', 'rejected', 'rejected', $userId, $data['reject_reason'] ?? null, $id]);
+            } else {
+                $hasLevel2 = !empty($expenseRow['approver_id_2']) && $expenseRow['status_level_2'] !== 'none';
+                $hasLevel3 = !empty($expenseRow['approver_id_3']) && $expenseRow['status_level_3'] !== 'none';
+
+                if ($currentLevel === 1) {
+                    if ($hasLevel2) {
+                        $nextApprovalStatus = 'pending';
+                        $nextStatus = 'pending';
+                    } else {
+                        $nextApprovalStatus = 'approved';
+                        $nextStatus = 'approved';
+                    }
+                } elseif ($currentLevel === 2) {
+                    if ($hasLevel3) {
+                        $nextApprovalStatus = 'pending';
+                        $nextStatus = 'pending';
+                    } else {
+                        $nextApprovalStatus = 'approved';
+                        $nextStatus = 'approved';
+                    }
+                } elseif ($currentLevel === 3) {
+                    $nextApprovalStatus = 'approved';
+                    $nextStatus = 'approved';
+                }
+
+                $approvedAtVal = ($nextStatus === 'approved') ? 'NOW()' : 'NULL';
+                $this->db->prepare("UPDATE expenses SET status=?, approval_status=?, $levelStatusField='approved', approved_at=" . ($nextStatus === 'approved' ? "NOW()" : "NULL") . " WHERE id=?")
+                    ->execute([$nextStatus, $nextApprovalStatus, $id]);
+            }
+
+            $this->db->commit();
+
+            // Send notification/email if final status is reached
+            if ($nextStatus === 'approved' || $nextStatus === 'rejected') {
+                $creatorId = (int)$expenseRow['created_by'];
+                $stmtUser = $this->db->prepare("SELECT email, full_name FROM users WHERE id=?");
+                $stmtUser->execute([$creatorId]);
+                $creatorRow = $stmtUser->fetch();
+                if ($creatorRow && !empty($creatorRow['email'])) {
+                    require_once __DIR__ . '/../mailer.php';
+                    $emailSubject = "[IDEAS] Chi phí của bạn đã được " . ($nextStatus === 'approved' ? 'duyệt' : 'từ chối');
+                    $emailTitle = "PHẢN HỒI YÊU CẦU CHI PHÍ";
+                    $emailContent = "Chào <strong>" . htmlspecialchars($creatorRow['full_name']) . "</strong>,<br/><br/>" .
+                                    "Yêu cầu thanh toán chi phí của bạn cho mục <strong>" . htmlspecialchars($expenseRow['title']) . "</strong> đã được cập nhật.<br/>" .
+                                    "Số tiền: <strong>" . number_format($expenseRow['amount'] ?? 0, 0, ',', '.') . "đ</strong>.<br/>" .
+                                    "Trạng thái mới: <strong style='color: " . ($nextStatus === 'approved' ? '#22c55e' : '#ef4444') . ";'>" . ($nextStatus === 'approved' ? 'Đã duyệt' : 'Từ chối') . "</strong> bởi quản trị viên.<br/>" .
+                                    "Vui lòng đăng nhập hệ thống IDEAS CRM để xem chi tiết.";
+                    sendEmailNotification($creatorRow['email'], $emailSubject, $emailTitle, $emailContent, '', false);
+                }
+            }
+
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE', 'expense', $id, json_encode(['status' => $nextStatus]));
+            respond(200, null, 'Đã cập nhật trạng thái');
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            respond(500, null, 'Lỗi khi duyệt chi phí: ' . $e->getMessage(), false);
+        }
     }
 
     public function summary(array $auth): void

@@ -1699,11 +1699,15 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                         <button 
                           className="btn primary sm" 
                           onClick={() => {
-                            navigate('/inventory', { 
+                            const primaryContact = subContacts.find(sc => sc.isPrimary) || subContacts[0];
+                            navigate('/expenses', { 
                               state: { 
-                                activeTab: 'purchase_orders',
-                                openPOCreate: true,
-                                defaultSupplierId: entity.id
+                                openCreate: true, 
+                                defaultContact: primaryContact ? {
+                                  id: primaryContact.id,
+                                  name: primaryContact.name,
+                                  avatar_url: ''
+                                } : null
                               } 
                             });
                             onClose();

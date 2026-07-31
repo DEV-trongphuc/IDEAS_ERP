@@ -29,6 +29,8 @@ const EMPTY_FORM = {
   date: '',
   notes: '',
   approver_id: null as number | null,
+  approver_id_2: null as number | null,
+  approver_id_3: null as number | null,
   related_user_ids: [] as number[],
   vendor_name: '',
   has_vat_invoice: false,
@@ -60,6 +62,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
 }) => {
   const { addToast } = useUIStore();
   const [form, setForm] = useState<any>({ ...EMPTY_FORM });
+  const [threshold, setThreshold] = useState<number>(5000000);
   const [saving, setSaving] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
@@ -206,6 +209,15 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   // Fetch initial data
   useEffect(() => {
     if (isOpen) {
+      api.get('/api.php?action=get_settings').then(r => {
+        if (r.data?.data) {
+          const matching = r.data.data.find((s: any) => s.setting_key === 'po_three_level_threshold');
+          if (matching && !isNaN(Number(matching.setting_value))) {
+            setThreshold(Number(matching.setting_value));
+          }
+        }
+      }).catch(() => {});
+
       api.get('/users').then(r => {
         const d = r.data.data;
         setUsers(Array.isArray(d) ? d : (d?.items || []));
@@ -279,6 +291,8 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           date: editItem.date || new Date().toISOString().split('T')[0],
           notes: cleanNotes,
           approver_id: editItem.approver_id ? Number(editItem.approver_id) : null,
+          approver_id_2: editItem.approver_id_2 ? Number(editItem.approver_id_2) : null,
+          approver_id_3: editItem.approver_id_3 ? Number(editItem.approver_id_3) : null,
           related_user_ids: Array.isArray(editItem.related_user_ids)
             ? editItem.related_user_ids.map(Number)
             : (editItem.related_user_ids ? String(editItem.related_user_ids).split(',').map(Number) : []),
@@ -326,8 +340,14 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
       return;
     }
     if (form.approver_id === null) {
-      addToast('Vui lòng chọn người duyệt', 'error');
+      addToast('Vui lòng chọn người duyệt Cấp 1', 'error');
       return;
+    }
+    if (Number(form.amount || 0) >= threshold) {
+      if (form.approver_id_2 === null || form.approver_id_3 === null) {
+        addToast(`Khoản chi từ ${threshold.toLocaleString('vi-VN')}đ trở lên bắt buộc phê duyệt 3 cấp. Vui lòng chọn đủ người duyệt!`, 'error');
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -1001,9 +1021,20 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   gap: '1rem',
                   boxShadow: 'var(--shadow-sm)'
                 }}>
-                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
-                    Phê duyệt & Vận hành
-                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Phê duyệt & Vận hành
+                    </h4>
+                    {Number(form.amount || 0) >= threshold ? (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        ⚠️ Bắt buộc 3 cấp duyệt!
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
+                        Duyệt 1 cấp (Cấp 2, 3 tùy chọn)
+                      </span>
+                    )}
+                  </div>
 
                   {/* Creator */}
                   <div className="form-group" style={{ margin: 0 }}>
@@ -1023,9 +1054,11 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                     </div>
                   </div>
 
-                  {/* Approver */}
+                  {/* Level 1 Approver */}
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-danger)' }}>Người duyệt *</label>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-danger)' }}>
+                      Người duyệt Cấp 1 *
+                    </label>
                     <CustomSelect
                       options={users.map((u: any) => ({
                         value: u.id,
@@ -1042,7 +1075,61 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                           related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
                         });
                       }}
-                      placeholder="Chọn người duyệt..."
+                      placeholder="Chọn người duyệt Cấp 1..."
+                      searchable
+                      showAvatars
+                    />
+                  </div>
+
+                  {/* Level 2 Approver */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: Number(form.amount || 0) >= threshold ? 'var(--color-danger)' : 'var(--color-text-light)' }}>
+                      Người duyệt Cấp 2 {Number(form.amount || 0) >= threshold ? '*' : '(Tùy chọn)'}
+                    </label>
+                    <CustomSelect
+                      options={users.map((u: any) => ({
+                        value: u.id,
+                        label: u.full_name,
+                        avatar: u.avatar_url,
+                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                      }))}
+                      value={form.approver_id_2}
+                      onChange={val => {
+                        const numVal = Number(val);
+                        setForm({
+                          ...form,
+                          approver_id_2: numVal,
+                          related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
+                        });
+                      }}
+                      placeholder="Chọn người duyệt Cấp 2..."
+                      searchable
+                      showAvatars
+                    />
+                  </div>
+
+                  {/* Level 3 Approver */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.85rem', color: Number(form.amount || 0) >= threshold ? 'var(--color-danger)' : 'var(--color-text-light)' }}>
+                      Người duyệt Cấp 3 {Number(form.amount || 0) >= threshold ? '*' : '(Tùy chọn)'}
+                    </label>
+                    <CustomSelect
+                      options={users.map((u: any) => ({
+                        value: u.id,
+                        label: u.full_name,
+                        avatar: u.avatar_url,
+                        sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                      }))}
+                      value={form.approver_id_3}
+                      onChange={val => {
+                        const numVal = Number(val);
+                        setForm({
+                          ...form,
+                          approver_id_3: numVal,
+                          related_user_ids: form.related_user_ids.filter((x: number) => x !== numVal)
+                        });
+                      }}
+                      placeholder="Chọn người duyệt Cấp 3..."
                       searchable
                       showAvatars
                     />
