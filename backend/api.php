@@ -6,7 +6,7 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-register_shutdown_function(function() {
+register_shutdown_function(function () {
     $error = error_get_last();
     if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
         if (!headers_sent()) {
@@ -43,12 +43,48 @@ if (strpos($action, '?') !== false) {
 $segments = explode('/', $action);
 $baseAction = explode('&', $segments[0])[0];
 if (in_array($baseAction, [
-    'auth', 'projects', 'deposits', 'cooperation-slips', 'capi', 'check-ins', 
-    'cloud-files', 'file-categories', 'tickets', 'suppliers', 'purchase-orders', 
-    'pos', 'custom-fields', 'inventory', 'tags', 'pipeline-stages', 
-    'users', 'reports', 'quotes', 'invoices', 'sales-orders', 'expenses', 'products', 'posts',
-    'contacts', 'companies', 'deals', 'activities', 'notes', 'campaigns', 'marketing-campaigns', 'upload', 'teams', 'dashboard',
-    'notifications', 'workflow-task-templates', 'search', 'export', 'import', 'system', 'test-benchmark', 'hrm'
+    'auth',
+    'projects',
+    'deposits',
+    'cooperation-slips',
+    'capi',
+    'check-ins',
+    'cloud-files',
+    'file-categories',
+    'tickets',
+    'suppliers',
+    'purchase-orders',
+    'pos',
+    'custom-fields',
+    'inventory',
+    'tags',
+    'pipeline-stages',
+    'users',
+    'reports',
+    'quotes',
+    'invoices',
+    'sales-orders',
+    'expenses',
+    'products',
+    'posts',
+    'contacts',
+    'companies',
+    'deals',
+    'activities',
+    'notes',
+    'campaigns',
+    'marketing-campaigns',
+    'upload',
+    'teams',
+    'dashboard',
+    'notifications',
+    'workflow-task-templates',
+    'search',
+    'export',
+    'import',
+    'system',
+    'test-benchmark',
+    'hrm'
 ], true)) {
     $_SERVER['REQUEST_URI'] = '/backend/' . $action . (!empty($_GET) ? '?' . http_build_query($_GET) : '');
     require_once __DIR__ . '/index.php';
@@ -347,28 +383,29 @@ if (!function_exists('getBearerToken')) {
     }
 }
 
-function check_zalo_direct_log_for_lead($logFile, $createdDate, $phone, $name) {
+function check_zalo_direct_log_for_lead($logFile, $createdDate, $phone, $name)
+{
     if (!file_exists($logFile)) return 'N/A';
-    
+
     $handle = fopen($logFile, 'r');
     if (!$handle) return 'N/A';
-    
+
     $fsize = filesize($logFile);
     $readSize = min($fsize, 150000); // Read last 150KB
     if ($fsize > $readSize) {
         fseek($handle, $fsize - $readSize);
     }
-    
+
     $content = fread($handle, $readSize);
     fclose($handle);
-    
+
     if (empty($content)) return 'N/A';
-    
+
     $lines = explode("\n", $content);
     for ($i = count($lines) - 1; $i >= 0; $i--) {
         $line = $lines[$i];
         if (empty(trim($line))) continue;
-        
+
         // Match by phone or name
         if (strpos($line, $phone) !== false || (!empty($name) && strpos($line, $name) !== false)) {
             if (strpos($line, 'HTTP: 200') !== false || strpos($line, '"ok":true') !== false) {
@@ -379,10 +416,11 @@ function check_zalo_direct_log_for_lead($logFile, $createdDate, $phone, $name) {
     return 'N/A';
 }
 
-function parse_zalo_direct_logs($logFile, $conn = null) {
+function parse_zalo_direct_logs($logFile, $conn = null)
+{
     $logs = [];
     if (!file_exists($logFile)) return $logs;
-    
+
     $zaloGroupChatId = '';
     if ($conn) {
         $res = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'zalo_admin_group_chat_id' LIMIT 1");
@@ -390,40 +428,40 @@ function parse_zalo_direct_logs($logFile, $conn = null) {
             $zaloGroupChatId = trim($row['setting_value'] ?? '');
         }
     }
-    
+
     $handle = fopen($logFile, 'r');
     if (!$handle) return $logs;
-    
+
     $fsize = filesize($logFile);
     $readSize = min($fsize, 250000); // Read last 250KB for log feed
     if ($fsize > $readSize) {
         fseek($handle, $fsize - $readSize);
     }
-    
+
     $content = fread($handle, $readSize);
     fclose($handle);
-    
+
     if (empty($content)) return $logs;
-    
+
     $lines = explode("\n", $content);
     for ($i = count($lines) - 1; $i >= 0; $i--) {
         $line = $lines[$i];
         if (empty(trim($line))) continue;
-        
+
         // Format: [Y-m-d H:i:s] Target ChatId: X, HTTP: Y, Request: Z, Response: W
         if (preg_match('/^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\]\s+Target\s+ChatId:\s*([^,]+),\s*HTTP:\s*(\d+)/i', $line, $matches)) {
             $time = $matches[1];
             $chatId = trim($matches[2]);
             $httpCode = $matches[3];
-            
+
             $body = '';
             $reqStart = strpos($line, 'Request: ');
             if ($reqStart !== false) {
                 $reqEnd = strpos($line, ', Response:', $reqStart);
-                $reqJsonStr = ($reqEnd !== false) 
+                $reqJsonStr = ($reqEnd !== false)
                     ? substr($line, $reqStart + 9, $reqEnd - ($reqStart + 9))
                     : substr($line, $reqStart + 9);
-                
+
                 $reqData = json_decode($reqJsonStr, true);
                 if (isset($reqData['text'])) {
                     $body = $reqData['text'];
@@ -433,7 +471,7 @@ function parse_zalo_direct_logs($logFile, $conn = null) {
                     $body = $reqJsonStr;
                 }
             }
-            
+
             $isDirect = empty($zaloGroupChatId) || (strtolower($chatId) !== strtolower($zaloGroupChatId));
 
             $logs[] = [
@@ -452,10 +490,11 @@ function parse_zalo_direct_logs($logFile, $conn = null) {
     return $logs;
 }
 
-function parse_telegram_direct_logs($logFile, $conn = null) {
+function parse_telegram_direct_logs($logFile, $conn = null)
+{
     $logs = [];
     if (!file_exists($logFile)) return $logs;
-    
+
     $tgGroupChatId = '';
     if ($conn) {
         $res = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'telegram_admin_group_chat_id' LIMIT 1");
@@ -466,37 +505,37 @@ function parse_telegram_direct_logs($logFile, $conn = null) {
 
     $handle = fopen($logFile, 'r');
     if (!$handle) return $logs;
-    
+
     $fsize = filesize($logFile);
     $readSize = min($fsize, 250000); // Read last 250KB for log feed
     if ($fsize > $readSize) {
         fseek($handle, $fsize - $readSize);
     }
-    
+
     $content = fread($handle, $readSize);
     fclose($handle);
-    
+
     if (empty($content)) return $logs;
-    
+
     $lines = explode("\n", $content);
     for ($i = count($lines) - 1; $i >= 0; $i--) {
         $line = $lines[$i];
         if (empty(trim($line))) continue;
-        
+
         // Format: [Y-m-d H:i:s] Target ChatId: X, HTTP: Y, Request: Z, Response: W
         if (preg_match('/^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\]\s+Target\s+ChatId:\s*([^,]+),\s*HTTP:\s*(\d+)/i', $line, $matches)) {
             $time = $matches[1];
             $chatId = trim($matches[2]);
             $httpCode = $matches[3];
-            
+
             $body = '';
             $reqStart = strpos($line, 'Request: ');
             if ($reqStart !== false) {
                 $reqEnd = strpos($line, ', Response:', $reqStart);
-                $reqJsonStr = ($reqEnd !== false) 
+                $reqJsonStr = ($reqEnd !== false)
                     ? substr($line, $reqStart + 9, $reqEnd - ($reqStart + 9))
                     : substr($line, $reqStart + 9);
-                
+
                 $reqData = json_decode($reqJsonStr, true);
                 if (isset($reqData['text'])) {
                     $body = $reqData['text'];
@@ -506,7 +545,7 @@ function parse_telegram_direct_logs($logFile, $conn = null) {
                     $body = $reqJsonStr;
                 }
             }
-            
+
             $isDirect = empty($tgGroupChatId) || (strtolower($chatId) !== strtolower($tgGroupChatId));
 
             $logs[] = [
@@ -526,7 +565,8 @@ function parse_telegram_direct_logs($logFile, $conn = null) {
 }
 
 if (!function_exists('saveSignatureBase64ToFile')) {
-    function saveSignatureBase64ToFile($sigVal, $userId) {
+    function saveSignatureBase64ToFile($sigVal, $userId)
+    {
         if (empty($sigVal) || strpos($sigVal, 'data:image/') !== 0) {
             return $sigVal;
         }
@@ -630,23 +670,70 @@ if (!in_array($action, $publicActions)) {
     }
 
     $salesAllowedActions = [
-        'get_settings', 'get_sale_portal_data', 'get_sse_updates', 'get_sale_lead_timeline', 
-        'toggle_consultant_vacation', 'accept_lead', 'check_lead_duplicate', 
-        'get_lead_notification_status', 'get_reports', 'get_support_tickets_count', 'get_rounds', 
-        'get_fair_share_stats', 'get_consultant_compensation_details', 
-        'upload_avatar', 'update_consultant_self_profile', 'consultant-profile', 
-        'get_dashboard_stats', 'get_logs', 'get_consultants', 'invoices', 
-        'projects', 'campaigns', 'marketing-campaigns', 'files', 'cloud-files', 'file-categories', 
-        'get_public_leads', 'claim_public_lead', 'teams', 'manual_insert_lead', 
-        'get_unique_sources', 'get_calendar_stats', 'get_calendar_day_details', 
-        'contacts', 'deals', 'companies', 'pipeline-stages', 'quotes', 
-        'expenses', 'tickets', 'activities', 'users', 'notes', 'cooperation-slips', 
-        'get_accounts', 'edit_account', 'unlink_zalo', 'unlink_telegram', 'get_night_shift_status', 
-        'register_night_shift', 'get_consultant_leaves', 'add_consultant_leave', 
+        'get_settings',
+        'get_sale_portal_data',
+        'get_sse_updates',
+        'get_sale_lead_timeline',
+        'toggle_consultant_vacation',
+        'accept_lead',
+        'check_lead_duplicate',
+        'get_lead_notification_status',
+        'get_reports',
+        'get_support_tickets_count',
+        'get_rounds',
+        'get_fair_share_stats',
+        'get_consultant_compensation_details',
+        'upload_avatar',
+        'update_consultant_self_profile',
+        'consultant-profile',
+        'get_dashboard_stats',
+        'get_logs',
+        'get_consultants',
+        'invoices',
+        'projects',
+        'campaigns',
+        'marketing-campaigns',
+        'files',
+        'cloud-files',
+        'file-categories',
+        'get_public_leads',
+        'claim_public_lead',
+        'teams',
+        'manual_insert_lead',
+        'get_unique_sources',
+        'get_calendar_stats',
+        'get_calendar_day_details',
+        'contacts',
+        'deals',
+        'companies',
+        'pipeline-stages',
+        'quotes',
+        'expenses',
+        'tickets',
+        'activities',
+        'users',
+        'notes',
+        'cooperation-slips',
+        'get_accounts',
+        'edit_account',
+        'unlink_zalo',
+        'unlink_telegram',
+        'get_night_shift_status',
+        'register_night_shift',
+        'get_consultant_leaves',
+        'add_consultant_leave',
         'delete_consultant_leave',
         // Whitelisted missing front-controller routes for Sales
-        'notifications', 'check-ins', 'deposits', 'search', 'workflow-task-templates', 'products', 'dashboard',
-        'update_profile', 'change_password', 'get_my_activity_logs'
+        'notifications',
+        'check-ins',
+        'deposits',
+        'search',
+        'workflow-task-templates',
+        'products',
+        'dashboard',
+        'update_profile',
+        'change_password',
+        'get_my_activity_logs'
     ];
 
     // Read the input body to check for self-operation
@@ -675,12 +762,22 @@ if (!in_array($action, $publicActions)) {
     // Read-only configuration and own-data lookups called by Layout, Dashboard, SalePortal, and Attendance pages
     // We allow any authenticated user (all roles) to query these endpoints.
     if (in_array($action, [
-        'get_settings', 'get_unique_sources', 'get_calendar_stats', 
-        'get_calendar_day_details', 'get_consultant_leaves', 'upload_avatar',
-        'get_night_shift_status', 'register_night_shift',
-        'get_weekend_shift_status', 'register_weekend_shift',
-        'get_holiday_shift_status', 'register_holiday_shift',
-        'register_weekly_shifts', 'get_connections', 'get_sale_portal_data', 'get_logs',
+        'get_settings',
+        'get_unique_sources',
+        'get_calendar_stats',
+        'get_calendar_day_details',
+        'get_consultant_leaves',
+        'upload_avatar',
+        'get_night_shift_status',
+        'register_night_shift',
+        'get_weekend_shift_status',
+        'register_weekend_shift',
+        'get_holiday_shift_status',
+        'register_holiday_shift',
+        'register_weekly_shifts',
+        'get_connections',
+        'get_sale_portal_data',
+        'get_logs',
         'get_all_pending_counts'
     ], true)) {
         $resolvedScope = 'all';
@@ -717,7 +814,8 @@ function logAdminAction($conn, $accountId, $action, $details = [])
     }
 }
 
-function isManagerOfConsultant($conn, $managerUserId, $consultantId) {
+function isManagerOfConsultant($conn, $managerUserId, $consultantId)
+{
     if (!$consultantId) return false;
     $stmt = $conn->prepare("SELECT u.id FROM users u JOIN teams t ON u.team_id = t.id JOIN consultants c ON u.email = c.email WHERE t.leader_id = ? AND c.id = ?");
     if (!$stmt) return false;
@@ -729,7 +827,8 @@ function isManagerOfConsultant($conn, $managerUserId, $consultantId) {
     return $isManaged;
 }
 
-function notifyLeaveChange($conn, $consultantId, $startDate, $endDate, $type = 'ADD') {
+function notifyLeaveChange($conn, $consultantId, $startDate, $endDate, $type = 'ADD')
+{
     // 1. Get consultant name & team leader info
     $stmtC = $conn->prepare("
         SELECT c.name as sale_name, c.team_id, t.leader_id 
@@ -803,7 +902,8 @@ function notifyLeaveChange($conn, $consultantId, $startDate, $endDate, $type = '
     }
 }
 
-function notifyNightShiftChange($conn, $userId, $shiftDate, $register = true) {
+function notifyNightShiftChange($conn, $userId, $shiftDate, $register = true)
+{
     if (!$userId) return;
     try {
         // 1. Get user name & team leader info
@@ -933,7 +1033,8 @@ function notifyNightShiftChange($conn, $userId, $shiftDate, $register = true) {
     }
 }
 
-function isManagerOfLead($conn, $managerUserId, $leadId) {
+function isManagerOfLead($conn, $managerUserId, $leadId)
+{
     if (!$leadId) return false;
     $stmt = $conn->prepare("SELECT l.id FROM leads l JOIN users u ON l.assigned_to = u.id JOIN teams t ON u.team_id = t.id WHERE t.leader_id = ? AND l.id = ?");
     if (!$stmt) return false;
@@ -945,14 +1046,16 @@ function isManagerOfLead($conn, $managerUserId, $leadId) {
     return $isManaged;
 }
 
-function maskPhone($phone) {
+function maskPhone($phone)
+{
     if (empty($phone)) return '';
     $phone = trim($phone);
     if (strlen($phone) <= 6) return '***';
     return substr($phone, 0, 3) . str_repeat('*', strlen($phone) - 6) . substr($phone, -3);
 }
 
-function maskEmail($email) {
+function maskEmail($email)
+{
     if (empty($email)) return '';
     $email = trim($email);
     $parts = explode('@', $email);
@@ -967,7 +1070,8 @@ function maskEmail($email) {
     return $maskedName . '@' . $domain;
 }
 
-function processManualLead($conn, $leadData, $override_round_id, $override_consultant_id, $compensate_skipped, $skipped_consultant_id, $distribution_mode, $decodedUser) {
+function processManualLead($conn, $leadData, $override_round_id, $override_consultant_id, $compensate_skipped, $skipped_consultant_id, $distribution_mode, $decodedUser)
+{
     require_once __DIR__ . '/webhook_logic.php';
 
     $phone = normalizePhone($leadData['phone'] ?? '');
@@ -1466,7 +1570,7 @@ function processManualLead($conn, $leadData, $override_round_id, $override_consu
                                     $leadId,
                                     $email,
                                     $type
-                                    );
+                                );
                             } catch (Exception $zEx) {
                                 error_log("Error sending fallback admin Zalo: " . $zEx->getMessage());
                             }
@@ -1476,7 +1580,6 @@ function processManualLead($conn, $leadData, $override_round_id, $override_consu
                     }
 
                     return ['success' => true, 'message' => 'Data đã được chuyển thẳng cho Admin Fallback thành công.'];
-
                 } else if ($consultantId) {
                     $status = $isComp ? 'compensation' : 'assigned';
                     $logMsg = $isComp
@@ -1549,7 +1652,7 @@ function processManualLead($conn, $leadData, $override_round_id, $override_consu
                         $updAccepted->bind_param("i", $leadId);
                         $updAccepted->execute();
                         $updAccepted->close();
-                        
+
                         ensurePersonAndContact($conn, $leadId);
                     }
                     if ($aiScreenerResult) {
@@ -1844,7 +1947,7 @@ switch ($action) {
 
         if (!empty($search)) {
             $searchParam = "%$search%";
-            
+
             $countSql = "
                 SELECT COUNT(*) as cnt
                 FROM leads l
@@ -2021,18 +2124,18 @@ switch ($action) {
 
         if ($lecturerId > 0) {
             $lecturerName = $lecturers[$lecturerId] ?? 'Giảng viên';
-            
+
             // Query all campaigns and extract subjects matching lecturerId
             $resCampaigns = $conn->query("SELECT id, name, project_id, subjects_json, status, thesis_milestones_json FROM marketing_campaigns");
             $matchingSubjects = [];
             $thesisMilestones = [];
-            
+
             if ($resCampaigns) {
                 while ($row = $resCampaigns->fetch_assoc()) {
                     if (empty($row['subjects_json'])) continue;
                     $subjectsArray = json_decode($row['subjects_json'], true);
                     if (!is_array($subjectsArray)) continue;
-                    
+
                     $courseTaught = false;
                     $courseSubjects = [];
                     foreach ($subjectsArray as $sub) {
@@ -2054,14 +2157,14 @@ switch ($action) {
                                 }
                             }
                         }
-                        
+
                         if ($subjectMatches) {
                             $courseTaught = true;
                             $sub['name'] = $sub['name'] . " (" . $row['name'] . ")";
                             $courseSubjects[] = $sub;
                         }
                     }
-                    
+
                     if ($courseTaught) {
                         $matchingSubjects = array_merge($matchingSubjects, $courseSubjects);
                         if (!empty($row['thesis_milestones_json'])) {
@@ -2073,7 +2176,7 @@ switch ($action) {
                     }
                 }
             }
-            
+
             echo json_encode([
                 'success' => true,
                 'data' => [
@@ -2160,14 +2263,14 @@ switch ($action) {
         echo json_encode([
             'success' => true,
             'data' => [
-                'student' => [
+                'student' => $lead ? [
                     'id' => $lead['id'],
                     'name' => $lead['full_name'] ?? $lead['name'] ?? '',
                     'email' => $lead['email'] ?? '',
                     'phone' => $lead['phone'] ?? '',
                     'dob' => $lead['dob'] ?? '',
                     'citizen_id' => $lead['citizen_id'] ?? ''
-                ],
+                ] : null,
                 'course' => $campaign ? [
                     'id' => $campaign['id'],
                     'name' => $campaign['name'] ?? '',
@@ -2487,7 +2590,7 @@ switch ($action) {
     case 'get_sse_updates':
         // SSE runs persistently, disable execution timeout
         set_time_limit(0);
-        
+
         // Prevent buffer buffering
         if (function_exists('apache_setenv')) {
             @apache_setenv('no-gzip', '1');
@@ -3468,7 +3571,7 @@ switch ($action) {
                 $teamMemberIds[] = (int)$tRow['id'];
             }
             $stmtTeam->close();
-            
+
             // Also include the manager's own consultant ID
             $stmtSelf = $conn->prepare("SELECT id FROM consultants WHERE email = ? LIMIT 1");
             $stmtSelf->bind_param("s", $decodedUser['email']);
@@ -3478,7 +3581,7 @@ switch ($action) {
             if ($selfRow) {
                 $teamMemberIds[] = (int)$selfRow['id'];
             }
-            
+
             $teamMemberIds = array_unique(array_filter($teamMemberIds));
             if (!empty($teamMemberIds)) {
                 $extraCondition .= " AND dl.assigned_to IN (" . implode(',', $teamMemberIds) . ")";
@@ -3662,7 +3765,7 @@ switch ($action) {
                 $teamIds[] = (int)$mRow['id'];
             }
             $stmtM->close();
-            
+
             if (!in_array((int)$lead['assigned_to'], $teamIds, true) && (int)$lead['assigned_to'] !== ($currentSaleConsultantId ?? 0)) {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'message' => 'Bạn không có quyền xem thông tin khách hàng này']);
@@ -3770,7 +3873,7 @@ switch ($action) {
 
         $distFilter = '';
         $ticketFilter = '';
-        
+
         if ($decodedUser['role'] === 'sale') {
             $stmtC = $conn->prepare("SELECT id FROM consultants WHERE email = ? LIMIT 1");
             $stmtC->bind_param("s", $decodedUser['email']);
@@ -3778,7 +3881,7 @@ switch ($action) {
             $cRow = $stmtC->get_result()->fetch_assoc();
             $stmtC->close();
             $consultantId = $cRow ? (int)$cRow['id'] : 0;
-            
+
             $distFilter = " AND dl.assigned_to = " . $consultantId;
             $ticketFilter = " AND t.consultant_id = " . $consultantId;
         } elseif ($decodedUser['role'] === 'manager' && (!isset($_GET['consultant']) || $_GET['consultant'] === 'all')) {
@@ -3791,7 +3894,7 @@ switch ($action) {
                 $teamMemberIds[] = (int)$tRow['id'];
             }
             $stmtTeam->close();
-            
+
             if (!empty($teamMemberIds)) {
                 $listStr = implode(',', $teamMemberIds);
                 $distFilter = " AND dl.assigned_to IN ($listStr)";
@@ -3808,7 +3911,7 @@ switch ($action) {
             $cRow = $stmtC->get_result()->fetch_assoc();
             $stmtC->close();
             $consultantId = $cRow ? (int)$cRow['id'] : 0;
-            
+
             $distFilter = " AND dl.assigned_to = " . $consultantId;
             $ticketFilter = " AND t.consultant_id = " . $consultantId;
         }
@@ -3894,8 +3997,13 @@ switch ($action) {
                     $d = $row['date_str'];
                     if (!isset($stats[$d])) {
                         $stats[$d] = [
-                            'distributed' => 0, 'blacklist' => 0, 'reminder' => 0, 'error' => 0, 'total' => 0,
-                            'ticket_total' => 0, 'ticket_approved' => 0
+                            'distributed' => 0,
+                            'blacklist' => 0,
+                            'reminder' => 0,
+                            'error' => 0,
+                            'total' => 0,
+                            'ticket_total' => 0,
+                            'ticket_approved' => 0
                         ];
                     }
                     $stats[$d]['so_count'] = (int)$row['so_count'];
@@ -3918,8 +4026,13 @@ switch ($action) {
                     $d = $row['date_str'];
                     if (!isset($stats[$d])) {
                         $stats[$d] = [
-                            'distributed' => 0, 'blacklist' => 0, 'reminder' => 0, 'error' => 0, 'total' => 0,
-                            'ticket_total' => 0, 'ticket_approved' => 0
+                            'distributed' => 0,
+                            'blacklist' => 0,
+                            'reminder' => 0,
+                            'error' => 0,
+                            'total' => 0,
+                            'ticket_total' => 0,
+                            'ticket_approved' => 0
                         ];
                     }
                     $stats[$d]['po_count'] = (int)$row['po_count'];
@@ -3957,7 +4070,7 @@ switch ($action) {
         }
 
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'data' => $stats,
             'finance_summary' => $financeSummary
         ]);
@@ -3981,7 +4094,7 @@ switch ($action) {
         $consultantFilter = '';
         $distFilter = '';
         $ticketFilter = '';
-        
+
         if ($decodedUser['role'] === 'sale') {
             $stmtC = $conn->prepare("SELECT id FROM consultants WHERE email = ? LIMIT 1");
             $stmtC->bind_param("s", $decodedUser['email']);
@@ -3989,7 +4102,7 @@ switch ($action) {
             $cRow = $stmtC->get_result()->fetch_assoc();
             $stmtC->close();
             $consultantId = $cRow ? (int)$cRow['id'] : 0;
-            
+
             $distFilter = " AND dl.assigned_to = " . $consultantId;
             $ticketFilter = " AND r.consultant_id = " . $consultantId;
         } elseif ($decodedUser['role'] === 'manager' && (!isset($_GET['consultant']) || $_GET['consultant'] === 'all')) {
@@ -4002,7 +4115,7 @@ switch ($action) {
                 $teamMemberIds[] = (int)$tRow['id'];
             }
             $stmtTeam->close();
-            
+
             if (!empty($teamMemberIds)) {
                 $listStr = implode(',', $teamMemberIds);
                 $distFilter = " AND dl.assigned_to IN ($listStr)";
@@ -4019,7 +4132,7 @@ switch ($action) {
             $cRow = $stmtC->get_result()->fetch_assoc();
             $stmtC->close();
             $consultantId = $cRow ? (int)$cRow['id'] : 0;
-            
+
             $distFilter = " AND dl.assigned_to = " . $consultantId;
             $ticketFilter = " AND r.consultant_id = " . $consultantId;
         }
@@ -4419,7 +4532,7 @@ switch ($action) {
         $canToggle = (time() < $deadline);
 
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'registered' => ($res !== null),
             'approved' => ($res !== null ? (int)$res['approved'] : 0),
             'shift_date' => $shiftDate,
@@ -4496,8 +4609,8 @@ switch ($action) {
             if ($existingReg) {
                 $isPending = ((int)$existingReg['approved'] === 0);
                 echo json_encode([
-                    'success' => true, 
-                    'message' => 'Bạn đã đăng ký trực ca đêm ngày hôm nay rồi.', 
+                    'success' => true,
+                    'message' => 'Bạn đã đăng ký trực ca đêm ngày hôm nay rồi.',
                     'pending' => $isPending,
                     'already' => true
                 ]);
@@ -4526,13 +4639,13 @@ switch ($action) {
             $stmt->bind_param("isii", $dbUserId, $shiftDate, $autoApprove, $autoApprove);
             $stmt->execute();
             $stmt->close();
-            
+
             logAdminAction($conn, $dbUserId, 'REGISTER_NIGHT_SHIFT', json_encode([
                 'user_id' => $dbUserId,
                 'shift_date' => $shiftDate,
                 'approved' => $autoApprove
             ]));
-            
+
             $saleConsultantId = $currentSaleConsultantId ?? 0;
             $saleIdToNotify = ($saleConsultantId > 0) ? $saleConsultantId : $dbUserId;
             if ($autoApprove === 1) {
@@ -4596,7 +4709,7 @@ switch ($action) {
                 $title = "Đăng ký trực ca đêm chờ duyệt";
                 $body = "Sale {$saleName} đã đăng ký trực ca đêm ngày {$shiftDate}. Vui lòng phê duyệt.";
                 $link = "/attendance";
-                
+
                 $admins = $conn->query("SELECT id FROM accounts WHERE role IN ('admin', 'superadmin', 'director') AND is_active = 1")->fetch_all(MYSQLI_ASSOC);
                 foreach ($admins as $admin) {
                     $stmtNotif = $conn->prepare("INSERT INTO notifications (user_id, tenant_id, title, body, type, link) VALUES (?, 1, ?, ?, 'shift_request', ?)");
@@ -4604,7 +4717,7 @@ switch ($action) {
                     $stmtNotif->execute();
                     $stmtNotif->close();
                 }
-                
+
                 echo json_encode(['success' => true, 'message' => 'Đăng ký trực đêm thành công. Vui lòng chờ Admin phê duyệt.', 'pending' => true]);
             }
         } else {
@@ -4624,12 +4737,12 @@ switch ($action) {
             $stmt->bind_param("is", $dbUserId, $shiftDate);
             $stmt->execute();
             $stmt->close();
-            
+
             logAdminAction($conn, $dbUserId, 'CANCEL_NIGHT_SHIFT', json_encode([
                 'user_id' => $dbUserId,
                 'shift_date' => $shiftDate
             ]));
-            
+
             $saleConsultantId = $currentSaleConsultantId ?? 0;
             $saleIdToNotify = ($saleConsultantId > 0) ? $saleConsultantId : $dbUserId;
             try {
@@ -5223,17 +5336,29 @@ switch ($action) {
         }
 
         $registrations = [];
-        
-        $resNight = $conn->query("SELECT 'night' as shift_type, r.id, r.user_id, r.shift_date, r.approved, r.created_at, a.name as user_name, '' as holiday_name FROM night_shift_registrations r JOIN accounts a ON r.user_id = a.id ORDER BY r.shift_date DESC LIMIT 200");
-        if ($resNight) { while($row = $resNight->fetch_assoc()) { $registrations[] = $row; } }
-        
-        $resWeekend = $conn->query("SELECT 'weekend' as shift_type, r.id, r.user_id, r.shift_date, r.approved, r.created_at, a.name as user_name, '' as holiday_name FROM weekend_shift_registrations r JOIN accounts a ON r.user_id = a.id ORDER BY r.shift_date DESC LIMIT 200");
-        if ($resWeekend) { while($row = $resWeekend->fetch_assoc()) { $registrations[] = $row; } }
-        
-        $resHoliday = $conn->query("SELECT 'holiday' as shift_type, r.id, r.user_id, r.shift_date, r.approved, r.created_at, a.name as user_name, r.holiday_name FROM holiday_shift_registrations r JOIN accounts a ON r.user_id = a.id ORDER BY r.shift_date DESC LIMIT 200");
-        if ($resHoliday) { while($row = $resHoliday->fetch_assoc()) { $registrations[] = $row; } }
 
-        usort($registrations, function($a, $b) {
+        $resNight = $conn->query("SELECT 'night' as shift_type, r.id, r.user_id, r.shift_date, r.approved, r.created_at, a.name as user_name, '' as holiday_name FROM night_shift_registrations r JOIN accounts a ON r.user_id = a.id ORDER BY r.shift_date DESC LIMIT 200");
+        if ($resNight) {
+            while ($row = $resNight->fetch_assoc()) {
+                $registrations[] = $row;
+            }
+        }
+
+        $resWeekend = $conn->query("SELECT 'weekend' as shift_type, r.id, r.user_id, r.shift_date, r.approved, r.created_at, a.name as user_name, '' as holiday_name FROM weekend_shift_registrations r JOIN accounts a ON r.user_id = a.id ORDER BY r.shift_date DESC LIMIT 200");
+        if ($resWeekend) {
+            while ($row = $resWeekend->fetch_assoc()) {
+                $registrations[] = $row;
+            }
+        }
+
+        $resHoliday = $conn->query("SELECT 'holiday' as shift_type, r.id, r.user_id, r.shift_date, r.approved, r.created_at, a.name as user_name, r.holiday_name FROM holiday_shift_registrations r JOIN accounts a ON r.user_id = a.id ORDER BY r.shift_date DESC LIMIT 200");
+        if ($resHoliday) {
+            while ($row = $resHoliday->fetch_assoc()) {
+                $registrations[] = $row;
+            }
+        }
+
+        usort($registrations, function ($a, $b) {
             return strcmp($b['created_at'], $a['created_at']);
         });
 
@@ -5264,9 +5389,16 @@ switch ($action) {
 
         $table = '';
         $typeLabel = '';
-        if ($shiftType === 'night') { $table = 'night_shift_registrations'; $typeLabel = 'Đêm'; }
-        else if ($shiftType === 'weekend') { $table = 'weekend_shift_registrations'; $typeLabel = 'Cuối tuần'; }
-        else if ($shiftType === 'holiday') { $table = 'holiday_shift_registrations'; $typeLabel = 'Ngày lễ'; }
+        if ($shiftType === 'night') {
+            $table = 'night_shift_registrations';
+            $typeLabel = 'Đêm';
+        } else if ($shiftType === 'weekend') {
+            $table = 'weekend_shift_registrations';
+            $typeLabel = 'Cuối tuần';
+        } else if ($shiftType === 'holiday') {
+            $table = 'holiday_shift_registrations';
+            $typeLabel = 'Ngày lễ';
+        }
 
         if (empty($table)) {
             echo json_encode(['success' => false, 'message' => 'Loại ca trực không hợp lệ.']);
@@ -5340,9 +5472,16 @@ switch ($action) {
 
         $table = '';
         $typeLabel = '';
-        if ($shiftType === 'night') { $table = 'night_shift_registrations'; $typeLabel = 'Đêm'; }
-        else if ($shiftType === 'weekend') { $table = 'weekend_shift_registrations'; $typeLabel = 'Cuối tuần'; }
-        else if ($shiftType === 'holiday') { $table = 'holiday_shift_registrations'; $typeLabel = 'Ngày lễ'; }
+        if ($shiftType === 'night') {
+            $table = 'night_shift_registrations';
+            $typeLabel = 'Đêm';
+        } else if ($shiftType === 'weekend') {
+            $table = 'weekend_shift_registrations';
+            $typeLabel = 'Cuối tuần';
+        } else if ($shiftType === 'holiday') {
+            $table = 'holiday_shift_registrations';
+            $typeLabel = 'Ngày lễ';
+        }
 
         if (empty($table)) {
             echo json_encode(['success' => false, 'message' => 'Loại ca trực không hợp lệ.']);
@@ -5403,7 +5542,7 @@ switch ($action) {
         $isSale = $decodedUser['role'] === 'sale';
         $isAdmin = ($decodedUser['role'] === 'admin' || $decodedUser['role'] === 'superadmin');
         $isManager = ($decodedUser['role'] === 'manager');
-        
+
         $targetConsultantId = null;
         if ($isSale) {
             $targetConsultantId = $currentSaleConsultantId ?? 0;
@@ -5450,7 +5589,7 @@ switch ($action) {
         $isSale = $decodedUser['role'] === 'sale';
         $isAdmin = ($decodedUser['role'] === 'admin' || $decodedUser['role'] === 'superadmin');
         $isManager = ($decodedUser['role'] === 'manager');
-        
+
         $targetConsultantId = null;
         if ($isSale) {
             $targetConsultantId = $currentSaleConsultantId ?? 0;
@@ -7155,7 +7294,7 @@ switch ($action) {
         try {
             $input = json_decode(file_get_contents('php://input'), true);
             $id = (int) ($input['id'] ?? 0);
-            
+
             // Check write access for GĐKD Dự án vs GĐKD Toàn sàn
             $userId = (int)($decodedUser['user_id'] ?? $decodedUser['id'] ?? 0);
             $userRole = $decodedUser['role'] ?? '';
@@ -7175,7 +7314,7 @@ switch ($action) {
                         }
                     }
                 }
-                
+
                 if ($userRole === 'director') {
                     // GĐKD Toàn sàn has global access
                 } else if ($isProjManager) {
@@ -8057,7 +8196,7 @@ switch ($action) {
         try {
             $apiKey = get_system_setting($conn, 'gemini_api_key');
             $model = get_system_setting($conn, 'gemini_model') ?: 'gemini-2.5-flash-lite';
-            
+
             if (empty($apiKey)) {
                 echo json_encode(['success' => false, 'message' => 'Gemini API Key chưa được cấu hình trong phần Cài đặt.']);
                 break;
@@ -8142,7 +8281,7 @@ switch ($action) {
                         }
                     }
                 }
-                
+
                 if (empty($conditions)) {
                     $conditions[] = "{$r['condition_column']} {$r['condition_operator']} '{$r['condition_value']}'";
                 }
@@ -8199,7 +8338,7 @@ switch ($action) {
 
             $resJson = json_decode($response, true);
             $rawText = $resJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
-            
+
             if (empty($rawText)) {
                 echo json_encode(['success' => false, 'message' => "Gemini API trả về kết quả trống."]);
                 break;
@@ -9032,7 +9171,7 @@ switch ($action) {
 
                 $placeholders = implode(',', array_fill(0, count($userIds), '?'));
                 $sqlExp .= " AND e.created_by IN ($placeholders)";
-                
+
                 $stmtExp = $conn->prepare($sqlExp);
                 $stmtExp->bind_param(str_repeat("i", 1 + count($userIds)), $tenantId, ...$userIds);
             } else {
@@ -9084,7 +9223,7 @@ switch ($action) {
         $round_id = isset($_GET['round_id']) ? (int) $_GET['round_id'] : 0;
         $status = isset($_GET['status']) ? trim($_GET['status']) : 'all';
         $consultant = isset($_GET['consultant']) ? trim($_GET['consultant']) : '';
-        
+
         $consultantId = isset($_GET['consultant_id']) && $_GET['consultant_id'] !== '' ? (int) $_GET['consultant_id'] : 0;
         if ($decodedUser['role'] === 'sale') {
             $consultantId = $currentSaleConsultantId ?? 0;
@@ -9116,7 +9255,7 @@ switch ($action) {
                 $managedConsultantIds[] = (int)$rowM['id'];
             }
             $stmtM->close();
-            
+
             if (empty($managedConsultantIds)) {
                 echo json_encode([
                     'success' => true,
@@ -9131,7 +9270,7 @@ switch ($action) {
                 ]);
                 break;
             }
-            
+
             if ($consultantId > 0) {
                 if (!in_array($consultantId, $managedConsultantIds)) {
                     echo json_encode([
@@ -9153,7 +9292,7 @@ switch ($action) {
                 $stmtCName->execute();
                 $cNameRow = $stmtCName->get_result()->fetch_assoc();
                 $stmtCName->close();
-                
+
                 $cNameId = $cNameRow ? (int)$cNameRow['id'] : 0;
                 if (!$cNameId || !in_array($cNameId, $managedConsultantIds)) {
                     echo json_encode([
@@ -9171,7 +9310,7 @@ switch ($action) {
                 }
             }
         }
-        
+
         $date = isset($_GET['date']) ? trim($_GET['date']) : 'Tháng này';
 
         $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
@@ -9736,7 +9875,6 @@ switch ($action) {
                     error_log("Error sending reassigned notifications: " . $newCEx->getMessage());
                 }
             }
-
         } catch (Exception $notifyOuterEx) {
             error_log("Outer notification error in approve_report: " . $notifyOuterEx->getMessage());
         }
@@ -9816,11 +9954,10 @@ switch ($action) {
             ]);
 
             $conn->commit();
-            
+
             // Trigger Live Two-Way Sync
             require_once __DIR__ . '/webhook_logic.php';
             triggerTwoWaySync($conn, $report['lead_id']);
-
         } catch (Exception $e) {
             $conn->rollback();
             echo json_encode(['success' => false, 'message' => getSafeErrorMsg($e)]);
@@ -10343,7 +10480,7 @@ switch ($action) {
         $leads = [];
         $p1 = $phone;
         $p2 = '84' . ltrim($phone, '0');
-        
+
         $sql = "
             SELECT l.*, 
                    COALESCE(dr.round_name, (SELECT r.round_name FROM distribution_logs dl JOIN distribution_rounds r ON dl.round_id = r.id WHERE dl.lead_id = l.id ORDER BY dl.id DESC LIMIT 1)) as round_name,
@@ -10388,7 +10525,7 @@ switch ($action) {
             } else if (!empty($email)) {
                 $stmt->bind_param("s", $email);
             }
-            
+
             $stmt->execute();
             $res = $stmt->get_result();
             while ($row = $res->fetch_assoc()) {
@@ -10574,7 +10711,6 @@ switch ($action) {
                 'reasons_breakdown' => $reasonsBreakdown,
                 'recent_below_standard' => $recentBelowStandard
             ]);
-
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode([
@@ -10751,7 +10887,6 @@ switch ($action) {
                 'recent_leads' => $recentLeads,
                 'total_recent_leads' => $totalRecentLeads
             ]);
-
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode([
@@ -11912,7 +12047,7 @@ switch ($action) {
         $resH = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'pipeline_status_hierarchy'");
         $rowH = $resH->fetch_assoc();
         $hierarchyJson = $rowH['setting_value'] ?? null;
-        
+
         $resL = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'pipeline_status_labels'");
         $rowL = $resL->fetch_assoc();
         $labelsJson = $rowL['setting_value'] ?? null;
@@ -11922,17 +12057,17 @@ switch ($action) {
             $labels = json_decode($labelsJson, true);
             if (is_array($hierarchy) && is_array($labels)) {
                 $tenantId = (int)($decodedUser['tenant_id'] ?? 1);
-                
+
                 // Get existing stages for this tenant
                 $resS = $conn->query("SELECT id FROM pipeline_stages WHERE tenant_id = $tenantId ORDER BY order_index");
                 $existingStages = [];
                 while ($rowS = $resS->fetch_assoc()) {
                     $existingStages[] = $rowS;
                 }
-                
+
                 $keepIds = [];
                 $colors = ['#3b82f6', '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#14b8a6', '#10b981'];
-                
+
                 $dealWonStatus = $input['deal_won_status'] ?? 'dong_deal';
                 if (!$dealWonStatus) {
                     $dealWonStatus = 'dong_deal';
@@ -11943,7 +12078,7 @@ switch ($action) {
                     $color = $colors[$idx % count($colors)];
                     $isWon = ($slug === $dealWonStatus) ? 1 : 0;
                     $isLost = ($slug === 'that_bai' || $slug === 'lost') ? 1 : 0;
-                    
+
                     if (isset($existingStages[$idx])) {
                         $stageId = (int)$existingStages[$idx]['id'];
                         $stmtUp = $conn->prepare("UPDATE pipeline_stages SET name = ?, color = ?, order_index = ?, is_won = ?, is_lost = ?, system_slug = ? WHERE id = ?");
@@ -11959,7 +12094,7 @@ switch ($action) {
                         $stmtIns->close();
                     }
                 }
-                
+
                 if (!empty($keepIds)) {
                     $inClause = implode(',', $keepIds);
                     $conn->query("DELETE FROM pipeline_stages WHERE tenant_id = $tenantId AND id NOT IN ($inClause)");
@@ -12939,14 +13074,14 @@ switch ($action) {
         if ($channel === 'all' || $channel === 'zalo') {
             $zaloLogFile = __DIR__ . '/zalo_send_log.txt';
             $zaloDirectLogs = parse_zalo_direct_logs($zaloLogFile, $conn);
-            
+
             // Deduplicate direct logs with zalo queue logs in memory
             $dedupedDirectLogs = [];
             foreach ($zaloDirectLogs as $dirLog) {
                 $isDup = false;
                 $dirTime = strtotime($dirLog['created_at']);
                 $dirBodyTrim = trim($dirLog['body']);
-                
+
                 foreach ($zaloQueueLogs as $qLog) {
                     if ($qLog['target'] === $dirLog['target'] && trim($qLog['body']) === $dirBodyTrim) {
                         $qTime = strtotime($qLog['created_at']);
@@ -12975,26 +13110,26 @@ switch ($action) {
         foreach ($rawLogs as $item) {
             $lowerBody = mb_strtolower($item['body'], 'UTF-8');
             $lowerSubject = mb_strtolower($item['subject'], 'UTF-8');
-            
+
             $isAdmin = false;
             if (
-                strpos($lowerBody, 'duyệt') !== false && 
+                strpos($lowerBody, 'duyệt') !== false &&
                 (strpos($lowerBody, '/duyet') !== false || strpos($lowerBody, '/tuchoi') !== false || strpos($lowerBody, 'lệnh duyệt nhanh') !== false)
             ) {
                 $isAdmin = true;
             } else if (
-                strpos($lowerBody, 'cảnh báo data dưới chuẩn') !== false || 
-                strpos($lowerBody, 'cảnh báo sót lead') !== false || 
+                strpos($lowerBody, 'cảnh báo data dưới chuẩn') !== false ||
+                strpos($lowerBody, 'cảnh báo sót lead') !== false ||
                 strpos($lowerBody, 'dưới chuẩn') !== false
             ) {
                 $isAdmin = true;
             } else if (
-                strpos($lowerSubject, 'cảnh báo') !== false || 
+                strpos($lowerSubject, 'cảnh báo') !== false ||
                 strpos($lowerSubject, 'sót lead') !== false
             ) {
                 $isAdmin = true;
             }
-            
+
             $item['type'] = $isAdmin ? 'admin' : 'sale';
 
             if ($type !== 'all' && $item['type'] !== $type) {
@@ -13163,7 +13298,7 @@ switch ($action) {
         try {
             $input = json_decode(file_get_contents('php://input'), true);
             $id = (int) ($input['id'] ?? 0);
-            
+
             $isTargetSelf = $id === (int)$decodedUser['id'];
             $isAdmin = $decodedUser['role'] === 'admin' || $decodedUser['role'] === 'superadmin' || $decodedUser['role'] === 'super_admin';
 
@@ -13203,7 +13338,7 @@ switch ($action) {
             if ($role === 'sale') {
                 $role = 'sales';
             }
-            
+
             if (!$isAdmin) {
                 $role = $exRow ? $exRow['role'] : 'viewer';
                 $is_active = $exRow ? (int)$exRow['is_active'] : 1;
@@ -13340,7 +13475,7 @@ switch ($action) {
         $sets = [];
         $types = "";
         $values = [];
-        
+
         $allowedFields = [
             'name' => ['col' => 'full_name', 'type' => 's'],
             'avatar' => ['col' => 'avatar_url', 'type' => 's'],
@@ -13356,7 +13491,7 @@ switch ($action) {
             'extra_fields_json' => ['col' => 'extra_fields_json', 'type' => 's'],
             'bio' => ['col' => 'bio', 'type' => 's']
         ];
-        
+
         foreach ($allowedFields as $key => $meta) {
             if (array_key_exists($key, $input)) {
                 $val = $input[$key];
@@ -13373,25 +13508,25 @@ switch ($action) {
                 } elseif ($val === '') {
                     $val = null;
                 }
-                
+
                 $sets[] = "`" . $meta['col'] . "` = ?";
                 $types .= $meta['type'];
                 $values[] = $val;
             }
         }
-        
+
         if (empty($sets)) {
             echo json_encode(['success' => true]);
             break;
         }
-        
+
         $types .= "i";
         $values[] = $userId;
-        
+
         $sql = "UPDATE users SET " . implode(', ', $sets) . " WHERE id = ?";
         $upd = $conn->prepare($sql);
         $upd->bind_param($types, ...$values);
-        
+
         if ($upd->execute()) {
             logAdminAction($conn, $userId, 'UPDATE_PROFILE', $input);
             echo json_encode(['success' => true]);
@@ -13428,7 +13563,7 @@ switch ($action) {
         // Check permission
         $isSelf = (int)$targetUserId === (int)$decodedUser['id'];
         $isAdmin = $decodedUser['role'] === 'admin' || $decodedUser['role'] === 'superadmin' || $decodedUser['role'] === 'super_admin';
-        
+
         $isManagerOfTarget = false;
         if ($decodedUser['role'] === 'manager') {
             $tRes = $conn->query("SELECT team_id FROM users WHERE id = " . $targetUserId);
@@ -13536,7 +13671,7 @@ switch ($action) {
         if ($avatar === '') $avatar = null;
         $work_start_time = trim($input['work_start_time'] ?? '00:00');
         $work_end_time = trim($input['work_end_time'] ?? '23:59');
-        
+
         $saleFilterId = isset($input['consultant_id']) && $input['consultant_id'] !== '' ? (int) $input['consultant_id'] : null;
         $targetId = $saleFilterId !== null ? $saleFilterId : ($currentSaleConsultantId ?? 0);
 
@@ -13589,7 +13724,7 @@ switch ($action) {
         // Check permission
         $isSelf = (int)$targetUserId === (int)$decodedUser['id'];
         $isAdmin = $decodedUser['role'] === 'admin' || $decodedUser['role'] === 'superadmin' || $decodedUser['role'] === 'super_admin';
-        
+
         $isManagerOfTarget = false;
         if ($decodedUser['role'] === 'manager') {
             $tRes = $conn->query("SELECT team_id FROM users WHERE id = " . $targetUserId);
@@ -13707,7 +13842,7 @@ switch ($action) {
             if ((int)$decodedUser['id'] !== (int)$targetUserId) {
                 $title = "Hồ sơ cá nhân đã được cập nhật";
                 $body = "$updaterName đã cập nhật thông tin hồ sơ của bạn.";
-                
+
                 $stmtNotif = $conn->prepare("INSERT INTO notifications (user_id, tenant_id, title, body, type, link) VALUES (?, 1, ?, ?, 'mention', '/account')");
                 if ($stmtNotif) {
                     $stmtNotif->bind_param("iss", $targetUserId, $title, $body);
@@ -14045,7 +14180,7 @@ switch ($action) {
     case 'resend_telegram_verify_consultant':
         $input = json_decode(file_get_contents('php://input'), true);
         $id = (int) ($input['id'] ?? 0);
-        
+
         // Map consultant ID to user ID because they share the same users table ID
         $stmtCon = $conn->prepare("SELECT id, email, name FROM consultants WHERE id = ?");
         $stmtCon->bind_param("i", $id);
@@ -14189,154 +14324,154 @@ switch ($action) {
     case 'get_dashboard_stats':
         try {
             $date = $_GET['date'] ?? 'Hôm nay';
-        
-        $userId = (int)($decodedUser['user_id'] ?? $decodedUser['id'] ?? 0);
-        $userRole = $decodedUser['role'] ?? '';
-        $isDirector = ($userRole === 'director');
-        $isManager = ($userRole === 'manager');
-        
-        $isProjManager = false;
-        $projIds = [];
-        if ($isManager) {
-            $pRes = $conn->query("SELECT id, manager_ids FROM projects");
-            if ($pRes) {
-                while ($pRow = $pRes->fetch_assoc()) {
-                    if (!empty($pRow['manager_ids'])) {
-                        $mIds = array_filter(array_map('intval', explode(',', $pRow['manager_ids'])));
-                        if (in_array((int)$userId, $mIds, true)) {
-                            $projIds[] = (int)$pRow['id'];
-                            $isProjManager = true;
+
+            $userId = (int)($decodedUser['user_id'] ?? $decodedUser['id'] ?? 0);
+            $userRole = $decodedUser['role'] ?? '';
+            $isDirector = ($userRole === 'director');
+            $isManager = ($userRole === 'manager');
+
+            $isProjManager = false;
+            $projIds = [];
+            if ($isManager) {
+                $pRes = $conn->query("SELECT id, manager_ids FROM projects");
+                if ($pRes) {
+                    while ($pRow = $pRes->fetch_assoc()) {
+                        if (!empty($pRow['manager_ids'])) {
+                            $mIds = array_filter(array_map('intval', explode(',', $pRow['manager_ids'])));
+                            if (in_array((int)$userId, $mIds, true)) {
+                                $projIds[] = (int)$pRow['id'];
+                                $isProjManager = true;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        $managerUserIds = [];
-        $managerFilter = "";
-        $managerFilterDl = "";
-        $managerFilterDlNoAlias = "";
-        $managerFilterLeads = "";
-        $managerFilterReports = "";
-        $consultantFilter = "";
-        
-        if ($isProjManager) {
-            $campIds = [];
-            if (!empty($projIds)) {
-                $projIdsStr = implode(',', $projIds);
-                $cRes = $conn->query("SELECT id FROM marketing_campaigns WHERE project_id IN ($projIdsStr)");
-                if ($cRes) {
-                    while ($cRow = $cRes->fetch_assoc()) {
-                        $campIds[] = (int)$cRow['id'];
+            $managerUserIds = [];
+            $managerFilter = "";
+            $managerFilterDl = "";
+            $managerFilterDlNoAlias = "";
+            $managerFilterLeads = "";
+            $managerFilterReports = "";
+            $consultantFilter = "";
+
+            if ($isProjManager) {
+                $campIds = [];
+                if (!empty($projIds)) {
+                    $projIdsStr = implode(',', $projIds);
+                    $cRes = $conn->query("SELECT id FROM marketing_campaigns WHERE project_id IN ($projIdsStr)");
+                    if ($cRes) {
+                        while ($cRow = $cRes->fetch_assoc()) {
+                            $campIds[] = (int)$cRow['id'];
+                        }
                     }
                 }
-            }
-            
-            $rosterUserIds = [];
-            if (!empty($projIds)) {
-                $projIdsStr = implode(',', $projIds);
-                $rRes = $conn->query("SELECT user_id FROM project_roster WHERE project_id IN ($projIdsStr)");
-                if ($rRes) {
-                    while ($rRow = $rRes->fetch_assoc()) {
-                        $rosterUserIds[] = (int)$rRow['user_id'];
+
+                $rosterUserIds = [];
+                if (!empty($projIds)) {
+                    $projIdsStr = implode(',', $projIds);
+                    $rRes = $conn->query("SELECT user_id FROM project_roster WHERE project_id IN ($projIdsStr)");
+                    if ($rRes) {
+                        while ($rRow = $rRes->fetch_assoc()) {
+                            $rosterUserIds[] = (int)$rRow['user_id'];
+                        }
                     }
                 }
-            }
-            $rosterUserIds[] = $userId;
-            $idsList = implode(',', array_unique($rosterUserIds));
-            
-            $managerFilter = " AND assigned_to IN ($idsList) ";
-            $managerFilterDl = " AND dl.assigned_to IN ($idsList) ";
-            $managerFilterDlNoAlias = " AND assigned_to IN ($idsList) ";
-            $managerFilterLeads = " AND l.assigned_to IN ($idsList) ";
-            $managerFilterReports = " AND consultant_id IN ($idsList) ";
-            $consultantFilter = " AND (email IN (SELECT email FROM users WHERE id IN ($idsList))) ";
-            
-            if (!empty($campIds)) {
-                $campIdsStr = implode(',', $campIds);
-                $managerFilter .= " AND campaign_id IN ($campIdsStr) ";
-                $managerFilterDl .= " AND dl.lead_id IN (SELECT id FROM leads WHERE campaign_id IN ($campIdsStr)) ";
-                $managerFilterDlNoAlias .= " AND lead_id IN (SELECT id FROM leads WHERE campaign_id IN ($campIdsStr)) ";
-                $managerFilterLeads .= " AND l.campaign_id IN ($campIdsStr) ";
-            } else {
-                $managerFilter .= " AND 1=0 ";
-                $managerFilterDl .= " AND 1=0 ";
-                $managerFilterDlNoAlias .= " AND 1=0 ";
-                $managerFilterLeads .= " AND 1=0 ";
-            }
-        } else if ($isManager) {
-            $mgrTeamRes = $conn->query("SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id']);
-            $mgrTeamIds = [];
-            if ($mgrTeamRes) {
-                while ($tr = $mgrTeamRes->fetch_assoc()) {
-                    $mgrTeamIds[] = (int)$tr['id'];
+                $rosterUserIds[] = $userId;
+                $idsList = implode(',', array_unique($rosterUserIds));
+
+                $managerFilter = " AND assigned_to IN ($idsList) ";
+                $managerFilterDl = " AND dl.assigned_to IN ($idsList) ";
+                $managerFilterDlNoAlias = " AND assigned_to IN ($idsList) ";
+                $managerFilterLeads = " AND l.assigned_to IN ($idsList) ";
+                $managerFilterReports = " AND consultant_id IN ($idsList) ";
+                $consultantFilter = " AND (email IN (SELECT email FROM users WHERE id IN ($idsList))) ";
+
+                if (!empty($campIds)) {
+                    $campIdsStr = implode(',', $campIds);
+                    $managerFilter .= " AND campaign_id IN ($campIdsStr) ";
+                    $managerFilterDl .= " AND dl.lead_id IN (SELECT id FROM leads WHERE campaign_id IN ($campIdsStr)) ";
+                    $managerFilterDlNoAlias .= " AND lead_id IN (SELECT id FROM leads WHERE campaign_id IN ($campIdsStr)) ";
+                    $managerFilterLeads .= " AND l.campaign_id IN ($campIdsStr) ";
+                } else {
+                    $managerFilter .= " AND 1=0 ";
+                    $managerFilterDl .= " AND 1=0 ";
+                    $managerFilterDlNoAlias .= " AND 1=0 ";
+                    $managerFilterLeads .= " AND 1=0 ";
                 }
-            }
-            if (!empty($mgrTeamIds)) {
-                $mgrUserRes = $conn->query("SELECT id FROM users WHERE team_id IN (" . implode(',', $mgrTeamIds) . ")");
-                if ($mgrUserRes) {
-                    while ($ur = $mgrUserRes->fetch_assoc()) {
-                        $managerUserIds[] = (int)$ur['id'];
+            } else if ($isManager) {
+                $mgrTeamRes = $conn->query("SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id']);
+                $mgrTeamIds = [];
+                if ($mgrTeamRes) {
+                    while ($tr = $mgrTeamRes->fetch_assoc()) {
+                        $mgrTeamIds[] = (int)$tr['id'];
                     }
                 }
+                if (!empty($mgrTeamIds)) {
+                    $mgrUserRes = $conn->query("SELECT id FROM users WHERE team_id IN (" . implode(',', $mgrTeamIds) . ")");
+                    if ($mgrUserRes) {
+                        while ($ur = $mgrUserRes->fetch_assoc()) {
+                            $managerUserIds[] = (int)$ur['id'];
+                        }
+                    }
+                }
+                $managerUserIds[] = (int)$decodedUser['user_id'];
+                $idsList = implode(',', $managerUserIds);
+
+                $managerFilter = " AND assigned_to IN ($idsList) ";
+                $managerFilterDl = " AND dl.assigned_to IN ($idsList) ";
+                $managerFilterDlNoAlias = " AND assigned_to IN ($idsList) ";
+                $managerFilterLeads = " AND l.assigned_to IN ($idsList) ";
+                $managerFilterReports = " AND consultant_id IN ($idsList) ";
+                $consultantFilter = " AND (email IN (SELECT email FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id'] . ")) OR email = '" . $conn->real_escape_string($decodedUser['email']) . "')";
             }
-            $managerUserIds[] = (int)$decodedUser['user_id'];
-            $idsList = implode(',', $managerUserIds);
-            
-            $managerFilter = " AND assigned_to IN ($idsList) ";
-            $managerFilterDl = " AND dl.assigned_to IN ($idsList) ";
-            $managerFilterDlNoAlias = " AND assigned_to IN ($idsList) ";
-            $managerFilterLeads = " AND l.assigned_to IN ($idsList) ";
-            $managerFilterReports = " AND consultant_id IN ($idsList) ";
-            $consultantFilter = " AND (email IN (SELECT email FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id'] . ")) OR email = '" . $conn->real_escape_string($decodedUser['email']) . "')";
-        }
-        $dbVer = 0;
-        $vStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'db_version' LIMIT 1");
-        if ($vStmt && $vStmt->num_rows > 0) {
-            $dbVer = (int)$vStmt->fetch_assoc()['setting_value'];
-        }
+            $dbVer = 0;
+            $vStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'db_version' LIMIT 1");
+            if ($vStmt && $vStmt->num_rows > 0) {
+                $dbVer = (int)$vStmt->fetch_assoc()['setting_value'];
+            }
 
-        // Define date filters - SARGable for performance
-        $dateCondition = "received_at >= CURDATE() AND received_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
-        $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND received_at < CURDATE()";
+            // Define date filters - SARGable for performance
+            $dateCondition = "received_at >= CURDATE() AND received_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
+            $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND received_at < CURDATE()";
 
-        if ($date === 'Hôm qua') {
-            $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND received_at < CURDATE()";
-            $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
-        } else if ($date === 'Tuần này') {
-            $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) AND received_at < DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)";
-            $prevDateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)";
-        } else if ($date === 'Tuần trước') {
-            $dateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)";
-            $prevDateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 14 DAY) AND received_at < DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)";
-        } else if ($date === 'Tuần trước nữa') {
-            $dateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 14 DAY) AND received_at < DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)";
-            $prevDateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 21 DAY) AND received_at < DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 14 DAY)";
-        } else if ($date === '7 ngày qua') {
-            $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-            $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-        } else if ($date === '30 ngày qua') {
-            $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
-            $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 60 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
-        } else if ($date === 'Tháng này') {
-            $dateCondition = "received_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND received_at < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)";
-            $prevDateCondition = "received_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH) AND received_at < DATE_FORMAT(CURDATE(), '%Y-%m-01')";
-        } else if ($date === 'Tháng trước') {
-            $dateCondition = "received_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH) AND received_at < DATE_FORMAT(CURDATE(), '%Y-%m-01')";
-            $prevDateCondition = "received_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 2 MONTH) AND received_at < DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)";
-        } else if (preg_match('/^(\d{4}-\d{2}-\d{2})\s*(?:đến|đên|den|to|-)\s*(\d{4}-\d{2}-\d{2})$/ui', $date, $matches)) {
-            $start = $conn->real_escape_string($matches[1]);
-            $end = $conn->real_escape_string($matches[2]);
-            $dateCondition = "received_at >= '$start 00:00:00' AND received_at <= '$end 23:59:59'";
-            $diff = max(1, (strtotime($end) - strtotime($start)) / 86400);
-            $prevDateCondition = "received_at >= DATE_SUB('$start', INTERVAL $diff DAY) AND received_at < '$start'";
-        }
+            if ($date === 'Hôm qua') {
+                $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND received_at < CURDATE()";
+                $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL 1 DAY)";
+            } else if ($date === 'Tuần này') {
+                $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) AND received_at < DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)";
+                $prevDateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)";
+            } else if ($date === 'Tuần trước') {
+                $dateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)";
+                $prevDateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 14 DAY) AND received_at < DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)";
+            } else if ($date === 'Tuần trước nữa') {
+                $dateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 14 DAY) AND received_at < DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 7 DAY)";
+                $prevDateCondition = "received_at >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 21 DAY) AND received_at < DATE_SUB(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 14 DAY)";
+            } else if ($date === '7 ngày qua') {
+                $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+                $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+            } else if ($date === '30 ngày qua') {
+                $dateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+                $prevDateCondition = "received_at >= DATE_SUB(CURDATE(), INTERVAL 60 DAY) AND received_at < DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            } else if ($date === 'Tháng này') {
+                $dateCondition = "received_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND received_at < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)";
+                $prevDateCondition = "received_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH) AND received_at < DATE_FORMAT(CURDATE(), '%Y-%m-01')";
+            } else if ($date === 'Tháng trước') {
+                $dateCondition = "received_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH) AND received_at < DATE_FORMAT(CURDATE(), '%Y-%m-01')";
+                $prevDateCondition = "received_at >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 2 MONTH) AND received_at < DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)";
+            } else if (preg_match('/^(\d{4}-\d{2}-\d{2})\s*(?:đến|đên|den|to|-)\s*(\d{4}-\d{2}-\d{2})$/ui', $date, $matches)) {
+                $start = $conn->real_escape_string($matches[1]);
+                $end = $conn->real_escape_string($matches[2]);
+                $dateCondition = "received_at >= '$start 00:00:00' AND received_at <= '$end 23:59:59'";
+                $diff = max(1, (strtotime($end) - strtotime($start)) / 86400);
+                $prevDateCondition = "received_at >= DATE_SUB('$start', INTERVAL $diff DAY) AND received_at < '$start'";
+            }
 
-        $dateConditionDl = str_replace('received_at', 'dl.received_at', $dateCondition);
-        $prevDateConditionDl = str_replace('received_at', 'dl.received_at', $prevDateCondition);
+            $dateConditionDl = str_replace('received_at', 'dl.received_at', $dateCondition);
+            $prevDateConditionDl = str_replace('received_at', 'dl.received_at', $prevDateCondition);
 
-        // Query current period stats using GROUP BY for index optimization
-        $statsSql = "SELECT dl.status, COUNT(*) as cnt 
+            // Query current period stats using GROUP BY for index optimization
+            $statsSql = "SELECT dl.status, COUNT(*) as cnt 
                      FROM distribution_logs dl 
                      INNER JOIN (
                          SELECT lead_id, MAX(id) as max_id 
@@ -14346,36 +14481,36 @@ switch ($action) {
                      ) dl_max ON dl.id = dl_max.max_id
                      WHERE $dateConditionDl $managerFilterDl 
                      GROUP BY dl.status";
-        $statsResRaw = $conn->query($statsSql);
-        $statusCounts = [
-            'assigned' => 0,
-            'compensation' => 0,
-            'rule_6_month' => 0,
-            'pending_work_hours' => 0,
-            'error' => 0,
-            'duplicate' => 0,
-            'reminder' => 0,
-            'no_consultant' => 0,
-            'blacklisted' => 0,
-            'pending_approval' => 0,
-            'rejected' => 0,
-            'fallback' => 0,
-            'success' => 0,
-            'databank_claim' => 0,
-            'released_to_kho' => 0
-        ];
-        if ($statsResRaw) {
-            while ($row = $statsResRaw->fetch_assoc()) {
-                $status = $row['status'];
-                $cnt = (int) $row['cnt'];
-                if (array_key_exists($status, $statusCounts)) {
-                    $statusCounts[$status] = $cnt;
+            $statsResRaw = $conn->query($statsSql);
+            $statusCounts = [
+                'assigned' => 0,
+                'compensation' => 0,
+                'rule_6_month' => 0,
+                'pending_work_hours' => 0,
+                'error' => 0,
+                'duplicate' => 0,
+                'reminder' => 0,
+                'no_consultant' => 0,
+                'blacklisted' => 0,
+                'pending_approval' => 0,
+                'rejected' => 0,
+                'fallback' => 0,
+                'success' => 0,
+                'databank_claim' => 0,
+                'released_to_kho' => 0
+            ];
+            if ($statsResRaw) {
+                while ($row = $statsResRaw->fetch_assoc()) {
+                    $status = $row['status'];
+                    $cnt = (int) $row['cnt'];
+                    if (array_key_exists($status, $statusCounts)) {
+                        $statusCounts[$status] = $cnt;
+                    }
                 }
             }
-        }
 
-        // Query previous period stats for % change
-        $prevStatsSql = "SELECT dl.status, COUNT(*) as cnt 
+            // Query previous period stats for % change
+            $prevStatsSql = "SELECT dl.status, COUNT(*) as cnt 
                          FROM distribution_logs dl 
                          INNER JOIN (
                              SELECT lead_id, MAX(id) as max_id 
@@ -14385,118 +14520,118 @@ switch ($action) {
                          ) dl_max ON dl.id = dl_max.max_id
                          WHERE $prevDateConditionDl $managerFilterDl 
                          GROUP BY dl.status";
-        $prevStatsResRaw = $conn->query($prevStatsSql);
-        $prevStatusCounts = [
-            'assigned' => 0,
-            'compensation' => 0,
-            'rule_6_month' => 0,
-            'pending_work_hours' => 0,
-            'error' => 0,
-            'duplicate' => 0,
-            'reminder' => 0,
-            'no_consultant' => 0,
-            'blacklisted' => 0,
-            'pending_approval' => 0,
-            'rejected' => 0,
-            'fallback' => 0,
-            'success' => 0,
-            'databank_claim' => 0,
-            'released_to_kho' => 0
-        ];
-        if ($prevStatsResRaw) {
-            while ($row = $prevStatsResRaw->fetch_assoc()) {
-                $status = $row['status'];
-                $cnt = (int) $row['cnt'];
-                if (array_key_exists($status, $prevStatusCounts)) {
-                    $prevStatusCounts[$status] = $cnt;
+            $prevStatsResRaw = $conn->query($prevStatsSql);
+            $prevStatusCounts = [
+                'assigned' => 0,
+                'compensation' => 0,
+                'rule_6_month' => 0,
+                'pending_work_hours' => 0,
+                'error' => 0,
+                'duplicate' => 0,
+                'reminder' => 0,
+                'no_consultant' => 0,
+                'blacklisted' => 0,
+                'pending_approval' => 0,
+                'rejected' => 0,
+                'fallback' => 0,
+                'success' => 0,
+                'databank_claim' => 0,
+                'released_to_kho' => 0
+            ];
+            if ($prevStatsResRaw) {
+                while ($row = $prevStatsResRaw->fetch_assoc()) {
+                    $status = $row['status'];
+                    $cnt = (int) $row['cnt'];
+                    if (array_key_exists($status, $prevStatusCounts)) {
+                        $prevStatusCounts[$status] = $cnt;
+                    }
                 }
             }
-        }
 
-        // Query active blacklist counts from admin_logs (excluding manual ones that are already in distribution_logs as status='blacklisted' to avoid double-counting)
-        $dateConditionCreated = str_replace('received_at', 'created_at', $dateCondition);
-        $prevDateConditionCreated = str_replace('received_at', 'created_at', $prevDateCondition);
+            // Query active blacklist counts from admin_logs (excluding manual ones that are already in distribution_logs as status='blacklisted' to avoid double-counting)
+            $dateConditionCreated = str_replace('received_at', 'created_at', $dateCondition);
+            $prevDateConditionCreated = str_replace('received_at', 'created_at', $prevDateCondition);
 
-        $autoBlacklistCnt = 0;
-        if (!$isManager) {
-            $blacklistRes = $conn->query("SELECT COUNT(*) as cnt FROM admin_logs WHERE action = 'BLOCK_LEAD_BLACKLIST' AND log_type = 'auto' AND $dateConditionCreated");
-            if ($blacklistRes && $row = $blacklistRes->fetch_assoc()) {
-                $autoBlacklistCnt = (int) $row['cnt'];
-            }
-        }
-
-        $prevAutoBlacklistCnt = 0;
-        if (!$isManager) {
-            $prevBlacklistRes = $conn->query("SELECT COUNT(*) as cnt FROM admin_logs WHERE action = 'BLOCK_LEAD_BLACKLIST' AND log_type = 'auto' AND $prevDateConditionCreated");
-            if ($prevBlacklistRes && $row = $prevBlacklistRes->fetch_assoc()) {
-                $prevAutoBlacklistCnt = (int) $row['cnt'];
-            }
-        }
-
-        // Query AI Pre-screener statistics (passed vs failed)
-        $aiPassedCount = 0;
-        $aiFailedCount = 0;
-        if ($dbVer >= 140) {
-            $cond1 = str_replace('received_at', 'ai_screening_started_at', $dateCondition);
-            $cond2 = str_replace('received_at', 'created_at', $dateCondition);
-            $dateConditionAI = "(($cond1) OR (ai_screening_started_at IS NULL AND $cond2))";
-        } else {
-            $dateConditionAI = str_replace('received_at', 'created_at', $dateCondition);
-        }
-        $aiScreenerSql = "SELECT ai_screener_status, COUNT(*) as cnt FROM leads WHERE $dateConditionAI $managerFilter AND ai_screener_status IN ('passed', 'failed') GROUP BY ai_screener_status";
-        $aiScreenerRes = $conn->query($aiScreenerSql);
-        if ($aiScreenerRes) {
-            while ($row = $aiScreenerRes->fetch_assoc()) {
-                if ($row['ai_screener_status'] === 'passed') {
-                    $aiPassedCount = (int) $row['cnt'];
-                } else if ($row['ai_screener_status'] === 'failed') {
-                    $aiFailedCount = (int) $row['cnt'];
+            $autoBlacklistCnt = 0;
+            if (!$isManager) {
+                $blacklistRes = $conn->query("SELECT COUNT(*) as cnt FROM admin_logs WHERE action = 'BLOCK_LEAD_BLACKLIST' AND log_type = 'auto' AND $dateConditionCreated");
+                if ($blacklistRes && $row = $blacklistRes->fetch_assoc()) {
+                    $autoBlacklistCnt = (int) $row['cnt'];
                 }
             }
-        }
 
-        // Query accepted leads count
-        $acceptedCount = 0;
-        $acceptedRes = $conn->query("SELECT COUNT(*) as cnt FROM leads WHERE $dateConditionCreated $managerFilter AND is_accepted = 1");
-        if ($acceptedRes && $row = $acceptedRes->fetch_assoc()) {
-            $acceptedCount = (int) $row['cnt'];
-        }
+            $prevAutoBlacklistCnt = 0;
+            if (!$isManager) {
+                $prevBlacklistRes = $conn->query("SELECT COUNT(*) as cnt FROM admin_logs WHERE action = 'BLOCK_LEAD_BLACKLIST' AND log_type = 'auto' AND $prevDateConditionCreated");
+                if ($prevBlacklistRes && $row = $prevBlacklistRes->fetch_assoc()) {
+                    $prevAutoBlacklistCnt = (int) $row['cnt'];
+                }
+            }
 
-        // ticket_count counts ALL tickets created in the date range (for Chatbot card)
-        $todayTickets = 0;
-        $ticketRes = $conn->query("SELECT COUNT(*) as cnt FROM data_reports WHERE $dateConditionCreated $managerFilterReports");
-        if ($ticketRes && $row = $ticketRes->fetch_assoc()) {
-            $todayTickets = (int) $row['cnt'];
-        }
+            // Query AI Pre-screener statistics (passed vs failed)
+            $aiPassedCount = 0;
+            $aiFailedCount = 0;
+            if ($dbVer >= 140) {
+                $cond1 = str_replace('received_at', 'ai_screening_started_at', $dateCondition);
+                $cond2 = str_replace('received_at', 'created_at', $dateCondition);
+                $dateConditionAI = "(($cond1) OR (ai_screening_started_at IS NULL AND $cond2))";
+            } else {
+                $dateConditionAI = str_replace('received_at', 'created_at', $dateCondition);
+            }
+            $aiScreenerSql = "SELECT ai_screener_status, COUNT(*) as cnt FROM leads WHERE $dateConditionAI $managerFilter AND ai_screener_status IN ('passed', 'failed') GROUP BY ai_screener_status";
+            $aiScreenerRes = $conn->query($aiScreenerSql);
+            if ($aiScreenerRes) {
+                while ($row = $aiScreenerRes->fetch_assoc()) {
+                    if ($row['ai_screener_status'] === 'passed') {
+                        $aiPassedCount = (int) $row['cnt'];
+                    } else if ($row['ai_screener_status'] === 'failed') {
+                        $aiFailedCount = (int) $row['cnt'];
+                    }
+                }
+            }
 
-        // ticket_errors counts only APPROVED tickets in the date range created_at (for Dashboard card details)
-        $ticketErrors = 0;
-        $tktErrRes = $conn->query("SELECT COUNT(*) as cnt FROM data_reports WHERE status IN ('approved', 'approved_no_comp') AND reason != 'databank_claim' AND $dateConditionCreated $managerFilterReports");
-        if ($tktErrRes && $row = $tktErrRes->fetch_assoc()) {
-            $ticketErrors = (int) $row['cnt'];
-        }
+            // Query accepted leads count
+            $acceptedCount = 0;
+            $acceptedRes = $conn->query("SELECT COUNT(*) as cnt FROM leads WHERE $dateConditionCreated $managerFilter AND is_accepted = 1");
+            if ($acceptedRes && $row = $acceptedRes->fetch_assoc()) {
+                $acceptedCount = (int) $row['cnt'];
+            }
 
-        // Previous period calculations for change percentage
-        $prevTicketErrors = 0;
-        $prevTktErrRes = $conn->query("SELECT COUNT(*) as cnt FROM data_reports WHERE status IN ('approved', 'approved_no_comp') AND reason != 'databank_claim' AND $prevDateConditionCreated $managerFilterReports");
-        if ($prevTktErrRes && $row = $prevTktErrRes->fetch_assoc()) {
-            $prevTicketErrors = (int) $row['cnt'];
-        }
+            // ticket_count counts ALL tickets created in the date range (for Chatbot card)
+            $todayTickets = 0;
+            $ticketRes = $conn->query("SELECT COUNT(*) as cnt FROM data_reports WHERE $dateConditionCreated $managerFilterReports");
+            if ($ticketRes && $row = $ticketRes->fetch_assoc()) {
+                $todayTickets = (int) $row['cnt'];
+            }
 
-        // 1. Success (Distributed) Calculations
-        $raw_distributed = $statusCounts['assigned'] + $statusCounts['rule_6_month'] + $statusCounts['pending_work_hours'] + $statusCounts['fallback'] + $statusCounts['success'] + $statusCounts['compensation'] + $statusCounts['databank_claim'] + $statusCounts['released_to_kho'];
-        $distributed_today = max(0, $raw_distributed - $ticketErrors);
+            // ticket_errors counts only APPROVED tickets in the date range created_at (for Dashboard card details)
+            $ticketErrors = 0;
+            $tktErrRes = $conn->query("SELECT COUNT(*) as cnt FROM data_reports WHERE status IN ('approved', 'approved_no_comp') AND reason != 'databank_claim' AND $dateConditionCreated $managerFilterReports");
+            if ($tktErrRes && $row = $tktErrRes->fetch_assoc()) {
+                $ticketErrors = (int) $row['cnt'];
+            }
 
-        // Keep details consistent: distributed_assigned + distributed_compensation = distributed_today
-        $assigned_count = $statusCounts['assigned'] + $statusCounts['rule_6_month'] + $statusCounts['pending_work_hours'] + $statusCounts['fallback'] + $statusCounts['success'];
-        $compensation_count = $statusCounts['compensation'] + $statusCounts['databank_claim'];
-        $assigned_adjusted = max(0, $assigned_count - $ticketErrors);
-        $rem = max(0, $ticketErrors - $assigned_count);
-        $compensation_adjusted = max(0, $compensation_count - $rem);
-        
-        // Count self-entered leads (source is ca_nhan or gioi_thieu)
-        $self_count = 0;
-        $selfRes = $conn->query("
+            // Previous period calculations for change percentage
+            $prevTicketErrors = 0;
+            $prevTktErrRes = $conn->query("SELECT COUNT(*) as cnt FROM data_reports WHERE status IN ('approved', 'approved_no_comp') AND reason != 'databank_claim' AND $prevDateConditionCreated $managerFilterReports");
+            if ($prevTktErrRes && $row = $prevTktErrRes->fetch_assoc()) {
+                $prevTicketErrors = (int) $row['cnt'];
+            }
+
+            // 1. Success (Distributed) Calculations
+            $raw_distributed = $statusCounts['assigned'] + $statusCounts['rule_6_month'] + $statusCounts['pending_work_hours'] + $statusCounts['fallback'] + $statusCounts['success'] + $statusCounts['compensation'] + $statusCounts['databank_claim'] + $statusCounts['released_to_kho'];
+            $distributed_today = max(0, $raw_distributed - $ticketErrors);
+
+            // Keep details consistent: distributed_assigned + distributed_compensation = distributed_today
+            $assigned_count = $statusCounts['assigned'] + $statusCounts['rule_6_month'] + $statusCounts['pending_work_hours'] + $statusCounts['fallback'] + $statusCounts['success'];
+            $compensation_count = $statusCounts['compensation'] + $statusCounts['databank_claim'];
+            $assigned_adjusted = max(0, $assigned_count - $ticketErrors);
+            $rem = max(0, $ticketErrors - $assigned_count);
+            $compensation_adjusted = max(0, $compensation_count - $rem);
+
+            // Count self-entered leads (source is ca_nhan or gioi_thieu)
+            $self_count = 0;
+            $selfRes = $conn->query("
             SELECT COUNT(*) as cnt 
             FROM distribution_logs dl
             JOIN leads l ON dl.lead_id = l.id
@@ -14504,98 +14639,98 @@ switch ($action) {
               AND l.source IN ('ca_nhan', 'gioi_thieu')
               AND $dateConditionDl $managerFilterDl
         ");
-        if ($selfRes && $row = $selfRes->fetch_assoc()) {
-            $self_count = (int)$row['cnt'];
-        }
-        
-        $assigned_total = max(0, $assigned_adjusted - $self_count);
-        $compensation_total = $compensation_adjusted;
+            if ($selfRes && $row = $selfRes->fetch_assoc()) {
+                $self_count = (int)$row['cnt'];
+            }
 
-        // 2. Duplicates Calculations
-        $duplicates = $statusCounts['duplicate'] + $statusCounts['reminder'];
+            $assigned_total = max(0, $assigned_adjusted - $self_count);
+            $compensation_total = $compensation_adjusted;
 
-        // 3. Errors Calculations
-        $underStandard = $statusCounts['rejected'] + $statusCounts['pending_approval'] + $statusCounts['error'] + $statusCounts['no_consultant'];
-        $blacklistCnt = $statusCounts['blacklisted'] + $autoBlacklistCnt;
-        $errors = $ticketErrors + $underStandard + $blacklistCnt;
+            // 2. Duplicates Calculations
+            $duplicates = $statusCounts['duplicate'] + $statusCounts['reminder'];
 
-        // 4. Total Calculations
-        $total_today = $distributed_today + $duplicates + $errors;
+            // 3. Errors Calculations
+            $underStandard = $statusCounts['rejected'] + $statusCounts['pending_approval'] + $statusCounts['error'] + $statusCounts['no_consultant'];
+            $blacklistCnt = $statusCounts['blacklisted'] + $autoBlacklistCnt;
+            $errors = $ticketErrors + $underStandard + $blacklistCnt;
 
-        $statsRes = [
-            'total' => $total_today,
-            'distributed' => $distributed_today,
-            'duplicates' => $duplicates,
-            'errors' => $errors
-        ];
+            // 4. Total Calculations
+            $total_today = $distributed_today + $duplicates + $errors;
 
-        // Do the same for previous period to keep % change consistent
-        $prev_raw_distributed = $prevStatusCounts['assigned'] + $prevStatusCounts['rule_6_month'] + $prevStatusCounts['pending_work_hours'] + $prevStatusCounts['fallback'] + $prevStatusCounts['success'] + $prevStatusCounts['compensation'] + $prevStatusCounts['databank_claim'] + $prevStatusCounts['released_to_kho'];
-        $prev_distributed_today = max(0, $prev_raw_distributed - $prevTicketErrors);
-        $prev_duplicates = $prevStatusCounts['duplicate'] + $prevStatusCounts['reminder'];
-        $prev_underStandard = $prevStatusCounts['rejected'] + $prevStatusCounts['pending_approval'] + $prevStatusCounts['error'] + $prevStatusCounts['no_consultant'];
-        $prev_blacklistCnt = $prevStatusCounts['blacklisted'] + $prevAutoBlacklistCnt;
-        $prev_errors = $prevTicketErrors + $prev_underStandard + $prev_blacklistCnt;
-        $prev_total_today = $prev_distributed_today + $prev_duplicates + $prev_errors;
+            $statsRes = [
+                'total' => $total_today,
+                'distributed' => $distributed_today,
+                'duplicates' => $duplicates,
+                'errors' => $errors
+            ];
 
-        $prevStatsRes = [
-            'total' => $prev_total_today,
-            'distributed' => $prev_distributed_today,
-            'duplicates' => $prev_duplicates,
-            'errors' => $prev_errors
-        ];
+            // Do the same for previous period to keep % change consistent
+            $prev_raw_distributed = $prevStatusCounts['assigned'] + $prevStatusCounts['rule_6_month'] + $prevStatusCounts['pending_work_hours'] + $prevStatusCounts['fallback'] + $prevStatusCounts['success'] + $prevStatusCounts['compensation'] + $prevStatusCounts['databank_claim'] + $prevStatusCounts['released_to_kho'];
+            $prev_distributed_today = max(0, $prev_raw_distributed - $prevTicketErrors);
+            $prev_duplicates = $prevStatusCounts['duplicate'] + $prevStatusCounts['reminder'];
+            $prev_underStandard = $prevStatusCounts['rejected'] + $prevStatusCounts['pending_approval'] + $prevStatusCounts['error'] + $prevStatusCounts['no_consultant'];
+            $prev_blacklistCnt = $prevStatusCounts['blacklisted'] + $prevAutoBlacklistCnt;
+            $prev_errors = $prevTicketErrors + $prev_underStandard + $prev_blacklistCnt;
+            $prev_total_today = $prev_distributed_today + $prev_duplicates + $prev_errors;
 
-        // Also define $raw_duplicates and $raw_errors to keep totalLogsCount consistent
-        $raw_duplicates = $duplicates;
-        $raw_errors = $underStandard;
+            $prevStatsRes = [
+                'total' => $prev_total_today,
+                'distributed' => $prev_distributed_today,
+                'duplicates' => $prev_duplicates,
+                'errors' => $prev_errors
+            ];
 
-        $calcChange = function ($current, $prev) {
-            $current = (int) $current;
-            $prev = (int) $prev;
-            if ($prev == 0)
-                return $current > 0 ? '+100%' : '0%';
-            $change = (($current - $prev) / $prev) * 100;
-            return ($change > 0 ? '+' : '') . number_format($change, 1) . '%';
-        };
+            // Also define $raw_duplicates and $raw_errors to keep totalLogsCount consistent
+            $raw_duplicates = $duplicates;
+            $raw_errors = $underStandard;
 
-        // NEW CALCULATIONS: Out-of-Hours Lead Ratio and Fair-Share Equity
-        // 1. Out of Hours Lead Ratio
-        $outOfHoursRes = $conn->query("SELECT COUNT(*) as cnt FROM distribution_logs WHERE (status = 'pending_work_hours' OR message LIKE '%ngoài khung giờ làm việc%' OR message LIKE '%outside working hours%') AND $dateCondition $managerFilterDlNoAlias");
-        $outOfHoursCount = ($outOfHoursRes && $row = $outOfHoursRes->fetch_assoc()) ? (int)$row['cnt'] : 0;
-        
-        $totalLogsCount = (int)$statsRes['total'];
-        $outOfHoursRatioVal = $totalLogsCount > 0 ? ($outOfHoursCount / $totalLogsCount) * 100 : 0;
-        $outOfHoursRatio = number_format($outOfHoursRatioVal, 1) . '%';
+            $calcChange = function ($current, $prev) {
+                $current = (int) $current;
+                $prev = (int) $prev;
+                if ($prev == 0)
+                    return $current > 0 ? '+100%' : '0%';
+                $change = (($current - $prev) / $prev) * 100;
+                return ($change > 0 ? '+' : '') . number_format($change, 1) . '%';
+            };
 
-        $prevOutOfHoursRes = $conn->query("SELECT COUNT(*) as cnt FROM distribution_logs WHERE (status = 'pending_work_hours' OR message LIKE '%ngoài khung giờ làm việc%' OR message LIKE '%outside working hours%') AND $prevDateCondition $managerFilterDlNoAlias");
-        $prevOutOfHoursCount = ($prevOutOfHoursRes && $row = $prevOutOfHoursRes->fetch_assoc()) ? (int)$row['cnt'] : 0;
-        
-        $prevTotalLogsCount = (int)$prevStatsRes['total'];
-        $prevOutOfHoursRatioVal = $prevTotalLogsCount > 0 ? ($prevOutOfHoursCount / $prevTotalLogsCount) * 100 : 0;
-        
-        $outOfHoursChange = $calcChange($outOfHoursCount, $prevOutOfHoursCount);
+            // NEW CALCULATIONS: Out-of-Hours Lead Ratio and Fair-Share Equity
+            // 1. Out of Hours Lead Ratio
+            $outOfHoursRes = $conn->query("SELECT COUNT(*) as cnt FROM distribution_logs WHERE (status = 'pending_work_hours' OR message LIKE '%ngoài khung giờ làm việc%' OR message LIKE '%outside working hours%') AND $dateCondition $managerFilterDlNoAlias");
+            $outOfHoursCount = ($outOfHoursRes && $row = $outOfHoursRes->fetch_assoc()) ? (int)$row['cnt'] : 0;
 
-        // 2. Fair-Share Equity
-        $calcFairness = function($conn, $dateCondition) use ($consultantFilter, $managerFilter, $managerFilterDlNoAlias) {
-            $consultants = [];
-            $sql = "SELECT id FROM consultants WHERE status = 'active' $consultantFilter";
-            $res = $conn->query($sql);
-            if ($res) {
-                while ($row = $res->fetch_assoc()) {
-                    $cId = (int)$row['id'];
-                    $consultants[$cId] = [
-                        'id' => $cId,
-                        'receive_ratio' => 1,
-                        'assigned_count' => 0
-                    ];
+            $totalLogsCount = (int)$statsRes['total'];
+            $outOfHoursRatioVal = $totalLogsCount > 0 ? ($outOfHoursCount / $totalLogsCount) * 100 : 0;
+            $outOfHoursRatio = number_format($outOfHoursRatioVal, 1) . '%';
+
+            $prevOutOfHoursRes = $conn->query("SELECT COUNT(*) as cnt FROM distribution_logs WHERE (status = 'pending_work_hours' OR message LIKE '%ngoài khung giờ làm việc%' OR message LIKE '%outside working hours%') AND $prevDateCondition $managerFilterDlNoAlias");
+            $prevOutOfHoursCount = ($prevOutOfHoursRes && $row = $prevOutOfHoursRes->fetch_assoc()) ? (int)$row['cnt'] : 0;
+
+            $prevTotalLogsCount = (int)$prevStatsRes['total'];
+            $prevOutOfHoursRatioVal = $prevTotalLogsCount > 0 ? ($prevOutOfHoursCount / $prevTotalLogsCount) * 100 : 0;
+
+            $outOfHoursChange = $calcChange($outOfHoursCount, $prevOutOfHoursCount);
+
+            // 2. Fair-Share Equity
+            $calcFairness = function ($conn, $dateCondition) use ($consultantFilter, $managerFilter, $managerFilterDlNoAlias) {
+                $consultants = [];
+                $sql = "SELECT id FROM consultants WHERE status = 'active' $consultantFilter";
+                $res = $conn->query($sql);
+                if ($res) {
+                    while ($row = $res->fetch_assoc()) {
+                        $cId = (int)$row['id'];
+                        $consultants[$cId] = [
+                            'id' => $cId,
+                            'receive_ratio' => 1,
+                            'assigned_count' => 0
+                        ];
+                    }
                 }
-            }
-            
-            if (empty($consultants)) {
-                return ['fairness' => 100.0, 'sd' => 0.0];
-            }
-            
-            $leadCountsSql = "SELECT assigned_to, 
+
+                if (empty($consultants)) {
+                    return ['fairness' => 100.0, 'sd' => 0.0];
+                }
+
+                $leadCountsSql = "SELECT assigned_to, 
                                      CASE 
                                        WHEN status = 'pending_work_hours' AND (message LIKE '%đền bù%' OR message LIKE '%compensation%' OR message LIKE '%Bù lượt%') THEN 'compensation'
                                        ELSE status 
@@ -14605,203 +14740,203 @@ switch ($action) {
                               WHERE $dateCondition $managerFilterDlNoAlias
                                 AND status IN ('assigned', 'compensation', 'error', 'rule_6_month', 'pending_work_hours') 
                               GROUP BY assigned_to, adjusted_status";
-            $countsRes = $conn->query($leadCountsSql);
-            $consultantStatusCounts = [];
-            if ($countsRes) {
-                while ($row = $countsRes->fetch_assoc()) {
-                    $cId = (int)$row['assigned_to'];
-                    $status = $row['adjusted_status'];
-                    $cnt = (int)$row['cnt'];
-                    if (!isset($consultantStatusCounts[$cId])) {
-                        $consultantStatusCounts[$cId] = [
-                            'assigned' => 0,
-                            'compensation' => 0,
-                            'rule_6_month' => 0,
-                            'pending_work_hours' => 0,
-                            'error' => 0
-                        ];
-                    }
-                    if (array_key_exists($status, $consultantStatusCounts[$cId])) {
-                        $consultantStatusCounts[$cId][$status] = $cnt;
-                    }
-                }
-            }
-            
-            foreach ($consultants as $cId => &$c) {
-                if (isset($consultantStatusCounts[$cId])) {
-                    $sc = $consultantStatusCounts[$cId];
-                    $c['assigned_count'] = $sc['assigned'] + $sc['compensation'] + $sc['rule_6_month'] + $sc['pending_work_hours'] + max(0, $sc['error'] - $sc['compensation']);
-                }
-            }
-            unset($c);
-            
-            $rawCounts = [];
-            $normalizedCounts = [];
-            $totalLeads = 0;
-            foreach ($consultants as $c) {
-                $rawCounts[] = $c['assigned_count'];
-                $ratio = max(1, $c['receive_ratio']);
-                $normalizedCounts[] = $c['assigned_count'] * $ratio;
-                $totalLeads += $c['assigned_count'];
-            }
-            
-            $N = count($consultants);
-            $mean = 0;
-            $standardDeviation = 0;
-            $giniNormalized = 0;
-            
-            if ($N > 0) {
-                $mean = $totalLeads / $N;
-                
-                $sumSqDiff = 0;
-                foreach ($rawCounts as $x) {
-                    $sumSqDiff += pow($x - $mean, 2);
-                }
-                $standardDeviation = sqrt($sumSqDiff / $N);
-                
-                $sumNorm = array_sum($normalizedCounts);
-                if ($sumNorm > 0) {
-                    $doubleSumDiffNorm = 0;
-                    for ($i = 0; $i < $N; $i++) {
-                        for ($j = 0; $j < $N; $j++) {
-                            $doubleSumDiffNorm += abs($normalizedCounts[$i] - $normalizedCounts[$j]);
+                $countsRes = $conn->query($leadCountsSql);
+                $consultantStatusCounts = [];
+                if ($countsRes) {
+                    while ($row = $countsRes->fetch_assoc()) {
+                        $cId = (int)$row['assigned_to'];
+                        $status = $row['adjusted_status'];
+                        $cnt = (int)$row['cnt'];
+                        if (!isset($consultantStatusCounts[$cId])) {
+                            $consultantStatusCounts[$cId] = [
+                                'assigned' => 0,
+                                'compensation' => 0,
+                                'rule_6_month' => 0,
+                                'pending_work_hours' => 0,
+                                'error' => 0
+                            ];
+                        }
+                        if (array_key_exists($status, $consultantStatusCounts[$cId])) {
+                            $consultantStatusCounts[$cId][$status] = $cnt;
                         }
                     }
-                    $giniNormalized = $doubleSumDiffNorm / (2 * $N * $sumNorm);
                 }
-            }
-            
-            $fairnessIndex = (1 - $giniNormalized) * 100;
-            return [
-                'fairness' => round($fairnessIndex, 1),
-                'sd' => round($standardDeviation, 1)
-            ];
-        };
 
-        $currentFairShare = $calcFairness($conn, $dateCondition);
-        $prevFairShare = $calcFairness($conn, $prevDateCondition);
-        
-        $fairShareEquity = $currentFairShare['fairness'] . '%';
-        $fairShareSD = $currentFairShare['sd'];
-        
-        $fairShareEquityChangeVal = $currentFairShare['fairness'] - $prevFairShare['fairness'];
-        $fairShareEquityChange = ($fairShareEquityChangeVal >= 0 ? '+' : '') . number_format($fairShareEquityChangeVal, 1) . '%';
+                foreach ($consultants as $cId => &$c) {
+                    if (isset($consultantStatusCounts[$cId])) {
+                        $sc = $consultantStatusCounts[$cId];
+                        $c['assigned_count'] = $sc['assigned'] + $sc['compensation'] + $sc['rule_6_month'] + $sc['pending_work_hours'] + max(0, $sc['error'] - $sc['compensation']);
+                    }
+                }
+                unset($c);
 
-        // Query hourly/daily chart data
-        $chartMode = $_GET['chart_mode'] ?? '';
-        $chartMetric = $_GET['chart_metric'] ?? 'lead';
-        $chartData = [];
+                $rawCounts = [];
+                $normalizedCounts = [];
+                $totalLeads = 0;
+                foreach ($consultants as $c) {
+                    $rawCounts[] = $c['assigned_count'];
+                    $ratio = max(1, $c['receive_ratio']);
+                    $normalizedCounts[] = $c['assigned_count'] * $ratio;
+                    $totalLeads += $c['assigned_count'];
+                }
 
-        if ($chartMetric === 'zalo' || $chartMetric === 'email' || $chartMetric === 'telegram') {
-            $type = $chartMetric;
-            $dateConditionSent = str_replace('received_at', 'sent_at', $dateCondition);
-            $managerFilterLeadsComm = !empty($managerFilterLeads) ? " AND (cl.lead_id IS NULL OR cl.lead_id = 0 OR 1=1 $managerFilterLeads) " : "";
-            if ($chartMode === 'heatmap') {
-                $heatmapSql = "SELECT WEEKDAY(cl.sent_at) as wday, HOUR(cl.sent_at) as h, COUNT(*) as vol 
+                $N = count($consultants);
+                $mean = 0;
+                $standardDeviation = 0;
+                $giniNormalized = 0;
+
+                if ($N > 0) {
+                    $mean = $totalLeads / $N;
+
+                    $sumSqDiff = 0;
+                    foreach ($rawCounts as $x) {
+                        $sumSqDiff += pow($x - $mean, 2);
+                    }
+                    $standardDeviation = sqrt($sumSqDiff / $N);
+
+                    $sumNorm = array_sum($normalizedCounts);
+                    if ($sumNorm > 0) {
+                        $doubleSumDiffNorm = 0;
+                        for ($i = 0; $i < $N; $i++) {
+                            for ($j = 0; $j < $N; $j++) {
+                                $doubleSumDiffNorm += abs($normalizedCounts[$i] - $normalizedCounts[$j]);
+                            }
+                        }
+                        $giniNormalized = $doubleSumDiffNorm / (2 * $N * $sumNorm);
+                    }
+                }
+
+                $fairnessIndex = (1 - $giniNormalized) * 100;
+                return [
+                    'fairness' => round($fairnessIndex, 1),
+                    'sd' => round($standardDeviation, 1)
+                ];
+            };
+
+            $currentFairShare = $calcFairness($conn, $dateCondition);
+            $prevFairShare = $calcFairness($conn, $prevDateCondition);
+
+            $fairShareEquity = $currentFairShare['fairness'] . '%';
+            $fairShareSD = $currentFairShare['sd'];
+
+            $fairShareEquityChangeVal = $currentFairShare['fairness'] - $prevFairShare['fairness'];
+            $fairShareEquityChange = ($fairShareEquityChangeVal >= 0 ? '+' : '') . number_format($fairShareEquityChangeVal, 1) . '%';
+
+            // Query hourly/daily chart data
+            $chartMode = $_GET['chart_mode'] ?? '';
+            $chartMetric = $_GET['chart_metric'] ?? 'lead';
+            $chartData = [];
+
+            if ($chartMetric === 'zalo' || $chartMetric === 'email' || $chartMetric === 'telegram') {
+                $type = $chartMetric;
+                $dateConditionSent = str_replace('received_at', 'sent_at', $dateCondition);
+                $managerFilterLeadsComm = !empty($managerFilterLeads) ? " AND (cl.lead_id IS NULL OR cl.lead_id = 0 OR 1=1 $managerFilterLeads) " : "";
+                if ($chartMode === 'heatmap') {
+                    $heatmapSql = "SELECT WEEKDAY(cl.sent_at) as wday, HOUR(cl.sent_at) as h, COUNT(*) as vol 
                                FROM communication_logs cl 
                                LEFT JOIN leads l ON cl.lead_id = l.id
                                WHERE cl.type = '$type' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm
                                GROUP BY WEEKDAY(cl.sent_at), HOUR(cl.sent_at) 
                                ORDER BY wday ASC, h ASC";
-                $res = $conn->query($heatmapSql);
-                if ($res) {
-                    while ($row = $res->fetch_assoc()) {
-                        $chartData[] = [
-                            'wday' => (int) $row['wday'],
-                            'hour' => (int) $row['h'],
-                            'volume' => (int) $row['vol']
-                        ];
+                    $res = $conn->query($heatmapSql);
+                    if ($res) {
+                        while ($row = $res->fetch_assoc()) {
+                            $chartData[] = [
+                                'wday' => (int) $row['wday'],
+                                'hour' => (int) $row['h'],
+                                'volume' => (int) $row['vol']
+                            ];
+                        }
                     }
-                }
-            } else {
-                $useHourly = ($chartMode === 'hour') || ($chartMode !== 'day' && ($date === 'Hôm nay' || $date === 'Hôm qua'));
-                if ($useHourly) {
-                    $hourlySql = "SELECT HOUR(cl.sent_at) as h, COUNT(*) as vol 
+                } else {
+                    $useHourly = ($chartMode === 'hour') || ($chartMode !== 'day' && ($date === 'Hôm nay' || $date === 'Hôm qua'));
+                    if ($useHourly) {
+                        $hourlySql = "SELECT HOUR(cl.sent_at) as h, COUNT(*) as vol 
                                   FROM communication_logs cl 
                                   LEFT JOIN leads l ON cl.lead_id = l.id
                                   WHERE cl.type = '$type' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm
                                   GROUP BY HOUR(cl.sent_at) 
                                   ORDER BY h ASC";
-                    $res = $conn->query($hourlySql);
-                    $hourlyMap = [];
-                    if ($res) {
-                        while ($row = $res->fetch_assoc()) {
-                            $hourlyMap[(int) $row['h']] = (int) $row['vol'];
+                        $res = $conn->query($hourlySql);
+                        $hourlyMap = [];
+                        if ($res) {
+                            while ($row = $res->fetch_assoc()) {
+                                $hourlyMap[(int) $row['h']] = (int) $row['vol'];
+                            }
                         }
-                    }
-                    for ($i = 0; $i <= 23; $i++) {
-                        $vol = $hourlyMap[$i] ?? 0;
-                        $chartData[] = ['time' => str_pad($i, 2, '0', STR_PAD_LEFT) . 'h', 'volume' => $vol];
-                    }
-                } else {
-                    $dailySql = "SELECT DATE(cl.sent_at) as d, COUNT(*) as vol 
+                        for ($i = 0; $i <= 23; $i++) {
+                            $vol = $hourlyMap[$i] ?? 0;
+                            $chartData[] = ['time' => str_pad($i, 2, '0', STR_PAD_LEFT) . 'h', 'volume' => $vol];
+                        }
+                    } else {
+                        $dailySql = "SELECT DATE(cl.sent_at) as d, COUNT(*) as vol 
                                  FROM communication_logs cl 
                                  LEFT JOIN leads l ON cl.lead_id = l.id
                                  WHERE cl.type = '$type' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm
                                  GROUP BY DATE(cl.sent_at) 
                                  ORDER BY d ASC";
-                    $res = $conn->query($dailySql);
-                    if ($res) {
-                        while ($row = $res->fetch_assoc()) {
-                            $chartData[] = ['time' => date('d/m', strtotime($row['d'])), 'volume' => (int) $row['vol']];
+                        $res = $conn->query($dailySql);
+                        if ($res) {
+                            while ($row = $res->fetch_assoc()) {
+                                $chartData[] = ['time' => date('d/m', strtotime($row['d'])), 'volume' => (int) $row['vol']];
+                            }
                         }
                     }
                 }
-            }
-        } else if ($chartMetric === 'token') {
-            $timeCol = ($dbVer >= 140) ? "COALESCE(ai_screening_started_at, created_at)" : "created_at";
-            if ($chartMode === 'heatmap') {
-                $heatmapSql = "SELECT WEEKDAY($timeCol) as wday, HOUR($timeCol) as h, SUM(ai_total_tokens) as vol 
+            } else if ($chartMetric === 'token') {
+                $timeCol = ($dbVer >= 140) ? "COALESCE(ai_screening_started_at, created_at)" : "created_at";
+                if ($chartMode === 'heatmap') {
+                    $heatmapSql = "SELECT WEEKDAY($timeCol) as wday, HOUR($timeCol) as h, SUM(ai_total_tokens) as vol 
                                FROM leads 
                                WHERE $dateConditionAI $managerFilter
                                GROUP BY WEEKDAY($timeCol), HOUR($timeCol) 
                                ORDER BY wday ASC, h ASC";
-                $res = $conn->query($heatmapSql);
-                if ($res) {
-                    while ($row = $res->fetch_assoc()) {
-                        $chartData[] = [
-                            'wday' => (int) $row['wday'],
-                            'hour' => (int) $row['h'],
-                            'volume' => (int) $row['vol']
-                        ];
+                    $res = $conn->query($heatmapSql);
+                    if ($res) {
+                        while ($row = $res->fetch_assoc()) {
+                            $chartData[] = [
+                                'wday' => (int) $row['wday'],
+                                'hour' => (int) $row['h'],
+                                'volume' => (int) $row['vol']
+                            ];
+                        }
                     }
-                }
-            } else {
-                $useHourly = ($chartMode === 'hour') || ($chartMode !== 'day' && ($date === 'Hôm nay' || $date === 'Hôm qua'));
-                if ($useHourly) {
-                    $hourlySql = "SELECT HOUR($timeCol) as h, SUM(ai_total_tokens) as vol 
+                } else {
+                    $useHourly = ($chartMode === 'hour') || ($chartMode !== 'day' && ($date === 'Hôm nay' || $date === 'Hôm qua'));
+                    if ($useHourly) {
+                        $hourlySql = "SELECT HOUR($timeCol) as h, SUM(ai_total_tokens) as vol 
                                   FROM leads 
                                   WHERE $dateConditionAI $managerFilter
                                   GROUP BY HOUR($timeCol) 
                                   ORDER BY h ASC";
-                    $res = $conn->query($hourlySql);
-                    $hourlyMap = [];
-                    if ($res) {
-                        while ($row = $res->fetch_assoc()) {
-                            $hourlyMap[(int) $row['h']] = (int) $row['vol'];
+                        $res = $conn->query($hourlySql);
+                        $hourlyMap = [];
+                        if ($res) {
+                            while ($row = $res->fetch_assoc()) {
+                                $hourlyMap[(int) $row['h']] = (int) $row['vol'];
+                            }
                         }
-                    }
-                    for ($i = 0; $i <= 23; $i++) {
-                        $vol = $hourlyMap[$i] ?? 0;
-                        $chartData[] = ['time' => str_pad($i, 2, '0', STR_PAD_LEFT) . 'h', 'volume' => $vol];
-                    }
-                } else {
-                    $dailySql = "SELECT DATE($timeCol) as d, SUM(ai_total_tokens) as vol 
+                        for ($i = 0; $i <= 23; $i++) {
+                            $vol = $hourlyMap[$i] ?? 0;
+                            $chartData[] = ['time' => str_pad($i, 2, '0', STR_PAD_LEFT) . 'h', 'volume' => $vol];
+                        }
+                    } else {
+                        $dailySql = "SELECT DATE($timeCol) as d, SUM(ai_total_tokens) as vol 
                                  FROM leads 
                                  WHERE $dateConditionAI $managerFilter
                                  GROUP BY DATE($timeCol) 
                                  ORDER BY d ASC";
-                    $res = $conn->query($dailySql);
-                    if ($res) {
-                        while ($row = $res->fetch_assoc()) {
-                            $chartData[] = ['time' => date('d/m', strtotime($row['d'])), 'volume' => (int) $row['vol']];
+                        $res = $conn->query($dailySql);
+                        if ($res) {
+                            while ($row = $res->fetch_assoc()) {
+                                $chartData[] = ['time' => date('d/m', strtotime($row['d'])), 'volume' => (int) $row['vol']];
+                            }
                         }
                     }
                 }
-            }
-        } else {
-            if ($chartMode === 'heatmap') {
-                $heatmapSql = "SELECT WEEKDAY(dl.received_at) as wday, HOUR(dl.received_at) as h, COUNT(*) as vol 
+            } else {
+                if ($chartMode === 'heatmap') {
+                    $heatmapSql = "SELECT WEEKDAY(dl.received_at) as wday, HOUR(dl.received_at) as h, COUNT(*) as vol 
                                FROM distribution_logs dl 
                                INNER JOIN (
                                    SELECT lead_id, MAX(id) as max_id 
@@ -14812,20 +14947,20 @@ switch ($action) {
                                WHERE $dateConditionDl $managerFilterDl 
                                GROUP BY WEEKDAY(dl.received_at), HOUR(dl.received_at) 
                                ORDER BY wday ASC, h ASC";
-                $res = $conn->query($heatmapSql);
-                if ($res) {
-                    while ($row = $res->fetch_assoc()) {
-                        $chartData[] = [
-                            'wday' => (int) $row['wday'],
-                            'hour' => (int) $row['h'],
-                            'volume' => (int) $row['vol']
-                        ];
+                    $res = $conn->query($heatmapSql);
+                    if ($res) {
+                        while ($row = $res->fetch_assoc()) {
+                            $chartData[] = [
+                                'wday' => (int) $row['wday'],
+                                'hour' => (int) $row['h'],
+                                'volume' => (int) $row['vol']
+                            ];
+                        }
                     }
-                }
-            } else {
-                $useHourly = ($chartMode === 'hour') || ($chartMode !== 'day' && ($date === 'Hôm nay' || $date === 'Hôm qua'));
-                if ($useHourly) {
-                    $hourlySql = "SELECT HOUR(dl.received_at) as h, COUNT(*) as vol 
+                } else {
+                    $useHourly = ($chartMode === 'hour') || ($chartMode !== 'day' && ($date === 'Hôm nay' || $date === 'Hôm qua'));
+                    if ($useHourly) {
+                        $hourlySql = "SELECT HOUR(dl.received_at) as h, COUNT(*) as vol 
                                   FROM distribution_logs dl 
                                   INNER JOIN (
                                       SELECT lead_id, MAX(id) as max_id 
@@ -14836,20 +14971,20 @@ switch ($action) {
                                   WHERE $dateConditionDl $managerFilterDl 
                                   GROUP BY HOUR(dl.received_at) 
                                   ORDER BY h ASC";
-                    $res = $conn->query($hourlySql);
-                    $hourlyMap = [];
-                    if ($res) {
-                        while ($row = $res->fetch_assoc()) {
-                            $hourlyMap[(int) $row['h']] = (int) $row['vol'];
+                        $res = $conn->query($hourlySql);
+                        $hourlyMap = [];
+                        if ($res) {
+                            while ($row = $res->fetch_assoc()) {
+                                $hourlyMap[(int) $row['h']] = (int) $row['vol'];
+                            }
                         }
-                    }
-                    for ($i = 0; $i <= 23; $i++) {
-                        $vol = $hourlyMap[$i] ?? 0;
-                        $chartData[] = ['time' => str_pad($i, 2, '0', STR_PAD_LEFT) . 'h', 'volume' => $vol];
-                    }
-                } else {
-                    // For daily
-                    $dailySql = "SELECT DATE(dl.received_at) as d, COUNT(*) as vol 
+                        for ($i = 0; $i <= 23; $i++) {
+                            $vol = $hourlyMap[$i] ?? 0;
+                            $chartData[] = ['time' => str_pad($i, 2, '0', STR_PAD_LEFT) . 'h', 'volume' => $vol];
+                        }
+                    } else {
+                        // For daily
+                        $dailySql = "SELECT DATE(dl.received_at) as d, COUNT(*) as vol 
                                  FROM distribution_logs dl 
                                  INNER JOIN (
                                      SELECT lead_id, MAX(id) as max_id 
@@ -14860,18 +14995,18 @@ switch ($action) {
                                  WHERE $dateConditionDl $managerFilterDl 
                                  GROUP BY DATE(dl.received_at) 
                                  ORDER BY d ASC";
-                    $res = $conn->query($dailySql);
-                    if ($res) {
-                        while ($row = $res->fetch_assoc()) {
-                            $chartData[] = ['time' => date('d/m', strtotime($row['d'])), 'volume' => (int) $row['vol']];
+                        $res = $conn->query($dailySql);
+                        if ($res) {
+                            while ($row = $res->fetch_assoc()) {
+                                $chartData[] = ['time' => date('d/m', strtotime($row['d'])), 'volume' => (int) $row['vol']];
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Query Top Consultants
-        $topConsultantsSql = "SELECT c.id, c.name, c.email, c.avatar, c.status as c_status, c.vacation_mode as c_vacation_mode, dl.status as dl_status, COUNT(dl.id) as cnt 
+            // Query Top Consultants
+            $topConsultantsSql = "SELECT c.id, c.name, c.email, c.avatar, c.status as c_status, c.vacation_mode as c_vacation_mode, dl.status as dl_status, COUNT(dl.id) as cnt 
                               FROM distribution_logs dl 
                               INNER JOIN (
                                   SELECT lead_id, MAX(id) as max_id 
@@ -14882,38 +15017,38 @@ switch ($action) {
                               JOIN consultants c ON dl.assigned_to = c.id 
                               WHERE $dateConditionDl $managerFilterDl AND dl.status IN ('assigned', 'compensation', 'rule_6_month', 'pending_work_hours', 'error', 'reminder', 'databank_claim') 
                               GROUP BY c.id, c.name, c.email, c.avatar, c.status, c.vacation_mode, dl.status";
-        $topConsultantsRes = $conn->query($topConsultantsSql);
-        $consultantStats = [];
-        if ($topConsultantsRes) {
-            while ($row = $topConsultantsRes->fetch_assoc()) {
-                $cId = (int) $row['id'];
-                if (!isset($consultantStats[$cId])) {
-                    $consultantStats[$cId] = [
-                        'id' => $cId,
-                        'name' => $row['name'],
-                        'email' => $row['email'],
-                        'avatar' => $row['avatar'],
-                        'status' => $row['c_status'],
-                        'vacation_mode' => (int) $row['c_vacation_mode'],
-                        'assigned' => 0,
-                        'compensation' => 0,
-                        'rule_6_month' => 0,
-                        'pending_work_hours' => 0,
-                        'error' => 0,
-                        'reminder' => 0,
-                        'databank_claim' => 0
-                    ];
-                }
-                $dl_status = $row['dl_status'];
-                if (isset($consultantStats[$cId][$dl_status])) {
-                    $consultantStats[$cId][$dl_status] = (int) $row['cnt'];
+            $topConsultantsRes = $conn->query($topConsultantsSql);
+            $consultantStats = [];
+            if ($topConsultantsRes) {
+                while ($row = $topConsultantsRes->fetch_assoc()) {
+                    $cId = (int) $row['id'];
+                    if (!isset($consultantStats[$cId])) {
+                        $consultantStats[$cId] = [
+                            'id' => $cId,
+                            'name' => $row['name'],
+                            'email' => $row['email'],
+                            'avatar' => $row['avatar'],
+                            'status' => $row['c_status'],
+                            'vacation_mode' => (int) $row['c_vacation_mode'],
+                            'assigned' => 0,
+                            'compensation' => 0,
+                            'rule_6_month' => 0,
+                            'pending_work_hours' => 0,
+                            'error' => 0,
+                            'reminder' => 0,
+                            'databank_claim' => 0
+                        ];
+                    }
+                    $dl_status = $row['dl_status'];
+                    if (isset($consultantStats[$cId][$dl_status])) {
+                        $consultantStats[$cId][$dl_status] = (int) $row['cnt'];
+                    }
                 }
             }
-        }
 
-        // Query uncontacted count for all consultants
-        $uncontactedMap = [];
-        $uncontactedRes = $conn->query("
+            // Query uncontacted count for all consultants
+            $uncontactedMap = [];
+            $uncontactedRes = $conn->query("
             SELECT l.assigned_to, COUNT(*) as cnt 
             FROM leads l
             JOIN consultants cons ON l.assigned_to = cons.id
@@ -14927,30 +15062,30 @@ switch ($action) {
               $managerFilterLeads
             GROUP BY l.assigned_to
         ");
-        if ($uncontactedRes) {
-            while ($r = $uncontactedRes->fetch_assoc()) {
-                $uncontactedMap[(int)$r['assigned_to']] = (int)$r['cnt'];
+            if ($uncontactedRes) {
+                while ($r = $uncontactedRes->fetch_assoc()) {
+                    $uncontactedMap[(int)$r['assigned_to']] = (int)$r['cnt'];
+                }
             }
-        }
 
-        // Query recalled (timed out) count
-        $recalledMap = [];
-        $recalledRes = $conn->query("
+            // Query recalled (timed out) count
+            $recalledMap = [];
+            $recalledRes = $conn->query("
             SELECT assigned_to, COUNT(*) as cnt 
             FROM distribution_logs 
             WHERE status = 'recalled' AND lead_id IS NOT NULL AND $dateCondition $managerFilterDlNoAlias
             GROUP BY assigned_to
         ");
-        if ($recalledRes) {
-            while ($r = $recalledRes->fetch_assoc()) {
-                $recalledMap[(int)$r['assigned_to']] = (int)$r['cnt'];
+            if ($recalledRes) {
+                while ($r = $recalledRes->fetch_assoc()) {
+                    $recalledMap[(int)$r['assigned_to']] = (int)$r['cnt'];
+                }
             }
-        }
 
-        // Query actually accepted counts for all consultants
-        $acceptedMap = [];
-        $dateConditionL = str_replace('received_at', 'l.created_at', $dateCondition);
-        $acceptedRes = $conn->query("
+            // Query actually accepted counts for all consultants
+            $acceptedMap = [];
+            $dateConditionL = str_replace('received_at', 'l.created_at', $dateCondition);
+            $acceptedRes = $conn->query("
             SELECT l.assigned_to, COUNT(*) as cnt 
             FROM leads l
             WHERE l.is_accepted = 1 
@@ -14958,128 +15093,128 @@ switch ($action) {
               AND $dateConditionL $managerFilterLeads
             GROUP BY l.assigned_to
         ");
-        if ($acceptedRes) {
-            while ($r = $acceptedRes->fetch_assoc()) {
-                $acceptedMap[(int)$r['assigned_to']] = (int)$r['cnt'];
+            if ($acceptedRes) {
+                while ($r = $acceptedRes->fetch_assoc()) {
+                    $acceptedMap[(int)$r['assigned_to']] = (int)$r['cnt'];
+                }
             }
-        }
 
-        $topConsultantsList = [];
-        foreach ($consultantStats as $cId => $cStats) {
-            $data_count = $cStats['assigned'] + $cStats['compensation'] + $cStats['rule_6_month'] + $cStats['pending_work_hours'] + $cStats['reminder'] + $cStats['databank_claim'] + max(0, $cStats['error'] - $cStats['compensation']);
-            
-            $uCount = $uncontactedMap[$cId] ?? 0;
-            $rCount = $recalledMap[$cId] ?? 0;
-            $offered = $data_count + $rCount;
-            $accCount = $acceptedMap[$cId] ?? 0;
-            $acceptedPercent = $offered > 0 ? round(($accCount / $offered) * 100, 1) : 0.0;
-            $recalledPercent = $offered > 0 ? round(($rCount / $offered) * 100, 1) : 0.0;
+            $topConsultantsList = [];
+            foreach ($consultantStats as $cId => $cStats) {
+                $data_count = $cStats['assigned'] + $cStats['compensation'] + $cStats['rule_6_month'] + $cStats['pending_work_hours'] + $cStats['reminder'] + $cStats['databank_claim'] + max(0, $cStats['error'] - $cStats['compensation']);
 
-            $topConsultantsList[] = [
-                'id' => $cStats['id'],
-                'name' => $cStats['name'],
-                'email' => $cStats['email'],
-                'avatar' => $cStats['avatar'],
-                'status' => $cStats['status'],
-                'vacation_mode' => $cStats['vacation_mode'],
-                'data' => $accCount,
-                'uncontacted_count' => $uCount,
-                'recalled_count' => $rCount,
-                'offered_count' => $offered,
-                'accepted_percent' => $acceptedPercent,
-                'recalled_percent' => $recalledPercent
-            ];
-        }
+                $uCount = $uncontactedMap[$cId] ?? 0;
+                $rCount = $recalledMap[$cId] ?? 0;
+                $offered = $data_count + $rCount;
+                $accCount = $acceptedMap[$cId] ?? 0;
+                $acceptedPercent = $offered > 0 ? round(($accCount / $offered) * 100, 1) : 0.0;
+                $recalledPercent = $offered > 0 ? round(($rCount / $offered) * 100, 1) : 0.0;
 
-        // Sort descending by data
-        usort($topConsultantsList, function ($a, $b) {
-            return $b['data'] <=> $a['data'];
-        });
+                $topConsultantsList[] = [
+                    'id' => $cStats['id'],
+                    'name' => $cStats['name'],
+                    'email' => $cStats['email'],
+                    'avatar' => $cStats['avatar'],
+                    'status' => $cStats['status'],
+                    'vacation_mode' => $cStats['vacation_mode'],
+                    'data' => $accCount,
+                    'uncontacted_count' => $uCount,
+                    'recalled_count' => $rCount,
+                    'offered_count' => $offered,
+                    'accepted_percent' => $acceptedPercent,
+                    'recalled_percent' => $recalledPercent
+                ];
+            }
 
-        $topConsultants = [];
-        $totalAssignedForTop = max(1, (int) $statsRes['distributed']);
-        $colors = ['#7c3aed', '#3b82f6', '#f59e0b', '#10b981'];
-        $i = 0;
-        foreach ($topConsultantsList as $row) {
-            $percent = round(($row['data'] / $totalAssignedForTop) * 100, 1);
-            $topConsultants[] = [
-                'id' => $row['id'],
-                'name' => $row['name'],
-                'email' => $row['email'],
-                'avatar' => $row['avatar'],
-                'status' => $row['status'],
-                'vacation_mode' => $row['vacation_mode'],
-                'data' => (int) $row['data'],
-                'percent' => $percent,
-                'color' => $colors[$i % 4],
-                'uncontacted_count' => $row['uncontacted_count'],
-                'recalled_count' => $row['recalled_count'],
-                'offered_count' => $row['offered_count'],
-                'accepted_percent' => $row['accepted_percent'],
-                'recalled_percent' => $row['recalled_percent']
-            ];
-            $i++;
-        }
+            // Sort descending by data
+            usort($topConsultantsList, function ($a, $b) {
+                return $b['data'] <=> $a['data'];
+            });
 
-        // Query Round Ratio
-        $roundRatioSql = "SELECT dr.id, dr.round_name, dl.status, COUNT(dl.id) as cnt 
+            $topConsultants = [];
+            $totalAssignedForTop = max(1, (int) $statsRes['distributed']);
+            $colors = ['#7c3aed', '#3b82f6', '#f59e0b', '#10b981'];
+            $i = 0;
+            foreach ($topConsultantsList as $row) {
+                $percent = round(($row['data'] / $totalAssignedForTop) * 100, 1);
+                $topConsultants[] = [
+                    'id' => $row['id'],
+                    'name' => $row['name'],
+                    'email' => $row['email'],
+                    'avatar' => $row['avatar'],
+                    'status' => $row['status'],
+                    'vacation_mode' => $row['vacation_mode'],
+                    'data' => (int) $row['data'],
+                    'percent' => $percent,
+                    'color' => $colors[$i % 4],
+                    'uncontacted_count' => $row['uncontacted_count'],
+                    'recalled_count' => $row['recalled_count'],
+                    'offered_count' => $row['offered_count'],
+                    'accepted_percent' => $row['accepted_percent'],
+                    'recalled_percent' => $row['recalled_percent']
+                ];
+                $i++;
+            }
+
+            // Query Round Ratio
+            $roundRatioSql = "SELECT dr.id, dr.round_name, dl.status, COUNT(dl.id) as cnt 
                           FROM distribution_logs dl 
                           JOIN distribution_rounds dr ON dl.round_id = dr.id 
                           WHERE $dateCondition $managerFilterDl AND dl.status IN ('assigned', 'compensation', 'rule_6_month', 'pending_work_hours', 'error') 
                           GROUP BY dr.id, dr.round_name, dl.status";
-        $roundRatioRes = $conn->query($roundRatioSql);
-        $roundStats = [];
-        if ($roundRatioRes) {
-            while ($row = $roundRatioRes->fetch_assoc()) {
-                $rId = (int) $row['id'];
-                if (!isset($roundStats[$rId])) {
-                    $roundStats[$rId] = [
-                        'round_name' => $row['round_name'],
-                        'assigned' => 0,
-                        'compensation' => 0,
-                        'rule_6_month' => 0,
-                        'pending_work_hours' => 0,
-                        'error' => 0
-                    ];
-                }
-                $status = $row['status'];
-                if (isset($roundStats[$rId][$status])) {
-                    $roundStats[$rId][$status] = (int) $row['cnt'];
+            $roundRatioRes = $conn->query($roundRatioSql);
+            $roundStats = [];
+            if ($roundRatioRes) {
+                while ($row = $roundRatioRes->fetch_assoc()) {
+                    $rId = (int) $row['id'];
+                    if (!isset($roundStats[$rId])) {
+                        $roundStats[$rId] = [
+                            'round_name' => $row['round_name'],
+                            'assigned' => 0,
+                            'compensation' => 0,
+                            'rule_6_month' => 0,
+                            'pending_work_hours' => 0,
+                            'error' => 0
+                        ];
+                    }
+                    $status = $row['status'];
+                    if (isset($roundStats[$rId][$status])) {
+                        $roundStats[$rId][$status] = (int) $row['cnt'];
+                    }
                 }
             }
-        }
 
-        $roundRatioList = [];
-        foreach ($roundStats as $rId => $rStats) {
-            $count = $rStats['assigned'] + $rStats['compensation'] + $rStats['rule_6_month'] + $rStats['pending_work_hours'] + max(0, $rStats['error'] - $rStats['compensation']);
-            $roundRatioList[] = [
-                'round' => $rStats['round_name'],
-                'count' => $count
-            ];
-        }
+            $roundRatioList = [];
+            foreach ($roundStats as $rId => $rStats) {
+                $count = $rStats['assigned'] + $rStats['compensation'] + $rStats['rule_6_month'] + $rStats['pending_work_hours'] + max(0, $rStats['error'] - $rStats['compensation']);
+                $roundRatioList[] = [
+                    'round' => $rStats['round_name'],
+                    'count' => $count
+                ];
+            }
 
-        // Sort descending by count
-        usort($roundRatioList, function ($a, $b) {
-            return $b['count'] <=> $a['count'];
-        });
+            // Sort descending by count
+            usort($roundRatioList, function ($a, $b) {
+                return $b['count'] <=> $a['count'];
+            });
 
-        $roundRatio = [];
-        $totalDistributed = max(1, (int) $statsRes['distributed']);
-        $roundColors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
-        $j = 0;
-        foreach ($roundRatioList as $row) {
-            $percent = round(($row['count'] / $totalDistributed) * 100, 1);
-            $roundRatio[] = [
-                'round' => $row['round'],
-                'count' => (int) $row['count'],
-                'percent' => $percent,
-                'color' => $roundColors[$j % 5]
-            ];
-            $j++;
-        }
+            $roundRatio = [];
+            $totalDistributed = max(1, (int) $statsRes['distributed']);
+            $roundColors = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+            $j = 0;
+            foreach ($roundRatioList as $row) {
+                $percent = round(($row['count'] / $totalDistributed) * 100, 1);
+                $roundRatio[] = [
+                    'round' => $row['round'],
+                    'count' => (int) $row['count'],
+                    'percent' => $percent,
+                    'color' => $roundColors[$j % 5]
+                ];
+                $j++;
+            }
 
-        // Query Source Ratio (fallback to l.source if sc.sheet_name is null)
-        $sourceSql = "SELECT 
+            // Query Source Ratio (fallback to l.source if sc.sheet_name is null)
+            $sourceSql = "SELECT 
                         CASE 
                             WHEN sc.id IS NOT NULL THEN sc.sheet_name
                             ELSE 'Nhập tay'
@@ -15100,23 +15235,23 @@ switch ($action) {
                             ELSE 'Nhập tay'
                         END
                       ORDER BY count DESC";
-        $sourceResRaw = $conn->query($sourceSql);
-        $sourceStats = [];
-        if ($sourceResRaw) {
-            $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
-            $i = 0;
-            while ($row = $sourceResRaw->fetch_assoc()) {
-                $sourceStats[] = [
-                    'name' => $row['source'] ?: 'Không xác định',
-                    'value' => (int) $row['count'],
-                    'color' => $colors[$i % count($colors)]
-                ];
-                $i++;
+            $sourceResRaw = $conn->query($sourceSql);
+            $sourceStats = [];
+            if ($sourceResRaw) {
+                $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
+                $i = 0;
+                while ($row = $sourceResRaw->fetch_assoc()) {
+                    $sourceStats[] = [
+                        'name' => $row['source'] ?: 'Không xác định',
+                        'value' => (int) $row['count'],
+                        'color' => $colors[$i % count($colors)]
+                    ];
+                    $i++;
+                }
             }
-        }
 
-        // Query true Lead Source Ratio (Optimized: No JOIN on sheet_connections needed)
-        $leadSourceSql = "SELECT COALESCE(NULLIF(TRIM(l.source), ''), 'Không xác định') as source, COUNT(dl.id) as count 
+            // Query true Lead Source Ratio (Optimized: No JOIN on sheet_connections needed)
+            $leadSourceSql = "SELECT COALESCE(NULLIF(TRIM(l.source), ''), 'Không xác định') as source, COUNT(dl.id) as count 
                           FROM distribution_logs dl 
                           INNER JOIN (
                               SELECT lead_id, MAX(id) as max_id 
@@ -15128,111 +15263,111 @@ switch ($action) {
                           WHERE $dateConditionDl $managerFilterDl
                           GROUP BY COALESCE(NULLIF(TRIM(l.source), ''), 'Không xác định') 
                           ORDER BY count DESC";
-        $leadSourceResRaw = $conn->query($leadSourceSql);
-        $leadSourceStats = [];
-        if ($leadSourceResRaw) {
-            $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
-            $i = 0;
-            while ($row = $leadSourceResRaw->fetch_assoc()) {
-                $leadSourceStats[] = [
-                    'name' => $row['source'] ?: 'Không xác định',
-                    'value' => (int) $row['count'],
-                    'color' => $colors[$i % count($colors)]
-                ];
-                $i++;
+            $leadSourceResRaw = $conn->query($leadSourceSql);
+            $leadSourceStats = [];
+            if ($leadSourceResRaw) {
+                $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
+                $i = 0;
+                while ($row = $leadSourceResRaw->fetch_assoc()) {
+                    $leadSourceStats[] = [
+                        'name' => $row['source'] ?: 'Không xác định',
+                        'value' => (int) $row['count'],
+                        'color' => $colors[$i % count($colors)]
+                    ];
+                    $i++;
+                }
             }
-        }
 
 
-        // Query Error Stats by Consultant (Approved tickets)
-        $dateConditionCreated = str_replace('received_at', 'dr.created_at', $dateCondition);
-        $errorSql = "SELECT c.name, COUNT(dr.id) as count 
+            // Query Error Stats by Consultant (Approved tickets)
+            $dateConditionCreated = str_replace('received_at', 'dr.created_at', $dateCondition);
+            $errorSql = "SELECT c.name, COUNT(dr.id) as count 
                      FROM data_reports dr 
                      JOIN consultants c ON dr.consultant_id = c.id
                      WHERE dr.status IN ('approved', 'approved_no_comp') AND $dateConditionCreated $managerFilterReports
                      GROUP BY c.id, c.name ORDER BY count DESC";
-        $errorResRaw = $conn->query($errorSql);
-        $errorStats = [];
-        if ($errorResRaw) {
-            while ($row = $errorResRaw->fetch_assoc()) {
-                $errorStats[] = [
-                    'name' => $row['name'],
-                    'errors' => (int) $row['count']
-                ];
+            $errorResRaw = $conn->query($errorSql);
+            $errorStats = [];
+            if ($errorResRaw) {
+                while ($row = $errorResRaw->fetch_assoc()) {
+                    $errorStats[] = [
+                        'name' => $row['name'],
+                        'errors' => (int) $row['count']
+                    ];
+                }
             }
-        }
 
-        // Query if AI Pre-screener is enabled
-        $aiEnabled = 0;
-        $aiEnabledRes = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'ai_screener_enabled'");
-        if ($aiEnabledRes && $row = $aiEnabledRes->fetch_assoc()) {
-            $aiEnabled = (int) $row['setting_value'];
-        }
+            // Query if AI Pre-screener is enabled
+            $aiEnabled = 0;
+            $aiEnabledRes = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'ai_screener_enabled'");
+            if ($aiEnabledRes && $row = $aiEnabledRes->fetch_assoc()) {
+                $aiEnabled = (int) $row['setting_value'];
+            }
 
-        // Query communication stats (Zalo/Email/Telegram/Tokens) for dashboard modal
-        $dateConditionSent = str_replace('received_at', 'sent_at', $dateCondition);
-        $managerFilterLeadsComm = !empty($managerFilterLeads) ? " AND (cl.lead_id IS NULL OR cl.lead_id = 0 OR 1=1 $managerFilterLeads) " : "";
-        
-        $totalZaloSent = 0;
-        $zaloSentRes = $conn->query("SELECT COUNT(cl.id) as cnt FROM communication_logs cl LEFT JOIN leads l ON cl.lead_id = l.id WHERE cl.type = 'zalo' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm");
-        if ($zaloSentRes && $row = $zaloSentRes->fetch_assoc()) {
-            $totalZaloSent = (int)$row['cnt'];
-        }
-        $dateConditionLeadsCreated = str_replace('received_at', 'created_at', $dateCondition);
-        $dateConditionLeadsSentAt = str_replace('received_at', 'zalo_notify_sent_at', $dateCondition);
-        $zaloLeadRes = $conn->query("SELECT COUNT(l.id) as cnt FROM leads l WHERE l.zalo_notify_status = 'sent' AND (($dateConditionLeadsSentAt) OR (l.zalo_notify_sent_at IS NULL AND $dateConditionLeadsCreated)) $managerFilterLeads");
-        if ($zaloLeadRes && $r = $zaloLeadRes->fetch_assoc()) {
-            $totalZaloSent = max($totalZaloSent, (int)$r['cnt']);
-        }
+            // Query communication stats (Zalo/Email/Telegram/Tokens) for dashboard modal
+            $dateConditionSent = str_replace('received_at', 'sent_at', $dateCondition);
+            $managerFilterLeadsComm = !empty($managerFilterLeads) ? " AND (cl.lead_id IS NULL OR cl.lead_id = 0 OR 1=1 $managerFilterLeads) " : "";
 
-        $totalEmailsSent = 0;
-        $emailsSentRes = $conn->query("SELECT COUNT(cl.id) as cnt FROM communication_logs cl LEFT JOIN leads l ON cl.lead_id = l.id WHERE cl.type = 'email' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm");
-        if ($emailsSentRes && $row = $emailsSentRes->fetch_assoc()) {
-            $totalEmailsSent = (int)$row['cnt'];
-        }
-        $dateConditionEmailSentAt = str_replace('received_at', 'email_notify_sent_at', $dateCondition);
-        $emailLeadRes = $conn->query("SELECT COUNT(l.id) as cnt FROM leads l WHERE l.email_notify_status = 'sent' AND (($dateConditionEmailSentAt) OR (l.email_notify_sent_at IS NULL AND $dateConditionLeadsCreated)) $managerFilterLeads");
-        if ($emailLeadRes && $r = $emailLeadRes->fetch_assoc()) {
-            $totalEmailsSent = max($totalEmailsSent, (int)$r['cnt']);
-        }
+            $totalZaloSent = 0;
+            $zaloSentRes = $conn->query("SELECT COUNT(cl.id) as cnt FROM communication_logs cl LEFT JOIN leads l ON cl.lead_id = l.id WHERE cl.type = 'zalo' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm");
+            if ($zaloSentRes && $row = $zaloSentRes->fetch_assoc()) {
+                $totalZaloSent = (int)$row['cnt'];
+            }
+            $dateConditionLeadsCreated = str_replace('received_at', 'created_at', $dateCondition);
+            $dateConditionLeadsSentAt = str_replace('received_at', 'zalo_notify_sent_at', $dateCondition);
+            $zaloLeadRes = $conn->query("SELECT COUNT(l.id) as cnt FROM leads l WHERE l.zalo_notify_status = 'sent' AND (($dateConditionLeadsSentAt) OR (l.zalo_notify_sent_at IS NULL AND $dateConditionLeadsCreated)) $managerFilterLeads");
+            if ($zaloLeadRes && $r = $zaloLeadRes->fetch_assoc()) {
+                $totalZaloSent = max($totalZaloSent, (int)$r['cnt']);
+            }
 
-        $totalTelegramSent = 0;
-        $telegramSentRes = $conn->query("SELECT COUNT(cl.id) as cnt FROM communication_logs cl LEFT JOIN leads l ON cl.lead_id = l.id WHERE cl.type = 'telegram' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm");
-        if ($telegramSentRes && $row = $telegramSentRes->fetch_assoc()) {
-            $totalTelegramSent = (int)$row['cnt'];
-        }
-        $dateConditionTgSentAt = str_replace('received_at', 'telegram_notify_sent_at', $dateCondition);
-        $tgLeadRes = $conn->query("SELECT COUNT(l.id) as cnt FROM leads l WHERE l.telegram_notify_status = 'sent' AND (($dateConditionTgSentAt) OR (l.telegram_notify_sent_at IS NULL AND $dateConditionLeadsCreated)) $managerFilterLeads");
-        if ($tgLeadRes && $r = $tgLeadRes->fetch_assoc()) {
-            $totalTelegramSent = max($totalTelegramSent, (int)$r['cnt']);
-        }
+            $totalEmailsSent = 0;
+            $emailsSentRes = $conn->query("SELECT COUNT(cl.id) as cnt FROM communication_logs cl LEFT JOIN leads l ON cl.lead_id = l.id WHERE cl.type = 'email' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm");
+            if ($emailsSentRes && $row = $emailsSentRes->fetch_assoc()) {
+                $totalEmailsSent = (int)$row['cnt'];
+            }
+            $dateConditionEmailSentAt = str_replace('received_at', 'email_notify_sent_at', $dateCondition);
+            $emailLeadRes = $conn->query("SELECT COUNT(l.id) as cnt FROM leads l WHERE l.email_notify_status = 'sent' AND (($dateConditionEmailSentAt) OR (l.email_notify_sent_at IS NULL AND $dateConditionLeadsCreated)) $managerFilterLeads");
+            if ($emailLeadRes && $r = $emailLeadRes->fetch_assoc()) {
+                $totalEmailsSent = max($totalEmailsSent, (int)$r['cnt']);
+            }
 
-        $totalTokensUsed = 0;
-        $totalPromptTokensUsed = 0;
-        $totalCompletionTokensUsed = 0;
-        if ($dbVer >= 140) {
-            $cond1 = str_replace('received_at', 'ai_screening_started_at', $dateCondition);
-            $cond2 = str_replace('received_at', 'created_at', $dateCondition);
-            $dateConditionAI = "(($cond1) OR (ai_screening_started_at IS NULL AND $cond2))";
-        } else {
-            $dateConditionAI = str_replace('received_at', 'created_at', $dateCondition);
-        }
-        $tokensRes = $conn->query("SELECT SUM(ai_total_tokens) as cnt, SUM(ai_prompt_tokens) as prompt_cnt, SUM(ai_completion_tokens) as completion_cnt FROM leads WHERE $dateConditionAI $managerFilter");
-        if ($tokensRes && $row = $tokensRes->fetch_assoc()) {
-            $totalTokensUsed = (int)$row['cnt'];
-            $totalPromptTokensUsed = (int)$row['prompt_cnt'];
-            $totalCompletionTokensUsed = (int)$row['completion_cnt'];
-        }
+            $totalTelegramSent = 0;
+            $telegramSentRes = $conn->query("SELECT COUNT(cl.id) as cnt FROM communication_logs cl LEFT JOIN leads l ON cl.lead_id = l.id WHERE cl.type = 'telegram' AND cl.status = 'sent' AND $dateConditionSent $managerFilterLeadsComm");
+            if ($telegramSentRes && $row = $telegramSentRes->fetch_assoc()) {
+                $totalTelegramSent = (int)$row['cnt'];
+            }
+            $dateConditionTgSentAt = str_replace('received_at', 'telegram_notify_sent_at', $dateCondition);
+            $tgLeadRes = $conn->query("SELECT COUNT(l.id) as cnt FROM leads l WHERE l.telegram_notify_status = 'sent' AND (($dateConditionTgSentAt) OR (l.telegram_notify_sent_at IS NULL AND $dateConditionLeadsCreated)) $managerFilterLeads");
+            if ($tgLeadRes && $r = $tgLeadRes->fetch_assoc()) {
+                $totalTelegramSent = max($totalTelegramSent, (int)$r['cnt']);
+            }
 
-        // --- BỔ SUNG BIỂU ĐỒ MARKETING (MARKETING CHARTS) ---
-        $mktCohortConversion = [];
-        $mktConversionByLeadMonth = [];
-        $mktConversionByCloseMonth = [];
-        $mktRevenueAndProjection = [];
+            $totalTokensUsed = 0;
+            $totalPromptTokensUsed = 0;
+            $totalCompletionTokensUsed = 0;
+            if ($dbVer >= 140) {
+                $cond1 = str_replace('received_at', 'ai_screening_started_at', $dateCondition);
+                $cond2 = str_replace('received_at', 'created_at', $dateCondition);
+                $dateConditionAI = "(($cond1) OR (ai_screening_started_at IS NULL AND $cond2))";
+            } else {
+                $dateConditionAI = str_replace('received_at', 'created_at', $dateCondition);
+            }
+            $tokensRes = $conn->query("SELECT SUM(ai_total_tokens) as cnt, SUM(ai_prompt_tokens) as prompt_cnt, SUM(ai_completion_tokens) as completion_cnt FROM leads WHERE $dateConditionAI $managerFilter");
+            if ($tokensRes && $row = $tokensRes->fetch_assoc()) {
+                $totalTokensUsed = (int)$row['cnt'];
+                $totalPromptTokensUsed = (int)$row['prompt_cnt'];
+                $totalCompletionTokensUsed = (int)$row['completion_cnt'];
+            }
 
-        try {
-            // 1. Cohort conversion speed (Số lead chuyển đổi trong 1 tháng, 2 tháng, 3 tháng kể từ ngày tạo)
-            $cohortSql = "
+            // --- BỔ SUNG BIỂU ĐỒ MARKETING (MARKETING CHARTS) ---
+            $mktCohortConversion = [];
+            $mktConversionByLeadMonth = [];
+            $mktConversionByCloseMonth = [];
+            $mktRevenueAndProjection = [];
+
+            try {
+                // 1. Cohort conversion speed (Số lead chuyển đổi trong 1 tháng, 2 tháng, 3 tháng kể từ ngày tạo)
+                $cohortSql = "
                 SELECT 
                     DATE_FORMAT(l.created_at, '%m/%Y') as cohort_month,
                     COUNT(l.id) as total_leads,
@@ -15246,21 +15381,21 @@ switch ($action) {
                 GROUP BY cohort_month
                 ORDER BY MIN(l.created_at) ASC
             ";
-            $cohortRes = $conn->query($cohortSql);
-            if ($cohortRes) {
-                while ($row = $cohortRes->fetch_assoc()) {
-                    $mktCohortConversion[] = [
-                        'cohort_month' => $row['cohort_month'],
-                        'total_leads' => (int)$row['total_leads'],
-                        'converted_1_month' => (int)$row['converted_1_month'],
-                        'converted_2_months' => (int)$row['converted_2_months'],
-                        'converted_3_months' => (int)$row['converted_3_months']
-                    ];
+                $cohortRes = $conn->query($cohortSql);
+                if ($cohortRes) {
+                    while ($row = $cohortRes->fetch_assoc()) {
+                        $mktCohortConversion[] = [
+                            'cohort_month' => $row['cohort_month'],
+                            'total_leads' => (int)$row['total_leads'],
+                            'converted_1_month' => (int)$row['converted_1_month'],
+                            'converted_2_months' => (int)$row['converted_2_months'],
+                            'converted_3_months' => (int)$row['converted_3_months']
+                        ];
+                    }
                 }
-            }
 
-            // 2a. Grouped by lead creation month (Tỷ lệ convert theo ngày tạo lead)
-            $leadMonthSql = "
+                // 2a. Grouped by lead creation month (Tỷ lệ convert theo ngày tạo lead)
+                $leadMonthSql = "
                 SELECT 
                     DATE_FORMAT(l.created_at, '%m/%Y') as month,
                     COUNT(l.id) as total_leads,
@@ -15273,20 +15408,20 @@ switch ($action) {
                 GROUP BY month
                 ORDER BY MIN(l.created_at) ASC
             ";
-            $leadMonthRes = $conn->query($leadMonthSql);
-            if ($leadMonthRes) {
-                while ($row = $leadMonthRes->fetch_assoc()) {
-                    $mktConversionByLeadMonth[] = [
-                        'month' => $row['month'],
-                        'total_leads' => (int)$row['total_leads'],
-                        'customer_count' => (int)$row['customer_count'],
-                        'conversion_rate' => (float)$row['conversion_rate']
-                    ];
+                $leadMonthRes = $conn->query($leadMonthSql);
+                if ($leadMonthRes) {
+                    while ($row = $leadMonthRes->fetch_assoc()) {
+                        $mktConversionByLeadMonth[] = [
+                            'month' => $row['month'],
+                            'total_leads' => (int)$row['total_leads'],
+                            'customer_count' => (int)$row['customer_count'],
+                            'conversion_rate' => (float)$row['conversion_rate']
+                        ];
+                    }
                 }
-            }
 
-            // 2b. Grouped by deal closing month (Tỷ lệ convert theo ngày chốt)
-            $closeMonthSql = "
+                // 2b. Grouped by deal closing month (Tỷ lệ convert theo ngày chốt)
+                $closeMonthSql = "
                 SELECT 
                     dates.month,
                     COALESCE(leads_tbl.total_leads, 0) as total_leads,
@@ -15317,20 +15452,20 @@ switch ($action) {
                 GROUP BY dates.month
                 ORDER BY MIN(dates.min_date) ASC
             ";
-            $closeMonthRes = $conn->query($closeMonthSql);
-            if ($closeMonthRes) {
-                while ($row = $closeMonthRes->fetch_assoc()) {
-                    $mktConversionByCloseMonth[] = [
-                        'month' => $row['month'],
-                        'total_leads' => (int)$row['total_leads'],
-                        'customer_count' => (int)$row['customer_count'],
-                        'conversion_rate' => (float)$row['conversion_rate']
-                    ];
+                $closeMonthRes = $conn->query($closeMonthSql);
+                if ($closeMonthRes) {
+                    while ($row = $closeMonthRes->fetch_assoc()) {
+                        $mktConversionByCloseMonth[] = [
+                            'month' => $row['month'],
+                            'total_leads' => (int)$row['total_leads'],
+                            'customer_count' => (int)$row['customer_count'],
+                            'conversion_rate' => (float)$row['conversion_rate']
+                        ];
+                    }
                 }
-            }
 
-            // 3. Doanh thu theo tháng và doanh thu dự kiến (Realized Revenue vs Projected Revenue)
-            $revProjSql = "
+                // 3. Doanh thu theo tháng và doanh thu dự kiến (Realized Revenue vs Projected Revenue)
+                $revProjSql = "
                 SELECT 
                     dates.month,
                     COALESCE(realized_tbl.realized, 0) as realized_revenue,
@@ -15356,67 +15491,67 @@ switch ($action) {
                 GROUP BY dates.month
                 ORDER BY MIN(dates.min_date) ASC
             ";
-            $revProjRes = $conn->query($revProjSql);
-            if ($revProjRes) {
-                while ($row = $revProjRes->fetch_assoc()) {
-                    $mktRevenueAndProjection[] = [
-                        'month' => $row['month'],
-                        'realized_revenue' => (float)$row['realized_revenue'],
-                        'projected_revenue' => (float)$row['projected_revenue']
-                    ];
+                $revProjRes = $conn->query($revProjSql);
+                if ($revProjRes) {
+                    while ($row = $revProjRes->fetch_assoc()) {
+                        $mktRevenueAndProjection[] = [
+                            'month' => $row['month'],
+                            'realized_revenue' => (float)$row['realized_revenue'],
+                            'projected_revenue' => (float)$row['projected_revenue']
+                        ];
+                    }
                 }
+            } catch (\Throwable $e) {
+                error_log("Error fetching marketing stats: " . $e->getMessage());
             }
-        } catch (\Throwable $e) {
-            error_log("Error fetching marketing stats: " . $e->getMessage());
-        }
 
-        echo json_encode([
-            'success' => true,
-            'data' => [
-                'db_needs_migration' => $GLOBALS['db_needs_migration'] ?? false,
-                'total_zalo_sent' => $totalZaloSent,
-                'total_emails_sent' => $totalEmailsSent,
-                'total_telegram_sent' => $totalTelegramSent,
-                'total_tokens_used' => $totalTokensUsed,
-                'total_prompt_tokens_used' => $totalPromptTokensUsed,
-                'total_completion_tokens_used' => $totalCompletionTokensUsed,
-                'total_today' => (int) $statsRes['total'],
-                'distributed_today' => (int) $statsRes['distributed'],
-                'distributed_assigned' => (int) $assigned_total,
-                'distributed_compensation' => (int) $compensation_total,
-                'distributed_self' => (int) $self_count,
-                'duplicates' => (int) $statsRes['duplicates'],
-                'errors' => (int) $statsRes['errors'],
-                'ticket_errors' => (int) $ticketErrors,
-                'ticket_count' => $todayTickets,
-                'blacklists' => (int) $blacklistCnt,
-                'under_standard' => (int) $underStandard,
-                'ai_passed_count' => $aiPassedCount,
-                'ai_failed_count' => $aiFailedCount,
-                'ai_screener_enabled' => $aiEnabled,
-                'accepted_today' => $acceptedCount,
-                'out_of_hours_ratio' => $outOfHoursRatio,
-                'out_of_hours_change' => $outOfHoursChange,
-                'pending_work_hours_count' => $outOfHoursCount,
-                'fair_share_equity' => $fairShareEquity,
-                'fair_share_equity_change' => $fairShareEquityChange,
-                'fair_share_sd' => $fairShareSD,
-                'total_change' => $calcChange($statsRes['total'], $prevStatsRes['total']),
-                'distributed_change' => $calcChange($statsRes['distributed'], $prevStatsRes['distributed']),
-                'duplicates_change' => $calcChange($statsRes['duplicates'], $prevStatsRes['duplicates']),
-                'errors_change' => $calcChange($statsRes['errors'], $prevStatsRes['errors']),
-                'chartData' => $chartData,
-                'topConsultants' => $topConsultants,
-                'roundRatio' => $roundRatio,
-                'sourceStats' => $sourceStats,
-                'leadSourceStats' => $leadSourceStats,
-                'errorStats' => $errorStats,
-                'mktCohortConversion' => $mktCohortConversion,
-                'mktConversionByLeadMonth' => $mktConversionByLeadMonth,
-                'mktConversionByCloseMonth' => $mktConversionByCloseMonth,
-                'mktRevenueAndProjection' => $mktRevenueAndProjection
-            ]
-        ]);
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'db_needs_migration' => $GLOBALS['db_needs_migration'] ?? false,
+                    'total_zalo_sent' => $totalZaloSent,
+                    'total_emails_sent' => $totalEmailsSent,
+                    'total_telegram_sent' => $totalTelegramSent,
+                    'total_tokens_used' => $totalTokensUsed,
+                    'total_prompt_tokens_used' => $totalPromptTokensUsed,
+                    'total_completion_tokens_used' => $totalCompletionTokensUsed,
+                    'total_today' => (int) $statsRes['total'],
+                    'distributed_today' => (int) $statsRes['distributed'],
+                    'distributed_assigned' => (int) $assigned_total,
+                    'distributed_compensation' => (int) $compensation_total,
+                    'distributed_self' => (int) $self_count,
+                    'duplicates' => (int) $statsRes['duplicates'],
+                    'errors' => (int) $statsRes['errors'],
+                    'ticket_errors' => (int) $ticketErrors,
+                    'ticket_count' => $todayTickets,
+                    'blacklists' => (int) $blacklistCnt,
+                    'under_standard' => (int) $underStandard,
+                    'ai_passed_count' => $aiPassedCount,
+                    'ai_failed_count' => $aiFailedCount,
+                    'ai_screener_enabled' => $aiEnabled,
+                    'accepted_today' => $acceptedCount,
+                    'out_of_hours_ratio' => $outOfHoursRatio,
+                    'out_of_hours_change' => $outOfHoursChange,
+                    'pending_work_hours_count' => $outOfHoursCount,
+                    'fair_share_equity' => $fairShareEquity,
+                    'fair_share_equity_change' => $fairShareEquityChange,
+                    'fair_share_sd' => $fairShareSD,
+                    'total_change' => $calcChange($statsRes['total'], $prevStatsRes['total']),
+                    'distributed_change' => $calcChange($statsRes['distributed'], $prevStatsRes['distributed']),
+                    'duplicates_change' => $calcChange($statsRes['duplicates'], $prevStatsRes['duplicates']),
+                    'errors_change' => $calcChange($statsRes['errors'], $prevStatsRes['errors']),
+                    'chartData' => $chartData,
+                    'topConsultants' => $topConsultants,
+                    'roundRatio' => $roundRatio,
+                    'sourceStats' => $sourceStats,
+                    'leadSourceStats' => $leadSourceStats,
+                    'errorStats' => $errorStats,
+                    'mktCohortConversion' => $mktCohortConversion,
+                    'mktConversionByLeadMonth' => $mktConversionByLeadMonth,
+                    'mktConversionByCloseMonth' => $mktConversionByCloseMonth,
+                    'mktRevenueAndProjection' => $mktRevenueAndProjection
+                ]
+            ]);
         } catch (Throwable $e) {
             echo json_encode([
                 'success' => false,
@@ -16107,7 +16242,7 @@ switch ($action) {
 
         $userId = (int)($decodedUser['user_id'] ?? $decodedUser['id'] ?? 0);
         $userRole = $decodedUser['role'] ?? '';
-        
+
         $isProjManager = false;
         $projIds = [];
         if ($userRole === 'manager') {
@@ -16133,13 +16268,13 @@ switch ($action) {
             $stmtP->execute();
             $leadProjectId = $stmtP->get_result()->fetch_column();
             $stmtP->close();
-            
+
             if (!$leadProjectId || !in_array((int)$leadProjectId, $projIds, true)) {
                 echo json_encode(['success' => false, 'message' => 'Bạn không có quyền quản lý lead thuộc dự án khác']);
                 $stmt->close();
                 break;
             }
-            
+
             // Check if new consultant is in roster for this project
             $stmtR = $conn->prepare("SELECT 1 FROM project_roster WHERE project_id = ? AND user_id = ?");
             $stmtR->bind_param("ii", $leadProjectId, $new_consultant_id);
@@ -18114,7 +18249,7 @@ switch ($action) {
             $conn->commit();
 
 
-            
+
             if ($leadId > 0) {
                 triggerTwoWaySync($conn, $leadId);
             }
@@ -18131,7 +18266,7 @@ switch ($action) {
             respond(401, null, 'Unauthorized: Chưa đăng nhập', false);
         }
         require_once __DIR__ . '/webhook_logic.php';
-        
+
         $limitDay = (int) get_system_setting($conn, 'databank_limit_per_day');
         $limitHour = (int) get_system_setting($conn, 'databank_limit_per_hour');
         $limitMonth = (int) get_system_setting($conn, 'databank_limit_per_month');
@@ -18141,7 +18276,7 @@ switch ($action) {
 
         $input = json_decode(file_get_contents('php://input'), true);
         $personId = (int) ($input['person_id'] ?? 0);
-        
+
         if ($personId <= 0) {
             echo json_encode(['success' => false, 'message' => 'ID khách hàng không hợp lệ']);
             break;
@@ -18480,7 +18615,9 @@ switch ($action) {
             $personIds = [$personIds];
         }
         $personIds = array_map('intval', $personIds);
-        $personIds = array_filter($personIds, function($id) { return $id > 0; });
+        $personIds = array_filter($personIds, function ($id) {
+            return $id > 0;
+        });
 
         if (empty($personIds)) {
             echo json_encode(['success' => false, 'message' => 'Danh sách ID không hợp lệ']);
@@ -18510,7 +18647,9 @@ switch ($action) {
             $personIds = [$personIds];
         }
         $personIds = array_map('intval', $personIds);
-        $personIds = array_filter($personIds, function($id) { return $id > 0; });
+        $personIds = array_filter($personIds, function ($id) {
+            return $id > 0;
+        });
 
         if (empty($personIds)) {
             echo json_encode(['success' => false, 'message' => 'Danh sách ID không hợp lệ']);
@@ -18540,7 +18679,9 @@ switch ($action) {
             $personIds = [$personIds];
         }
         $personIds = array_map('intval', $personIds);
-        $personIds = array_filter($personIds, function($id) { return $id > 0; });
+        $personIds = array_filter($personIds, function ($id) {
+            return $id > 0;
+        });
 
         if (empty($personIds)) {
             echo json_encode(['success' => false, 'message' => 'Danh sách ID không hợp lệ']);
@@ -18571,7 +18712,9 @@ switch ($action) {
             $personIds = [$personIds];
         }
         $personIds = array_map('intval', $personIds);
-        $personIds = array_filter($personIds, function($id) { return $id > 0; });
+        $personIds = array_filter($personIds, function ($id) {
+            return $id > 0;
+        });
 
         if (empty($personIds)) {
             echo json_encode(['success' => false, 'message' => 'Danh sách ID không hợp lệ']);
@@ -18641,7 +18784,7 @@ switch ($action) {
                         $allowed = true;
                     }
                 }
-                
+
                 if (!$allowed && $personId > 0) {
                     $stmtTaker = $conn->prepare("SELECT id FROM contacts WHERE person_id = ? AND owner_id = ? AND deleted_at IS NULL");
                     $stmtTaker->bind_param("ii", $personId, $decodedUser['user_id']);
@@ -18665,47 +18808,47 @@ switch ($action) {
             $stmtReal->close();
             $realLeadId = $realL ? (int)$realL['id'] : null;
 
-              // Check status of contacts for this person to prevent releasing active/deposit clients
-              $stmtStatus = $conn->prepare("SELECT pipeline_status FROM contacts WHERE person_id = ? AND deleted_at IS NULL LIMIT 1");
-              $stmtStatus->bind_param("i", $personId);
-              $stmtStatus->execute();
-              $statusRow = $stmtStatus->get_result()->fetch_assoc();
-              $stmtStatus->close();
-              $currStatus = $statusRow ? $statusRow['pipeline_status'] : '';
-              $coopSettingStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'coop_eligible_statuses' LIMIT 1");
-              $coopSettingVal = $coopSettingStmt ? $coopSettingStmt->fetch_assoc()['setting_value'] : '';
-              if (!empty($coopSettingVal)) {
-                  $coopStatuses = array_map('trim', explode(',', $coopSettingVal));
-              } else {
-                  $coopStatuses = ['dat_coc', 'da_coc', 'dong_deal', 'thanh_cong'];
-              }
+            // Check status of contacts for this person to prevent releasing active/deposit clients
+            $stmtStatus = $conn->prepare("SELECT pipeline_status FROM contacts WHERE person_id = ? AND deleted_at IS NULL LIMIT 1");
+            $stmtStatus->bind_param("i", $personId);
+            $stmtStatus->execute();
+            $statusRow = $stmtStatus->get_result()->fetch_assoc();
+            $stmtStatus->close();
+            $currStatus = $statusRow ? $statusRow['pipeline_status'] : '';
+            $coopSettingStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'coop_eligible_statuses' LIMIT 1");
+            $coopSettingVal = $coopSettingStmt ? $coopSettingStmt->fetch_assoc()['setting_value'] : '';
+            if (!empty($coopSettingVal)) {
+                $coopStatuses = array_map('trim', explode(',', $coopSettingVal));
+            } else {
+                $coopStatuses = ['dat_coc', 'da_coc', 'dong_deal', 'thanh_cong'];
+            }
 
-              if (in_array($currStatus, $coopStatuses, true)) {
-                  throw new Exception("Không thể giải phóng khách hàng đang ở trạng thái quy định (" . implode(', ', $coopStatuses) . ")!");
-              }
+            if (in_array($currStatus, $coopStatuses, true)) {
+                throw new Exception("Không thể giải phóng khách hàng đang ở trạng thái quy định (" . implode(', ', $coopStatuses) . ")!");
+            }
 
-              // Check for active cooperation slips
-              $stmtCoop = $conn->prepare("
+            // Check for active cooperation slips
+            $stmtCoop = $conn->prepare("
                   SELECT id FROM cooperation_slips 
                   WHERE contact_id IN (SELECT id FROM contacts WHERE person_id = ? AND deleted_at IS NULL) 
                     AND status != 'rejected' LIMIT 1
               ");
-              $stmtCoop->bind_param("i", $personId);
-              $stmtCoop->execute();
-              $coopRow = $stmtCoop->get_result()->fetch_assoc();
-              $stmtCoop->close();
-              if ($coopRow) {
-                  throw new Exception("Không thể giải phóng khách hàng đang có phiếu hợp tác hoa hồng!");
-              }
+            $stmtCoop->bind_param("i", $personId);
+            $stmtCoop->execute();
+            $coopRow = $stmtCoop->get_result()->fetch_assoc();
+            $stmtCoop->close();
+            if ($coopRow) {
+                throw new Exception("Không thể giải phóng khách hàng đang có phiếu hợp tác hoa hồng!");
+            }
 
-             // Update person is_public = 1
-             $stmtU = $conn->prepare("UPDATE persons SET is_public = 1, released_to_kho_at = NOW(), deleted_from_databank = 0 WHERE id = ?");
-             $stmtU->bind_param("i", $personId);
-             $stmtU->execute();
-             $stmtU->close();
+            // Update person is_public = 1
+            $stmtU = $conn->prepare("UPDATE persons SET is_public = 1, released_to_kho_at = NOW(), deleted_from_databank = 0 WHERE id = ?");
+            $stmtU->bind_param("i", $personId);
+            $stmtU->execute();
+            $stmtU->close();
 
-             // Clear owner on contacts and reset status, and soft-delete them
-             $stmtDel = $conn->prepare("
+            // Clear owner on contacts and reset status, and soft-delete them
+            $stmtDel = $conn->prepare("
                  UPDATE contacts 
                  SET owner_id = NULL, 
                      pipeline_status = 'chua_xac_dinh',
@@ -18715,18 +18858,18 @@ switch ($action) {
                      deleted_at = NOW()
                  WHERE person_id = ? AND deleted_at IS NULL
              ");
-             $stmtDel->bind_param("i", $personId);
-             $stmtDel->execute();
-             $stmtDel->close();
+            $stmtDel->bind_param("i", $personId);
+            $stmtDel->execute();
+            $stmtDel->close();
 
-             // Clear assigned_to on leads
-             $stmtLeadUpdate = $conn->prepare("UPDATE leads SET assigned_to = NULL, last_assigned_at = NULL WHERE person_id = ?");
-             $stmtLeadUpdate->bind_param("i", $personId);
-             $stmtLeadUpdate->execute();
-             $stmtLeadUpdate->close();
-             
-             // Log
-             logDistribution($conn, $realLeadId, null, null, 'released_to_kho', 'Admin chủ động nhả về Kho chung (Databank)', false);
+            // Clear assigned_to on leads
+            $stmtLeadUpdate = $conn->prepare("UPDATE leads SET assigned_to = NULL, last_assigned_at = NULL WHERE person_id = ?");
+            $stmtLeadUpdate->bind_param("i", $personId);
+            $stmtLeadUpdate->execute();
+            $stmtLeadUpdate->close();
+
+            // Log
+            logDistribution($conn, $realLeadId, null, null, 'released_to_kho', 'Admin chủ động nhả về Kho chung (Databank)', false);
 
             $conn->commit();
             echo json_encode(['success' => true, 'message' => 'Đã nhả khách hàng về Kho chung (Databank) thành công!']);
@@ -18757,4 +18900,3 @@ require_once __DIR__ . '/cron_daily_report.php';
 runDailyReportCron($conn);
 
 $conn->close();
-

@@ -95,7 +95,8 @@ export const PublicSchedulePage: React.FC = () => {
     );
   }
 
-  const { student, course, program, lecturers, lecturer } = data;
+  const student = data.student && data.student.id ? data.student : null;
+  const { course, program, lecturers, lecturer } = data;
   const subjects = course?.subjects || [];
   const thesisMilestones = course?.thesis_milestones || [];
 
