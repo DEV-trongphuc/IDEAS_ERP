@@ -222,6 +222,23 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [allowedCampaigns, setAllowedCampaigns] = useState<any[]>([]);
   const [allowedTeams, setAllowedTeams] = useState<any[]>([]);
 
+  const teamDropdownRef = useRef<HTMLDivElement>(null);
+  const participantDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (showTeamDropdown && teamDropdownRef.current && !teamDropdownRef.current.contains(target)) {
+        setShowTeamDropdown(false);
+      }
+      if (showParticipantDropdown && participantDropdownRef.current && !participantDropdownRef.current.contains(target)) {
+        setShowParticipantDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showTeamDropdown, showParticipantDropdown]);
+
   useEffect(() => {
     if (isOpen) {
       const isRosterRestricted = ['sale', 'sales', 'manager', 'director'].includes(currentUser?.role || '');
@@ -4357,6 +4374,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                             border: '1px solid rgba(59, 130, 246, 0.15)'
                           }}
                         >
+                          <Users size={12} style={{ opacity: 0.8 }} />
                           {t.name}
                           <button
                             type="button"
@@ -4410,24 +4428,27 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
                 {/* Dropdown list of teams */}
                 {showTeamDropdown && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    marginTop: '6px',
-                    zIndex: 9999,
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                    minWidth: '220px',
-                    maxHeight: '230px',
-                    overflowY: 'auto',
-                    padding: '6px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px'
-                  }}>
+                  <div 
+                    ref={teamDropdownRef}
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      marginTop: '6px',
+                      zIndex: 9999,
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                      minWidth: '220px',
+                      maxHeight: '230px',
+                      overflowY: 'auto',
+                      padding: '6px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px'
+                    }}
+                  >
                     <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
                       {t('Chọn team liên kết:')}
                     </div>
@@ -4484,7 +4505,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           }}
                           className="hover-bg-alt"
                         >
-                          <span>{tItem.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Users size={12} color={isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)'} />
+                            <span>{tItem.name}</span>
+                          </div>
                           {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
                         </div>
                       );
@@ -4568,9 +4592,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                       <UserPlus size={14} color="var(--color-primary)" />
                     </button>
                     
-                    {/* Dropdown list of users */}
                     {showParticipantDropdown && (
-                      <div style={{
+                      <div 
+                        ref={participantDropdownRef}
+                        style={{
                         position: 'absolute',
                         top: '100%',
                         left: 0,
