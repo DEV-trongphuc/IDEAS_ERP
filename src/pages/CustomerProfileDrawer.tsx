@@ -7276,41 +7276,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         flexDirection: 'column',
                         gap: '1.25rem'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
-                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Khóa học tham gia</h4>
-                          </div>
-
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              window.open(`/public-schedule/${contact?.id}`, '_blank');
-                            }}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px', 
-                              fontSize: '0.78rem', 
-                              fontWeight: 700, 
-                              color: 'var(--color-primary)', 
-                              background: 'var(--color-primary-light)', 
-                              border: 'none', 
-                              padding: '5px 12px', 
-                              borderRadius: '8px', 
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.filter = 'brightness(0.95)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.filter = 'none';
-                            }}
-                          >
-                            <ExternalLink size={13} />
-                            Xem lịch công khai
-                          </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
+                          <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Khóa học tham gia</h4>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: isMobileOrTablet ? '1fr' : '1fr 1fr', gap: '1.25rem' }}>
@@ -7477,9 +7445,41 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           <>
                             {/* Danh sách môn học */}
                             <div className="card-panel" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                                <List size={18} style={{ color: 'var(--color-primary)' }} />
-                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Danh sách Môn học ({subjects.length})</h4>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <List size={18} style={{ color: 'var(--color-primary)' }} />
+                                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Danh sách Môn học ({subjects.length})</h4>
+                                </div>
+
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    window.open(`/public-schedule/${contact?.id}`, '_blank');
+                                  }}
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '6px', 
+                                    fontSize: '0.78rem', 
+                                    fontWeight: 700, 
+                                    color: 'var(--color-primary)', 
+                                    background: 'var(--color-primary-light)', 
+                                    border: 'none', 
+                                    padding: '5px 12px', 
+                                    borderRadius: '8px', 
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.filter = 'brightness(0.95)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.filter = 'none';
+                                  }}
+                                >
+                                  <ExternalLink size={13} />
+                                  Xem lịch công khai
+                                </button>
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {subjects.map((sub: any, idx: number) => {

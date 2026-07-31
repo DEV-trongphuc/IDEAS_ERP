@@ -53,7 +53,7 @@ export const PublicSchedulePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--color-bg)', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100vw', flex: 1, background: 'var(--color-bg)', gap: '12px' }}>
         <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
         <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Đang tải thông tin lịch học...</div>
         <style>{`
@@ -67,7 +67,7 @@ export const PublicSchedulePage: React.FC = () => {
 
   if (error || !data) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--color-bg)', padding: '2rem', textAlign: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100vw', flex: 1, background: 'var(--color-bg)', padding: '2rem', textAlign: 'center' }}>
         <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
         <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '0.5rem' }}>Không thể truy cập</h3>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', maxWidth: '400px', marginBottom: '1.5rem' }}>{error || 'Đường dẫn liên kết không chính xác hoặc dữ liệu không tồn tại.'}</p>
@@ -206,7 +206,23 @@ export const PublicSchedulePage: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ 
+      flex: 1,
+      width: '100%', 
+      height: '100vh', 
+      overflowY: 'auto',
+      background: 'var(--color-bg)', 
+      fontFamily: 'Inter, system-ui, sans-serif' 
+    }}>
+      <div style={{ 
+        maxWidth: '1200px', 
+        width: '100%', 
+        margin: '0 auto', 
+        padding: '1.5rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.5rem' 
+      }}>
       
       {/* 1. Header Student Info Card */}
       <div style={{ 
@@ -677,6 +693,7 @@ export const PublicSchedulePage: React.FC = () => {
           to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
+      </div>
     </div>
   );
 };
