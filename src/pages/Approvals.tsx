@@ -433,7 +433,7 @@ export default function Approvals() {
   // Form field states
   const [proposerUser, setProposerUser] = useState<any>(null);
   const [formType, setFormType] = useState<'leave' | 'advance' | 'expense' | 'general' | 'attendance_bulk' | 'late_early' | 'overtime' | 'remote_work'>('expense');
-  const [leaveSession, setLeaveSession] = useState<'full' | 'morning' | 'afternoon' | 'range'>('full');
+  const [leaveSession, setLeaveSession] = useState<'full' | 'morning' | 'afternoon' | 'range' | 'intermittent'>('full');
   const [lateEarlyType, setLateEarlyType] = useState<'late' | 'early'>('late');
   const [lateEarlyMinutes, setLateEarlyMinutes] = useState(30);
   const [otDate, setOtDate] = useState(new Date().toISOString().split('T')[0]);

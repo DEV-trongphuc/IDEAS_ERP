@@ -191,5 +191,41 @@ try {
 assertTest("Nhập kho thành công (Trạng thái code 200)", $receiveSuccessCode === 200, "Code trả về: " . $receiveSuccessCode);
 assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'received', 'Trạng thái PO sau nhập kho');
 
+// ---------------------------------------------------------------------
+// TEST 5: Kiểm tra hạn mức phê duyệt 3 cấp (Threshold Validation)
+// ---------------------------------------------------------------------
+echo "\n📌 5. Kiểm tra hạn mức phê duyệt 3 cấp...\n";
+
+// A. Tạo PO lớn hơn hoặc bằng 5 triệu (ví dụ 6 triệu) nhưng thiếu người duyệt Cấp 2, 3
+$mockBody = [
+    'supplier_id' => $supplierId,
+    'order_date' => date('Y-m-d'),
+    'notes' => 'Test PO trên 5tr thiếu cấp duyệt',
+    'subtotal' => 5500000.00,
+    'tax_rate' => 10,
+    'tax' => 550000.00,
+    'total' => 6050000.00,
+    'approver_id' => $user1,
+    'approver_id_2' => null, // Thiếu cấp 2
+    'approver_id_3' => null, // Thiếu cấp 3
+    'items' => [
+        [
+            'product_id' => null,
+            'name' => 'Sản phẩm Test Giá Cao',
+            'quantity' => 1,
+            'unit_cost' => 5500000.00,
+            'subtotal' => 5500000.00
+        ]
+    ]
+];
+
+$storeErrorCode = 0;
+try {
+    $poController->store($authCreator);
+} catch (ResponseException $e) {
+    $storeErrorCode = $e->code;
+}
+assertTest("Chặn tạo PO >= 5tr khi thiếu cấp duyệt thành công (Trạng thái 422)", $storeErrorCode === 422, "Code trả về: " . $storeErrorCode);
+
 echo "\n";
 printTestSummary();

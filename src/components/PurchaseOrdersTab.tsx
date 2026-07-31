@@ -13,6 +13,7 @@ import { useUIStore } from '../store/uiStore';
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { useAuth } from '../contexts/AuthContext';
+import { Avatar } from './ui/Avatar';
 
 interface Props {
   showModal: boolean;
@@ -34,6 +35,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [threshold, setThreshold] = useState<number>(5000000);
   
   const [formData, setFormData] = useState({
     supplier_id: '', 
@@ -59,10 +61,11 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
 
   const fetchSuppliersAndProducts = async () => {
     try {
-      const [sRes, pRes, uRes] = await Promise.all([
+      const [sRes, pRes, uRes, setRes] = await Promise.all([
         api.get('/suppliers'),
         api.get('/products'),
-        api.get('/users?all=1')
+        api.get('/users?all=1'),
+        api.get('/api.php?action=get_settings')
       ]);
       const sData = sRes.data.data;
       const pData = pRes.data.data;
@@ -70,6 +73,10 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
       setSuppliers(Array.isArray(sData) ? sData : (sData?.items || []));
       setProducts(Array.isArray(pData) ? pData : (pData?.items || []));
       setUsers(Array.isArray(uData) ? uData : (uData?.items || []));
+      
+      if (setRes.data?.success && setRes.data?.data?.po_three_level_threshold !== undefined) {
+        setThreshold(Number(setRes.data.data.po_three_level_threshold));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -141,6 +148,21 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
       const taxRate = Number(formData.tax_rate || 0);
       const tax = Math.round(subtotal * taxRate / 100);
       const total = subtotal + tax;
+
+      // Enforce 3-level approval constraint based on threshold
+      if (total >= threshold) {
+        if (!formData.approver_id || !formData.approver_id_2 || !formData.approver_id_3) {
+          addToast(`Đơn hàng từ ${new Intl.NumberFormat('vi-VN').format(threshold)} đ trở lên bắt buộc phải phê duyệt 3 cấp, vui lòng chọn đầy đủ người duyệt`, 'error');
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        if ((formData.approver_id_2 || formData.approver_id_3) && !formData.approver_id) {
+          addToast('Vui lòng chọn người duyệt Cấp 1 trước khi chọn Cấp 2 hoặc Cấp 3', 'error');
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       await api.post('/purchase-orders', {
         supplier_id: formData.supplier_id,
@@ -279,32 +301,53 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
                             
                             {/* Render levels info */}
                             {o.approver_id && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {o.status_level_1 === 'approved' ? (
+                                    <CheckCircle2 size={11} color="var(--color-success)" />
+                                  ) : o.status_level_1 === 'rejected' ? (
+                                    <XCircle size={11} color="var(--color-danger)" />
+                                  ) : (
+                                    <Clock size={11} color="var(--color-warning)" />
+                                  )}
                                   <span style={{ 
-                                    fontWeight: 700,
-                                    color: o.status_level_1 === 'approved' ? 'var(--color-success)' : o.status_level_1 === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'
+                                    fontWeight: 650,
+                                    color: o.status_level_1 === 'approved' ? 'var(--color-success)' : o.status_level_1 === 'rejected' ? 'var(--color-danger)' : 'var(--color-text)'
                                   }}>
-                                    Cấp 1: {o.approver_name_1 || '...'} ({o.status_level_1 === 'approved' ? 'Đã duyệt' : o.status_level_1 === 'rejected' ? 'Từ chối' : 'Chờ duyệt'})
+                                    Cấp 1: {o.approver_name_1 || '...'}
                                   </span>
                                 </div>
                                 {o.approver_id_2 && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    {o.status_level_2 === 'approved' ? (
+                                      <CheckCircle2 size={11} color="var(--color-success)" />
+                                    ) : o.status_level_2 === 'rejected' ? (
+                                      <XCircle size={11} color="var(--color-danger)" />
+                                    ) : (
+                                      <Clock size={11} color="var(--color-warning)" />
+                                    )}
                                     <span style={{ 
-                                      fontWeight: 700,
-                                      color: o.status_level_2 === 'approved' ? 'var(--color-success)' : o.status_level_2 === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'
+                                      fontWeight: 650,
+                                      color: o.status_level_2 === 'approved' ? 'var(--color-success)' : o.status_level_2 === 'rejected' ? 'var(--color-danger)' : 'var(--color-text)'
                                     }}>
-                                      Cấp 2: {o.approver_name_2 || '...'} ({o.status_level_2 === 'approved' ? 'Đã duyệt' : o.status_level_2 === 'rejected' ? 'Từ chối' : 'Chờ duyệt'})
+                                      Cấp 2: {o.approver_name_2 || '...'}
                                     </span>
                                   </div>
                                 )}
                                 {o.approver_id_3 && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    {o.status_level_3 === 'approved' ? (
+                                      <CheckCircle2 size={11} color="var(--color-success)" />
+                                    ) : o.status_level_3 === 'rejected' ? (
+                                      <XCircle size={11} color="var(--color-danger)" />
+                                    ) : (
+                                      <Clock size={11} color="var(--color-warning)" />
+                                    )}
                                     <span style={{ 
-                                      fontWeight: 700,
-                                      color: o.status_level_3 === 'approved' ? 'var(--color-success)' : o.status_level_3 === 'rejected' ? 'var(--color-danger)' : 'var(--color-warning)'
+                                      fontWeight: 650,
+                                      color: o.status_level_3 === 'approved' ? 'var(--color-success)' : o.status_level_3 === 'rejected' ? 'var(--color-danger)' : 'var(--color-text)'
                                     }}>
-                                      Cấp 3: {o.approver_name_3 || '...'} ({o.status_level_3 === 'approved' ? 'Đã duyệt' : o.status_level_3 === 'rejected' ? 'Từ chối' : 'Chờ duyệt'})
+                                      Cấp 3: {o.approver_name_3 || '...'}
                                     </span>
                                   </div>
                                 )}
@@ -439,43 +482,140 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
                       </div>
                     </div>
 
-                    {/* Approver levels */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', borderTop: '1px dashed var(--color-border)', paddingTop: '1.25rem', marginTop: '0.25rem' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                          <CheckCircle2 size={13} /> Người duyệt Cấp 1
-                        </label>
-                        <CustomSelect 
-                          options={users.map(u => ({ value: String(u.id), label: u.full_name }))}
-                          value={formData.approver_id} 
-                          onChange={val => setFormData({...formData, approver_id: String(val)})}
-                          placeholder="-- Không cần duyệt --"
-                          searchable
-                        />
+                    {/* Phê duyệt & Vận hành Card */}
+                    <div style={{
+                      padding: '1.25rem',
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem',
+                      boxShadow: 'var(--shadow-xs)',
+                      marginTop: '0.25rem'
+                    }}>
+                      <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckCircle2 size={16} color="var(--color-primary)" /> Phê duyệt & Vận hành
+                      </h4>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                        {/* Creator Block */}
+                        <div className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--color-text-light)' }}>Người tạo</label>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 12px',
+                            background: 'var(--color-surface)',
+                            border: '1px solid var(--color-border-light)',
+                            borderRadius: '8px',
+                            height: '38px'
+                          }}>
+                            <Avatar src={user?.avatar_url || user?.avatar} name={user?.name || user?.username} size="sm" />
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user?.name || user?.username}</span>
+                          </div>
+                        </div>
+
+                        {/* Summary / Warning info */}
+                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: 'var(--color-surface)', border: '1px dashed var(--color-border)', borderRadius: '12px', padding: '8px 12px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--color-text-muted)' }}>
+                            Hạn mức 3 cấp duyệt:
+                          </span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: '2px' }}>
+                            {new Intl.NumberFormat('vi-VN').format(threshold)} đ
+                          </span>
+                          {/* Indicator if current total requires 3 levels */}
+                          {(() => {
+                            const subtotal = calculateTotal();
+                            const taxRate = Number(formData.tax_rate || 0);
+                            const tax = Math.round(subtotal * taxRate / 100);
+                            const total = subtotal + tax;
+                            if (total >= threshold) {
+                              return (
+                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-danger)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  ⚠️ Bắt buộc 3 cấp duyệt!
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-success)', marginTop: '2px' }}>
+                                  Duyệt 1 cấp (Cấp 2, 3 tùy chọn)
+                                </span>
+                              );
+                            }
+                          })()}
+                        </div>
                       </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                          <CheckCircle2 size={13} /> Người duyệt Cấp 2
-                        </label>
-                        <CustomSelect 
-                          options={users.map(u => ({ value: String(u.id), label: u.full_name }))}
-                          value={formData.approver_id_2} 
-                          onChange={val => setFormData({...formData, approver_id_2: String(val)})}
-                          placeholder="-- Không có --"
-                          searchable
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                          <CheckCircle2 size={13} /> Người duyệt Cấp 3
-                        </label>
-                        <CustomSelect 
-                          options={users.map(u => ({ value: String(u.id), label: u.full_name }))}
-                          value={formData.approver_id_3} 
-                          onChange={val => setFormData({...formData, approver_id_3: String(val)})}
-                          placeholder="-- Không có --"
-                          searchable
-                        />
+
+                      {/* Stacked Approvers */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                            Người duyệt Cấp 1 <span className="text-danger">*</span>
+                          </label>
+                          <CustomSelect 
+                            options={users.map((u: any) => ({
+                              value: String(u.id),
+                              label: u.full_name,
+                              avatar: u.avatar_url || u.avatar,
+                              sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                            }))}
+                            value={formData.approver_id} 
+                            onChange={val => setFormData({...formData, approver_id: String(val)})}
+                            placeholder="Chọn người duyệt..."
+                            searchable
+                            showAvatars
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                            Người duyệt Cấp 2 {(() => {
+                              const subtotal = calculateTotal();
+                              const taxRate = Number(formData.tax_rate || 0);
+                              const tax = Math.round(subtotal * taxRate / 100);
+                              const total = subtotal + tax;
+                              return total >= threshold ? <span className="text-danger">*</span> : <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Tùy chọn)</span>;
+                            })()}
+                          </label>
+                          <CustomSelect 
+                            options={users.map((u: any) => ({
+                              value: String(u.id),
+                              label: u.full_name,
+                              avatar: u.avatar_url || u.avatar,
+                              sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                            }))}
+                            value={formData.approver_id_2} 
+                            onChange={val => setFormData({...formData, approver_id_2: String(val)})}
+                            placeholder="-- Không có --"
+                            searchable
+                            showAvatars
+                          />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                            Người duyệt Cấp 3 {(() => {
+                              const subtotal = calculateTotal();
+                              const taxRate = Number(formData.tax_rate || 0);
+                              const tax = Math.round(subtotal * taxRate / 100);
+                              const total = subtotal + tax;
+                              return total >= threshold ? <span className="text-danger">*</span> : <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Tùy chọn)</span>;
+                            })()}
+                          </label>
+                          <CustomSelect 
+                            options={users.map((u: any) => ({
+                              value: String(u.id),
+                              label: u.full_name,
+                              avatar: u.avatar_url || u.avatar,
+                              sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                            }))}
+                            value={formData.approver_id_3} 
+                            onChange={val => setFormData({...formData, approver_id_3: String(val)})}
+                            placeholder="-- Không có --"
+                            searchable
+                            showAvatars
+                          />
+                        </div>
                       </div>
                     </div>
 

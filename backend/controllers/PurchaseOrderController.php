@@ -81,13 +81,30 @@ class PurchaseOrderController {
         $checkSup->execute([(int)$b['supplier_id'], $auth['tenant_id']]);
         if (!$checkSup->fetch()) respond(404, null, 'Nhà cung cấp không hợp lệ', false);
 
+        // Fetch threshold for 3-level approval
+        $threshold = 5000000;
+        $thQuery = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'po_three_level_threshold' LIMIT 1");
+        if ($thQuery) {
+            $thRow = $thQuery->fetch();
+            if ($thRow && is_numeric($thRow['setting_value'])) {
+                $threshold = (float)$thRow['setting_value'];
+            }
+        }
+
+        $total = (float)($b['total'] ?? 0);
+        $approver_id = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;
+        $approver_id_2 = !empty($b['approver_id_2']) ? (int)$b['approver_id_2'] : null;
+        $approver_id_3 = !empty($b['approver_id_3']) ? (int)$b['approver_id_3'] : null;
+
+        if ($total >= $threshold) {
+            if (empty($approver_id) || empty($approver_id_2) || empty($approver_id_3)) {
+                respond(422, null, 'Đơn hàng từ ' . number_format($threshold, 0, ',', '.') . ' VND trở lên bắt buộc phải phê duyệt 3 cấp, vui lòng chọn đầy đủ người duyệt.', false);
+            }
+        }
+
         $this->db->beginTransaction();
         try {
             $po_number = 'PO-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
-            
-            $approver_id = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;
-            $approver_id_2 = !empty($b['approver_id_2']) ? (int)$b['approver_id_2'] : null;
-            $approver_id_3 = !empty($b['approver_id_3']) ? (int)$b['approver_id_3'] : null;
 
             $status_level_1 = $approver_id ? 'pending' : 'none';
             $status_level_2 = $approver_id_2 ? 'pending' : 'none';

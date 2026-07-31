@@ -328,6 +328,7 @@ const SettingsInner = () => {
 
   // Business Configurations (Dynamic settings from markdown rules)
   const [temperatureDecayDays, setTemperatureDecayDays] = useState<number>(5);
+  const [poThreeLevelThreshold, setPoThreeLevelThreshold] = useState<number>(5000000);
   const [leadResponseTimeoutMinutes, setLeadResponseTimeoutMinutes] = useState<number>(2);
   const [leadMaxRecallAttempts, setLeadMaxRecallAttempts] = useState<number>(2);
   const [leadRecallCooldownMinutes, setLeadRecallCooldownMinutes] = useState<number>(30);
@@ -870,6 +871,7 @@ const SettingsInner = () => {
 
         // Business configurations from markdown rules
         if (json.data.temperature_decay_days !== undefined) setTemperatureDecayDays(Number(json.data.temperature_decay_days));
+        if (json.data.po_three_level_threshold !== undefined) setPoThreeLevelThreshold(Number(json.data.po_three_level_threshold));
         if (json.data.lead_response_timeout_minutes !== undefined) setLeadResponseTimeoutMinutes(Number(json.data.lead_response_timeout_minutes));
         if (json.data.lead_max_recall_attempts !== undefined) setLeadMaxRecallAttempts(Number(json.data.lead_max_recall_attempts));
         if (json.data.lead_recall_cooldown_minutes !== undefined) setLeadRecallCooldownMinutes(Number(json.data.lead_recall_cooldown_minutes));
@@ -1423,6 +1425,7 @@ const SettingsInner = () => {
       deal_opportunity_status: dealOpportunityStatus,
       deal_won_status: dealWonStatus,
       temperature_decay_days: temperatureDecayDays,
+      po_three_level_threshold: poThreeLevelThreshold,
       lead_response_timeout_minutes: leadResponseTimeoutMinutes,
       lead_max_recall_attempts: leadMaxRecallAttempts,
       lead_recall_cooldown_minutes: leadRecallCooldownMinutes,
@@ -5012,6 +5015,34 @@ function doPost(e) {
                         />
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
                           {t('Trạng thái đích nếu khách hàng từng có lịch sử đặt chỗ/booking (ví dụ: Booking).')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cụm 4: Hạn mức Phê duyệt PO */}
+                  <div style={{ background: 'var(--color-surface)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '8px' }}>
+                      <DollarSign size={16} style={{ color: 'var(--color-primary)' }} />
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>{t('Hạn mức Phê duyệt Đơn nhập hàng (PO)')}</h4>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
+                      <div>
+                        <label className="form-label" style={{ fontWeight: 600 }}>{t('Số tiền tối thiểu bắt buộc duyệt 3 cấp')}</label>
+                        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                          <input
+                            type="number"
+                            className="form-input"
+                            style={{ paddingRight: '3.5rem' }}
+                            value={poThreeLevelThreshold}
+                            onChange={e => setPoThreeLevelThreshold(Number(e.target.value))}
+                            min={0}
+                          />
+                          <span style={{ position: 'absolute', right: '12px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('VND')}</span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', lineHeight: 1.4 }}>
+                          {t('Các đơn nhập hàng (PO) có tổng tiền từ mức này trở lên bắt buộc phải đi qua quy trình phê duyệt đủ 3 cấp. Mặc định: 5.000.000 đ.')}
                         </span>
                       </div>
                     </div>
