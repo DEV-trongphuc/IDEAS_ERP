@@ -18,9 +18,10 @@ import { Avatar } from './ui/Avatar';
 interface Props {
   showModal: boolean;
   setShowModal: (show: boolean) => void;
+  defaultSupplierId?: string;
 }
 
-export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) => {
+export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, defaultSupplierId }) => {
   const { user } = useAuth();
   const isSale = user?.role === 'sale' || user?.role === 'viewer';
   console.log('PurchaseOrdersTab RENDERED. showModal =', showModal);
@@ -47,6 +48,12 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal }) 
     approver_id_2: '',
     approver_id_3: ''
   });
+
+  useEffect(() => {
+    if (showModal && defaultSupplierId) {
+      setFormData(prev => ({ ...prev, supplier_id: String(defaultSupplierId) }));
+    }
+  }, [showModal, defaultSupplierId]);
 
   const fetchOrders = async () => {
     try {

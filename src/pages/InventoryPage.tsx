@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   Package, Plus, Edit, Trash2, LayoutGrid, List, Search, 
@@ -91,6 +92,26 @@ export default function InventoryPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const { showConfirm, addToast, closeConfirm } = useUIStore();
+  const location = useLocation();
+  const [defaultSupplierId, setDefaultSupplierId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+    if (location.state?.openPOCreate) {
+      setShowPOModal(true);
+      if (location.state?.defaultSupplierId) {
+        setDefaultSupplierId(String(location.state.defaultSupplierId));
+      }
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!showPOModal) {
+      setDefaultSupplierId(undefined);
+    }
+  }, [showPOModal]);
 
 
   const fetchReceivers = async () => {
@@ -505,7 +526,7 @@ export default function InventoryPage() {
 
       {/* Always mounted so header button can open modal from any tab */}
       <div style={{ display: activeTab === 'purchase_orders' ? 'block' : 'none' }}>
-        <PurchaseOrdersTab showModal={showPOModal} setShowModal={setShowPOModal} />
+        <PurchaseOrdersTab showModal={showPOModal} setShowModal={setShowPOModal} defaultSupplierId={defaultSupplierId} />
       </div>
 
       {activeTab !== 'purchase_orders' && (
