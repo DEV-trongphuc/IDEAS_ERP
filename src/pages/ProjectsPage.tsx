@@ -8980,7 +8980,7 @@ export default function ProjectsPage() {
                           });
                           if (res.success) {
                             if (syncSubjectToOtherCourses && (sub.code || sub.name)) {
-                              const otherCamps = campaigns.filter(c => c.id !== editingCampaign.id);
+                              const otherCamps = campaigns.filter(c => c.id !== editingCampaign.id && c.status === 'active');
                               const syncPromises = otherCamps.map(async (camp) => {
                                 const campSubjects = camp.subjects_json
                                   ? (typeof camp.subjects_json === 'string'
