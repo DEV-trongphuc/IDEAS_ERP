@@ -7277,13 +7277,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
                           <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
-                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cấu hình Khóa học Quan tâm</h4>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Khóa học tham gia</h4>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: isMobileOrTablet ? '1fr' : '1fr 1fr', gap: '1.25rem' }}>
 
                         <div className="form-group">
-                          <label className="form-label">Chương trình Quan tâm (Liên kết)</label>
+                          <label className="form-label">Chương trình</label>
                           <CustomSelect
                             searchable
                             options={[
@@ -7311,7 +7311,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Chiến dịch Quan tâm (Liên kết)</label>
+                          <label className="form-label">Khóa học</label>
                           {(() => {
                             const filteredCamps = formData.project_id
                               ? allowedCampaigns.filter(c => Number(c.project_id) === Number(formData.project_id))
@@ -7352,7 +7352,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           return (
                             <div style={{ padding: '3rem 2rem', textAlign: 'center', background: 'var(--color-surface)', border: '1px dashed var(--color-border)', borderRadius: '16px' }}>
                               <BookOpen size={40} style={{ color: 'var(--color-text-light)', marginBottom: '12px' }} />
-                              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Vui lòng chọn Chương trình và Khóa học quan tâm để xem thông tin học tập.</div>
+                              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Vui lòng chọn Chương trình và Khóa học để xem thông tin học tập.</div>
                             </div>
                           );
                         }
