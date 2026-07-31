@@ -3495,29 +3495,30 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                 style={{ 
                                   display: 'flex', 
                                   gap: '12px', 
-                                  background: isReply ? 'transparent' : 'var(--color-bg-alt, rgba(0, 0, 0, 0.01))', 
-                                  border: isReply ? 'none' : '1px solid var(--color-border-light)', 
-                                  padding: isReply ? '6px 0' : '12px 16px', 
-                                  borderRadius: isReply ? '0' : '16px',
-                                  borderLeft: undefined,
+                                  background: isReply ? 'var(--color-bg-light, rgba(0, 0, 0, 0.015))' : 'var(--color-surface, #fff)', 
+                                  border: '1px solid var(--color-border-light)', 
+                                  padding: isReply ? '10px 14px' : '14px 18px', 
+                                  borderRadius: isReply ? '12px' : '16px',
+                                  boxShadow: isReply ? 'inset 0 1px 2px rgba(0, 0, 0, 0.01)' : '0 2px 8px rgba(0, 0, 0, 0.02)',
                                   transition: 'all 0.5s ease',
-                                  marginTop: isReply ? '6px' : '0'
+                                  marginTop: isReply ? '4px' : '0',
+                                  width: '100%'
                                 }}
                               >
-                                <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={isReply ? 24 : 28} />
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: isReply ? '0.75rem' : '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
+                                <Avatar src={comment.avatar_url || commUser?.avatar || commUser?.avatar_url} name={commUser?.full_name || comment.user_name || 'Đồng nghiệp'} size={isReply ? 24 : 32} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                                    <span style={{ fontSize: isReply ? '0.76rem' : '0.82rem', fontWeight: 800, color: 'var(--color-text)' }}>{commUser?.full_name || comment.user_name || 'Đồng nghiệp'}</span>
                                     <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{new Date(comment.created_at.replace(/-/g, '/')).toLocaleString('vi-VN')}</span>
                                   </div>
                                   {comment.content && /<[a-z][\s\S]*>/i.test(comment.content) ? (
                                     <div 
                                       className="rich-text-editor-content"
                                       dangerouslySetInnerHTML={{ __html: linkifyHtml(comment.content) }}
-                                      style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45' }}
+                                      style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '6px 0 0', lineHeight: '1.45' }}
                                     />
                                   ) : (
-                                    <div style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '4px 0 0', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
+                                    <div style={{ fontSize: isReply ? '0.78rem' : '0.825rem', color: 'var(--color-text-light)', margin: '6px 0 0', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
                                       {renderCommentContent(comment.content)}
                                     </div>
                                   )}
@@ -3570,13 +3571,25 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   )}
                                   
                                   {!isReply && (
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                                       <button
                                         onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp' })}
-                                        style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.7rem', padding: 0, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
-                                        className="hover-lift"
+                                        style={{ 
+                                          background: 'rgba(163, 20, 34, 0.05)', 
+                                          border: 'none', 
+                                          color: 'var(--color-primary)', 
+                                          fontSize: '0.7rem', 
+                                          padding: '4px 10px', 
+                                          borderRadius: '12px',
+                                          cursor: 'pointer', 
+                                          fontWeight: 700, 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          gap: '4px' 
+                                        }}
+                                        className="hover-scale"
                                       >
-                                        <MessageSquare size={12} style={{ marginTop: '1px' }} />
+                                        <MessageSquare size={11} />
                                         <span>Phản hồi</span>
                                       </button>
                                     </div>
@@ -3589,16 +3602,16 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           return rootComments.map((rootComment: any) => {
                             const replies = getReplies(rootComment.id);
                             return (
-                              <div key={rootComment.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                              <div key={rootComment.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {renderSingleComment(rootComment, false)}
                                 {replies.length > 0 && (
                                   <div style={{ 
-                                    marginLeft: '26px', 
+                                    marginLeft: '20px', 
                                     display: 'flex', 
                                     flexDirection: 'column', 
-                                    gap: '12px', 
-                                    borderLeft: '2px solid var(--color-border-light)', 
-                                    paddingLeft: '18px', 
+                                    gap: '8px', 
+                                    borderLeft: '2px solid rgba(163, 20, 34, 0.15)', 
+                                    paddingLeft: '14px', 
                                     marginTop: '8px',
                                     marginBottom: '6px'
                                   }}>
