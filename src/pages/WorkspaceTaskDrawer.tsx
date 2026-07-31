@@ -92,7 +92,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [newCommentText, setNewCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentAttachments, setCommentAttachments] = useState<any[]>([]);
-  const [replyTo, setReplyTo] = useState<{ id: number; userName: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<{ id: number; userName: string; avatar?: string } | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -3404,9 +3404,39 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                     {/* Add comment input */}
                     <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '12px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
                       {replyTo && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(163, 20, 34, 0.08)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.72rem', color: '#a31422', fontWeight: 700 }}>
-                          <span>Đang trả lời {replyTo.userName}</span>
-                          <button onClick={() => setReplyTo(null)} style={{ border: 'none', background: 'transparent', color: '#a31422', cursor: 'pointer', fontWeight: 800, fontSize: '0.9rem', padding: '0 4px' }}>×</button>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between', 
+                          background: 'rgba(107, 114, 128, 0.08)', 
+                          border: '1px solid var(--color-border-light)',
+                          padding: '8px 12px', 
+                          borderRadius: '10px', 
+                          fontSize: '0.78rem', 
+                          color: 'var(--color-text)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Avatar src={replyTo.avatar} name={replyTo.userName} size={20} />
+                            <span>
+                              {t('Đang trả lời')}{' '}
+                              <strong style={{ color: 'var(--color-primary)' }}>{replyTo.userName}</strong>
+                            </span>
+                          </div>
+                          <button 
+                            onClick={() => setReplyTo(null)} 
+                            style={{ 
+                              border: 'none', 
+                              background: 'transparent', 
+                              color: 'var(--color-text-muted)', 
+                              cursor: 'pointer', 
+                              fontWeight: 800, 
+                              fontSize: '1rem', 
+                              padding: '0 4px',
+                              lineHeight: 1
+                            }}
+                          >
+                            ×
+                          </button>
                         </div>
                       )}
                       <div style={{ position: 'relative' }}>
@@ -3573,7 +3603,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   {!isReply && (
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                                       <button
-                                        onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp' })}
+                                        onClick={() => setReplyTo({ id: comment.id, userName: commUser?.full_name || comment.user_name || 'Đồng nghiệp', avatar: comment.avatar_url || commUser?.avatar || commUser?.avatar_url })}
                                         style={{ 
                                           background: 'rgba(163, 20, 34, 0.05)', 
                                           border: 'none', 
