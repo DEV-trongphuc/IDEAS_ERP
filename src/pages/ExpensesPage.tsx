@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   DollarSign, Plus, Search, Download, Truck, Coffee, Home,
   Briefcase, CreditCard, Tag, Eye, Pencil, Trash2, Loader2,
   CheckCircle2, Clock, Activity, TrendingDown, X, ArrowUpRight, ArrowDownRight, ChevronDown, Building2, Wallet, User,
-  Upload, Paperclip, XCircle, Send, MessageSquare, Copy, Calendar
+  Upload, Paperclip, XCircle, Send, MessageSquare, Copy, Calendar, Bell, Info
 } from 'lucide-react';
 import { compressToWebP } from '../utils/imageCompress';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -110,6 +110,10 @@ export const ExpensesPage: React.FC = () => {
   const [uploadingRefund, setUploadingRefund] = useState(false);
   const [submittingRefund, setSubmittingRefund] = useState(false);
 
+  const [reminderTargetUser, setReminderTargetUser] = useState<any>(null);
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [sendingReminder, setSendingReminder] = useState(false);
+
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [comments, setComments] = useState<any[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -148,6 +152,31 @@ export const ExpensesPage: React.FC = () => {
       setLoadingHistory(false);
     }
   }, []);
+
+  const combinedFeed = useMemo(() => {
+    const feedItems: any[] = [];
+    if (Array.isArray(comments)) {
+      comments.forEach(c => {
+        feedItems.push({
+          id: `comment-${c.id}`,
+          type: 'comment',
+          timestamp: new Date(c.created_at).getTime(),
+          data: c
+        });
+      });
+    }
+    if (Array.isArray(historyLogs)) {
+      historyLogs.forEach(h => {
+        feedItems.push({
+          id: `history-${h.id}`,
+          type: 'history',
+          timestamp: new Date(h.created_at).getTime(),
+          data: h
+        });
+      });
+    }
+    return feedItems.sort((a, b) => b.timestamp - a.timestamp);
+  }, [comments, historyLogs]);
 
   const handleAddComment = async () => {
     if (!commentText.trim() || !viewItem) return;
@@ -388,6 +417,482 @@ export const ExpensesPage: React.FC = () => {
   });
 
   const getCatInfo = (label: string) => CATEGORIES.find(c => c.label === label) || { color: '#6b7280', icon: Tag };
+
+  const renderTimeline = () => {
+    if (!viewItem) return null;
+
+    // Helper to get step status and details
+    const getStepStatus = (stepKey: 'creator' | 'level1' | 'level2' | 'level3' | 'payment', stepNum: number) => {
+      const overall = (viewItem.status || 'pending').toLowerCase();
+      const s1 = (viewItem.status_level_1 || 'pending').toLowerCase();
+      const s2 = (viewItem.status_level_2 || 'pending').toLowerCase();
+      const s3 = (viewItem.status_level_3 || 'pending').toLowerCase();
+      const isRefunded = !!viewItem.is_refunded;
+
+      let status: 'approved' | 'rejected' | 'pending' | 'not_reached' = 'pending';
+
+      if (stepKey === 'creator') {
+        status = 'approved';
+      } else if (stepKey === 'level1') {
+        if (overall === 'approved' || overall === 'refunded' || isRefunded || s1 === 'approved') status = 'approved';
+        else if (overall === 'rejected' || s1 === 'rejected') status = 'rejected';
+        else status = 'pending';
+      } else if (stepKey === 'level2') {
+        if (s2 === 'approved' || isRefunded) status = 'approved';
+        else if (s2 === 'rejected') status = 'rejected';
+        else if (overall === 'rejected' || s1 === 'rejected') status = 'not_reached';
+        else if (s1 === 'approved') status = 'pending';
+        else status = 'not_reached';
+      } else if (stepKey === 'level3') {
+        if (s3 === 'approved' || isRefunded) status = 'approved';
+        else if (s3 === 'rejected') status = 'rejected';
+        else if (overall === 'rejected' || s1 === 'rejected' || s2 === 'rejected') status = 'not_reached';
+        else if (s2 === 'approved') status = 'pending';
+        else status = 'not_reached';
+      } else if (stepKey === 'payment') {
+        if (isRefunded) status = 'approved';
+        else if (overall === 'approved') {
+          // If multi-level, must wait for the last active level to be approved
+          const hasL2 = !!viewItem.approver_id_2;
+          const hasL3 = !!viewItem.approver_id_3;
+          if (hasL3) {
+            status = s3 === 'approved' ? 'pending' : 'not_reached';
+          } else if (hasL2) {
+            status = s2 === 'approved' ? 'pending' : 'not_reached';
+          } else {
+            status = 'pending';
+          }
+        } else {
+          status = 'not_reached';
+        }
+      }
+
+      // Styles based on status
+      let bg = 'var(--color-primary)';
+      let textCol = '#ffffff';
+      let iconContent: React.ReactNode = String(stepNum);
+      let showBell = false;
+
+      if (status === 'approved') {
+        bg = '#10b981'; // Green
+        iconContent = '✓';
+      } else if (status === 'rejected') {
+        bg = '#ef4444'; // Red
+        iconContent = '✗';
+      } else if (status === 'not_reached') {
+        bg = 'var(--color-border-light)';
+        textCol = 'var(--color-text-muted)';
+        iconContent = String(stepNum);
+      } else if (status === 'pending') {
+        bg = 'var(--color-primary)';
+        iconContent = String(stepNum);
+        showBell = true;
+      }
+
+      return { bg, textCol, iconContent, showBell };
+    };
+
+    let stepCount = 1;
+    const stepCreatorNum = stepCount++;
+    const stepL1Num = stepCount++;
+    const stepL2Num = viewItem.approver_id_2 ? stepCount++ : null;
+    const stepL3Num = viewItem.approver_id_3 ? stepCount++ : null;
+    const stepPaymentNum = stepCount++;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '12px', position: 'relative', paddingLeft: '30px', textAlign: 'left' }}>
+        <div style={{ position: 'absolute', left: '10px', top: '10px', bottom: '10px', width: '2px', background: 'var(--color-border-light)' }} />
+
+        {/* Step 1: Proposer */}
+        {(() => {
+          const sDetails = getStepStatus('creator', stepCreatorNum);
+          return (
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                position: 'absolute',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
+              }}>
+                {sDetails.iconContent}
+              </div>
+              <div style={{ width: '100%' }}>
+                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>Lập đề xuất & gửi</strong>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '6px 12px', 
+                  background: 'var(--color-bg-light)', 
+                  border: '1px solid var(--color-border-light)', 
+                  borderRadius: '8px',
+                  height: '38px',
+                  marginTop: '4px'
+                }}>
+                  <Avatar 
+                    src={viewItem.creator_avatar} 
+                    name={viewItem.creator_name || 'Người lập'} 
+                    size={20} 
+                  />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {viewItem.creator_name || 'Người lập'} (Người lập)
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                  Đã gửi lúc {viewItem.created_at ? new Date(viewItem.created_at).toLocaleString('vi-VN') : '—'}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Step 2: Level 1 Approver */}
+        {(() => {
+          const sDetails = getStepStatus('level1', stepL1Num);
+          const approverUser = users.find(u => Number(u.id) === Number(viewItem.approver_id)) || {
+            id: viewItem.approver_id,
+            full_name: viewItem.approver_name || 'Người duyệt Cấp 1',
+            avatar_url: viewItem.approver_avatar,
+            role: 'Người duyệt Cấp 1'
+          };
+          return (
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                position: 'absolute',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
+              }}>
+                {sDetails.iconContent}
+              </div>
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>Phê duyệt Cấp 1</strong>
+                  {sDetails.showBell && approverUser.id && (
+                    <button 
+                      onClick={() => { setReminderTargetUser(approverUser); setReminderMessage(''); }}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      title="Gửi nhắc nhở"
+                    >
+                      <Bell size={18} fill="#ef4444" />
+                    </button>
+                  )}
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '6px 12px', 
+                  background: 'var(--color-bg-light)', 
+                  border: '1px solid var(--color-border-light)', 
+                  borderRadius: '8px',
+                  height: '38px',
+                  marginTop: '4px'
+                }}>
+                  <Avatar 
+                    src={approverUser.avatar_url} 
+                    name={approverUser.full_name} 
+                    size={20} 
+                  />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {approverUser.full_name} ({approverUser.role || 'Người duyệt'})
+                  </span>
+                </div>
+                {sDetails.bg === '#10b981' && (
+                  <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    ✓ Đã duyệt lúc {viewItem.approved_at ? new Date(viewItem.approved_at).toLocaleString('vi-VN') : '—'}
+                  </span>
+                )}
+                {sDetails.bg === '#ef4444' && (
+                  <span style={{ fontSize: '0.725rem', color: '#ef4444', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    ✗ Bị từ chối lúc {viewItem.approved_at ? new Date(viewItem.approved_at).toLocaleString('vi-VN') : '—'}
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-primary)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-warning)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Đang chờ duyệt bởi Admin / Quản lý
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Step 3: Level 2 Approver (Optional) */}
+        {stepL2Num && (() => {
+          const sDetails = getStepStatus('level2', stepL2Num);
+          const approverUser = users.find(u => Number(u.id) === Number(viewItem.approver_id_2)) || {
+            id: viewItem.approver_id_2,
+            full_name: 'Người duyệt Cấp 2',
+            avatar_url: undefined,
+            role: 'Người duyệt Cấp 2'
+          };
+          return (
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                position: 'absolute',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
+              }}>
+                {sDetails.iconContent}
+              </div>
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>Phê duyệt Cấp 2</strong>
+                  {sDetails.showBell && approverUser.id && (
+                    <button 
+                      onClick={() => { setReminderTargetUser(approverUser); setReminderMessage(''); }}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      title="Gửi nhắc nhở"
+                    >
+                      <Bell size={18} fill="#ef4444" />
+                    </button>
+                  )}
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '6px 12px', 
+                  background: 'var(--color-bg-light)', 
+                  border: '1px solid var(--color-border-light)', 
+                  borderRadius: '8px',
+                  height: '38px',
+                  marginTop: '4px'
+                }}>
+                  <Avatar 
+                    src={approverUser.avatar_url} 
+                    name={approverUser.full_name} 
+                    size={20} 
+                  />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {approverUser.full_name} ({approverUser.role || 'Người duyệt'})
+                  </span>
+                </div>
+                {sDetails.bg === '#10b981' && (
+                  <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    ✓ Đã duyệt
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-primary)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-warning)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Đang chờ duyệt Cấp 2
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-border-light)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Sẽ thực hiện sau khi Cấp 1 duyệt
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Step 4: Level 3 Approver (Optional) */}
+        {stepL3Num && (() => {
+          const sDetails = getStepStatus('level3', stepL3Num);
+          const approverUser = users.find(u => Number(u.id) === Number(viewItem.approver_id_3)) || {
+            id: viewItem.approver_id_3,
+            full_name: 'Người duyệt Cấp 3',
+            avatar_url: undefined,
+            role: 'Người duyệt Cấp 3'
+          };
+          return (
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                position: 'absolute',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
+              }}>
+                {sDetails.iconContent}
+              </div>
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>Phê duyệt Cấp 3</strong>
+                  {sDetails.showBell && approverUser.id && (
+                    <button 
+                      onClick={() => { setReminderTargetUser(approverUser); setReminderMessage(''); }}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      title="Gửi nhắc nhở"
+                    >
+                      <Bell size={18} fill="#ef4444" />
+                    </button>
+                  )}
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '6px 12px', 
+                  background: 'var(--color-bg-light)', 
+                  border: '1px solid var(--color-border-light)', 
+                  borderRadius: '8px',
+                  height: '38px',
+                  marginTop: '4px'
+                }}>
+                  <Avatar 
+                    src={approverUser.avatar_url} 
+                    name={approverUser.full_name} 
+                    size={20} 
+                  />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {approverUser.full_name} ({approverUser.role || 'Người duyệt'})
+                  </span>
+                </div>
+                {sDetails.bg === '#10b981' && (
+                  <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    ✓ Đã duyệt
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-primary)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-warning)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Đang chờ duyệt Cấp 3
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-border-light)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Sẽ thực hiện sau khi Cấp 2 duyệt
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Step 5: Accountant Payment */}
+        {(() => {
+          const sDetails = getStepStatus('payment', stepPaymentNum);
+          const defaultAccountant = users.find(u => String(u.role).toLowerCase() === 'accountant') || users.find(u => ['admin', 'superadmin'].includes(String(u.role).toLowerCase())) || {
+            id: 1001,
+            full_name: 'Kế toán / Thủ quỹ',
+            avatar_url: undefined,
+            role: 'Thủ quỹ'
+          };
+          const refunderUser = viewItem.is_refunded ? {
+            id: viewItem.refunder_id,
+            full_name: viewItem.refunder_name || 'Kế toán / Thủ quỹ',
+            avatar_url: viewItem.refunder_avatar,
+            role: 'Kế toán chi'
+          } : defaultAccountant;
+
+          return (
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{
+                position: 'absolute',
+                left: '-30px',
+                top: '0px',
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: sDetails.bg,
+                color: sDetails.textCol,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                zIndex: 2
+              }}>
+                {sDetails.iconContent}
+              </div>
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>Hạch toán thanh toán thực tế</strong>
+                  {sDetails.showBell && refunderUser.id && (
+                    <button 
+                      onClick={() => { setReminderTargetUser(refunderUser); setReminderMessage(''); }}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      title="Gửi nhắc nhở"
+                    >
+                      <Bell size={18} fill="#ef4444" />
+                    </button>
+                  )}
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '6px 12px', 
+                  background: 'var(--color-bg-light)', 
+                  border: '1px solid var(--color-border-light)', 
+                  borderRadius: '8px',
+                  height: '38px',
+                  marginTop: '4px'
+                }}>
+                  <Avatar 
+                    src={refunderUser.avatar_url || refunderUser.avatar} 
+                    name={refunderUser.full_name} 
+                    size={20} 
+                  />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {refunderUser.full_name} ({refunderUser.role || 'Kế toán'})
+                  </span>
+                </div>
+                {sDetails.bg === '#10b981' && (
+                  <span style={{ fontSize: '0.725rem', color: '#10b981', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    ✓ Đã chi lúc {viewItem.refunded_at ? new Date(viewItem.refunded_at).toLocaleString('vi-VN') : '—'}
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-primary)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-warning)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Chờ kế toán xác nhận thanh toán thực tế (Tải ảnh UNC)
+                  </span>
+                )}
+                {sDetails.bg === 'var(--color-border-light)' && (
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'block', fontWeight: 600 }}>
+                    Sẽ thực hiện sau khi đề xuất được duyệt
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -1423,246 +1928,290 @@ export const ExpensesPage: React.FC = () => {
                       display: 'flex',
                       flexDirection: 'column',
                       overflow: 'hidden',
-                      background: 'var(--color-surface)'
+                      background: 'var(--color-surface)',
+                      borderLeft: '1px solid var(--color-border-light)',
+                      padding: '1.25rem',
+                      boxSizing: 'border-box'
                     }}>
-                      
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-light)', padding: '0 8px', flexShrink: 0 }}>
-                      <button
-                        onClick={() => setActiveTab('comments')}
-                        style={{
-                          flex: 1,
-                          padding: '14px 10px',
-                          border: 'none',
-                          background: 'none',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          color: activeTab === 'comments' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                          borderBottom: activeTab === 'comments' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <MessageSquare size={14} />
-                        Thảo luận ({comments.length})
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('history')}
-                        style={{
-                          flex: 1,
-                          padding: '14px 10px',
-                          border: 'none',
-                          background: 'none',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          color: activeTab === 'history' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                          borderBottom: activeTab === 'history' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        <Activity size={14} />
-                        Hoạt động ({historyLogs.length})
-                      </button>
-                    </div>
-
-                    {/* Tab Content Body */}
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 1.25rem 1.25rem 1.25rem', display: 'flex', flexDirection: 'column' }}>
-                      {activeTab === 'comments' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '1rem', overflow: 'hidden' }}>
-                          {/* Comments List */}
-                          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {loadingComments ? (
-                              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                                <Loader2 size={20} className="spin text-primary" />
-                              </div>
-                            ) : (!Array.isArray(comments) || comments.length === 0) ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                                <Coffee size={24} style={{ opacity: 0.4 }} />
-                                <span style={{ fontSize: '0.8rem' }}>Chưa có bình luận nào cho khoản chi này. Hãy bắt đầu thảo luận!</span>
-                              </div>
-                            ) : (
-                              comments.map((c) => (
-                                <div key={c.id} style={{ display: 'flex', gap: '10px', padding: '10px', borderRadius: '8px', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-light)', position: 'relative' }}>
-                                  <Avatar src={c.avatar_url} name={c.user_name} size={32} />
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{c.user_name}</span>
-                                      <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                        {new Date(c.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                      </span>
-                                    </div>
-                                    {c.body && /<[a-z][\s\S]*>/i.test(c.body) ? (
-                                      <div 
-                                        className="rich-comment-content text-left"
-                                        dangerouslySetInnerHTML={{ __html: c.body }}
-                                        style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '2px 0 0', lineHeight: '1.4', textAlign: 'left' }}
-                                      />
-                                    ) : (
-                                      <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: 0, lineHeight: 1.4, whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{c.body}</p>
-                                    )}
-                                  </div>
-                                  {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === c.user_id) && (
-                                    <button
-                                      onClick={() => handleDeleteComment(c.id)}
-                                      style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '4px', bottom: '4px' }}
-                                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'}
-                                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                                      title="Xóa bình luận"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  )}
-                                </div>
-                              ))
-                            )}
-                          </div>
-
-                          {/* Comment Input */}
-                          <div style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            gap: '8px', 
-                            borderTop: '1px solid var(--color-border-light)', 
-                            paddingTop: '12px', 
-                            flexShrink: 0 
-                          }}>
-                            <MentionInput
-                              value={commentText}
-                              onChange={(e: any) => setCommentText(e.target.value)}
-                              placeholder="Nhập nội dung trao đổi... (Gõ @ để nhắc tên đồng nghiệp)"
-                              style={{ 
-                                width: '100%', 
-                                minHeight: '80px', 
-                                border: '1px solid var(--color-border)', 
-                                borderRadius: '10px', 
-                                outline: 'none', 
-                                background: 'var(--color-bg)', 
-                                color: 'var(--color-text)', 
-                                boxSizing: 'border-box'
-                              }}
-                              disabled={submittingComment}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                              <button
-                                disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
-                                onClick={handleAddComment}
-                                className="btn primary"
-                                style={{ 
-                                  height: '32px', 
-                                  padding: '0 16px', 
-                                  fontSize: '0.75rem', 
-                                  fontWeight: 700, 
-                                  borderRadius: '8px',
-                                  cursor: 'pointer', 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  gap: '6px',
-                                  background: 'var(--color-primary)',
-                                  color: 'white',
-                                  border: 'none',
-                                  opacity: (commentText && commentText.replace(/<[^>]*>/g, '').trim()) ? 1 : 0.6
-                                }}
-                              >
-                                {submittingComment ? (
-                                  <>
-                                    <Loader2 size={12} className="spin" /> Đang gửi...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Send size={12} /> Gửi
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
+                      {/* Scrollable container for stepper and feed */}
+                      <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingRight: '4px' }}>
+                        
+                        {/* Section 1: CÁC BƯỚC THỰC HIỆN */}
+                        <div>
+                          <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                            Các bước thực hiện
+                          </h3>
+                          {renderTimeline()}
                         </div>
-                      ) : (
-                          /* History Timeline */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', paddingLeft: '16px' }}>
-                            <div style={{ position: 'absolute', top: '8px', bottom: '8px', left: '4px', width: '2px', background: 'var(--color-border-light)' }} />
-                            
-                            {loadingHistory ? (
+
+                        {/* Section 2: THẢO LUẬN & HOẠT ĐỘNG */}
+                        <div style={{ marginTop: '0.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8125rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em' }}>
+                            Thảo luận & Hoạt động
+                          </h3>
+
+                          {/* Combined Feed Items */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {loadingComments || loadingHistory ? (
                               <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
                                 <Loader2 size={20} className="spin text-primary" />
                               </div>
-                            ) : (!Array.isArray(historyLogs) || historyLogs.length === 0) ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
-                                <Clock size={24} style={{ opacity: 0.4 }} />
-                                <span style={{ fontSize: '0.8rem' }}>Chưa ghi nhận hoạt động lịch sử nào.</span>
+                            ) : combinedFeed.length === 0 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', color: 'var(--color-text-muted)', gap: '8px', textAlign: 'center' }}>
+                                <Coffee size={24} style={{ opacity: 0.4 }} />
+                                <span style={{ fontSize: '0.8rem' }}>Chưa có hoạt động hay thảo luận nào cho khoản chi này.</span>
                               </div>
                             ) : (
-                              historyLogs.map((log) => {
-                                let actionLabel = log.action;
-                                let actionColor = 'var(--color-primary)';
-                                if (log.action === 'CREATE') {
-                                  actionLabel = 'Tạo phiếu chi đề xuất';
-                                  actionColor = '#2563eb';
-                                } else if (log.action === 'UPDATE') {
-                                  actionLabel = 'Cập nhật nội dung chi';
-                                  actionColor = '#f59e0b';
-                                } else if (log.action === 'APPROVE') {
-                                  let statusText = 'phê duyệt';
-                                  try {
-                                    const parsed = JSON.parse(log.new_data || '{}');
-                                    if (parsed.status === 'rejected') {
-                                      statusText = 'từ chối';
-                                      actionColor = '#ef4444';
-                                    } else {
-                                      actionColor = '#10b981';
-                                    }
-                                  } catch (e) {}
-                                  actionLabel = `Thay đổi trạng thái: ${statusText}`;
-                                } else if (log.action === 'DELETE') {
-                                  actionLabel = 'Xóa khoản chi';
-                                  actionColor = '#ef4444';
-                                } else if (log.action === 'ADD_COMMENT') {
-                                  actionLabel = 'Thêm bình luận';
-                                  actionColor = '#10b981';
-                                }
-                                
-                                return (
-                                  <div key={log.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    {/* Timeline Dot */}
-                                    <div style={{
-                                      position: 'absolute',
-                                      top: '5px',
-                                      left: '-16px',
-                                      width: '10px',
-                                      height: '10px',
-                                      borderRadius: '50%',
-                                      background: actionColor,
-                                      border: '2px solid var(--color-surface)',
-                                      boxShadow: 'var(--shadow-sm)'
-                                    }} />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>
-                                        {log.user_name || 'Hệ thống'}
-                                      </span>
-                                      <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                        {new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                      </span>
+                              combinedFeed.map((item) => {
+                                if (item.type === 'comment') {
+                                  return (
+                                    <div key={item.id} style={{
+                                      display: 'flex',
+                                      gap: '12px',
+                                      padding: '12px 16px',
+                                      background: 'var(--color-bg)',
+                                      borderRadius: '14px',
+                                      border: '1px solid var(--color-border-light)',
+                                      boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
+                                      position: 'relative'
+                                    }}>
+                                      <Avatar src={item.data.avatar_url} name={item.data.user_name} size={28} />
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                          <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{item.data.user_name}</strong>
+                                          <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                            {new Date(item.data.created_at).toLocaleString('vi-VN')}
+                                          </span>
+                                        </div>
+                                        {item.data.body && /<[a-z][\s\S]*>/i.test(item.data.body) ? (
+                                          <div 
+                                            className="rich-comment-content text-left"
+                                            dangerouslySetInnerHTML={{ __html: item.data.body }}
+                                            style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', margin: '2px 0 0', lineHeight: '1.45', textAlign: 'left' }}
+                                          />
+                                        ) : (
+                                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{item.data.body}</p>
+                                        )}
+                                      </div>
+                                      {(['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role as any) || user?.id === item.data.user_id) && (
+                                        <button
+                                          onClick={() => handleDeleteComment(item.data.id)}
+                                          style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-text-muted)', position: 'absolute', right: '8px', top: '8px' }}
+                                          title="Xóa bình luận"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
                                     </div>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                                      Hành động: <strong style={{ color: actionColor }}>{actionLabel}</strong>
-                                    </span>
-                                  </div>
-                                );
+                                  );
+                                } else {
+                                  let actionLabel = item.data.action;
+                                  let actionColor = 'var(--color-primary)';
+                                  if (item.data.action === 'CREATE') {
+                                    actionLabel = 'Tạo phiếu chi đề xuất';
+                                    actionColor = '#2563eb';
+                                  } else if (item.data.action === 'UPDATE') {
+                                    actionLabel = 'Cập nhật nội dung chi';
+                                    actionColor = '#f59e0b';
+                                  } else if (item.data.action === 'APPROVE') {
+                                    let statusText = 'phê duyệt';
+                                    try {
+                                      const parsed = JSON.parse(item.data.new_data || '{}');
+                                      if (parsed.status === 'rejected') {
+                                        statusText = 'từ chối';
+                                        actionColor = '#ef4444';
+                                      } else {
+                                        actionColor = '#10b981';
+                                      }
+                                    } catch (e) {}
+                                    actionLabel = `Thay đổi trạng thái: ${statusText}`;
+                                  } else if (item.data.action === 'DELETE') {
+                                    actionLabel = 'Xóa khoản chi';
+                                    actionColor = '#ef4444';
+                                  } else if (item.data.action === 'ADD_COMMENT') {
+                                    actionLabel = 'Thêm bình luận';
+                                    actionColor = '#10b981';
+                                  }
+                                  return (
+                                    <div key={item.id} style={{
+                                      display: 'flex',
+                                      gap: '12px',
+                                      padding: '10px 14px',
+                                      background: 'var(--color-bg-secondary)',
+                                      borderRadius: '10px',
+                                      borderLeft: `3px solid ${actionColor}`,
+                                      boxShadow: '0 1px 3px rgba(0,0,0,0.01)',
+                                      alignItems: 'center'
+                                    }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', color: actionColor, flexShrink: 0 }}>
+                                        <Info size={14} />
+                                      </div>
+                                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                          <strong style={{ fontSize: '0.78rem', color: 'var(--color-text)', fontWeight: 700 }}>{item.data.user_name || 'Hệ thống'}</strong>
+                                          <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                            {new Date(item.data.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+                                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'left', lineHeight: '1.4' }}>
+                                          Hành động: <strong style={{ color: actionColor }}>{actionLabel}</strong> lúc {new Date(item.data.created_at).toLocaleTimeString('vi-VN')} {new Date(item.data.created_at).toLocaleDateString('vi-VN')}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
                               })
                             )}
                           </div>
-                        )}
+                        </div>
+                      </div>
+
+                      {/* Comment Editor Box at bottom */}
+                      <div style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '8px', 
+                        borderTop: '1px solid var(--color-border-light)', 
+                        paddingTop: '12px', 
+                        flexShrink: 0,
+                        marginTop: '1rem',
+                        background: 'var(--color-surface)'
+                      }}>
+                        <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                          <MentionInput
+                            value={commentText}
+                            onChange={(e: any) => setCommentText(e.target.value)}
+                            placeholder="Viết bình luận... Gõ @ để nhắc tên"
+                            style={{ 
+                              width: '100%', 
+                              minHeight: '65px', 
+                              border: 'none',
+                              borderRadius: 0,
+                              outline: 'none', 
+                              background: 'transparent',
+                              color: 'var(--color-text)', 
+                              boxSizing: 'border-box'
+                            }}
+                            disabled={submittingComment}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '4px', borderTop: '1px dashed var(--color-border-light)' }}>
+                            <button
+                              disabled={submittingComment || !commentText || !commentText.replace(/<[^>]*>/g, '').trim()}
+                              onClick={handleAddComment}
+                              className="btn primary sm"
+                              style={{
+                                background: 'var(--color-primary)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '20px',
+                                padding: '6px 18px',
+                                cursor: 'pointer',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                            >
+                              <Send size={13} />
+                              Gửi
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  {reminderTargetUser && (
+                    <div style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(0, 0, 0, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 35000
+                    }} onClick={() => setReminderTargetUser(null)}>
+                      <div style={{
+                        background: 'var(--color-surface)',
+                        borderRadius: '16px',
+                        border: '1px solid var(--color-border)',
+                        padding: '1.5rem',
+                        width: '400px',
+                        maxWidth: '90%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        boxShadow: 'var(--shadow-lg)'
+                      }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)' }}>
+                            Gửi nhắc nhở phê duyệt
+                          </span>
+                          <button 
+                            onClick={() => setReminderTargetUser(null)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', background: 'var(--color-bg-light)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                          <Avatar src={reminderTargetUser.avatar || reminderTargetUser.avatar_url} name={reminderTargetUser.full_name || reminderTargetUser.name} size={28} />
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{reminderTargetUser.full_name || reminderTargetUser.name}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{reminderTargetUser.role || 'Người duyệt'}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                            Nội dung nhắc nhở
+                          </span>
+                          <textarea
+                            style={{ width: '100%', minHeight: '80px', borderRadius: '8px', border: '1px solid var(--color-border)', padding: '8px', fontSize: '0.8rem', outline: 'none', background: 'transparent', color: 'var(--color-text)', boxSizing: 'border-box' }}
+                            value={reminderMessage}
+                            onChange={e => setReminderMessage(e.target.value)}
+                            placeholder="Nhập lời nhắn nhắc nhở người duyệt... Ví dụ: Đề xuất này đang cần gấp, duyệt hộ mình với nhé!"
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                          <button
+                            className="btn secondary sm"
+                            onClick={() => setReminderTargetUser(null)}
+                            style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            className="btn primary sm"
+                            disabled={sendingReminder}
+                            onClick={async () => {
+                              setSendingReminder(true);
+                              const targetName = reminderTargetUser.full_name || reminderTargetUser.name || '';
+                              try {
+                                await api.post('/notifications/reminder', {
+                                  target_user_id: reminderTargetUser.id,
+                                  message: reminderMessage,
+                                  workflow_id: viewItem.id
+                                });
+                                addToast(`Đã gửi nhắc nhở thành công đến ${targetName}!`, 'success');
+                                setReminderTargetUser(null);
+                                setReminderMessage('');
+                              } catch (err: any) {
+                                addToast(err?.response?.data?.message || err?.message || 'Lỗi gửi nhắc nhở', 'error');
+                              } finally {
+                                setSendingReminder(false);
+                              }
+                            }}
+                            style={{ padding: '6px 18px', fontSize: '0.78rem', background: 'var(--color-primary)', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}
+                          >
+                            {sendingReminder ? 'Đang gửi...' : 'Gửi'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </motion.div>
             </div>
           )}
