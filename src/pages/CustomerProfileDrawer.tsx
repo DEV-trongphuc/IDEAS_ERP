@@ -7384,7 +7384,17 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         };
 
                         // Collect all upcoming schedules:
-                        const todayStr = new Date().toISOString().split('T')[0];
+                        const today = new Date();
+                        const todayStr = today.toISOString().split('T')[0];
+
+                        const thirtyDaysLater = new Date();
+                        thirtyDaysLater.setDate(today.getDate() + 30);
+                        const thirtyDaysLaterStr = thirtyDaysLater.toISOString().split('T')[0];
+
+                        const sevenDaysLater = new Date();
+                        sevenDaysLater.setDate(today.getDate() + 7);
+                        const sevenDaysLaterStr = sevenDaysLater.toISOString().split('T')[0];
+
                         const upcomingSchedules: any[] = [];
 
                         subjects.forEach((sub: any) => {
@@ -7392,7 +7402,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
                           if (Array.isArray(sub.host_sessions)) {
                             sub.host_sessions.forEach((hs: any) => {
-                              if (hs.date && hs.date >= todayStr) {
+                              if (hs.date && hs.date >= todayStr && hs.date <= thirtyDaysLaterStr) {
                                 upcomingSchedules.push({
                                   type: 'school',
                                   subjectCode: sub.code || 'MÔN HỌC',
@@ -7401,7 +7411,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                   date: hs.date,
                                   time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
                                   lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
-                                  location: hs.location || 'Online'
+                                  location: hs.location || 'Online',
+                                  isWithin7Days: hs.date <= sevenDaysLaterStr
                                 });
                               }
                             });
@@ -7409,7 +7420,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
                           if (Array.isArray(sub.seminars)) {
                             sub.seminars.forEach((sem: any) => {
-                              if (sem.date && sem.date >= todayStr) {
+                              if (sem.date && sem.date >= todayStr && sem.date <= thirtyDaysLaterStr) {
                                 const semLect = sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer;
                                 upcomingSchedules.push({
                                   type: 'seminar',
@@ -7419,7 +7430,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                   date: sem.date,
                                   time: sem.time_slot || 'Chưa cấu hình giờ',
                                   lecturer: semLect,
-                                  location: sem.location || 'Online'
+                                  location: sem.location || 'Online',
+                                  isWithin7Days: sem.date <= sevenDaysLaterStr
                                 });
                               }
                             });
@@ -7601,22 +7613,39 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             <div className="card-panel" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
                                 <Calendar size={18} style={{ color: 'var(--color-primary)' }} />
-                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch học sắp tới ({upcomingSchedules.length})</h4>
+                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch học 30 ngày tới ({upcomingSchedules.length})</h4>
                               </div>
                               {upcomingSchedules.length === 0 ? (
-                                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>Chưa có lịch học sắp tới.</div>
+                                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>Chưa có lịch học trong 30 ngày tới.</div>
                               ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                   {upcomingSchedules.map((sch: any, idx: number) => (
                                     <div key={idx} style={{ padding: '10px 12px', background: '#ffffff', borderRadius: '10px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                           <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', ...sch.type === 'school' ? { background: '#eff6ff', color: '#1d4ed8' } : { background: '#faf5ff', color: '#6b21a8' } }}>
                                             {sch.type === 'school' ? 'Trường' : 'Chuyên đề'}
                                           </span>
                                           <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{sch.subjectCode} - {sch.subjectName}</span>
                                         </div>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>{sch.date.split('-').reverse().join('/')}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>{sch.date.split('-').reverse().join('/')}</span>
+                                          {sch.isWithin7Days && (
+                                            <span style={{ 
+                                              fontSize: '0.625rem', 
+                                              fontWeight: 800, 
+                                              color: '#c2410c', 
+                                              background: '#ffedd5', 
+                                              padding: '2px 6px', 
+                                              borderRadius: '4px',
+                                              textTransform: 'uppercase',
+                                              letterSpacing: '0.02em',
+                                              border: '1px solid #fed7aa'
+                                            }}>
+                                              7 ngày tới
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
                                       <div style={{ fontWeight: 700, fontSize: '0.825rem', color: 'var(--color-text)' }}>{sch.title}</div>
                                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
