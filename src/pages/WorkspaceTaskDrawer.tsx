@@ -5337,7 +5337,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   inset: 0,
                   backgroundColor: 'rgba(0, 0, 0, 0.5)',
                   backdropFilter: 'blur(4px)',
-                  zIndex: 100000,
+                  zIndex: 1000500,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
