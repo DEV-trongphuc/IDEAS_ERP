@@ -2047,10 +2047,10 @@ switch ($action) {
                 $lecturers[$row['id']] = $row['name'];
             }
         }
-        $resUsers = $conn->query("SELECT id, name, full_name FROM users");
+        $resUsers = $conn->query("SELECT id, username, full_name FROM users");
         if ($resUsers) {
             while ($row = $resUsers->fetch_assoc()) {
-                $lecturers[$row['id']] = $row['full_name'] ?: $row['name'];
+                $lecturers[$row['id']] = $row['full_name'] ?: $row['username'];
             }
         }
 

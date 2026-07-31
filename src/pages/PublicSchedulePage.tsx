@@ -225,7 +225,31 @@ export const PublicSchedulePage: React.FC = () => {
         flexDirection: 'column', 
         gap: '1.5rem' 
       }}>
-      
+      {/* 0. Branded Top Header Bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '1rem',
+        paddingBottom: '0.75rem',
+        borderBottom: '1px solid var(--color-border-light)'
+      }}>
+        <img 
+          src="https://ideas.edu.vn/wp-content/uploads/2026/06/Logo_IDEAS_Slg-optimized.webp" 
+          alt="Logo IDEAS" 
+          style={{ height: '48px', objectFit: 'contain' }}
+        />
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            Tri thức Nguyên Bản
+          </div>
+          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+            Đồng hành Bản Địa
+          </div>
+        </div>
+      </div>
+
       {/* 1. Header Student Info Card */}
       <div style={{ 
         background: 'var(--color-surface)', 
