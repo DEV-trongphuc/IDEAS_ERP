@@ -48,7 +48,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     title: 'CHƯƠNG TRÌNH',
     items: [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
-      { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
+      { name: 'Khóa học', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
       { name: 'Tài liệu', href: '/files', icon: File },
       { name: 'Đối tác', href: '/companies', icon: Building2 },
       { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
@@ -156,7 +156,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
   ],
   marketing: [
-    { name: 'Chiến dịch', href: '/projects?tab=campaigns', icon: Layers },
+    { name: 'Khóa học', href: '/projects?tab=campaigns', icon: Layers },
     { name: 'Pre-screener', href: '/gatekeeper', icon: Filter, badgeKey: 'gatekeeper' },
     { name: 'Tích hợp', href: '/integrations', icon: Link2 },
     { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2 }

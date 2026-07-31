@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Users, Phone, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2 } from 'lucide-react';
+import { X, User, Users, Phone, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2, BookOpen } from 'lucide-react';
 import { triggerFullConfetti } from '../utils/confettiHelper';
 import { LeadScoreRing } from '../components/ui/LeadScoreRing';
 import { TagInput } from '../components/ui/TagInput';
@@ -206,6 +206,7 @@ const resolveAttachmentUrl = (url: string | null | undefined): string => {
 
 const TABS = [
   { id: 'info', label: 'Thông tin chung', icon: <User size={16} /> },
+  { id: 'learning', label: 'Học tập', icon: <BookOpen size={16} /> },
   { id: 'tags', label: 'Tags & Ghi chú', icon: <TagIcon size={16} /> },
   { id: 'tasks', label: 'Công việc', icon: <CheckSquare size={16} /> },
   { id: 'docs', label: 'Hồ sơ & Tài liệu', icon: <Paperclip size={16} /> },
@@ -220,6 +221,7 @@ const renderColoredTabIcon = (tabId: string, IconComponent: any) => {
   let bgColor = 'var(--color-primary)';
   switch (tabId) {
     case 'info': bgColor = '#ef4444'; break;
+    case 'learning': bgColor = '#8b5cf6'; break;
     case 'tags': bgColor = '#ec4899'; break;
     case 'cooperation': bgColor = '#f59e0b'; break;
     case 'tasks': bgColor = '#10b981'; break;
@@ -1987,6 +1989,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     const isAdmin = currentUser?.role && ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'manager'].includes(currentUser.role);
     return isOwner || isAdmin;
   }, [currentUser, formData.owner_id, contact?.owner_id, contact?.team_id, formData.team_id, formData.collaborator_ids, contact?.collaborator_ids, coopSlip]);
+
+  const isStudent = useMemo(() => {
+    return String(formData.pipeline_status || contact?.pipeline_status || 'chua_xac_dinh') === 'hoc_vien';
+  }, [formData.pipeline_status, contact?.pipeline_status]);
   const isAdmin = currentUser?.role && ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'manager'].includes(currentUser.role);
   const isViewer = currentUser?.role === 'viewer';
   const isMainOwnerOrManagerAdmin = useMemo(() => {
@@ -5938,6 +5944,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                   tabs: ['info', 'tags', 'tasks', 'timeline', 'scoring']
                                 },
                                 {
+                                  title: 'Học tập',
+                                  tabs: ['learning']
+                                },
+                                {
                                   title: 'Giao dịch & Tài liệu',
                                   tabs: ['docs', 'deals', 'expenses']
                                 },
@@ -5950,7 +5960,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               return tabGroups.map((group, groupIdx) => {
                                 const allowedTabs = group.tabs
                                   .map(id => TABS.find(tab => tab.id === id))
-                                  .filter((tab): tab is any => !!tab && (isOwnerOrAdmin || (tab.id !== 'quotes' && tab.id !== 'expenses')));
+                                  .filter((tab): tab is any => {
+                                    if (!tab) return false;
+                                    if (tab.id === 'learning' && !isStudent) return false;
+                                    return isOwnerOrAdmin || (tab.id !== 'quotes' && tab.id !== 'expenses');
+                                  });
                                 if (allowedTabs.length === 0) return null;
 
                                 return (
@@ -6024,6 +6038,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                   tabs: ['info', 'tags', 'tasks', 'timeline', 'scoring']
                                 },
                                 {
+                                  title: 'Học tập',
+                                  tabs: ['learning']
+                                },
+                                {
                                   title: 'Giao dịch & Tài liệu',
                                   tabs: ['docs', 'deals', 'expenses']
                                 },
@@ -6036,7 +6054,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               return tabGroups.map((group, groupIdx) => {
                                 const allowedTabs = group.tabs
                                   .map(id => TABS.find(tab => tab.id === id))
-                                  .filter((tab): tab is any => !!tab && (isOwnerOrAdmin || (tab.id !== 'quotes' && tab.id !== 'expenses')));
+                                  .filter((tab): tab is any => {
+                                    if (!tab) return false;
+                                    if (tab.id === 'learning' && !isStudent) return false;
+                                    return isOwnerOrAdmin || (tab.id !== 'quotes' && tab.id !== 'expenses');
+                                  });
                                 if (allowedTabs.length === 0) return null;
 
                                 return (
@@ -6694,67 +6716,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               }} />
                             </div>
                           </div>
-                          <div className="form-group">
-                            <label className="form-label">Chương trình Quan tâm (Liên kết)</label>
-                            <CustomSelect
-                              searchable
-                              options={[
-                                { value: '', label: '— Không chọn —' },
-                                ...projectsList.map(p => ({ value: String(p.id), label: p.name }))
-                              ]}
-                              value={String(formData.project_id || '')}
-                              onChange={val => {
-                                const selectedId = val ? Number(val) : null;
-                                let nextCampaignId = formData.campaign_id;
-                                if (!selectedId) {
-                                  nextCampaignId = null;
-                                } else if (nextCampaignId) {
-                                  const campObj = allowedCampaigns.find(c => Number(c.id) === Number(nextCampaignId));
-                                  if (campObj && Number(campObj.project_id) !== selectedId) {
-                                    nextCampaignId = null;
-                                  }
-                                }
-                                setFormData((prev: any) => ({
-                                  ...prev,
-                                  project_id: selectedId,
-                                  campaign_id: nextCampaignId
-                                }));
-                              }}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Chiến dịch Quan tâm (Liên kết)</label>
-                            {(() => {
-                              const filteredCamps = formData.project_id
-                                ? allowedCampaigns.filter(c => Number(c.project_id) === Number(formData.project_id))
-                                : allowedCampaigns;
-                              return (
-                                <CustomSelect
-                                  searchable
-                                  options={[
-                                    { value: '', label: '— Không chọn —' },
-                                    ...filteredCamps.map(c => ({ value: String(c.id), label: c.name, faded: c.status !== 'active' }))
-                                  ]}
-                                  value={formData.campaign_id ? String(formData.campaign_id) : ''}
-                                  onChange={val => {
-                                    const nextCampaign = val ? Number(val) : null;
-                                    let nextProjectId = formData.project_id;
-                                    if (nextCampaign) {
-                                      const campObj = allowedCampaigns.find(c => Number(c.id) === nextCampaign);
-                                      if (campObj && campObj.project_id) {
-                                        nextProjectId = Number(campObj.project_id);
-                                      }
-                                    }
-                                    setFormData((prev: any) => ({
-                                      ...prev,
-                                      campaign_id: nextCampaign,
-                                      project_id: nextProjectId
-                                    }));
-                                  }}
-                                />
-                              );
-                            })()}
-                          </div>
+                          {/* Interest fields moved to learning tab */}
                         </div>
 
                         <div style={{ borderTop: '1px solid var(--color-border-light)', margin: '1.25rem 0', paddingTop: '1.25rem' }}></div>
@@ -7297,6 +7259,240 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           </div>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* LEARNING TAB */}
+                  {activeTab === 'learning' && (
+                    <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      <div className="card-panel" style={{
+                        padding: '1.5rem',
+                        borderRadius: '16px',
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border-light)',
+                        boxShadow: 'var(--shadow-sm)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1.25rem'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '0.25rem' }}>
+                          <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cấu hình Khóa học Quan tâm</h4>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobileOrTablet ? '1fr' : '1fr 1fr', gap: '1.25rem' }}>
+
+                        <div className="form-group">
+                          <label className="form-label">Chương trình Quan tâm (Liên kết)</label>
+                          <CustomSelect
+                            searchable
+                            options={[
+                              { value: '', label: '— Không chọn —' },
+                              ...projectsList.map(p => ({ value: String(p.id), label: p.name }))
+                            ]}
+                            value={String(formData.project_id || '')}
+                            onChange={val => {
+                              const selectedId = val ? Number(val) : null;
+                              let nextCampaignId = formData.campaign_id;
+                              if (!selectedId) {
+                                nextCampaignId = null;
+                              } else if (nextCampaignId) {
+                                const campObj = allowedCampaigns.find(c => Number(c.id) === Number(nextCampaignId));
+                                if (campObj && Number(campObj.project_id) !== selectedId) {
+                                  nextCampaignId = null;
+                                }
+                              }
+                              setFormData((prev: any) => ({
+                                ...prev,
+                                project_id: selectedId,
+                                campaign_id: nextCampaignId
+                              }));
+                            }}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Chiến dịch Quan tâm (Liên kết)</label>
+                          {(() => {
+                            const filteredCamps = formData.project_id
+                              ? allowedCampaigns.filter(c => Number(c.project_id) === Number(formData.project_id))
+                              : allowedCampaigns;
+                            return (
+                              <CustomSelect
+                                searchable
+                                options={[
+                                  { value: '', label: '— Không chọn —' },
+                                  ...filteredCamps.map(c => ({ value: String(c.id), label: c.name, faded: c.status !== 'active' }))
+                                ]}
+                                value={formData.campaign_id ? String(formData.campaign_id) : ''}
+                                onChange={val => {
+                                  const nextCampaign = val ? Number(val) : null;
+                                  let nextProjectId = formData.project_id;
+                                  if (nextCampaign) {
+                                    const campObj = allowedCampaigns.find(c => Number(c.id) === nextCampaign);
+                                    if (campObj && campObj.project_id) {
+                                      nextProjectId = Number(campObj.project_id);
+                                    }
+                                  }
+                                  setFormData((prev: any) => ({
+                                    ...prev,
+                                    campaign_id: nextCampaign,
+                                    project_id: nextProjectId
+                                  }));
+                                }}
+                              />
+                            );
+                          })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Display subjects & schedule here */}
+                      {(() => {
+                        if (!formData.campaign_id) {
+                          return (
+                            <div style={{ padding: '3rem 2rem', textAlign: 'center', background: 'var(--color-surface)', border: '1px dashed var(--color-border)', borderRadius: '16px' }}>
+                              <BookOpen size={40} style={{ color: 'var(--color-text-light)', marginBottom: '12px' }} />
+                              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Vui lòng chọn Chương trình và Khóa học quan tâm để xem thông tin học tập.</div>
+                            </div>
+                          );
+                        }
+
+                        const selectedCamp = allowedCampaigns.find(c => Number(c.id) === Number(formData.campaign_id));
+                        const subjects = selectedCamp?.subjects_json
+                          ? (typeof selectedCamp.subjects_json === 'string'
+                            ? JSON.parse(selectedCamp.subjects_json)
+                            : selectedCamp.subjects_json)
+                          : [];
+
+                        if (subjects.length === 0) {
+                          return (
+                            <div style={{ padding: '3rem 2rem', textAlign: 'center', background: 'var(--color-surface)', border: '1px dashed var(--color-border)', borderRadius: '16px' }}>
+                              <BookOpen size={40} style={{ color: 'var(--color-text-light)', marginBottom: '12px' }} />
+                              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chưa có môn học nào được cấu hình cho khóa học này.</div>
+                            </div>
+                          );
+                        }
+
+                        const getLecturerName = (lecturerId: any) => {
+                          if (!lecturerId) return 'Chưa phân công';
+                          const foundComp = companiesList.find(c => String(c.id) === String(lecturerId));
+                          if (foundComp) return foundComp.name;
+                          const foundUser = users.find(u => String(u.id) === String(lecturerId));
+                          if (foundUser) return foundUser.full_name || foundUser.name;
+                          return lecturerId;
+                        };
+
+                        // Collect all upcoming schedules:
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const upcomingSchedules: any[] = [];
+
+                        subjects.forEach((sub: any) => {
+                          const subLecturer = getLecturerName(sub.lecturer_id);
+
+                          if (Array.isArray(sub.host_sessions)) {
+                            sub.host_sessions.forEach((hs: any) => {
+                              if (hs.date && hs.date >= todayStr) {
+                                upcomingSchedules.push({
+                                  type: 'school',
+                                  subjectCode: sub.code || 'MÔN HỌC',
+                                  subjectName: sub.name,
+                                  title: hs.name || 'Buổi học',
+                                  date: hs.date,
+                                  time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
+                                  lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
+                                  location: hs.location || 'Online'
+                                });
+                              }
+                            });
+                          }
+
+                          if (Array.isArray(sub.seminars)) {
+                            sub.seminars.forEach((sem: any) => {
+                              if (sem.date && sem.date >= todayStr) {
+                                const semLect = sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer;
+                                upcomingSchedules.push({
+                                  type: 'seminar',
+                                  subjectCode: sub.code || 'MÔN HỌC',
+                                  subjectName: sub.name,
+                                  title: sem.topic || 'Lớp chuyên đề',
+                                  date: sem.date,
+                                  time: sem.time_slot || 'Chưa cấu hình giờ',
+                                  lecturer: semLect,
+                                  location: sem.location || 'Online'
+                                });
+                              }
+                            });
+                          }
+                        });
+
+                        // Sort chronologically:
+                        upcomingSchedules.sort((a, b) => a.date.localeCompare(b.date));
+
+                        return (
+                          <>
+                            {/* Danh sách môn học */}
+                            <div className="card-panel" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                                <List size={18} style={{ color: 'var(--color-primary)' }} />
+                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Danh sách Môn học ({subjects.length})</h4>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {subjects.map((sub: any, idx: number) => {
+                                  const subLecturer = getLecturerName(sub.lecturer_id);
+                                  return (
+                                    <div key={sub.id || idx} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--color-bg-light)', borderRadius: '10px', border: '1px solid var(--color-border-light)' }}>
+                                      <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '2px 6px', borderRadius: '4px' }}>{sub.code || 'MÃ'}</span>
+                                          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{sub.name}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'flex', gap: '1rem' }}>
+                                          <span>GV: <strong>{subLecturer}</strong></span>
+                                          <span>Lịch học: <strong>{sub.host_sessions?.length || 0} buổi</strong></span>
+                                          <span>Chuyên đề: <strong>{sub.seminars?.length || 0} buổi</strong></span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Lịch học sắp tới */}
+                            <div className="card-panel" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                                <Calendar size={18} style={{ color: 'var(--color-primary)' }} />
+                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch học sắp tới ({upcomingSchedules.length})</h4>
+                              </div>
+                              {upcomingSchedules.length === 0 ? (
+                                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>Chưa có lịch học sắp tới.</div>
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                  {upcomingSchedules.map((sch: any, idx: number) => (
+                                    <div key={idx} style={{ padding: '10px 12px', background: '#ffffff', borderRadius: '10px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', ...sch.type === 'school' ? { background: '#eff6ff', color: '#1d4ed8' } : { background: '#faf5ff', color: '#6b21a8' } }}>
+                                            {sch.type === 'school' ? 'Trường' : 'Chuyên đề'}
+                                          </span>
+                                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{sch.subjectCode} - {sch.subjectName}</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>{sch.date.split('-').reverse().join('/')}</span>
+                                      </div>
+                                      <div style={{ fontWeight: 700, fontSize: '0.825rem', color: 'var(--color-text)' }}>{sch.title}</div>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                        <span>Giờ: <strong>{sch.time}</strong></span>
+                                        <span>GV: <strong>{sch.lecturer}</strong></span>
+                                        <span>Địa điểm: <strong>{sch.location}</strong></span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 

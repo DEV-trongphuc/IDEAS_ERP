@@ -133,6 +133,9 @@ class CampaignController {
         $document_ids = trim($b['document_ids'] ?? '');
         $folder_path = trim($b['folder_path'] ?? '');
         $reference_url = trim($b['reference_url'] ?? '');
+        $subjects_json = trim($b['subjects_json'] ?? '');
+        $thesis_milestones_json = trim($b['thesis_milestones_json'] ?? '');
+        $reminders_json = trim($b['reminders_json'] ?? '');
 
         $tenantId = $auth['tenant_id'] ?? 1;
         $userId = $auth['user_id'] ?? $auth['id'] ?? 1;
@@ -150,7 +153,7 @@ class CampaignController {
             }
         }
 
-            requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing']);
+            requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing', 'academic']);
 
         if ($project_id === null && !empty($project_ids)) {
             $pNames = array_filter(array_map('trim', explode(',', $project_ids)));
@@ -170,10 +173,10 @@ class CampaignController {
         }
 
         $stmt = $this->db->prepare("
-            INSERT INTO marketing_campaigns (tenant_id, name, description, status, start_date, end_date, project_id, project_ids, user_ids, manager_ids, document_ids, folder_path, reference_url, created_by) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO marketing_campaigns (tenant_id, name, description, subjects_json, thesis_milestones_json, reminders_json, status, start_date, end_date, project_id, project_ids, user_ids, manager_ids, document_ids, folder_path, reference_url, created_by) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$tenantId, $name, $description, $status, $start_date, $end_date, $project_id, $project_ids, $user_ids, $manager_ids, $document_ids, $folder_path, $reference_url, $userId]);
+        $stmt->execute([$tenantId, $name, $description, $subjects_json ?: null, $thesis_milestones_json ?: null, $reminders_json ?: null, $status, $start_date, $end_date, $project_id, $project_ids, $user_ids, $manager_ids, $document_ids, $folder_path, $reference_url, $userId]);
         $newId = (int)$this->db->lastInsertId();
 
         $this->propagateCampaignRoster($project_id ?: $project_ids, $user_ids);
@@ -183,7 +186,7 @@ class CampaignController {
     }
 
     public function update(array $auth, int $id): void {
-        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing'], true);
+        $isAuthorized = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'marketing', 'academic'], true);
         if (!$isAuthorized) {
             $stmtLeader = $this->db->prepare("SELECT 1 FROM teams WHERE leader_id = ? LIMIT 1");
             $stmtLeader->execute([(int)$auth['user_id']]);
@@ -266,6 +269,9 @@ class CampaignController {
         $document_ids = trim($b['document_ids'] ?? '');
         $folder_path = trim($b['folder_path'] ?? '');
         $reference_url = trim($b['reference_url'] ?? '');
+        $subjects_json = trim($b['subjects_json'] ?? '');
+        $thesis_milestones_json = trim($b['thesis_milestones_json'] ?? '');
+        $reminders_json = trim($b['reminders_json'] ?? '');
 
         if (empty($name)) {
             respond(422, null, 'Tên chiến dịch không được để trống', false);
@@ -293,10 +299,10 @@ class CampaignController {
 
         $stmt = $this->db->prepare("
             UPDATE marketing_campaigns 
-            SET name = ?, description = ?, status = ?, start_date = ?, end_date = ?, project_id = ?, project_ids = ?, user_ids = ?, manager_ids = ?, document_ids = ?, folder_path = ?, reference_url = ? 
+            SET name = ?, description = ?, subjects_json = ?, thesis_milestones_json = ?, reminders_json = ?, status = ?, start_date = ?, end_date = ?, project_id = ?, project_ids = ?, user_ids = ?, manager_ids = ?, document_ids = ?, folder_path = ?, reference_url = ? 
             WHERE id = ? AND tenant_id = ?
         ");
-        $stmt->execute([$name, $description, $status, $start_date, $end_date, $project_id, $project_ids, $user_ids, $manager_ids, $document_ids, $folder_path, $reference_url, $id, $tenantId]);
+        $stmt->execute([$name, $description, $subjects_json ?: null, $thesis_milestones_json ?: null, $reminders_json ?: null, $status, $start_date, $end_date, $project_id, $project_ids, $user_ids, $manager_ids, $document_ids, $folder_path, $reference_url, $id, $tenantId]);
 
         $this->propagateCampaignRoster($project_id ?: $project_ids, $user_ids);
 

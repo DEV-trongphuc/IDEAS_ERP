@@ -91,6 +91,7 @@ $tasks = [
     'cron_sync.php',
     'cron_recurring_tasks.php',
     'cron_deposit_reminders.php',
+    'cron_academic_reminders.php',
     'cron_mailer.php'
 ];
 

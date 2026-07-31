@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, FileText, FileBadge, Tag as TagIcon, Phone, Mail, MapPin, Search, Calendar, Users, Briefcase, Plus, HelpCircle, Globe, Settings, Download, Trash2, Edit, Pencil, Loader2, History, ChevronLeft, ChevronRight, Camera, Save, TrendingUp, DollarSign } from 'lucide-react';
+import { X, Building2, FileText, FileBadge, Tag as TagIcon, Phone, Mail, MapPin, Search, Calendar, Users, Briefcase, Plus, HelpCircle, Globe, Settings, Download, Trash2, Edit, Pencil, Loader2, History, ChevronLeft, ChevronRight, Camera, Save, TrendingUp, DollarSign, BookOpen, List } from 'lucide-react';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { CustomCheckbox } from '../components/ui/CustomCheckbox';
 import { AddressSelect } from '../components/ui/AddressSelect';
@@ -27,6 +27,7 @@ interface CompanyDrawerProps {
 
 const TABS = [
   { id: 'info', label: 'Thông tin', icon: <Building2 size={16} /> },
+  { id: 'teaching', label: 'Giảng dạy', icon: <BookOpen size={16} /> },
   { id: 'activities', label: 'Hoạt động', icon: <History size={16} /> },
   { id: 'contacts', label: 'Liên hệ', icon: <Users size={16} /> },
   { id: 'sales_orders', label: 'Đơn bán (SO)', icon: <FileText size={16} /> },
@@ -112,11 +113,27 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
     }
   };
 
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+
+  const fetchCampaigns = async () => {
+    setLoadingCampaigns(true);
+    try {
+      const res = await api.get('/marketing-campaigns');
+      setCampaigns(res.data.data?.items || res.data.data || []);
+    } catch {
+      setCampaigns([]);
+    } finally {
+      setLoadingCampaigns(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       fetchUsers();
       fetchAllCompanies();
+      fetchCampaigns();
     } else {
       document.body.style.overflow = '';
     }
@@ -1355,6 +1372,197 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                       </div>
                     </div>
                   </fieldset>
+                )}
+
+                {activeTab === 'teaching' && (
+                  <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {(() => {
+                      const companyIdStr = String(entity?.id);
+                      const companyNameStr = String(entity?.name || '').toLowerCase();
+                      const courseMap: Record<string, { campaignName: string, campaignId: any, subjects: Set<string>, sessionCount: number }> = {};
+                      const upcoming: any[] = [];
+                      const todayStr = new Date().toISOString().split('T')[0];
+
+                      campaigns.forEach((camp: any) => {
+                        const subjects = camp.subjects_json
+                          ? (typeof camp.subjects_json === 'string'
+                            ? JSON.parse(camp.subjects_json)
+                            : camp.subjects_json)
+                          : [];
+
+                        subjects.forEach((sub: any) => {
+                          const isMainLecturer = String(sub.lecturer_id || '') === companyIdStr;
+                          let subTaughtInCourse = false;
+                          let subSessions = 0;
+
+                          if (Array.isArray(sub.host_sessions)) {
+                            sub.host_sessions.forEach((hs: any) => {
+                              const isHsLecturer = hs.lecturer_name
+                                ? (String(hs.lecturer_name) === companyIdStr || String(hs.lecturer_name).toLowerCase() === companyNameStr)
+                                : isMainLecturer;
+
+                              if (isHsLecturer) {
+                                subTaughtInCourse = true;
+                                subSessions += 1;
+
+                                if (hs.date && hs.date >= todayStr) {
+                                  upcoming.push({
+                                    type: 'school',
+                                    campaignName: camp.name,
+                                    subjectCode: sub.code || 'MÔN HỌC',
+                                    subjectName: sub.name,
+                                    title: hs.name || 'Buổi học',
+                                    date: hs.date,
+                                    time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
+                                    location: hs.location || 'Online'
+                                  });
+                                }
+                              }
+                            });
+                          }
+
+                          if (Array.isArray(sub.seminars)) {
+                            sub.seminars.forEach((sem: any) => {
+                              const isSemLecturer = sem.lecturer_id
+                                ? (String(sem.lecturer_id) === companyIdStr)
+                                : isMainLecturer;
+
+                              if (isSemLecturer) {
+                                subTaughtInCourse = true;
+                                const weight = Number(sem.sessions_count) === 2 ? 2 : 1;
+                                subSessions += weight;
+
+                                if (sem.date && sem.date >= todayStr) {
+                                  upcoming.push({
+                                    type: 'seminar',
+                                    campaignName: camp.name,
+                                    subjectCode: sub.code || 'MÔN HỌC',
+                                    subjectName: sub.name,
+                                    title: sem.topic || 'Lớp chuyên đề',
+                                    date: sem.date,
+                                    time: sem.time_slot || 'Chưa cấu hình giờ',
+                                    location: sem.location || 'Online'
+                                  });
+                                }
+                              }
+                            });
+                          }
+
+                          if (subTaughtInCourse) {
+                            if (!courseMap[camp.id]) {
+                              courseMap[camp.id] = {
+                                campaignName: camp.name,
+                                campaignId: camp.id,
+                                subjects: new Set(),
+                                sessionCount: 0
+                              };
+                            }
+                            courseMap[camp.id].subjects.add(sub.name || sub.code);
+                            courseMap[camp.id].sessionCount += subSessions;
+                          }
+                        });
+                      });
+
+                      const courseStatsList = Object.values(courseMap).map(c => ({
+                        ...c,
+                        subjectListStr: Array.from(c.subjects).join(', ')
+                      }));
+
+                      upcoming.sort((a, b) => a.date.localeCompare(b.date));
+
+                      const totalCourses = courseStatsList.length;
+                      const totalSubjects = courseStatsList.reduce((acc, c) => acc + c.subjects.size, 0);
+                      const totalSessions = courseStatsList.reduce((acc, c) => acc + c.sessionCount, 0);
+
+                      return (
+                        <>
+                          {/* Grid Thống kê nhanh */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                            <div style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', textAlign: 'center' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Khóa học giảng dạy</div>
+                              <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--color-primary)' }}>{totalCourses}</div>
+                            </div>
+                            <div style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', textAlign: 'center' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Số môn phụ trách</div>
+                              <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--color-success)' }}>{totalSubjects}</div>
+                            </div>
+                            <div style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', textAlign: 'center' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Tổng số buổi dạy</div>
+                              <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#8b5cf6' }}>{totalSessions}</div>
+                            </div>
+                          </div>
+
+                          {/* Bảng Danh sách Khóa học & Môn học */}
+                          <div className="card-panel" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                              <List size={18} style={{ color: 'var(--color-primary)' }} />
+                              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Danh sách Lớp học đang giảng dạy</h4>
+                            </div>
+
+                            {courseStatsList.length === 0 ? (
+                              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>Chưa có thông tin giảng dạy cho giảng viên này.</div>
+                            ) : (
+                              <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '2px solid var(--color-border-light)' }}>
+                                      <th style={{ textAlign: 'left', padding: '10px 8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Khóa học</th>
+                                      <th style={{ textAlign: 'left', padding: '10px 8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Môn học giảng dạy</th>
+                                      <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '90px' }}>Số môn</th>
+                                      <th style={{ textAlign: 'center', padding: '10px 8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '90px' }}>Số buổi</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {courseStatsList.map((stat, idx) => (
+                                      <tr key={stat.campaignId || idx} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                                        <td style={{ padding: '12px 8px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{stat.campaignName}</td>
+                                        <td style={{ padding: '12px 8px', fontSize: '0.8rem', color: 'var(--color-text)' }}>{stat.subjectListStr}</td>
+                                        <td style={{ padding: '12px 8px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', color: 'var(--color-success)' }}>{stat.subjects.size}</td>
+                                        <td style={{ padding: '12px 8px', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center', color: '#8b5cf6' }}>{stat.sessionCount}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Lịch dạy sắp tới */}
+                          <div className="card-panel" style={{ padding: '1.5rem', borderRadius: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                              <Calendar size={18} style={{ color: 'var(--color-primary)' }} />
+                              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch dạy sắp tới ({upcoming.length})</h4>
+                            </div>
+
+                            {upcoming.length === 0 ? (
+                              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>Chưa có lịch dạy sắp tới.</div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {upcoming.map((sch, idx) => (
+                                  <div key={idx} style={{ padding: '10px 12px', background: '#ffffff', borderRadius: '10px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 6px', borderRadius: '100px', ...sch.type === 'school' ? { background: '#eff6ff', color: '#1d4ed8' } : { background: '#faf5ff', color: '#6b21a8' } }}>
+                                          {sch.type === 'school' ? 'Trường' : 'Chuyên đề'}
+                                        </span>
+                                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{sch.campaignName}</span>
+                                      </div>
+                                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>{sch.date.split('-').reverse().join('/')}</span>
+                                    </div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.825rem', color: 'var(--color-text)' }}>{sch.subjectCode} - {sch.subjectName}: {sch.title}</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                      <span>Giờ: <strong>{sch.time}</strong></span>
+                                      <span>Địa điểm: <strong>{sch.location}</strong></span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
                 )}
 
                 {activeTab === 'activities' && (

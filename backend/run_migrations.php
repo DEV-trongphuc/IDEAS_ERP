@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 208;
+$targetVersion = 211;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1134,9 +1134,48 @@ try {
         $logMsg("Nâng cấp lên phiên bản 209 hoàn tất.", "success");
     }
 
-    // 16. Update DB version in system_settings
-    $targetVersion = 209;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '209') ON DUPLICATE KEY UPDATE setting_value = '209'");
+    // 16. Upgrade to 210: Add subjects_json and thesis_milestones_json to marketing_campaigns
+    if ($currentVersion < 210) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 210...", "info");
+        try {
+            $chk1 = $conn->query("SHOW COLUMNS FROM `marketing_campaigns` LIKE 'subjects_json'");
+            if (!$chk1 || $chk1->num_rows === 0) {
+                $conn->query("ALTER TABLE `marketing_campaigns` ADD COLUMN `subjects_json` LONGTEXT NULL AFTER `description`");
+                $logMsg("Đã bổ sung cột subjects_json vào bảng marketing_campaigns.", "success");
+            }
+            $chk2 = $conn->query("SHOW COLUMNS FROM `marketing_campaigns` LIKE 'thesis_milestones_json'");
+            if (!$chk2 || $chk2->num_rows === 0) {
+                $conn->query("ALTER TABLE `marketing_campaigns` ADD COLUMN `thesis_milestones_json` LONGTEXT NULL AFTER `subjects_json`");
+                $logMsg("Đã bổ sung cột thesis_milestones_json vào bảng marketing_campaigns.", "success");
+            }
+            
+            // Cập nhật dự án MBA
+            $conn->query("UPDATE `projects` SET `name` = 'MBA High Quality', `campaign_sharing_mode` = 'public' WHERE `id` = 9 OR `code` = 'MBA'");
+            $logMsg("Đã đồng bộ chương trình MBA High Quality sang dạng công khai.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 210: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 210 hoàn tất.", "success");
+    }
+
+    // 17. Upgrade to 211: Add reminders_json to marketing_campaigns
+    if ($currentVersion < 211) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 211...", "info");
+        try {
+            $chk1 = $conn->query("SHOW COLUMNS FROM `marketing_campaigns` LIKE 'reminders_json'");
+            if (!$chk1 || $chk1->num_rows === 0) {
+                $conn->query("ALTER TABLE `marketing_campaigns` ADD COLUMN `reminders_json` LONGTEXT NULL AFTER `thesis_milestones_json`");
+                $logMsg("Đã bổ sung cột reminders_json vào bảng marketing_campaigns.", "success");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 211: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 211 hoàn tất.", "success");
+    }
+
+    // 18. Update DB version in system_settings
+    $targetVersion = 211;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '211') ON DUPLICATE KEY UPDATE setting_value = '211'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
