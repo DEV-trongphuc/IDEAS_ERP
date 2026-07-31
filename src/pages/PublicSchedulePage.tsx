@@ -46,9 +46,13 @@ export const PublicSchedulePage: React.FC = () => {
     setLoading(true);
     setError(null);
     let param = '';
-    if (customerId) param = `customer_id=${customerId}`;
-    else if (campaignId) param = `campaign_id=${campaignId}`;
-    else if (lecturerId) param = `lecturer_id=${lecturerId}`;
+    if (customerId && customerId !== 'course' && customerId !== 'lecturer') {
+      param = `customer_id=${customerId}`;
+    } else if (campaignId) {
+      param = `campaign_id=${campaignId}`;
+    } else if (lecturerId) {
+      param = `lecturer_id=${lecturerId}`;
+    }
 
     axios.get(`/backend/api.php?action=public_student_schedule&${param}`)
       .then(res => {
