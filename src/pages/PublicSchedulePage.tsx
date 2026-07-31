@@ -18,10 +18,17 @@ import {
 import axios from 'axios';
 
 export const PublicSchedulePage: React.FC = () => {
-  const { customerId } = useParams<{ customerId: string }>();
+  const { customerId, campaignId, lecturerId } = useParams<{ customerId?: string; campaignId?: string; lecturerId?: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>(null);
+
+  const getLocalDateString = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
 
   // Calendar State
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -31,15 +38,24 @@ export const PublicSchedulePage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!customerId) return;
+    if (!customerId && !campaignId && !lecturerId) {
+      setError('Mã liên kết lịch học không hợp lệ.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-    axios.get(`/backend/api.php?action=public_student_schedule&customer_id=${customerId}`)
+    let param = '';
+    if (customerId) param = `customer_id=${customerId}`;
+    else if (campaignId) param = `campaign_id=${campaignId}`;
+    else if (lecturerId) param = `lecturer_id=${lecturerId}`;
+
+    axios.get(`/backend/api.php?action=public_student_schedule&${param}`)
       .then(res => {
         if (res.data && res.data.success) {
           setData(res.data.data);
         } else {
-          setError(res.data?.message || 'Không thể tải lịch học của học viên.');
+          setError(res.data?.message || 'Không thể tải lịch học.');
         }
       })
       .catch(err => {
@@ -49,7 +65,7 @@ export const PublicSchedulePage: React.FC = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [customerId]);
+  }, [customerId, campaignId, lecturerId]);
 
   if (loading) {
     return (
@@ -75,7 +91,7 @@ export const PublicSchedulePage: React.FC = () => {
     );
   }
 
-  const { student, course, program, lecturers } = data;
+  const { student, course, program, lecturers, lecturer } = data;
   const subjects = course?.subjects || [];
   const thesisMilestones = course?.thesis_milestones || [];
 
@@ -265,7 +281,7 @@ export const PublicSchedulePage: React.FC = () => {
   };
 
   const handleDayClick = (date: Date) => {
-    const dStr = date.toISOString().split('T')[0];
+    const dStr = getLocalDateString(date);
     const dayEvts = eventsByDate[dStr] || [];
     const dayMs = milestonesByDate[dStr] || [];
 
@@ -338,35 +354,95 @@ export const PublicSchedulePage: React.FC = () => {
         gap: '1.5rem',
         boxShadow: 'var(--shadow-md)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          {/* Circular Avatar */}
-          <div style={{ 
-            width: '64px', 
-            height: '64px', 
-            borderRadius: '50%', 
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', 
-            color: '#ffffff',
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            fontSize: '1.5rem', 
-            fontWeight: 800,
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
-            border: '3px solid #ffffff'
-          }}>
-            {getStudentInitials(student.name)}
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{student.name}</span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-light)', padding: '2px 8px', borderRadius: '100px' }}>Học viên</span>
+        {student ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            {/* Circular Avatar */}
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '50%', 
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', 
+              color: '#ffffff',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '1.5rem', 
+              fontWeight: 800,
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+              border: '3px solid #ffffff'
+            }}>
+              {getStudentInitials(student.name)}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} /> Chương trình: <strong style={{ color: 'var(--color-text)' }}>{program?.name || 'Chưa liên kết'}</strong></span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BookOpen size={14} /> Khóa học: <strong style={{ color: 'var(--color-text)' }}>{course?.name || 'Chưa liên kết'}</strong></span>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{student.name}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-light)', padding: '2px 8px', borderRadius: '100px' }}>Học viên</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} /> Chương trình: <strong style={{ color: 'var(--color-text)' }}>{program?.name || 'Chưa liên kết'}</strong></span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BookOpen size={14} /> Khóa học: <strong style={{ color: 'var(--color-text)' }}>{course?.name || 'Chưa liên kết'}</strong></span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : lecturer ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            {/* Red Theme Avatar for Lecturer */}
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '50%', 
+              background: 'linear-gradient(135deg, #b91c1c 0%, #ef4444 100%)', 
+              color: '#ffffff',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '1.5rem', 
+              fontWeight: 800,
+              boxShadow: '0 4px 12px rgba(185, 28, 28, 0.25)',
+              border: '3px solid #ffffff'
+            }}>
+              {getStudentInitials(lecturer.name)}
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>Giảng viên: {lecturer.name}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-danger)', background: 'var(--color-danger-light)', padding: '2px 8px', borderRadius: '100px' }}>Giảng viên</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} /> Hệ thống: <strong style={{ color: 'var(--color-text)' }}>{program?.name || 'Chưa liên kết'}</strong></span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BookOpen size={14} /> Lịch giảng dạy: <strong style={{ color: 'var(--color-text)' }}>Tất cả khóa học</strong></span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            {/* Calendar Icon Avatar */}
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '50%', 
+              background: 'linear-gradient(135deg, #b91c1c 0%, #ef4444 100%)', 
+              color: '#ffffff',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              boxShadow: '0 4px 12px rgba(185, 28, 28, 0.25)',
+              border: '3px solid #ffffff'
+            }}>
+              <CalendarDays size={30} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>Lịch học Khóa: {course?.name || 'Chưa thiết lập'}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-primary)', background: 'var(--color-primary-light)', padding: '2px 8px', borderRadius: '100px' }}>Toàn khóa</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={14} /> Chương trình: <strong style={{ color: 'var(--color-text)' }}>{program?.name || 'Chưa liên kết'}</strong></span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><BookOpen size={14} /> Trạng thái: <strong style={{ color: 'var(--color-text)' }}>Đang hoạt động</strong></span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* School (Degree Awarding Body) */}
         {program?.degree_awarding_body && (
@@ -411,9 +487,10 @@ export const PublicSchedulePage: React.FC = () => {
                 <Clock size={20} />
               </div>
               <div>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lịch học sắp tới</div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lecturer ? 'Lịch giảng sắp tới' : 'Lịch học sắp tới'}</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e3a8a', marginTop: '2px' }}>
-                  Bạn có lịch học gần nhất vào <span style={{ color: '#2563eb', fontWeight: 800 }}>{formatDaysPhrase(nearestClassDays)}</span> ({nearestClassDateStr.split('-').reverse().join('/')}).
+                  {student ? 'Bạn có lịch học gần nhất vào ' : lecturer ? 'Lịch giảng gần nhất vào ' : 'Lịch học gần nhất của khóa vào '}
+                  <span style={{ color: '#2563eb', fontWeight: 800 }}>{formatDaysPhrase(nearestClassDays)}</span> ({nearestClassDateStr.split('-').reverse().join('/')}).
                 </div>
               </div>
             </div>
@@ -434,9 +511,10 @@ export const PublicSchedulePage: React.FC = () => {
                 <FileText size={20} />
               </div>
               <div>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bài tập & Hạn nộp</div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#c2410c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lecturer ? 'Bài tập & Cột mốc liên quan' : 'Bài tập & Hạn nộp'}</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7c2d12', marginTop: '2px' }}>
-                  Bạn có bài tập/mốc cần hoàn thành <span style={{ color: '#ea580c', fontWeight: 800 }}>{formatDaysPhrase(nearestAsmDays)}</span> ({nearestAsmDateStr.split('-').reverse().join('/')}): <span style={{ fontWeight: 800 }}>{nearestAsmName}</span>.
+                  {student ? 'Bạn có bài tập/mốc cần hoàn thành ' : lecturer ? 'Thời hạn bài tập/mốc liên quan ' : 'Hạn nộp bài tập/mốc gần nhất '}
+                  <span style={{ color: '#ea580c', fontWeight: 800 }}>{formatDaysPhrase(nearestAsmDays)}</span> ({nearestAsmDateStr.split('-').reverse().join('/')}): <span style={{ fontWeight: 800 }}>{nearestAsmName}</span>.
                 </div>
               </div>
             </div>
@@ -510,7 +588,7 @@ export const PublicSchedulePage: React.FC = () => {
             <span>Lịch học Trường</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#a855f7' }}></span>
+            <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }}></span>
             <span>Lớp Chuyên đề (IDEAS)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -551,7 +629,7 @@ export const PublicSchedulePage: React.FC = () => {
                 );
               }
 
-              const dStr = date.toISOString().split('T')[0];
+              const dStr = getLocalDateString(date);
               const dayEvts = eventsByDate[dStr] || [];
               const dayMs = milestonesByDate[dStr] || [];
               
@@ -610,7 +688,7 @@ export const PublicSchedulePage: React.FC = () => {
                           fontSize: '0.68rem', 
                           fontWeight: 700, 
                           color: '#ffffff', 
-                          background: evt.type === 'school' ? '#3b82f6' : '#a855f7', 
+                          background: evt.type === 'school' ? '#3b82f6' : '#ef4444', 
                           padding: '1px 6px', 
                           borderRadius: '4px',
                           whiteSpace: 'nowrap',
@@ -733,7 +811,7 @@ export const PublicSchedulePage: React.FC = () => {
                           padding: '2px 8px', 
                           borderRadius: '100px', 
                           color: '#ffffff', 
-                          background: evt.type === 'school' ? '#3b82f6' : '#a855f7' 
+                          background: evt.type === 'school' ? '#3b82f6' : '#ef4444' 
                         }}>
                           {evt.type === 'school' ? 'Trường' : 'Chuyên đề'}
                         </span>

@@ -56,6 +56,7 @@ const MyPayslips = lazy(() => import('./pages/MyPayslips'));
 const Approvals = lazy(() => import('./pages/Approvals'));
 const EnterpriseFeed = lazy(() => import('./pages/EnterpriseFeed').then(module => ({ default: module.EnterpriseFeed })));
 const PublicSchedulePage = lazy(() => import('./pages/PublicSchedulePage').then(module => ({ default: module.PublicSchedulePage })));
+const InternalSchedulePage = lazy(() => import('./pages/InternalSchedulePage').then(module => ({ default: module.InternalSchedulePage })));
 
 // Loading spinner fallback
 const PageLoader = () => (
@@ -87,7 +88,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training', '/hrm'];
-  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/contacts', '/students', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/cash-flow', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard'];
+  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/contacts', '/students', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/cash-flow', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard', '/schedules'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -213,6 +214,8 @@ const AppTabs = () => {
         return user?.role === 'sale' ? <SalePortal embedMode={true} activeTabProp="tickets" key="tickets" /> : <Tickets key="tickets" />;
       case '/support-tickets':
         return <TicketsPage key="support-tickets" />;
+      case '/schedules':
+        return <InternalSchedulePage key="schedules" />;
       case '/consultants':
         return <Consultants key="consultants" />;
       case '/rounds':
@@ -543,6 +546,8 @@ export default function App() {
                   <Route path="/demo" element={<DemoEntry />} />
                   <Route path="/download" element={<DownloadPage />} />
                   <Route path="/public-schedule/:customerId" element={<PublicSchedulePage />} />
+                  <Route path="/public-schedule/course/:campaignId" element={<PublicSchedulePage />} />
+                  <Route path="/public-schedule/lecturer/:lecturerId" element={<PublicSchedulePage />} />
 
                   {/* All authenticated users (sharing a single persistent AppTabs instance) */}
                   <Route element={<ProtectedRoute />}>

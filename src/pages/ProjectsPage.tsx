@@ -2655,14 +2655,42 @@ export default function ProjectsPage() {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ width: '3px', height: '14px', background: 'var(--color-primary)', borderRadius: '1.5px' }} />
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cấu hình Môn học &amp; Lịch giảng dạy</h4>
           </div>
-          {canEdit && (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {copiedSubject && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {editingCampaign?.id && (
+              <button
+                type="button"
+                className="btn outline sm hover-lift"
+                style={{ 
+                  borderRadius: '100px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  fontSize: '0.75rem', 
+                  fontWeight: 750, 
+                  borderColor: '#ea580c', 
+                  color: '#ea580c', 
+                  background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', 
+                  border: '1px solid #fed7aa',
+                  boxShadow: 'var(--shadow-sm)',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  const publicLink = `/public-schedule/course/${editingCampaign.id}`;
+                  window.open(publicLink, '_blank');
+                }}
+              >
+                <Calendar size={14} />
+                <span>Xem lịch khóa học (Public)</span>
+              </button>
+            )}
+            {canEdit && (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {copiedSubject && (
                 <button
                   type="button"
                   className="btn outline sm"
@@ -2726,6 +2754,7 @@ export default function ProjectsPage() {
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {subjects.length === 0 ? (

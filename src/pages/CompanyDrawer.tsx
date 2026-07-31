@@ -75,6 +75,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   const [activeTab, setActiveTab] = useState(() => window.innerWidth <= 1024 ? '' : 'info');
   const [formData, setFormData] = useState(entity || {});
   const isPartner = ['f1', 'f2', 'f3', 'ctv'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
+  const isLecturer = ['f1', 'f2', 'f3', 'giang_vien'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
   const [tags, setTags] = useState<string[]>(entity?.tags || []);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -537,6 +538,33 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                     {activeTab ? (visibleTabs.find(t => t.id === activeTab)?.label || 'Chi tiết') : (formData?.name || 'Tên Giảng viên')}
                   </h3>
                 </div>
+                {isLecturer && formData?.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const publicLink = `/public-schedule/lecturer/${formData.id}`;
+                      window.open(publicLink, '_blank');
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '10px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      height: '36px',
+                      width: '44px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid #fed7aa',
+                      background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                      color: '#ea580c',
+                      cursor: 'pointer',
+                      marginRight: '8px'
+                    }}
+                  >
+                    <Calendar size={18} />
+                  </button>
+                )}
                 <button
                   disabled={isSaving}
                   onClick={handleSave}
@@ -638,6 +666,35 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                   <span className={`badge ${formData?.status === 'active' ? 'success' : formData?.status === 'inactive' ? 'danger' : 'warning'}`}>
                     {formData?.status === 'active' ? 'Hoạt động' : formData?.status === 'inactive' ? 'Ngừng' : 'Tiềm năng'}
                   </span>
+                  {isLecturer && formData?.id && (
+                    <button
+                      type="button"
+                      className="btn outline hover-lift"
+                      style={{
+                        borderColor: '#ea580c',
+                        color: '#ea580c',
+                        background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                        border: '1px solid #fed7aa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 750,
+                        height: '38px',
+                        borderRadius: '10px',
+                        boxShadow: 'var(--shadow-sm)',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        const publicLink = `/public-schedule/lecturer/${formData.id}`;
+                        window.open(publicLink, '_blank');
+                      }}
+                    >
+                      <Calendar size={16} />
+                      <span>Xem lịch giảng</span>
+                    </button>
+                  )}
                   <button 
                     className="btn primary" 
                     disabled={isSaving}

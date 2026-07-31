@@ -49,6 +49,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { name: 'Chương trình', href: '/projects', icon: Building2, hideForRoles: ['hr'] },
       { name: 'Khóa học', href: '/projects?tab=campaigns', icon: Layers, hideForRoles: ['hr'] },
+      { name: 'Lịch học', href: '/schedules', icon: Calendar, hideForRoles: ['hr'] },
       { name: 'Đối tác', href: '/companies', icon: Building2 },
       { name: 'Tài liệu', href: '/files', icon: File },
       { name: 'Nhà cung cấp', href: '/suppliers', icon: Truck }
@@ -157,6 +158,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   ],
   marketing: [
     { name: 'Khóa học', href: '/projects?tab=campaigns', icon: Layers },
+    { name: 'Lịch học', href: '/schedules', icon: Calendar },
     { name: 'Pre-screener', href: '/gatekeeper', icon: Filter, badgeKey: 'gatekeeper' },
     { name: 'Tích hợp', href: '/integrations', icon: Link2 },
     { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2 }

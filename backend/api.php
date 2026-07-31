@@ -2001,42 +2001,145 @@ switch ($action) {
 
     case 'public_student_schedule':
         $customerId = isset($_GET['customer_id']) ? (int)$_GET['customer_id'] : 0;
-        if ($customerId <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Mã học viên không hợp lệ']);
+        $campaignId = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : 0;
+        $lecturerId = isset($_GET['lecturer_id']) ? (int)$_GET['lecturer_id'] : 0;
+
+        // Fetch Lecturers lookup dictionary
+        $lecturers = [];
+        $resComp = $conn->query("SELECT id, name FROM companies");
+        if ($resComp) {
+            while ($row = $resComp->fetch_assoc()) {
+                $lecturers[$row['id']] = $row['name'];
+            }
+        }
+        $resUsers = $conn->query("SELECT id, username, full_name FROM users");
+        if ($resUsers) {
+            while ($row = $resUsers->fetch_assoc()) {
+                $lecturers[$row['id']] = $row['full_name'] ?: $row['username'];
+            }
+        }
+
+        if ($lecturerId > 0) {
+            $lecturerName = $lecturers[$lecturerId] ?? 'Giảng viên';
+            
+            // Query all campaigns and extract subjects matching lecturerId
+            $resCampaigns = $conn->query("SELECT id, name, project_id, subjects_json, status, thesis_milestones_json FROM marketing_campaigns");
+            $matchingSubjects = [];
+            $thesisMilestones = [];
+            
+            if ($resCampaigns) {
+                while ($row = $resCampaigns->fetch_assoc()) {
+                    if (empty($row['subjects_json'])) continue;
+                    $subjectsArray = json_decode($row['subjects_json'], true);
+                    if (!is_array($subjectsArray)) continue;
+                    
+                    $courseTaught = false;
+                    $courseSubjects = [];
+                    foreach ($subjectsArray as $sub) {
+                        $subjectMatches = false;
+                        if (isset($sub['lecturer_id']) && (int)$sub['lecturer_id'] === $lecturerId) {
+                            $subjectMatches = true;
+                        }
+                        if (isset($sub['host_sessions']) && is_array($sub['host_sessions'])) {
+                            foreach ($sub['host_sessions'] as $session) {
+                                if (isset($session['lecturer_name']) && (int)$session['lecturer_name'] === $lecturerId) {
+                                    $subjectMatches = true;
+                                }
+                            }
+                        }
+                        if (isset($sub['seminars']) && is_array($sub['seminars'])) {
+                            foreach ($sub['seminars'] as $sem) {
+                                if (isset($sem['lecturer_id']) && (int)$sem['lecturer_id'] === $lecturerId) {
+                                    $subjectMatches = true;
+                                }
+                            }
+                        }
+                        
+                        if ($subjectMatches) {
+                            $courseTaught = true;
+                            $sub['name'] = $sub['name'] . " (" . $row['name'] . ")";
+                            $courseSubjects[] = $sub;
+                        }
+                    }
+                    
+                    if ($courseTaught) {
+                        $matchingSubjects = array_merge($matchingSubjects, $courseSubjects);
+                        if (!empty($row['thesis_milestones_json'])) {
+                            $miles = json_decode($row['thesis_milestones_json'], true);
+                            if (is_array($miles)) {
+                                $thesisMilestones = array_merge($thesisMilestones, $miles);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'student' => null,
+                    'lecturer' => [
+                        'id' => $lecturerId,
+                        'name' => $lecturerName
+                    ],
+                    'course' => [
+                        'id' => 0,
+                        'name' => 'Lịch giảng dạy',
+                        'subjects' => $matchingSubjects,
+                        'thesis_milestones' => $thesisMilestones
+                    ],
+                    'program' => [
+                        'id' => 0,
+                        'name' => 'Hệ thống IDEAS ERP',
+                        'code' => 'IDEAS',
+                        'degree_awarding_body' => 'Viện IDEAS'
+                    ],
+                    'lecturers' => $lecturers
+                ]
+            ]);
             break;
         }
 
-        // 1. Query Contact
-        $stmtL = $conn->prepare("SELECT id, full_name, campaign_id, phone, email, dob, citizen_id FROM contacts WHERE id = ? LIMIT 1");
-        $stmtL->bind_param("i", $customerId);
-        $stmtL->execute();
-        $lead = $stmtL->get_result()->fetch_assoc();
-        if (!$lead) {
-            echo json_encode(['success' => false, 'message' => 'Không tìm thấy học viên']);
+        $lead = null;
+        if ($customerId > 0) {
+            // 1. Query Contact
+            $stmtL = $conn->prepare("SELECT id, full_name, campaign_id, phone, email, dob, citizen_id FROM contacts WHERE id = ? LIMIT 1");
+            $stmtL->bind_param("i", $customerId);
+            $stmtL->execute();
+            $lead = $stmtL->get_result()->fetch_assoc();
+            if (!$lead) {
+                echo json_encode(['success' => false, 'message' => 'Không tìm thấy học viên']);
+                break;
+            }
+            $campaignId = (int)($lead['campaign_id'] ?? 0);
+        }
+
+        if ($campaignId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Khóa học hoặc học viên không hợp lệ']);
             break;
         }
 
-        $campaignId = (int)($lead['campaign_id'] ?? 0);
         $campaign = null;
         $project = null;
 
         // 2. Query Campaign/Course
-        if ($campaignId > 0) {
-            $stmtC = $conn->prepare("SELECT id, name, project_id, subjects_json, status, thesis_milestones_json FROM marketing_campaigns WHERE id = ? LIMIT 1");
-            $stmtC->bind_param("i", $campaignId);
-            $stmtC->execute();
-            $campaign = $stmtC->get_result()->fetch_assoc();
+        $stmtC = $conn->prepare("SELECT id, name, project_id, subjects_json, status, thesis_milestones_json FROM marketing_campaigns WHERE id = ? LIMIT 1");
+        $stmtC->bind_param("i", $campaignId);
+        $stmtC->execute();
+        $campaign = $stmtC->get_result()->fetch_assoc();
 
-            if ($campaign) {
-                $projectId = (int)($campaign['project_id'] ?? 0);
-                // 3. Query Project/Program
-                if ($projectId > 0) {
-                    $stmtP = $conn->prepare("SELECT id, name, code, developer FROM projects WHERE id = ? LIMIT 1");
-                    $stmtP->bind_param("i", $projectId);
-                    $stmtP->execute();
-                    $project = $stmtP->get_result()->fetch_assoc();
-                }
-            }
+        if (!$campaign) {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy thông tin khóa học']);
+            break;
+        }
+
+        $projectId = (int)($campaign['project_id'] ?? 0);
+        // 3. Query Project/Program
+        if ($projectId > 0) {
+            $stmtP = $conn->prepare("SELECT id, name, code, developer FROM projects WHERE id = ? LIMIT 1");
+            $stmtP->bind_param("i", $projectId);
+            $stmtP->execute();
+            $project = $stmtP->get_result()->fetch_assoc();
         }
 
         // 4. Fetch Lecturers lookup dictionary
