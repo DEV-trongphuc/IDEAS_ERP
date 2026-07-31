@@ -1379,8 +1379,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                     {(() => {
                       const companyIdStr = String(entity?.id);
                       const companyNameStr = String(entity?.name || '').toLowerCase();
-                      const courseMap: Record<string, { campaignName: string, campaignId: any, subjects: Set<string>, sessionCount: number }> = {};
-                      const upcoming: any[] = [];
+                      const allSessions: any[] = [];
                       const todayStr = new Date().toISOString().split('T')[0];
 
                       campaigns.forEach((camp: any) => {
@@ -1392,8 +1391,6 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
 
                         subjects.forEach((sub: any) => {
                           const isMainLecturer = String(sub.lecturer_id || '') === companyIdStr;
-                          let subTaughtInCourse = false;
-                          let subSessions = 0;
 
                           if (Array.isArray(sub.host_sessions)) {
                             sub.host_sessions.forEach((hs: any) => {
@@ -1402,21 +1399,18 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                                 : isMainLecturer;
 
                               if (isHsLecturer) {
-                                subTaughtInCourse = true;
-                                subSessions += 1;
-
-                                if (hs.date && hs.date >= todayStr) {
-                                  upcoming.push({
-                                    type: 'school',
-                                    campaignName: camp.name,
-                                    subjectCode: sub.code || 'MÔN HỌC',
-                                    subjectName: sub.name,
-                                    title: hs.name || 'Buổi học',
-                                    date: hs.date,
-                                    time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
-                                    location: hs.location || 'Online'
-                                  });
-                                }
+                                allSessions.push({
+                                  type: 'school',
+                                  campaignId: camp.id,
+                                  campaignName: camp.name,
+                                  subjectCode: sub.code || 'MÔN HỌC',
+                                  subjectName: sub.name || '',
+                                  title: hs.name || 'Buổi học',
+                                  date: hs.date || '',
+                                  time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
+                                  location: hs.location || 'Online',
+                                  sessionsCount: 1
+                                });
                               }
                             });
                           }
@@ -1428,39 +1422,92 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                                 : isMainLecturer;
 
                               if (isSemLecturer) {
-                                subTaughtInCourse = true;
-                                const weight = Number(sem.sessions_count) === 2 ? 2 : 1;
-                                subSessions += weight;
-
-                                if (sem.date && sem.date >= todayStr) {
-                                  upcoming.push({
-                                    type: 'seminar',
-                                    campaignName: camp.name,
-                                    subjectCode: sub.code || 'MÔN HỌC',
-                                    subjectName: sub.name,
-                                    title: sem.topic || 'Lớp chuyên đề',
-                                    date: sem.date,
-                                    time: sem.time_slot || 'Chưa cấu hình giờ',
-                                    location: sem.location || 'Online'
-                                  });
-                                }
+                                allSessions.push({
+                                  type: 'seminar',
+                                  campaignId: camp.id,
+                                  campaignName: camp.name,
+                                  subjectCode: sub.code || 'MÔN HỌC',
+                                  subjectName: sub.name || '',
+                                  title: sem.topic || 'Lớp chuyên đề',
+                                  date: sem.date || '',
+                                  time: sem.time_slot || 'Chưa cấu hình giờ',
+                                  location: sem.location || 'Online',
+                                  sessionsCount: Number(sem.sessions_count) || 1
+                                });
                               }
                             });
                           }
-
-                          if (subTaughtInCourse) {
-                            if (!courseMap[camp.id]) {
-                              courseMap[camp.id] = {
-                                campaignName: camp.name,
-                                campaignId: camp.id,
-                                subjects: new Set(),
-                                sessionCount: 0
-                              };
-                            }
-                            courseMap[camp.id].subjects.add(sub.name || sub.code);
-                            courseMap[camp.id].sessionCount += subSessions;
-                          }
                         });
+                      });
+
+                      // Group sessions to deduplicate overlapping ones (same date, time, subject code/name, and type)
+                      const groupedSessions: Record<string, {
+                        type: string;
+                        subjectCode: string;
+                        subjectName: string;
+                        title: string;
+                        date: string;
+                        time: string;
+                        location: string;
+                        campaigns: { id: any, name: string }[];
+                        sessionsCount: number;
+                      }> = {};
+
+                      allSessions.forEach(s => {
+                        const subKey = (s.subjectCode && s.subjectCode !== 'MÔN HỌC') ? s.subjectCode : s.subjectName;
+                        const key = `${s.date || 'no-date'}_${s.time || 'no-time'}_${subKey || 'no-subj'}_${s.type}`;
+                        if (!groupedSessions[key]) {
+                          groupedSessions[key] = {
+                            type: s.type,
+                            subjectCode: s.subjectCode,
+                            subjectName: s.subjectName,
+                            title: s.title,
+                            date: s.date,
+                            time: s.time,
+                            location: s.location,
+                            campaigns: [],
+                            sessionsCount: s.sessionsCount
+                          };
+                        }
+                        if (!groupedSessions[key].campaigns.some(c => String(c.id) === String(s.campaignId))) {
+                          groupedSessions[key].campaigns.push({
+                            id: s.campaignId,
+                            name: s.campaignName
+                          });
+                        }
+                      });
+
+                      const deduplicatedList = Object.values(groupedSessions);
+
+                      // Calculate upcoming list from deduplicated sessions
+                      const upcoming = deduplicatedList
+                        .filter(s => s.date && s.date >= todayStr)
+                        .map(s => ({
+                          type: s.type,
+                          campaignName: s.campaigns.map(c => c.name).join(', '),
+                          subjectCode: s.subjectCode,
+                          subjectName: s.subjectName,
+                          title: s.title,
+                          date: s.date,
+                          time: s.time,
+                          location: s.location
+                        }));
+
+                      upcoming.sort((a, b) => a.date.localeCompare(b.date));
+
+                      // Course Stats List (Table display per campaign)
+                      const courseMap: Record<string, { campaignName: string, campaignId: any, subjects: Set<string>, sessionCount: number }> = {};
+                      allSessions.forEach(s => {
+                        if (!courseMap[s.campaignId]) {
+                          courseMap[s.campaignId] = {
+                            campaignName: s.campaignName,
+                            campaignId: s.campaignId,
+                            subjects: new Set(),
+                            sessionCount: 0
+                          };
+                        }
+                        courseMap[s.campaignId].subjects.add(s.subjectName || s.subjectCode);
+                        courseMap[s.campaignId].sessionCount += s.sessionsCount;
                       });
 
                       const courseStatsList = Object.values(courseMap).map(c => ({
@@ -1468,11 +1515,9 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
                         subjectListStr: Array.from(c.subjects).join(', ')
                       }));
 
-                      upcoming.sort((a, b) => a.date.localeCompare(b.date));
-
                       const totalCourses = courseStatsList.length;
-                      const totalSubjects = courseStatsList.reduce((acc, c) => acc + c.subjects.size, 0);
-                      const totalSessions = courseStatsList.reduce((acc, c) => acc + c.sessionCount, 0);
+                      const totalSubjects = new Set(allSessions.map(s => (s.subjectCode && s.subjectCode !== 'MÔN HỌC') ? s.subjectCode : s.subjectName)).size;
+                      const totalSessions = deduplicatedList.reduce((acc, s) => acc + s.sessionsCount, 0);
 
                       return (
                         <>
