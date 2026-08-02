@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,6 +47,9 @@ export const MentionInput: React.FC<MentionInputProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; bottom?: number; upwards?: boolean } | null>(null);
   const [isEmpty, setIsEmpty] = useState(!value);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const isFocusedRef = useRef(false);
@@ -394,11 +398,31 @@ export const MentionInput: React.FC<MentionInputProps> = ({
   };
 
   const handleEditorAddLink = () => {
-    const url = prompt('Nhập đường dẫn URL (ví dụ: https://example.com):');
-    if (url) {
-      const absoluteUrl = url.match(/^https?:\/\//) ? url : 'https://' + url;
+    let range: Range | null = null;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      range = sel.getRangeAt(0).cloneRange();
+    }
+    setSavedRange(range);
+    setLinkUrl('');
+    setShowLinkModal(true);
+  };
+
+  const handleConfirmLink = () => {
+    if (linkUrl.trim()) {
+      const absoluteUrl = linkUrl.match(/^https?:\/\//) ? linkUrl : 'https://' + linkUrl;
+      
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        if (savedRange) {
+          selection.addRange(savedRange);
+        }
+      }
+      
       handleEditorCommand('createLink', absoluteUrl);
     }
+    setShowLinkModal(false);
   };
 
   const triggerImageUpload = () => {
@@ -699,6 +723,116 @@ export const MentionInput: React.FC<MentionInputProps> = ({
                 })
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showLinkModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999999,
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowLinkModal(false);
+            }}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: '12px',
+                padding: '20px',
+                width: '360px',
+                boxShadow: 'var(--shadow-xl)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                Chèn liên kết
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                Nhập đường dẫn URL (ví dụ: https://example.com):
+              </div>
+              <input
+                type="text"
+                value={linkUrl}
+                onChange={e => setLinkUrl(e.target.value)}
+                placeholder="https://..."
+                className="form-input"
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '0 10px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  outline: 'none'
+                }}
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleConfirmLink();
+                  if (e.key === 'Escape') setShowLinkModal(false);
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowLinkModal(false)}
+                  className="btn text"
+                  style={{
+                    height: '32px',
+                    padding: '0 12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: '1px solid var(--color-border)',
+                    background: 'transparent',
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmLink}
+                  className="btn primary"
+                  style={{
+                    height: '32px',
+                    padding: '0 12px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'var(--color-primary)',
+                    color: 'white',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đồng ý
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

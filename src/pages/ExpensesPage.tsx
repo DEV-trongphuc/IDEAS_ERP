@@ -79,8 +79,8 @@ export const ExpensesPage: React.FC = () => {
   const { addToast, showConfirm } = useUIStore();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>(location.state?.period || 'this_month');
-  const [dateRange, setDateRange] = useState<DateRange>(location.state?.dateRange || getDateRange('this_month'));
+  const [period, setPeriod] = useState<Period>(location.state?.period || 'all');
+  const [dateRange, setDateRange] = useState<DateRange>(location.state?.dateRange || getDateRange('all'));
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');

@@ -32,7 +32,7 @@ try {
 
         // --- FETCH CAMPAIGN STUDENTS (CONTACTS) ---
         $studentsList = [];
-        $stmtC = $conn->prepare("SELECT id, name, email, phone FROM contacts WHERE campaign_id = ? AND tenant_id = ? AND deleted_at IS NULL");
+        $stmtC = $conn->prepare("SELECT id, name, email, phone FROM contacts WHERE campaign_id = ? AND tenant_id = ? AND pipeline_status = (SELECT COALESCE(setting_value, 'hoc_vien') FROM system_settings WHERE setting_key = 'deal_won_status' LIMIT 1) AND deleted_at IS NULL");
         $stmtC->bind_param("ii", $camp['id'], $camp['tenant_id']);
         $stmtC->execute();
         $resStudents = $stmtC->get_result();
@@ -99,6 +99,14 @@ try {
                             $stmtL->execute();
                             $lectInfo = $stmtL->get_result()->fetch_assoc();
                             $stmtL->close();
+
+                            if (!$lectInfo) {
+                                $stmtL = $conn->prepare("SELECT name, email, phone FROM consultants WHERE id = ?");
+                                $stmtL->bind_param("i", $lectId);
+                                $stmtL->execute();
+                                $lectInfo = $stmtL->get_result()->fetch_assoc();
+                                $stmtL->close();
+                            }
 
                             if ($lectInfo) {
                                 $lectName = $lectInfo['name'];

@@ -20,6 +20,8 @@ import { ProcessFeed } from '../components/ui/ProcessFeed';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pagination } from '../components/ui/Pagination';
 import { useUIStore } from '../store/uiStore';
+import { PeriodFilter, getDateRange } from '../components/ui/PeriodFilter';
+import type { Period, DateRange } from '../components/ui/PeriodFilter';
 
 const workflowList = [
   { id: 'payment', name: 'Đề nghị thanh toán', description: 'Đề xuất thanh toán nhà cung cấp, chi phí vận hành, đối tác.', category: 'finance', icon: FileSignature, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
@@ -348,6 +350,8 @@ export default function Approvals() {
   
   const isAdmin = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr'].includes(String(user?.role).toLowerCase());
   const [activeTab, setActiveTab] = useState<'pending' | 'my_requests'>(isAdmin ? 'pending' : 'my_requests');
+  const [period, setPeriod] = useState<Period>('all');
+  const [dateRange, setDateRange] = useState<DateRange>(() => getDateRange('all'));
   
   const [pendingList, setPendingList] = useState<ApprovalItem[]>([]);
   const [myRequestsList, setMyRequestsList] = useState<ApprovalItem[]>([]);
@@ -969,7 +973,14 @@ export default function Approvals() {
       const matchesStatus = listStatusFilter === 'all' || 
         (item.status || 'pending').toLowerCase() === listStatusFilter.toLowerCase();
       
-      return matchesSearch && matchesCategory && matchesStatus;
+      let matchesDate = true;
+      if (item.created_at) {
+        const dateStr = item.created_at.substring(0, 10);
+        if (dateRange.from && dateStr < dateRange.from) matchesDate = false;
+        if (dateRange.to && dateStr > dateRange.to) matchesDate = false;
+      }
+      
+      return matchesSearch && matchesCategory && matchesStatus && matchesDate;
     });
   };
 
@@ -986,14 +997,20 @@ export default function Approvals() {
           <h1 className="page-title">{t('Quy trình hệ thống')}</h1>
           <p className="page-subtitle">{t('Quản lý tập trung các quy trình đề xuất nghỉ phép, tạm ứng lương, chi phí hành chính và giải trình đi trễ.')}</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', fontWeight: 700 }}
-        >
-          <Plus size={16} />
-          {t('Tạo đề xuất')}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <PeriodFilter
+            value={period}
+            onChange={(p, r) => { setPeriod(p); setDateRange(r); }}
+          />
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', fontWeight: 700 }}
+          >
+            <Plus size={16} />
+            {t('Tạo đề xuất')}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

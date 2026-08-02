@@ -225,6 +225,7 @@ class PurchaseOrderController {
             $po = $stmt->fetch();
             if (!$po) respond(404, null, 'Không tìm thấy đơn hàng', false);
             if ($po['status'] === 'received') respond(422, null, 'Đơn hàng này đã được nhập kho rồi', false);
+            if ($po['status'] === 'cancelled') respond(422, null, 'Đơn hàng này đã bị hủy, không thể nhập kho', false);
             if ($po['approval_status'] !== 'approved') {
                 respond(422, null, 'Đơn hàng chưa được phê duyệt đầy đủ, không thể nhập kho', false);
             }

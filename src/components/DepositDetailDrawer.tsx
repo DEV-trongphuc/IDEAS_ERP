@@ -199,8 +199,8 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   }, [isOpen, selectedDepForManage?.id]);
 
   const handleAddComment = async () => {
-    const cleanText = newCommentText.replace(/<[^>]*>/g, '').trim();
-    if (!cleanText || !selectedDepForManage?.id || isSubmittingComment) return;
+    const hasContent = newCommentText.includes('<img') || !!newCommentText.replace(/<[^>]*>/g, '').trim();
+    if (!hasContent || !selectedDepForManage?.id || isSubmittingComment) return;
     setIsSubmittingComment(true);
     try {
       const res = await fetchAPI(`deposits/${selectedDepForManage.id}/comments`, {
@@ -1253,19 +1253,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                   className="form-input"
                                   style={{ width: '100%', height: '34px', fontSize: '0.775rem', padding: '0 10px', borderRadius: '6px' }}
                                 />
-                                {(() => {
-                                  const currentVal = selectedDepForManage.currency !== 'VND'
-                                    ? (m.original_amount !== null && m.original_amount !== undefined ? m.original_amount : m.expected_amount)
-                                    : m.expected_amount;
-                                  if (currentVal > 0) {
-                                    return (
-                                      <div style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, marginTop: '2px', fontStyle: 'italic' }} title={numberToVietnameseText(currentVal, selectedDepForManage.currency)}>
-                                        {numberToVietnameseText(currentVal, selectedDepForManage.currency)}
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })()}
+
                                 {selectedDepForManage.currency !== 'VND' && (
                                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', paddingLeft: '4px', fontWeight: 600 }}>
                                     ≈ {formatNumberWithCommas(m.expected_amount)} VND
@@ -1273,7 +1261,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                 )}
                               </div>
 
-                              {/* Status + dates + Remind Bell */}
+                              {/* Status + dates */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                                   <span style={{
@@ -1302,33 +1290,6 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                     </div>
                                   )}
                                 </div>
-                                {m.id && m.status !== 'approved' && (
-                                  <button
-                                    onClick={() => setPreviewReminderMilestone(m)}
-                                    disabled={sendingReminderId === m.id}
-                                    style={{
-                                      background: 'rgba(245, 158, 11, 0.08)',
-                                      border: '1px solid rgba(245, 158, 11, 0.2)',
-                                      color: '#d97706',
-                                      padding: '5px',
-                                      borderRadius: '6px',
-                                      cursor: sendingReminderId === m.id ? 'not-allowed' : 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.15s ease'
-                                    }}
-                                    onMouseEnter={e => { if (sendingReminderId !== m.id) e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)'; }}
-                                    onMouseLeave={e => { if (sendingReminderId !== m.id) e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)'; }}
-                                    title="Gửi nhắc nhở thanh toán ngay"
-                                  >
-                                    {sendingReminderId === m.id ? (
-                                      <Loader2 size={13} className="animate-spin" />
-                                    ) : (
-                                      <Bell size={13} />
-                                    )}
-                                  </button>
-                                )}
                               </div>
 
                               {/* UNC proof */}
@@ -1404,6 +1365,34 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
                               {/* Actions (Approve/Reject or Delete) */}
                               <div style={{ display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                {m.id && m.status !== 'approved' && (
+                                  <button
+                                    onClick={() => setPreviewReminderMilestone(m)}
+                                    disabled={sendingReminderId === m.id}
+                                    style={{
+                                      background: 'rgba(245, 158, 11, 0.08)',
+                                      border: '1px solid rgba(245, 158, 11, 0.2)',
+                                      color: '#d97706',
+                                      padding: '0 8px',
+                                      height: '30px',
+                                      borderRadius: '6px',
+                                      cursor: sendingReminderId === m.id ? 'not-allowed' : 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseEnter={e => { if (sendingReminderId !== m.id) e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)'; }}
+                                    onMouseLeave={e => { if (sendingReminderId !== m.id) e.currentTarget.style.background = 'rgba(245, 158, 11, 0.08)'; }}
+                                    title="Gửi nhắc nhở thanh toán ngay"
+                                  >
+                                    {sendingReminderId === m.id ? (
+                                      <Loader2 size={13} className="animate-spin" />
+                                    ) : (
+                                      <Bell size={13} />
+                                    )}
+                                  </button>
+                                )}
                                 {isAdmin && m.status === 'paid' && m.unc_file_path && m.unc_file_path.trim() !== '' && (
                                   <>
     <button
@@ -1554,56 +1543,70 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                           </div>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {comments.map((c) => (
-                              <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                <Avatar src={c.avatar_url} name={c.user_name} size="sm" />
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>{c.user_name}</span>
-                                      {(() => {
-                                        const isCurrentUserAdmin = user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role);
-                                        const isCommentAuthor = user?.id && String(user.id) === String(c.user_id);
-                                        if (isCurrentUserAdmin || isCommentAuthor) {
-                                          return (
-                                            <button
-                                              onClick={() => setCommentToDelete(c.id)}
-                                              style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--color-danger, #ef4444)', display: 'inline-flex', alignItems: 'center' }}
-                                              title={t('Xóa bình luận')}
-                                            >
-                                              <Trash2 size={11} />
-                                            </button>
-                                          );
-                                        }
-                                        return null;
-                                      })()}
+                            {comments.map((c) => {
+                              const isCurrentUserAdmin = user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role);
+                              const isCommentAuthor = user?.id && String(user.id) === String(c.user_id);
+                              const canDeleteComment = isCurrentUserAdmin || isCommentAuthor;
+
+                              return (
+                                <div 
+                                  key={c.id} 
+                                  style={{ 
+                                    display: 'flex', 
+                                    gap: '12px', 
+                                    background: 'var(--color-surface, #fff)', 
+                                    border: '1px solid var(--color-border-light)', 
+                                    padding: '14px 18px', 
+                                    borderRadius: '16px',
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+                                    boxSizing: 'border-box'
+                                  }}
+                                >
+                                  <Avatar src={c.avatar_url} name={c.user_name} size={32} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)' }}>{c.user_name}</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                          {new Date(c.created_at).toLocaleString('vi-VN')}
+                                        </span>
+                                        {canDeleteComment && (
+                                          <button
+                                            onClick={() => setCommentToDelete(c.id)}
+                                            style={{ 
+                                              background: 'none', 
+                                              border: 'none', 
+                                              color: 'var(--color-danger, #ef4444)', 
+                                              cursor: 'pointer', 
+                                              display: 'inline-flex', 
+                                              alignItems: 'center', 
+                                              padding: '4px' 
+                                            }}
+                                            className="hover-scale"
+                                            title={t('Xóa bình luận')}
+                                          >
+                                            <Trash2 size={12} />
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                      {new Date(c.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
-                                    </span>
-                                  </div>
-                                  <div style={{
-                                    padding: '8px 12px',
-                                    borderRadius: '0 8px 8px 8px',
-                                    background: 'var(--color-surface)',
-                                    border: '1px solid var(--color-border-light)',
-                                    fontSize: '0.8125rem',
-                                    color: 'var(--color-text)',
-                                    lineHeight: 1.4
-                                  }}>
-                                    {c.body && /<[a-z][\s\S]*>/i.test(c.body) ? (
-                                      <div 
-                                        className="rich-comment-content text-left"
-                                        dangerouslySetInnerHTML={{ __html: c.body }}
-                                        style={{ fontSize: '0.8125rem', color: 'var(--color-text)', lineHeight: '1.4', textAlign: 'left' }}
-                                      />
-                                    ) : (
-                                      <p style={{ fontSize: '0.8125rem', color: 'var(--color-text)', margin: 0, lineHeight: 1.4, whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>{c.body}</p>
-                                    )}
+                                    <div style={{ marginTop: '6px', textAlign: 'left' }}>
+                                      {c.body && /<[a-z][\s\S]*>/i.test(c.body) ? (
+                                        <div 
+                                          className="rich-comment-content"
+                                          dangerouslySetInnerHTML={{ __html: c.body }}
+                                          style={{ fontSize: '0.825rem', color: 'var(--color-text-light)', lineHeight: '1.45', textAlign: 'left' }}
+                                        />
+                                      ) : (
+                                        <div style={{ fontSize: '0.825rem', color: 'var(--color-text-light)', lineHeight: '1.45', whiteSpace: 'pre-wrap', textAlign: 'left', wordBreak: 'break-word' }}>
+                                          {c.body}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                             <div ref={commentEndRef} />
                           </div>
                         )}
@@ -1686,54 +1689,60 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                   {/* Send Comment Input */}
                   {activeDrawerTab === 'comments' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border)', padding: '12px', background: 'var(--color-surface)' }}>
-                      <MentionInput
-                        value={newCommentText}
-                        onChange={(e: any) => setNewCommentText(e.target.value)}
-                        placeholder="Nhập nội dung trao đổi... (Gõ @ để nhắc tên đồng nghiệp)"
-                        style={{ 
-                          width: '100%', 
-                          minHeight: '60px', 
-                          border: '1px solid var(--color-border)', 
-                          borderRadius: '8px', 
-                          outline: 'none', 
-                          background: 'var(--color-bg)', 
-                          color: 'var(--color-text)', 
-                          boxSizing: 'border-box'
-                        }}
-                        disabled={isSubmittingComment}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          disabled={isSubmittingComment || !newCommentText || !newCommentText.replace(/<[^>]*>/g, '').trim()}
-                          onClick={handleAddComment}
-                          className="btn primary"
-                          style={{
-                            height: '32px',
-                            padding: '0 16px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            borderRadius: '8px',
-                            cursor: (newCommentText && newCommentText.replace(/<[^>]*>/g, '').trim()) ? 'pointer' : 'not-allowed',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            opacity: (newCommentText && newCommentText.replace(/<[^>]*>/g, '').trim()) ? 1 : 0.6
+                      <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                        <MentionInput
+                          value={newCommentText}
+                          onChange={(e: any) => setNewCommentText(e.target.value)}
+                          placeholder="Viết bình luận... Gõ @ để nhắc tên"
+                          style={{ 
+                            width: '100%', 
+                            minHeight: '65px', 
+                            border: 'none', 
+                            borderRadius: 0, 
+                            outline: 'none', 
+                            background: 'transparent', 
+                            color: 'var(--color-text)', 
+                            boxSizing: 'border-box'
                           }}
-                        >
-                          {isSubmittingComment ? (
-                            <>
-                              <Loader2 size={12} className="spin animate-spin" /> Đang gửi...
-                            </>
-                          ) : (
-                            <>
-                              <Send size={12} /> Gửi
-                            </>
-                          )}
-                        </button>
+                          disabled={isSubmittingComment}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', paddingTop: '6px', borderTop: '1px dashed var(--color-border-light)' }}>
+                          {(() => {
+                            const hasContent = newCommentText.includes('<img') || !!(newCommentText && newCommentText.replace(/<[^>]*>/g, '').trim());
+                            return (
+                              <button
+                                type="button"
+                                disabled={isSubmittingComment || !hasContent}
+                                onClick={handleAddComment}
+                                className="btn primary sm"
+                                style={{
+                                  padding: '6px 18px',
+                                  fontSize: '0.78rem',
+                                  borderRadius: '20px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  background: 'var(--color-primary)',
+                                  borderColor: 'var(--color-primary)',
+                                  color: '#fff',
+                                  cursor: hasContent ? 'pointer' : 'not-allowed',
+                                  opacity: hasContent ? 1 : 0.6,
+                                  border: 'none'
+                                }}
+                              >
+                                {isSubmittingComment ? (
+                                  <>
+                                    <Loader2 size={13} className="spin animate-spin" /> Đang gửi...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Send size={13} /> <span>Gửi</span>
+                                  </>
+                                )}
+                              </button>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   )}

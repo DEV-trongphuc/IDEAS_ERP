@@ -248,6 +248,9 @@ class SalesOrderController {
         if (!$so) {
             respond(404, null, 'Đơn bán hàng không tồn tại', false);
         }
+        if ($so['status'] !== 'draft') {
+            respond(422, null, 'Chỉ có thể phê duyệt đơn bán hàng nháp', false);
+        }
 
         $update = $this->db->prepare("UPDATE sales_orders SET status = 'approved' WHERE id = ?");
         $update->execute([$id]);
@@ -271,6 +274,11 @@ class SalesOrderController {
             if (!$so) {
                 $this->db->rollBack();
                 respond(404, null, 'Đơn bán hàng không tồn tại', false);
+                return;
+            }
+            if ($so['status'] !== 'approved') {
+                $this->db->rollBack();
+                respond(422, null, 'Đơn bán hàng phải ở trạng thái đã phê duyệt mới có thể tạo hóa đơn', false);
                 return;
             }
 

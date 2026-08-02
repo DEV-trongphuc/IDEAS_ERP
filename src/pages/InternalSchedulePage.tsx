@@ -119,102 +119,104 @@ export const InternalSchedulePage: React.FC = () => {
     return lecturers?.[lecturerId] || lecturerId;
   };
 
-  const allEvents: any[] = [];
-  subjects.forEach((sub: any) => {
-    const subLecturer = getLecturerName(sub.lecturer_id);
-    if (Array.isArray(sub.host_sessions)) {
-      sub.host_sessions.forEach((hs: any, hsIdx: number) => {
-        if (hs.date) {
-          const isShared = sub.zoom_shared !== false;
-          allEvents.push({
-            type: 'school',
-            date: hs.date,
-            subjectCode: sub.code || 'MÔN HỌC',
-            subjectName: sub.name,
-            title: hs.name || `Buổi học ${hsIdx + 1}`,
-            time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
-            lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
-            lecturerId: hs.lecturer_name || sub.lecturer_id || null,
-            location: hs.location || 'Online',
-            zoom_link: (isShared ? sub.zoom_link : sub.school_zoom_link) || '',
-            zoom_id: (isShared ? sub.zoom_id : sub.school_zoom_id) || '',
-            zoom_pass: (isShared ? sub.zoom_pass : sub.school_zoom_pass) || ''
-          });
-        }
-      });
-    }
-    if (Array.isArray(sub.seminars)) {
-      sub.seminars.forEach((sem: any) => {
-        if (sem.date) {
-          const isShared = sub.zoom_shared !== false;
-          allEvents.push({
-            type: 'seminar',
-            date: sem.date,
-            subjectCode: sub.code || 'MÔN HỌC',
-            subjectName: sub.name,
-            title: sem.topic || 'Lớp chuyên đề',
-            time: sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : 'Chưa cấu hình giờ'),
-            lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
-            lecturerId: sem.lecturer_id || sub.lecturer_id || null,
-            location: sem.location || 'Online',
-            zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
-            zoom_id: (isShared ? sub.zoom_id : sub.seminar_zoom_id) || '',
-            zoom_pass: (isShared ? sub.zoom_pass : sub.seminar_zoom_pass) || ''
-          });
-        }
-      });
-    }
-  });
-
-  // Deduplicate merged/shared classes (same date, lecturer, subjectCode, time)
-  try {
-    const dedupedEvents: any[] = [];
-    allEvents.forEach(evt => {
-      if (!evt) return;
-      const existing = dedupedEvents.find(e => 
-        e.date === evt.date && 
-        e.lecturer === evt.lecturer && 
-        e.subjectCode === evt.subjectCode && 
-        e.time === evt.time &&
-        e.type === evt.type
-      );
-      
-      if (existing) {
-        const getCourseName = (fullName: string) => {
-          if (!fullName) return '';
-          const match = fullName.match(/\(([^)]+)\)$/);
-          return match ? match[1] : '';
-        };
-        
-        const getBaseName = (fullName: string) => {
-          if (!fullName) return '';
-          return fullName.replace(/\s*\([^)]+\)$/, '').trim();
-        };
-        
-        const course1 = getCourseName(existing.subjectName || '');
-        const course2 = getCourseName(evt.subjectName || '');
-        const baseName = getBaseName(existing.subjectName || '');
-        
-        if (course1 && course2 && course1 !== course2) {
-          const courses = Array.from(new Set([...course1.split(', '), ...course2.split(', ')]));
-          existing.subjectName = `${baseName} (${courses.join(', ')})`;
-        } else if (!course1 && course2) {
-          existing.subjectName = `${existing.subjectName} (${course2})`;
-        }
-        
-        if (existing.title !== evt.title && evt.title) {
-          const titles = Array.from(new Set([existing.title, evt.title].filter(Boolean)));
-          existing.title = titles.join(' / ');
-        }
-      } else {
-        dedupedEvents.push({ ...evt });
+  const allEvents = React.useMemo(() => {
+    const events: any[] = [];
+    subjects.forEach((sub: any) => {
+      const subLecturer = getLecturerName(sub.lecturer_id);
+      if (Array.isArray(sub.host_sessions)) {
+        sub.host_sessions.forEach((hs: any, hsIdx: number) => {
+          if (hs.date) {
+            const isShared = sub.zoom_shared !== false;
+            events.push({
+              type: 'school',
+              date: hs.date,
+              subjectCode: sub.code || 'MÔN HỌC',
+              subjectName: sub.name,
+              title: hs.name || `Buổi học ${hsIdx + 1}`,
+              time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
+              lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
+              lecturerId: hs.lecturer_name || sub.lecturer_id || null,
+              location: hs.location || 'Online',
+              zoom_link: (isShared ? sub.zoom_link : sub.school_zoom_link) || '',
+              zoom_id: (isShared ? sub.zoom_id : sub.school_zoom_id) || '',
+              zoom_pass: (isShared ? sub.zoom_pass : sub.school_zoom_pass) || ''
+            });
+          }
+        });
+      }
+      if (Array.isArray(sub.seminars)) {
+        sub.seminars.forEach((sem: any) => {
+          if (sem.date) {
+            const isShared = sub.zoom_shared !== false;
+            events.push({
+              type: 'seminar',
+              date: sem.date,
+              subjectCode: sub.code || 'MÔN HỌC',
+              subjectName: sub.name,
+              title: sem.topic || 'Lớp chuyên đề',
+              time: sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : 'Chưa cấu hình giờ'),
+              lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
+              lecturerId: sem.lecturer_id || sub.lecturer_id || null,
+              location: sem.location || 'Online',
+              zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
+              zoom_id: (isShared ? sub.zoom_id : sub.seminar_zoom_id) || '',
+              zoom_pass: (isShared ? sub.zoom_pass : sub.seminar_zoom_pass) || ''
+            });
+          }
+        });
       }
     });
-    allEvents.length = 0;
-    allEvents.push(...dedupedEvents);
-  } catch (err) {
-    console.error('Error during events deduplication:', err);
-  }
+
+    // Deduplicate merged/shared classes (same date, lecturer, subjectCode, time)
+    try {
+      const dedupedEvents: any[] = [];
+      events.forEach(evt => {
+        if (!evt) return;
+        const existing = dedupedEvents.find(e => 
+          e.date === evt.date && 
+          e.lecturer === evt.lecturer && 
+          e.subjectCode === evt.subjectCode && 
+          e.time === evt.time &&
+          e.type === evt.type
+        );
+        
+        if (existing) {
+          const getCourseName = (fullName: string) => {
+            if (!fullName) return '';
+            const match = fullName.match(/\(([^)]+)\)$/);
+            return match ? match[1] : '';
+          };
+          
+          const getBaseName = (fullName: string) => {
+            if (!fullName) return '';
+            return fullName.replace(/\s*\([^)]+\)$/, '').trim();
+          };
+          
+          const course1 = getCourseName(existing.subjectName || '');
+          const course2 = getCourseName(evt.subjectName || '');
+          const baseName = getBaseName(existing.subjectName || '');
+          
+          if (course1 && course2 && course1 !== course2) {
+            const courses = Array.from(new Set([...course1.split(', '), ...course2.split(', ')]));
+            existing.subjectName = `${baseName} (${courses.join(', ')})`;
+          } else if (!course1 && course2) {
+            existing.subjectName = `${existing.subjectName} (${course2})`;
+          }
+          
+          if (existing.title !== evt.title && evt.title) {
+            const titles = Array.from(new Set([existing.title, evt.title].filter(Boolean)));
+            existing.title = titles.join(' / ');
+          }
+        } else {
+          dedupedEvents.push({ ...evt });
+        }
+      });
+      return dedupedEvents;
+    } catch (err) {
+      console.error('Error during events deduplication:', err);
+      return events;
+    }
+  }, [subjects, lecturers]);
 
   // Calculate nearest class and assignment/milestone
   const todayDate = new Date();
@@ -1094,6 +1096,7 @@ export const InternalSchedulePage: React.FC = () => {
           isOpen={isLecturerDrawerOpen}
           onClose={() => setIsLecturerDrawerOpen(false)}
           entity={selectedLecturerEntity}
+          onSave={() => {}}
         />
       )}
     </div>

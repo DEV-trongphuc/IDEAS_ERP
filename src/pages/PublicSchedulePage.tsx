@@ -72,133 +72,134 @@ export const PublicSchedulePage: React.FC = () => {
       });
   }, [customerId, campaignId, lecturerId]);
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100vw', flex: 1, background: 'var(--color-bg)', gap: '12px' }}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Đang tải thông tin lịch học...</div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100vw', flex: 1, background: 'var(--color-bg)', padding: '2rem', textAlign: 'center' }}>
-        <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '1rem' }} />
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: '0.5rem' }}>Không thể truy cập</h3>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', maxWidth: '400px', marginBottom: '1.5rem' }}>{error || 'Đường dẫn liên kết không chính xác hoặc dữ liệu không tồn tại.'}</p>
-      </div>
-    );
-  }
-
-  const student = data.student && data.student.id ? data.student : null;
-  const { course, program, lecturers, lecturer } = data;
+  const student = data?.student && data.student.id ? data.student : null;
+  const course = data?.course;
+  const program = data?.program;
+  const lecturers = data?.lecturers || {};
+  const lecturer = data?.lecturer;
   const subjects = course?.subjects || [];
   const thesisMilestones = course?.thesis_milestones || [];
 
-  // Parse all schedules:
   const getLecturerName = (lecturerId: any) => {
     if (!lecturerId) return 'Chưa phân công';
     return lecturers?.[lecturerId] || lecturerId;
   };
 
-  const allEvents: any[] = [];
+  const allEvents = React.useMemo(() => {
+    if (!data) return [];
+    const events: any[] = [];
 
-  subjects.forEach((sub: any) => {
-    const subLecturer = getLecturerName(sub.lecturer_id);
+    subjects.forEach((sub: any) => {
+      const subLecturer = getLecturerName(sub.lecturer_id);
 
-    // 1. Host sessions
-    if (Array.isArray(sub.host_sessions)) {
-      sub.host_sessions.forEach((hs: any, hsIdx: number) => {
-        if (hs.date) {
-          const isShared = sub.zoom_shared !== false;
-          allEvents.push({
-            type: 'school',
-            date: hs.date,
-            subjectCode: sub.code || 'MÔN HỌC',
-            subjectName: sub.name,
-            title: hs.name || `Buổi học ${hsIdx + 1}`,
-            time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
-            lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
-            location: hs.location || 'Online',
-            zoom_link: (isShared ? sub.zoom_link : sub.school_zoom_link) || '',
-            zoom_id: (isShared ? sub.zoom_id : sub.school_zoom_id) || '',
-            zoom_pass: (isShared ? sub.zoom_pass : sub.school_zoom_pass) || ''
-          });
-        }
-      });
-    }
-
-    // 2. Seminars
-    if (Array.isArray(sub.seminars)) {
-      sub.seminars.forEach((sem: any) => {
-        if (sem.date) {
-          const isShared = sub.zoom_shared !== false;
-          allEvents.push({
-            type: 'seminar',
-            date: sem.date,
-            subjectCode: sub.code || 'MÔN HỌC',
-            subjectName: sub.name,
-            title: sem.topic || 'Lớp chuyên đề',
-            time: sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : 'Chưa cấu hình giờ'),
-            lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
-            location: sem.location || 'Online',
-            zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
-            zoom_id: (isShared ? sub.zoom_id : sub.seminar_zoom_id) || '',
-            zoom_pass: (isShared ? sub.zoom_pass : sub.seminar_zoom_pass) || ''
-          });
-        }
-      });
-    }
-  });
-
-  // Deduplicate merged/shared classes (same date, lecturer, subjectCode, time)
-  const dedupedEvents: any[] = [];
-  allEvents.forEach(evt => {
-    const existing = dedupedEvents.find(e => 
-      e.date === evt.date && 
-      e.lecturer === evt.lecturer && 
-      e.subjectCode === evt.subjectCode && 
-      e.time === evt.time &&
-      e.type === evt.type
-    );
-    
-    if (existing) {
-      const getCourseName = (fullName: string) => {
-        const match = fullName.match(/\(([^)]+)\)$/);
-        return match ? match[1] : '';
-      };
-      
-      const getBaseName = (fullName: string) => {
-        return fullName.replace(/\s*\([^)]+\)$/, '').trim();
-      };
-      
-      const course1 = getCourseName(existing.subjectName);
-      const course2 = getCourseName(evt.subjectName);
-      const baseName = getBaseName(existing.subjectName);
-      
-      if (course1 && course2 && course1 !== course2) {
-        const courses = Array.from(new Set([...course1.split(', '), ...course2.split(', ')]));
-        existing.subjectName = `${baseName} (${courses.join(', ')})`;
-      } else if (!course1 && course2) {
-        existing.subjectName = `${existing.subjectName} (${course2})`;
+      // 1. Host sessions
+      if (Array.isArray(sub.host_sessions)) {
+        sub.host_sessions.forEach((hs: any, hsIdx: number) => {
+          if (hs.date) {
+            const isShared = sub.zoom_shared !== false;
+            events.push({
+              type: 'school',
+              date: hs.date,
+              subjectCode: sub.code || 'MÔN HỌC',
+              subjectName: sub.name,
+              title: hs.name || `Buổi học ${hsIdx + 1}`,
+              time: `${hs.time_start || '20:00'} - ${hs.time_end || '22:00'}`,
+              lecturer: hs.lecturer_name ? getLecturerName(hs.lecturer_name) : subLecturer,
+              location: hs.location || 'Online',
+              zoom_link: (isShared ? sub.zoom_link : sub.school_zoom_link) || '',
+              zoom_id: (isShared ? sub.zoom_id : sub.school_zoom_id) || '',
+              zoom_pass: (isShared ? sub.zoom_pass : sub.school_zoom_pass) || ''
+            });
+          }
+        });
       }
-      
-      if (existing.title !== evt.title) {
-        const titles = Array.from(new Set([existing.title, evt.title]));
-        existing.title = titles.join(' / ');
+
+      // 2. Seminars
+      if (Array.isArray(sub.seminars)) {
+        sub.seminars.forEach((sem: any) => {
+          if (sem.date) {
+            const isShared = sub.zoom_shared !== false;
+            events.push({
+              type: 'seminar',
+              date: sem.date,
+              subjectCode: sub.code || 'MÔN HỌC',
+              subjectName: sub.name,
+              title: sem.topic || 'Lớp chuyên đề',
+              time: sem.time_slot || (sem.time_start && sem.time_end ? `${sem.time_start} - ${sem.time_end}` : 'Chưa cấu hình giờ'),
+              lecturer: sem.lecturer_id ? getLecturerName(sem.lecturer_id) : subLecturer,
+              location: sem.location || 'Online',
+              zoom_link: (isShared ? sub.zoom_link : sub.seminar_zoom_link) || '',
+              zoom_id: (isShared ? sub.zoom_id : sub.seminar_zoom_id) || '',
+              zoom_pass: (isShared ? sub.zoom_pass : sub.seminar_zoom_pass) || ''
+            });
+          }
+        });
       }
-    } else {
-      dedupedEvents.push({ ...evt });
-    }
-  });
-  allEvents.length = 0;
-  allEvents.push(...dedupedEvents);
+
+      // 3. Thesis defenses
+      if (Array.isArray(sub.thesis_defenses)) {
+        sub.thesis_defenses.forEach((def: any) => {
+          if (def.date) {
+            events.push({
+              type: 'thesis',
+              date: def.date,
+              subjectCode: sub.code || 'MÔN HỌC',
+              subjectName: sub.name,
+              title: def.title || 'Bảo vệ luận văn',
+              time: def.time_slot || (def.time_start && def.time_end ? `${def.time_start} - ${def.time_end}` : 'Chưa cấu hình giờ'),
+              lecturer: def.committee_members || subLecturer,
+              location: def.location || 'Online',
+              zoom_link: def.zoom_link || '',
+              zoom_id: def.zoom_id || '',
+              zoom_pass: def.zoom_pass || ''
+            });
+          }
+        });
+      }
+    });
+
+    // Deduplicate merged/shared classes (same date, lecturer, subjectCode, time)
+    const dedupedEvents: any[] = [];
+    events.forEach(evt => {
+      const existing = dedupedEvents.find(e => 
+        e.date === evt.date && 
+        e.lecturer === evt.lecturer && 
+        e.subjectCode === evt.subjectCode && 
+        e.time === evt.time &&
+        e.type === evt.type
+      );
+      
+      if (existing) {
+        const getCourseName = (fullName: string) => {
+          const match = fullName.match(/\(([^)]+)\)$/);
+          return match ? match[1] : '';
+        };
+        
+        const getBaseName = (fullName: string) => {
+          return fullName.replace(/\s*\([^)]+\)$/, '').trim();
+        };
+        
+        const course1 = getCourseName(existing.subjectName);
+        const course2 = getCourseName(evt.subjectName);
+        const baseName = getBaseName(existing.subjectName);
+        
+        if (course1 && course2 && course1 !== course2) {
+          const courses = Array.from(new Set([...course1.split(', '), ...course2.split(', ')]));
+          existing.subjectName = `${baseName} (${courses.join(', ')})`;
+        } else if (!course1 && course2) {
+          existing.subjectName = `${existing.subjectName} (${course2})`;
+        }
+        
+        if (existing.title !== evt.title) {
+          const titles = Array.from(new Set([existing.title, evt.title]));
+          existing.title = titles.join(' / ');
+        }
+      } else {
+        dedupedEvents.push({ ...evt });
+      }
+    });
+    return dedupedEvents;
+  }, [subjects, lecturers, data]);
 
   // Calculate nearest class and assignment/milestone
   const calculateNearestDeadlines = () => {
@@ -381,10 +382,10 @@ export const PublicSchedulePage: React.FC = () => {
           style={{ height: '48px', objectFit: 'contain' }}
         />
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b91c1c', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#b91c1c' }}>
             Tri thức Nguyên Bản
           </div>
-          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-muted)', marginTop: '2px' }}>
             Đồng hành Bản Địa
           </div>
         </div>
@@ -410,14 +411,14 @@ export const PublicSchedulePage: React.FC = () => {
               width: '64px', 
               height: '64px', 
               borderRadius: '50%', 
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', 
+              background: 'linear-gradient(135deg, #b91c1c 0%, #ef4444 100%)', 
               color: '#ffffff',
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
               fontSize: '1.5rem', 
               fontWeight: 800,
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+              boxShadow: '0 4px 12px rgba(185, 28, 28, 0.25)',
               border: '3px solid #ffffff'
             }}>
               {getStudentInitials(student.name)}

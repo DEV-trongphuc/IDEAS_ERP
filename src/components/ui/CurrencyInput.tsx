@@ -41,7 +41,11 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
     if (value === undefined || value === null || value === 0 || value === '') {
       setDisplayValue('');
     } else {
-      const cleanExternal = String(value).replace(/[^0-9]/g, '');
+      let valStr = String(value);
+      if (/^\d+[\.,]\d+$/.test(valStr)) {
+        valStr = valStr.split(/[\.,]/)[0];
+      }
+      const cleanExternal = valStr.replace(/[^0-9]/g, '');
       const formatted = formatWithCommas(cleanExternal);
       if (formatted !== displayValue) {
         setDisplayValue(formatted);

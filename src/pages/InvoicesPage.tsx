@@ -36,8 +36,8 @@ export const InvoicesPage: React.FC = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>('this_month');
-  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('this_month'));
+  const [period, setPeriod] = useState<Period>('all');
+  const [dateRange, setDateRange] = useState<DateRange>(getDateRange('all'));
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim(), 300);
   const [statusFilter, setStatusFilter] = useState('');

@@ -422,28 +422,55 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={camp.id}
+                    className="hover-lift"
                     style={{
                       background: 'var(--color-surface)',
                       border: '1px solid var(--color-border-light)',
-                      borderRadius: '12px',
+                      borderRadius: '16px',
                       padding: '1.25rem',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: 'var(--shadow-sm)'
+                      boxShadow: '0 4px 20px -5px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s ease',
+                      position: 'relative'
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem', gap: '8px' }}>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }} className="line-clamp-1">
-                          {camp.name}
-                        </h4>
-                        <span className={`badge ${camp.status === 'active' ? 'success' : 'secondary'}`} style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '100px', fontWeight: 700 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', overflow: 'hidden' }}>
+                          <div style={{
+                            padding: '6px',
+                            background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.08), rgba(225, 29, 72, 0.08))',
+                            borderRadius: '8px',
+                            color: 'var(--color-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            <BookOpen size={14} />
+                          </div>
+                          <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }} className="line-clamp-1">
+                            {camp.name}
+                          </h4>
+                        </div>
+                        <span style={{ 
+                          fontSize: '0.65rem', 
+                          padding: '2px 8px', 
+                          borderRadius: '100px', 
+                          fontWeight: 750,
+                          background: camp.status === 'active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                          color: camp.status === 'active' ? '#10b981' : '#ef4444',
+                          border: camp.status === 'active' ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0
+                        }}>
                           {camp.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
                         </span>
                       </div>
                       {camp.description ? (
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem', lineHeight: 1.4 }} className="line-clamp-2">
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '1rem', lineHeight: 1.45 }} className="line-clamp-2">
                           {camp.description}
                         </p>
                       ) : (
@@ -452,19 +479,33 @@ export default function ProjectsPage() {
                         </p>
                       )}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dotted var(--color-border-light)', paddingTop: '0.75rem', marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <span><strong>{docCount}</strong> Tài liệu</span>
-                        <span>•</span>
-                        <span><strong>{staffCount}</strong> Nhân sự</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border-light)', paddingTop: '0.75rem', marginTop: '0.5rem', fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                          <Folder size={11} style={{ color: 'var(--color-text-light)' }} />
+                          {docCount} Tài liệu
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontWeight: 600 }}>
+                          <Users size={11} style={{ color: 'var(--color-text-light)' }} />
+                          {staffCount} Nhân sự
+                        </span>
                       </div>
                       <button
                         onClick={() => {
                           setQuickCampaignsModalOpen(false);
                           handleOpenCampaignView(camp);
                         }}
-                        className="btn outline sm"
-                        style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '4px' }}
+                        className="btn secondary sm"
+                        style={{ 
+                          fontSize: '0.72rem', 
+                          padding: '0 10px', 
+                          height: '28px', 
+                          borderRadius: '6px', 
+                          fontWeight: 700,
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border-light)',
+                          color: 'var(--color-text)'
+                        }}
                       >
                         Chi tiết
                       </button>
@@ -601,7 +642,7 @@ export default function ProjectsPage() {
   const [projectRoster, setProjectRoster] = useState<any[]>([]);
   const [projectRosterLoading, setProjectRosterLoading] = useState(false);
   const [projectDrawerTab, setProjectDrawerTab] = useState<'details' | 'hierarchy' | 'changelog'>('details');
-  const [campaignDrawerTab, setCampaignDrawerTab] = useState<'details' | 'subjects' | 'thesis' | 'reminders' | 'changelog'>('details');
+  const [campaignDrawerTab, setCampaignDrawerTab] = useState<'details' | 'subjects' | 'lecturers' | 'thesis' | 'reminders' | 'changelog'>('details');
   const [subjects, setSubjects] = useState<any[]>([]);
   const [remindersConfig, setRemindersConfig] = useState<{
     school_reminder_enabled: boolean;
@@ -1554,6 +1595,263 @@ export default function ProjectsPage() {
     }
   };
 
+  const getSubjectStatus = (sub: any, fallbackStart?: string, fallbackEnd?: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dates: Date[] = [];
+    
+    if (sub && Array.isArray(sub.host_sessions)) {
+      sub.host_sessions.forEach((s: any) => {
+        if (s.date) {
+          const d = new Date(s.date);
+          if (!isNaN(d.getTime())) dates.push(d);
+        }
+      });
+    }
+    
+    if (sub && Array.isArray(sub.seminars)) {
+      sub.seminars.forEach((s: any) => {
+        if (s.date) {
+          const d = new Date(s.date);
+          if (!isNaN(d.getTime())) dates.push(d);
+        }
+      });
+    }
+    
+    if (sub && Array.isArray(sub.assignments)) {
+      sub.assignments.forEach((a: any) => {
+        if (a.due_date) {
+          const d = new Date(a.due_date);
+          if (!isNaN(d.getTime())) dates.push(d);
+        }
+      });
+    }
+    
+    if (dates.length === 0) {
+      if (fallbackStart || fallbackEnd) {
+        const start = fallbackStart ? new Date(fallbackStart) : null;
+        const end = fallbackEnd ? new Date(fallbackEnd) : null;
+        const minTime = start && !isNaN(start.getTime()) ? start.getTime() : null;
+        const maxTime = end && !isNaN(end.getTime()) ? end.getTime() : null;
+        const todayTime = today.getTime();
+        
+        if (minTime !== null && todayTime < minTime) {
+          return {
+            code: 'chua_mo',
+            label: 'Chưa mở',
+            color: '#3b82f6',
+            bg: 'rgba(59, 130, 246, 0.08)'
+          };
+        }
+        if (maxTime !== null && todayTime > maxTime) {
+          return {
+            code: 'da_ket_thuc',
+            label: 'Đã kết thúc',
+            color: '#ef4444',
+            bg: 'rgba(239, 68, 68, 0.08)'
+          };
+        }
+        if (minTime !== null || maxTime !== null) {
+          return {
+            code: 'dang_hoc',
+            label: 'Đang học',
+            color: '#10b981',
+            bg: 'rgba(16, 185, 129, 0.08)'
+          };
+        }
+      }
+      return {
+        code: 'chua_mo',
+        label: 'Chưa mở',
+        color: '#6b7280',
+        bg: 'rgba(107, 114, 128, 0.08)'
+      };
+    }
+    
+    const sortedTimes = dates.map(d => d.getTime()).sort((a, b) => a - b);
+    const minTime = sortedTimes[0];
+    const maxTime = sortedTimes[sortedTimes.length - 1];
+    const todayTime = today.getTime();
+    
+    if (todayTime < minTime) {
+      return {
+        code: 'chua_mo',
+        label: 'Chưa mở',
+        color: '#3b82f6',
+        bg: 'rgba(59, 130, 246, 0.08)'
+      };
+    } else if (todayTime > maxTime) {
+      return {
+        code: 'da_ket_thuc',
+        label: 'Đã kết thúc',
+        color: '#ef4444',
+        bg: 'rgba(239, 68, 68, 0.08)'
+      };
+    } else {
+      return {
+        code: 'dang_hoc',
+        label: 'Đang học',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.08)'
+      };
+    }
+  };
+
+  const subjectStatsSummary = React.useMemo(() => {
+    let active = 0;
+    let ended = 0;
+    let notStarted = 0;
+    const statusMap: Record<string, { code: string; label: string; color: string; bg: string }> = {};
+
+    subjects.forEach(s => {
+      const statusObj = getSubjectStatus(s, editingCampaign?.start_date, editingCampaign?.end_date);
+      statusMap[s.id] = statusObj;
+      if (statusObj.code === 'dang_hoc') active++;
+      else if (statusObj.code === 'da_ket_thuc') ended++;
+      else notStarted++;
+    });
+
+    return {
+      active,
+      ended,
+      notStarted,
+      statusMap
+    };
+  }, [subjects, editingCampaign?.start_date, editingCampaign?.end_date]);
+
+  const lecturerStatsSummary = React.useMemo(() => {
+    const statsMap: Record<string, {
+      id: string;
+      name: string;
+      email?: string;
+      phone?: string;
+      avatar?: string;
+      subjectIds: Set<string>;
+      subjectsCount: number;
+      sessionsCount: number;
+      seminarsCount: number;
+      totalClassesCount: number;
+      type: 'internal' | 'external' | 'unknown';
+    }> = {};
+
+    const getOrInitLecturer = (lecturerId: string) => {
+      if (!lecturerId) return null;
+      const cleanId = String(lecturerId).trim();
+      if (!cleanId) return null;
+
+      if (!statsMap[cleanId]) {
+        const cons = consultants.find(c => String(c.id) === cleanId);
+        if (cons) {
+          statsMap[cleanId] = {
+            id: cleanId,
+            name: cons.name || cons.full_name || cons.username,
+            email: cons.email,
+            phone: cons.phone,
+            avatar: cons.avatar_url || cons.avatar,
+            subjectIds: new Set(),
+            subjectsCount: 0,
+            sessionsCount: 0,
+            seminarsCount: 0,
+            totalClassesCount: 0,
+            type: 'internal'
+          };
+        } else {
+          const comp = companiesList.find(c => String(c.id) === cleanId);
+          if (comp) {
+            statsMap[cleanId] = {
+              id: cleanId,
+              name: comp.name,
+              email: comp.email,
+              phone: comp.phone,
+              avatar: comp.logo || comp.avatar_url,
+              subjectIds: new Set(),
+              subjectsCount: 0,
+              sessionsCount: 0,
+              seminarsCount: 0,
+              totalClassesCount: 0,
+              type: 'external'
+            };
+          } else {
+            statsMap[cleanId] = {
+              id: cleanId,
+              name: `GV ID: ${cleanId}`,
+              subjectIds: new Set(),
+              subjectsCount: 0,
+              sessionsCount: 0,
+              seminarsCount: 0,
+              totalClassesCount: 0,
+              type: 'unknown'
+            };
+          }
+        }
+      }
+      return statsMap[cleanId];
+    };
+
+    let totalSessions = 0;
+    let totalSeminars = 0;
+
+    subjects.forEach(sub => {
+      const mainLecturerId = sub.lecturer_id ? String(sub.lecturer_id).trim() : '';
+      
+      if (mainLecturerId) {
+        const lect = getOrInitLecturer(mainLecturerId);
+        if (lect) {
+          lect.subjectIds.add(sub.id);
+        }
+      }
+
+      if (Array.isArray(sub.host_sessions)) {
+        totalSessions += sub.host_sessions.length;
+        sub.host_sessions.forEach((hs: any) => {
+          const sessionLecturerId = hs.lecturer_name ? String(hs.lecturer_name).trim() : mainLecturerId;
+          if (sessionLecturerId) {
+            const lect = getOrInitLecturer(sessionLecturerId);
+            if (lect) {
+              lect.sessionsCount += 1;
+              lect.totalClassesCount += 1;
+              lect.subjectIds.add(sub.id);
+            }
+          }
+        });
+      }
+
+      if (Array.isArray(sub.seminars)) {
+        totalSeminars += sub.seminars.length;
+        sub.seminars.forEach((sem: any) => {
+          const semLecturerId = sem.lecturer_id ? String(sem.lecturer_id).trim() : mainLecturerId;
+          if (semLecturerId) {
+            const lect = getOrInitLecturer(semLecturerId);
+            if (lect) {
+              lect.seminarsCount += 1;
+              lect.totalClassesCount += 1;
+              lect.subjectIds.add(sub.id);
+            }
+          }
+        });
+      }
+    });
+
+    Object.values(statsMap).forEach(lect => {
+      lect.subjectsCount = lect.subjectIds.size;
+    });
+
+    const lecturerStats = Object.values(statsMap);
+    const assignedSubjects = subjects.filter(s => s.lecturer_id).length;
+    const assignmentRate = subjects.length > 0 ? Math.round((assignedSubjects / subjects.length) * 100) : 0;
+    const topLecturer = lecturerStats.length > 0 ? [...lecturerStats].sort((a, b) => b.totalClassesCount - a.totalClassesCount)[0] : null;
+
+    return {
+      lecturerStats,
+      assignedSubjects,
+      assignmentRate,
+      totalSessions,
+      totalSeminars,
+      topLecturer
+    };
+  }, [subjects, consultants, companiesList]);
+
   const canEditProject = (proj: Project) => {
     if (!user) return false;
     if (isSystemAdmin || ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role)) return true;
@@ -2017,7 +2315,7 @@ export default function ProjectsPage() {
             {/* KPI Summary Cards */}
             {projectStats && (
               <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                {/* 1. Tổng Khách Hàng */}
+                {/* 1. Tổng Học Viên */}
                 <div
                   className="stat-card hover-lift"
                   onClick={user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? () => {
@@ -2046,18 +2344,18 @@ export default function ProjectsPage() {
                     </svg>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng Khách Hàng</span>
+                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng Học Viên</span>
                     <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={14} /></div>
                   </div>
                   <div>
                     <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
-                      {projectStats.total_leads}
+                      {projectStats.won_deals}
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Khách hàng tiềm năng</div>
+                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Trong tổng số {projectStats.total_leads} hồ sơ</div>
                   </div>
                 </div>
 
-                {/* 2. Cơ Hội Bán Hàng */}
+                {/* 2. Cơ Hội Tuyển Sinh */}
                 <div
                   className="stat-card hover-lift"
                   style={{
@@ -2080,18 +2378,18 @@ export default function ProjectsPage() {
                     </svg>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cơ Hội Bán Hàng</span>
+                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cơ Hội Tuyển Sinh</span>
                     <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Layers size={14} /></div>
                   </div>
                   <div>
                     <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
                       {projectStats.total_deals}
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Cơ cơ hội giao dịch</div>
+                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Hồ sơ đang tư vấn & xử lý</div>
                   </div>
                 </div>
 
-                {/* 3. Doanh Thu */}
+                {/* 3. Học Phí Thực Thu */}
                 <div
                   className="stat-card hover-lift"
                   style={{
@@ -2113,7 +2411,7 @@ export default function ProjectsPage() {
                     </svg>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Doanh Thu</span>
+                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Học Phí Thực Thu</span>
                     <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Building2 size={14} /></div>
                   </div>
                   <div>
@@ -2122,11 +2420,11 @@ export default function ProjectsPage() {
                         ? `${(projectStats.actual_revenue / 1000000000).toFixed(2)} tỷ`
                         : `${(projectStats.actual_revenue / 1000000).toFixed(0)} triệu`}
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Từ hóa đơn thực tế</div>
+                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Từ hóa đơn đã thanh toán</div>
                   </div>
                 </div>
 
-                {/* 4. Tỷ Lệ Chốt */}
+                {/* 4. Tỷ Lệ Nhập Học */}
                 <div
                   className="stat-card hover-lift"
                   style={{
@@ -2148,14 +2446,14 @@ export default function ProjectsPage() {
                     </svg>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tỷ Lệ Chốt</span>
+                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tỷ Lệ Nhập Học</span>
                     <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckSquare size={14} /></div>
                   </div>
                   <div>
                     <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
                       {projectStats.win_rate}%
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Tỷ lệ giao dịch thành công</div>
+                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Tỷ lệ chuyển đổi học viên</div>
                   </div>
                 </div>
               </div>
@@ -2953,6 +3251,164 @@ export default function ProjectsPage() {
     );
   };
 
+  const renderLecturersTab = () => {
+    const {
+      lecturerStats,
+      assignedSubjects,
+      assignmentRate,
+      totalSessions,
+      totalSeminars,
+      topLecturer
+    } = lecturerStatsSummary;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+        {/* Banner thống kê giảng viên */}
+        <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+          {/* Card 1: Tổng Giảng Viên */}
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng Giảng Viên</span>
+              <Users size={14} style={{ color: 'var(--color-primary)' }} />
+            </div>
+            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{lecturerStats.length}</span>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Đội ngũ giảng viên khóa học</div>
+          </div>
+          {/* Card 2: Tỷ Lệ Phân Công */}
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tỷ Lệ Phân Công</span>
+              <CheckSquare size={14} style={{ color: '#3b82f6' }} />
+            </div>
+            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{assignedSubjects} / {subjects.length} môn</span>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Đã phân công {assignmentRate}% môn học</div>
+          </div>
+          {/* Card 3: Buổi Trường & Chuyên Đề */}
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Buổi học &amp; Chuyên đề</span>
+              <BookOpen size={14} style={{ color: '#10b981' }} />
+            </div>
+            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)' }}>{totalSessions} / {totalSeminars}</span>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Tổng số buổi trường / chuyên đề</div>
+          </div>
+          {/* Card 4: GV Tích Cực Nhất */}
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>GV Giảng Dạy Nhiều Nhất</span>
+              <Award size={14} style={{ color: '#f59e0b' }} />
+            </div>
+            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={topLecturer ? topLecturer.name : 'Chưa có'}>
+              {topLecturer ? topLecturer.name : 'Chưa có'}
+            </span>
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>
+              {topLecturer ? `Phụ trách ${topLecturer.totalClassesCount} buổi giảng` : 'Chưa có lịch dạy'}
+            </div>
+          </div>
+        </div>
+
+        {/* Bảng Giảng viên */}
+        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', overflow: 'hidden' }}>
+          {lecturerStats.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center' }}>
+              <Users size={36} style={{ color: 'var(--color-text-light)', marginBottom: '0.5rem', opacity: 0.5 }} />
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Chưa phân công giảng viên nào cho các môn học/chuyên đề</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
+                <thead>
+                  <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border-light)' }}>
+                    <th style={{ padding: '10px 16px', fontWeight: 750, color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Giảng viên</th>
+                    <th style={{ padding: '10px 16px', fontWeight: 750, color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', textAlign: 'center' }}>Số môn phụ trách</th>
+                    <th style={{ padding: '10px 16px', fontWeight: 750, color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', textAlign: 'center' }}>Số buổi trường</th>
+                    <th style={{ padding: '10px 16px', fontWeight: 750, color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', textAlign: 'center' }}>Số chuyên đề</th>
+                    <th style={{ padding: '10px 16px', fontWeight: 750, color: 'var(--color-text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', textAlign: 'center' }}>Tổng buổi dạy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lecturerStats.map((lect, idx) => {
+                    const foundComp = companiesList.find(c => String(c.id) === String(lect.id));
+                    return (
+                      <tr
+                        key={lect.id}
+                        onClick={() => {
+                          if (foundComp) {
+                            setSelectedLecturerEntity(foundComp);
+                            setIsLecturerDrawerOpen(true);
+                          }
+                        }}
+                        style={{
+                          borderBottom: idx < lecturerStats.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                          transition: 'background 0.2s ease',
+                          cursor: foundComp ? 'pointer' : 'default'
+                        }}
+                        onMouseEnter={e => { if (foundComp) e.currentTarget.style.background = 'rgba(100, 116, 139, 0.04)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        {/* Tên & Avatar & Loại GV */}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Avatar name={lect.name} src={lect.avatar} size={32} />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '0.825rem' }}>{lect.name}</span>
+                                {lect.type === 'internal' ? (
+                                  <span style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '100px', fontWeight: 700, background: 'rgba(16, 185, 129, 0.06)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.12)' }}>
+                                    Cơ hữu
+                                  </span>
+                                ) : lect.type === 'external' ? (
+                                  <span style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '100px', fontWeight: 700, background: 'rgba(59, 130, 246, 0.06)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.12)' }}>
+                                    Thỉnh giảng
+                                  </span>
+                                ) : null}
+                              </div>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
+                                {lect.email || 'Không có email'} {lect.phone && `• ${lect.phone}`}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Số môn phụ trách */}
+                        <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: 'var(--color-text)' }}>
+                          <span style={{ background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontSize: '0.72rem' }}>
+                            {lect.subjectsCount} môn
+                          </span>
+                        </td>
+
+                        {/* Số buổi trường */}
+                        <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: 'var(--color-text)' }}>
+                          <span style={{ background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontSize: '0.72rem' }}>
+                            {lect.sessionsCount} buổi
+                          </span>
+                        </td>
+
+                        {/* Số chuyên đề */}
+                        <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 700, color: 'var(--color-text)' }}>
+                          <span style={{ background: 'var(--color-bg-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--color-border-light)', fontSize: '0.72rem' }}>
+                            {lect.seminarsCount} chuyên đề
+                          </span>
+                        </td>
+
+                        {/* Tổng buổi dạy */}
+                        <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 750, color: 'var(--color-primary)' }}>
+                          <span style={{ background: 'rgba(225, 29, 72, 0.05)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(225, 29, 72, 0.15)', fontSize: '0.75rem' }}>
+                            {lect.totalClassesCount} buổi
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderSubjectsTab = () => {
     const canEdit = user && ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'academic'].includes(user.role);
 
@@ -3082,16 +3538,19 @@ export default function ProjectsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: 'var(--color-bg-light)', borderBottom: '1px solid var(--color-border-light)' }}>
-                  <th style={{ padding: 0, width: '35%' }}>
+                  <th style={{ padding: 0, width: '30%' }}>
                     <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Môn học</div>
                   </th>
-                  <th style={{ padding: 0, width: '20%' }}>
+                  <th style={{ padding: 0, width: '18%' }}>
                     <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Giảng viên chính</div>
                   </th>
-                  <th style={{ padding: 0, width: '28%' }}>
+                  <th style={{ padding: 0, width: '22%' }}>
                     <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thời lượng / Bài tập</div>
                   </th>
-                  <th style={{ padding: 0, width: '17%', textAlign: 'right' }}>
+                  <th style={{ padding: 0, width: '15%' }}>
+                    <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trạng thái</div>
+                  </th>
+                  <th style={{ padding: 0, width: '15%', textAlign: 'right' }}>
                     <div style={{ padding: '6px 16px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Hành động</div>
                   </th>
                 </tr>
@@ -3107,6 +3566,8 @@ export default function ProjectsPage() {
                   const foundCons = consultants.find(c => String(c.id) === String(lecturerId));
                   const lecturerName = foundComp ? foundComp.name : (foundCons ? foundCons.name : (lecturerId || 'Chưa phân công'));
                   const avatarUrl = foundComp ? (foundComp.logo || foundComp.avatar_url) : (foundCons ? foundCons.avatar_url : '');
+
+                  const statusObj = subjectStatsSummary.statusMap[sub.id] || getSubjectStatus(sub, editingCampaign?.start_date, editingCampaign?.end_date);
 
                   return (
                     <tr 
@@ -3171,13 +3632,33 @@ export default function ProjectsPage() {
                       <td style={{ padding: 0, verticalAlign: 'middle' }}>
                         <div style={{ padding: '8px 16px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'var(--color-bg-light)', padding: '3px 8px', borderRadius: '6px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                            <Calendar size={11} /> {sessionCount} buổi trường
+                            <Calendar size={11} /> {sessionCount} buổi
                           </span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'var(--color-bg-light)', padding: '3px 8px', borderRadius: '6px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                            <Layers size={11} /> {seminarCount} chuyên đề
+                            <Layers size={11} /> {seminarCount} đề
                           </span>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', background: 'var(--color-bg-light)', padding: '3px 8px', borderRadius: '6px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                            <CheckSquare size={11} /> {assignmentCount} bài tập
+                            <CheckSquare size={11} /> {assignmentCount} bài
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Cột 3.5: Trạng thái môn học */}
+                      <td style={{ padding: 0, verticalAlign: 'middle' }}>
+                        <div style={{ padding: '8px 16px' }}>
+                          <span style={{ 
+                            fontSize: '0.7rem', 
+                            fontWeight: 750, 
+                            color: statusObj.color, 
+                            background: statusObj.bg, 
+                            padding: '4px 10px', 
+                            borderRadius: '100px', 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.03em', 
+                            display: 'inline-block',
+                            border: `1px solid ${statusObj.color}22`
+                          }}>
+                            {statusObj.label}
                           </span>
                         </div>
                       </td>
@@ -3776,6 +4257,7 @@ export default function ProjectsPage() {
           {[
             { id: 'details', label: 'Thông tin chung', icon: <Info size={14} /> },
             { id: 'subjects', label: 'Môn học & Lịch học', icon: <BookOpen size={14} /> },
+            { id: 'lecturers', label: 'Đội ngũ giảng viên', icon: <Users size={14} /> },
             { id: 'thesis', label: 'Cột mốc luận văn', icon: <FileText size={14} /> },
             { id: 'reminders', label: 'Cài đặt nhắc nhở', icon: <Settings size={14} /> }
           ].map(tab => (
@@ -3808,151 +4290,164 @@ export default function ProjectsPage() {
         {campaignDrawerTab === 'details' && (
           <>
             {/* KPI Summary Cards */}
-            {campaignStats && (
-              <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                {/* 1. Tổng Khách Hàng */}
-                <div
-                  className="stat-card hover-lift"
-                  onClick={user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? () => {
-                    if (editingCampaign?.id) {
-                      navigate(`/contacts?campaign_id=${editingCampaign.id}`);
-                    }
-                  } : undefined}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '0.75rem 1rem',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                    cursor: user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? 'pointer' : 'default',
-                    transition: 'all 0.2s ease',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div className="decor-svg" style={{ color: '#ef4444' }}>
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                      <path d="M50 45 C 58 45, 65 38, 65 30 C 65 22, 58 15, 50 15 C 42 15, 35 22, 35 30 C 35 38, 42 45, 50 45 Z" stroke="currentColor" strokeWidth="2" />
-                      <path d="M20 80 C 20 65, 33 55, 50 55 C 67 55, 80 65, 80 80" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng Khách Hàng</span>
-                    <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={14} /></div>
-                  </div>
-                  <div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
-                      {campaignStats.total_leads}
-                    </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Khách hàng tiềm năng</div>
-                  </div>
-                </div>
+            {campaignStats && (() => {
+              const activeSubjectsCount = subjectStatsSummary.active;
+              const endedSubjectsCount = subjectStatsSummary.ended;
+              const notStartedSubjectsCount = subjectStatsSummary.notStarted;
+              const { totalSessions, totalSeminars } = lecturerStatsSummary;
 
-                {/* 2. Cơ Hội Bán Hàng */}
-                <div
-                  className="stat-card hover-lift"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '0.75rem 1rem',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div className="decor-svg" style={{ color: '#3b82f6' }}>
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                      <path d="M50 20 L 80 35 L 50 50 L 20 35 Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                      <path d="M20 50 L 50 65 L 80 50" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M20 65 L 50 80 L 80 65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cơ Hội Bán Hàng</span>
-                    <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Layers size={14} /></div>
-                  </div>
-                  <div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
-                      {campaignStats.converted_leads}
+              return (
+                <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  {/* 1. Tổng Học Viên */}
+                  <div
+                    className="stat-card hover-lift"
+                    onClick={user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? () => {
+                      if (editingCampaign?.id) {
+                        navigate(`/contacts?campaign_id=${editingCampaign.id}`);
+                      }
+                    } : undefined}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '0.75rem 1rem',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                      cursor: user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role) ? 'pointer' : 'default',
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="decor-svg" style={{ color: '#ef4444' }}>
+                      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                        <path d="M50 45 C 58 45, 65 38, 65 30 C 65 22, 58 15, 50 15 C 42 15, 35 22, 35 30 C 35 38, 42 45, 50 45 Z" stroke="currentColor" strokeWidth="2" />
+                        <path d="M20 80 C 20 65, 33 55, 50 55 C 67 55, 80 65, 80 80" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Cơ hội giao dịch</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng Học Viên</span>
+                      <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={14} /></div>
+                    </div>
+                    <div>
+                      <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
+                        {campaignStats.won_deals}
+                      </div>
+                      <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>
+                        {campaignStats.converted_leads} liên hệ / {campaignStats.total_leads} tiềm năng
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* 3. Doanh Thu */}
-                <div
-                  className="stat-card hover-lift"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '0.75rem 1rem',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div className="decor-svg" style={{ color: '#10b981' }}>
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                      <rect x="25" y="20" width="50" height="60" rx="4" stroke="currentColor" strokeWidth="2" />
-                      <path d="M35 35 H 45 M 55 35 H 65 M 35 50 H 45 M 55 50 H 65 M 35 65 H 45 M 55 65 H 65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Doanh Thu</span>
-                    <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Building2 size={14} /></div>
-                  </div>
-                  <div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={campaignStats.actual_revenue.toLocaleString('vi-VN') + ' VND'}>
-                      {campaignStats.actual_revenue >= 1000000000
-                        ? `${(campaignStats.actual_revenue / 1000000000).toFixed(2)} tỷ`
-                        : `${(campaignStats.actual_revenue / 1000000).toFixed(0)} triệu`}
+                  {/* 2. Tổng Môn Học */}
+                  <div
+                    className="stat-card hover-lift"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '0.75rem 1rem',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="decor-svg" style={{ color: '#3b82f6' }}>
+                      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                        <path d="M20 35 L 50 20 L 80 35 L 50 50 Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                        <path d="M20 50 L 50 65 L 80 50" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M20 65 L 50 80 L 80 65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Từ hóa đơn thực tế</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tổng Môn Học</span>
+                      <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><BookOpen size={14} /></div>
+                    </div>
+                    <div>
+                      <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
+                        {subjects.length}
+                      </div>
+                      <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>
+                        {totalSessions} buổi trường / {totalSeminars} chuyên đề
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* 4. Tỷ Lệ Chốt */}
-                <div
-                  className="stat-card hover-lift"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '0.75rem 1rem',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-light)',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div className="decor-svg" style={{ color: '#f59e0b' }}>
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                      <rect x="25" y="25" width="50" height="50" rx="6" stroke="currentColor" strokeWidth="2" />
-                      <path d="M40 50 L 47 57 L 62 42" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tỷ Lệ Chốt</span>
-                    <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckSquare size={14} /></div>
-                  </div>
-                  <div>
-                    <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
-                      {campaignStats.conversion_rate}%
+                  {/* 3. Tiến Độ Môn Học */}
+                  <div
+                    className="stat-card hover-lift"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '0.75rem 1rem',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="decor-svg" style={{ color: '#10b981' }}>
+                      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                        <rect x="25" y="20" width="50" height="60" rx="4" stroke="currentColor" strokeWidth="2" />
+                        <path d="M35 35 H 45 M 55 35 H 65 M 35 50 H 45 M 55 50 H 65 M 35 65 H 45 M 55 65 H 65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
                     </div>
-                    <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Tỷ lệ giao dịch thành công</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tiến Độ Môn Học</span>
+                      <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Calendar size={14} /></div>
+                    </div>
+                    <div>
+                      <div className="stat-value" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>
+                        {activeSubjectsCount} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>/ {subjects.length} đang học</span>
+                      </div>
+                      <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>
+                        {endedSubjectsCount} đã kết thúc, {notStartedSubjectsCount} chưa mở
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Học Phí Thực Thu */}
+                  <div
+                    className="stat-card hover-lift"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '0.75rem 1rem',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border-light)',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div className="decor-svg" style={{ color: '#f59e0b' }}>
+                      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                        <rect x="25" y="25" width="50" height="50" rx="6" stroke="currentColor" strokeWidth="2" />
+                        <path d="M40 50 L 47 57 L 62 42" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span className="stat-label" style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Học Phí Thực Thu</span>
+                      <div className="stat-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><GraduationCap size={14} /></div>
+                    </div>
+                    <div>
+                      <div className="stat-value" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={campaignStats.actual_revenue.toLocaleString('vi-VN') + ' VND'}>
+                        {campaignStats.actual_revenue >= 1000000000
+                          ? `${(campaignStats.actual_revenue / 1000000000).toFixed(2)} tỷ`
+                          : `${(campaignStats.actual_revenue / 1000000).toFixed(0)} triệu`}
+                      </div>
+                      <div className="stat-desc" style={{ fontSize: '0.6875rem', color: 'var(--color-text-light)', marginTop: '4px', fontWeight: 550 }}>Từ hóa đơn đã thanh toán</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'start' }}>
               {/* Left Column (3/5) */}
@@ -4437,6 +4932,8 @@ export default function ProjectsPage() {
         )}
 
         {campaignDrawerTab === 'subjects' && renderSubjectsTab()}
+
+        {campaignDrawerTab === 'lecturers' && renderLecturersTab()}
 
         {campaignDrawerTab === 'thesis' && renderThesisTab()}
 
@@ -5529,15 +6026,15 @@ export default function ProjectsPage() {
                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                           <div style={{
                             padding: '12px',
-                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))',
+                            background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(225, 29, 72, 0.1))',
                             borderRadius: '16px',
-                            color: '#3b82f6',
+                            color: 'var(--color-primary)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: 'inset 0 0 0 1px rgba(59, 130, 246, 0.15)'
+                            boxShadow: 'inset 0 0 0 1px rgba(225, 29, 72, 0.15)'
                           }}>
-                            <GraduationCap size={22} style={{ color: '#3b82f6' }} />
+                            <GraduationCap size={22} style={{ color: 'var(--color-primary)' }} />
                           </div>
                           <div>
                             <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, lineHeight: 1.35, letterSpacing: '-0.01em' }}>{proj.name}</h3>
@@ -5585,8 +6082,9 @@ export default function ProjectsPage() {
                       <div
                         style={{
                           display: 'flex',
-                          flexDirection: 'column',
-                          gap: screenWidth <= 640 ? '8px' : '10px',
+                          flexDirection: 'row',
+                          flexWrap: 'wrap',
+                          gap: '8px',
                           fontSize: screenWidth <= 640 ? '0.68rem' : '0.72rem',
                           color: 'var(--color-text-muted)'
                         }}
@@ -5671,21 +6169,32 @@ export default function ProjectsPage() {
                     </div>
 
                     {/* Actions Row */}
-                    <div className="flex gap-2 pt-4" style={{ borderTop: '1px solid var(--color-border-light)', marginTop: '1.25rem' }} onClick={e => e.stopPropagation()}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderTop: '1px solid var(--color-border-light)',
+                      marginTop: '1.25rem',
+                      paddingTop: '0.75rem'
+                    }} onClick={e => e.stopPropagation()}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenDocs(proj.id);
                         }}
-                        className="btn secondary sm flex-1 flex justify-center items-center gap-1.5"
+                        className="btn secondary sm"
                         style={{
-                          borderRadius: '12px',
+                          borderRadius: '8px',
                           fontWeight: 700,
-                          fontSize: '0.8rem',
-                          height: '36px',
+                          fontSize: '0.75rem',
+                          height: '32px',
+                          padding: '0 12px',
                           background: 'var(--color-bg)',
                           border: '1px solid var(--color-border-light)',
                           color: 'var(--color-text)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
                           transition: 'all 0.2s ease'
                         }}
                         onMouseEnter={e => {
@@ -5697,11 +6206,11 @@ export default function ProjectsPage() {
                           e.currentTarget.style.borderColor = 'var(--color-border-light)';
                         }}
                       >
-                        <FileText size={14} />
+                        <FileText size={13} />
                         Tài liệu
                       </button>
                       {isManagerOrLeader && (
-                        <>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                           {canEditProject(proj) && (
                             <button
                               onClick={(e) => {
@@ -5713,9 +6222,9 @@ export default function ProjectsPage() {
                               }}
                               className="btn secondary sm"
                               style={{
-                                borderRadius: '12px',
-                                width: '36px',
-                                height: '36px',
+                                borderRadius: '8px',
+                                width: '32px',
+                                height: '32px',
                                 padding: 0,
                                 display: 'flex',
                                 alignItems: 'center',
@@ -5735,7 +6244,7 @@ export default function ProjectsPage() {
                               }}
                               title="Sửa"
                             >
-                              <Edit size={14} />
+                              <Edit size={13} />
                             </button>
                           )}
                           {canDeleteProject(proj) && (
@@ -5746,32 +6255,32 @@ export default function ProjectsPage() {
                               }}
                               className="btn secondary sm"
                               style={{
-                                borderRadius: '12px',
-                                width: '36px',
-                                height: '36px',
+                                borderRadius: '8px',
+                                width: '32px',
+                                height: '32px',
                                 padding: 0,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                background: 'var(--color-bg)',
-                                border: '1px solid rgba(239, 68, 68, 0.15)',
+                                background: '#fee2e2',
+                                border: '1px solid #fca5a5',
                                 color: '#ef4444',
                                 transition: 'all 0.2s ease'
                               }}
                               onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.06)';
-                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                                e.currentTarget.style.background = '#fca5a5';
+                                e.currentTarget.style.borderColor = '#ef4444';
                               }}
                               onMouseLeave={e => {
-                                e.currentTarget.style.background = 'var(--color-bg)';
-                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.15)';
+                                e.currentTarget.style.background = '#fee2e2';
+                                e.currentTarget.style.borderColor = '#fca5a5';
                               }}
                               title="Xóa"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} />
                             </button>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>

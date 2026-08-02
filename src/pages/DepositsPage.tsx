@@ -16,6 +16,8 @@ const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(
 import { DepositDetailDrawer } from '../components/DepositDetailDrawer';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { MentionInput } from '../components/ui/MentionInput';
+import { PeriodFilter, getDateRange } from '../components/ui/PeriodFilter';
+import type { Period, DateRange } from '../components/ui/PeriodFilter';
 import {
   XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, ComposedChart,
@@ -123,6 +125,8 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
+  const [period, setPeriod] = useState<Period>('all');
+  const [dateRange, setDateRange] = useState<DateRange>(() => getDateRange('all'));
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProjectId, setFilterProjectId] = useState('');
@@ -159,6 +163,20 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       );
     }
 
+    // Filter by dateRange
+    if (dateRange.from) {
+      list = list.filter((d: any) => {
+        const dateStr = d.created_at?.substring(0, 10);
+        return !dateStr || dateStr >= dateRange.from;
+      });
+    }
+    if (dateRange.to) {
+      list = list.filter((d: any) => {
+        const dateStr = d.created_at?.substring(0, 10);
+        return !dateStr || dateStr <= dateRange.to;
+      });
+    }
+
     return list.filter((d: any) => {
       const clientName = (d.full_name || '').toLowerCase();
       const matchesSearch = !searchQuery.trim() ? true : 
@@ -173,7 +191,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
 
       return matchesSearch && matchesProject && matchesStatus;
     });
-  }, [deposits, user, searchQuery, filterProjectId, filterStatus]);
+  }, [deposits, user, searchQuery, filterProjectId, filterStatus, dateRange]);
 
   const paginatedDeposits = React.useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -416,8 +434,8 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanText = newCommentText.replace(/<[^>]*>/g, '').trim();
-    if (!cleanText || !selectedDepForManage?.id || isSubmittingComment) return;
+    const hasContent = newCommentText.includes('<img') || !!newCommentText.replace(/<[^>]*>/g, '').trim();
+    if (!hasContent || !selectedDepForManage?.id || isSubmittingComment) return;
     setIsSubmittingComment(true);
     try {
       const res = await fetchAPI(`deposits/${selectedDepForManage.id}/comments`, {
@@ -1277,16 +1295,24 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
               : t("Theo dõi đơn hàng, tiến độ thanh toán và duyệt Sales Order")}
           </p>
         </div>
-        {!isViewer && activeViewTab !== 'stats' && (
-          <button
-            onClick={() => setShowPOS(true)}
-            className="btn primary"
-            style={{ height: '38px' }}
-          >
-            <Plus size={16} />
-            Tạo đơn hàng mới
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {activeViewTab !== 'stats' && (
+            <PeriodFilter
+              value={period}
+              onChange={(p, r) => { setPeriod(p); setDateRange(r); setCurrentPage(1); }}
+            />
+          )}
+          {!isViewer && activeViewTab !== 'stats' && (
+            <button
+              onClick={() => setShowPOS(true)}
+              className="btn primary"
+              style={{ height: '38px' }}
+            >
+              <Plus size={16} />
+              Tạo đơn hàng mới
+            </button>
+          )}
+        </div>
       </div>
 
 

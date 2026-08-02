@@ -6937,6 +6937,28 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             />
                           </div>
 
+                          {!isStudent && (
+                            <div className="form-group">
+                              <label className="form-label">Chương trình quan tâm</label>
+                              <CustomSelect
+                                searchable
+                                options={[
+                                  { value: '', label: '— Không chọn —' },
+                                  ...projectsList.map(p => ({ value: String(p.id), label: p.name }))
+                                ]}
+                                value={String(formData.project_id || '')}
+                                onChange={val => {
+                                  const selectedId = val ? Number(val) : null;
+                                  setFormData((prev: any) => ({
+                                    ...prev,
+                                    project_id: selectedId,
+                                    campaign_id: null
+                                  }));
+                                }}
+                              />
+                            </div>
+                          )}
+
                           <div className="form-group">
                             <label className="form-label">Dự kiến doanh thu</label>
                             <CurrencyInput

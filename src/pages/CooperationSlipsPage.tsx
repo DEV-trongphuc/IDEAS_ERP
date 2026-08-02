@@ -137,8 +137,8 @@ export default function CooperationSlipsPage() {
 
   const [expandedSlips, setExpandedSlips] = useState<Record<number, boolean>>({});
 
-  const [period, setPeriod] = useState<Period>('30d');
-  const [dateRange, setDateRange] = useState<DateRange>(() => getDateRange('30d'));
+  const [period, setPeriod] = useState<Period>('all');
+  const [dateRange, setDateRange] = useState<DateRange>(() => getDateRange('all'));
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSale, setFilterSale] = useState('all');
   const location = useLocation();

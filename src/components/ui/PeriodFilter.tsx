@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export type Period = '7d' | '30d' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'custom';
+export type Period = 'all' | '7d' | '30d' | 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'custom';
 
 export interface DateRange {
   from: string;
@@ -19,6 +19,7 @@ export interface PeriodFilterProps {
 }
 
 const PERIODS: { key: Period; label: string }[] = [
+  { key: 'all', label: 'Tất cả' },
   { key: '7d', label: '7 ngày' },
   { key: '30d', label: '30 ngày' },
   { key: 'this_month', label: 'Tháng này' },
@@ -45,6 +46,8 @@ export function getDateRange(period: Period, custom?: DateRange): DateRange {
   const today = formatLocalDate(now);
 
   switch (period) {
+    case 'all':
+      return { from: '', to: '' };
     case '7d': {
       const d = new Date(now); d.setDate(d.getDate() - 6);
       return { from: formatLocalDate(d), to: today };
