@@ -979,84 +979,115 @@ export const InternalSchedulePage: React.FC = () => {
                             <div>Địa điểm: <strong style={{ color: 'var(--color-text)' }}>{evt.location}</strong></div>
                           </div>
                           {evt.zoom_link && (
-                            <div style={{ 
-                              marginTop: '8px', 
-                              background: 'var(--color-primary-light)', 
-                              border: '1px solid var(--color-border-light)', 
-                              borderRadius: '8px', 
-                              padding: '8px 10px', 
-                              display: 'flex', 
-                              flexDirection: 'column', 
-                              gap: '6px' 
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <Video size={13} /> Phòng Zoom Trực tuyến
-                                </span>
-                                <button
-                                  onClick={() => window.open(evt.zoom_link, '_blank')}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    background: 'var(--color-primary)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    padding: '4px 8px',
-                                    fontSize: '0.68rem',
-                                    fontWeight: 750,
-                                    cursor: 'pointer',
-                                    boxShadow: 'var(--shadow-xs)'
-                                  }}
-                                  className="hover-lift"
-                                >
-                                  Vào học Zoom <ExternalLink size={11} />
-                                </button>
-                              </div>
-                              
-                              <div style={{ 
-                                display: 'flex', 
-                                gap: '10px', 
-                                fontSize: '0.68rem', 
-                                color: 'var(--color-text)', 
-                                background: '#ffffff', 
-                                padding: '4px 6px', 
-                                borderRadius: '4px', 
-                                border: '1px solid var(--color-border-light)',
-                                flexWrap: 'wrap'
-                              }}>
-                                {evt.zoom_id && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span>ID: <strong>{evt.zoom_id}</strong></span>
-                                    <button 
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(evt.zoom_id);
-                                        toast.success('Đã copy Zoom ID!');
-                                      }}
-                                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)' }}
-                                    >
-                                      <Copy size={11} />
-                                    </button>
-                                  </div>
-                                )}
-                                {evt.zoom_pass && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--color-border-light)', paddingLeft: '10px' }}>
-                                    <span>Pass: <strong>{evt.zoom_pass}</strong></span>
-                                    <button 
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(evt.zoom_pass);
-                                        toast.success('Đã copy Zoom Pass!');
-                                      }}
-                                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)' }}
-                                    >
-                                      <Copy size={11} />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
+                             <div style={{ 
+                               marginTop: '8px', 
+                               background: 'var(--color-primary-light)', 
+                               border: '1px solid var(--color-border-light)', 
+                               borderRadius: '8px', 
+                               padding: '8px 10px', 
+                               display: 'flex', 
+                               flexDirection: 'column', 
+                               gap: '6px' 
+                             }}>
+                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                   <Video size={13} /> Phòng Zoom Trực tuyến
+                                 </span>
+                                 <button
+                                   onClick={() => {
+                                     const infoText = `Link Zoom: ${evt.zoom_link}\nID: ${evt.zoom_id || ''}\nPass: ${evt.zoom_pass || ''}`;
+                                     navigator.clipboard.writeText(infoText)
+                                       .then(() => toast.success('Đã copy Link, ID và Pass!'))
+                                       .catch(() => {});
+                                     window.open(evt.zoom_link, '_blank');
+                                   }}
+                                   style={{
+                                     display: 'flex',
+                                     alignItems: 'center',
+                                     gap: '4px',
+                                     background: 'var(--color-primary)',
+                                     color: '#ffffff',
+                                     border: 'none',
+                                     borderRadius: '6px',
+                                     padding: '4px 8px',
+                                     fontSize: '0.68rem',
+                                     fontWeight: 750,
+                                     cursor: 'pointer',
+                                     boxShadow: 'var(--shadow-xs)'
+                                   }}
+                                   className="hover-lift"
+                                 >
+                                   Vào học Zoom <ExternalLink size={11} />
+                                 </button>
+                               </div>
+                               
+                               <div style={{ 
+                                 display: 'flex', 
+                                 flexDirection: 'column',
+                                 gap: '8px', 
+                                 fontSize: '0.68rem', 
+                                 color: 'var(--color-text)', 
+                                 background: '#ffffff', 
+                                 padding: '6px 8px', 
+                                 borderRadius: '4px', 
+                                 border: '1px solid var(--color-border-light)'
+                               }}>
+                                 {/* Zoom Link Display */}
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', wordBreak: 'break-all' }}>
+                                   <span style={{ fontWeight: 600, flexShrink: 0 }}>Link:</span>
+                                   <a 
+                                     href={evt.zoom_link} 
+                                     target="_blank" 
+                                     rel="noopener noreferrer" 
+                                     style={{ color: 'var(--color-primary)', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
+                                   >
+                                     {evt.zoom_link}
+                                   </a>
+                                   <button 
+                                     onClick={() => {
+                                       navigator.clipboard.writeText(evt.zoom_link);
+                                       toast.success('Đã copy Zoom Link!');
+                                     }}
+                                     style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)', flexShrink: 0 }}
+                                   >
+                                     <Copy size={11} />
+                                   </button>
+                                 </div>
+
+                                 {/* ID and Pass row */}
+                                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px' }}>
+                                   {evt.zoom_id && (
+                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                       <span>ID: <strong>{evt.zoom_id}</strong></span>
+                                       <button 
+                                         onClick={() => {
+                                           navigator.clipboard.writeText(evt.zoom_id);
+                                           toast.success('Đã copy Zoom ID!');
+                                         }}
+                                         style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)' }}
+                                       >
+                                         <Copy size={11} />
+                                       </button>
+                                     </div>
+                                   )}
+                                   {evt.zoom_pass && (
+                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--color-border-light)', paddingLeft: '10px' }}>
+                                       <span>Pass: <strong>{evt.zoom_pass}</strong></span>
+                                       <button 
+                                         onClick={() => {
+                                           navigator.clipboard.writeText(evt.zoom_pass);
+                                           toast.success('Đã copy Zoom Pass!');
+                                         }}
+                                         style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px', color: 'var(--color-text-muted)' }}
+                                       >
+                                         <Copy size={11} />
+                                       </button>
+                                     </div>
+                                   )}
+                                 </div>
+                               </div>
+                             </div>
+                           )}
                         </div>
                       ))}
                     </div>
