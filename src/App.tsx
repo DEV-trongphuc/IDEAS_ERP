@@ -198,7 +198,7 @@ const AppTabs = () => {
       case '/calendar':
         return (user?.role === 'sale' || user?.role === 'sales')
           ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" />
-          : <CalendarPage key="calendar" />;
+          : <DataList key="data" />;
       case '/contacts':
         return <ContactsPage key="contacts" defaultSegment="tiem_nang" />;
       case '/students':
