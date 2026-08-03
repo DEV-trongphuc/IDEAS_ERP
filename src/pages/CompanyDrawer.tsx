@@ -502,7 +502,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
             animate={{ y: 0, x: 0, opacity: 1 }}
             exit={isMobileOrTablet ? { y: '100%' } : { opacity: 0, x: '250px' }}
             transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
-            style={{ zIndex: 2147483647 }}
+            style={{ zIndex: 2147483600 }}
           >
             {/* Header / Sticky Top Bar */}
             {isMobileOrTablet ? (

@@ -12,7 +12,16 @@ if (!function_exists('getModulePermissionScope')) {
             return 'all';
         }
         if ($module === 'users' && $action === 'read') {
-            return 'all';
+            if (in_array($role, ['superadmin', 'admin', 'super_admin', 'hr', 'director', 'viewer', 'assistant', 'sale_admin', 'saleadmin'], true)) {
+                return 'all';
+            }
+            if ($role === 'manager') {
+                return 'team';
+            }
+            if (in_array($role, ['accountant', 'marketing', 'sale', 'sales'], true)) {
+                return 'own';
+            }
+            return 'none';
         }
         if ($role === 'sale_admin' || $role === 'saleadmin') {
             if (in_array($module, ['settings', 'hrm', 'attendance'], true)) {

@@ -214,6 +214,12 @@ class CheckInController {
         
         $isSupplementary = ($today !== date('Y-m-d')) || (!empty($b['is_supplementary']));
 
+        // Chặn chấm công hoặc cập nhật công cho tương lai
+        if ($today > date('Y-m-d') || ($today === date('Y-m-d') && $currentTime > date('H:i:s'))) {
+            respond(400, null, 'Không thể chấm công hoặc cập nhật công cho thời gian trong tương lai.', false);
+            return;
+        }
+
         // Fetch system settings for checkout & auto-approve requirements
         $stmtSettings = $this->db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('require_checkin_weekend_lead', 'require_checkin_holiday_lead', 'holiday_schedules', 'require_checkout', 'auto_approve_checkin', 'global_work_start_time', 'global_work_end_time')");
         $stmtSettings->execute();
@@ -533,7 +539,11 @@ class CheckInController {
 
         // Update status and admin_note, keeping original Sale reason intact
         $adminNote = (!empty($reason) && trim($reason) !== '') ? trim($reason) : null;
-        $upd = $this->db->prepare("UPDATE check_ins SET status = ?, admin_note = COALESCE(?, admin_note) WHERE id = ?");
+        if ($status === 'approved') {
+            $upd = $this->db->prepare("UPDATE check_ins SET status = ?, admin_note = COALESCE(?, admin_note), late_minutes = 0, early_minutes = 0 WHERE id = ?");
+        } else {
+            $upd = $this->db->prepare("UPDATE check_ins SET status = ?, admin_note = COALESCE(?, admin_note) WHERE id = ?");
+        }
         $upd->execute([$status, $adminNote, $id]);
 
         logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'UPDATE_CHECK_IN', 'check_in', $id, json_encode([
@@ -768,6 +778,9 @@ class CheckInController {
 
             foreach ($details as $d) {
                 $date = $d['date'];
+                if ($date > date('Y-m-d')) {
+                    throw new Exception('Không thể đề xuất bổ sung công cho các ngày trong tương lai: ' . $date);
+                }
                 $in = !empty($d['check_in']) ? $d['check_in'] : null;
                 $out = !empty($d['check_out']) ? $d['check_out'] : null;
                 $reason = $d['reason'] ?? 'Bổ sung công';
@@ -968,14 +981,16 @@ class CheckInController {
                     $details = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
 
                     $stmtUpsert = $this->db->prepare("
-                        INSERT INTO check_ins (user_id, check_in_date, check_in_time, check_out_time, status, reason, admin_note)
-                        VALUES (?, ?, ?, ?, 'approved', ?, ?)
+                        INSERT INTO check_ins (user_id, check_in_date, check_in_time, check_out_time, status, reason, admin_note, late_minutes, early_minutes)
+                        VALUES (?, ?, ?, ?, 'approved', ?, ?, 0, 0)
                         ON DUPLICATE KEY UPDATE 
                           check_in_time = VALUES(check_in_time),
                           check_out_time = VALUES(check_out_time),
                           status = 'approved',
                           reason = VALUES(reason),
-                          admin_note = VALUES(admin_note)
+                          admin_note = VALUES(admin_note),
+                          late_minutes = 0,
+                          early_minutes = 0
                     ");
 
                     foreach ($details as $d) {

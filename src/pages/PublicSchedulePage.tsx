@@ -796,7 +796,7 @@ export const PublicSchedulePage: React.FC = () => {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 
-          zIndex: 2147483647,
+          zIndex: 2147483600,
           padding: '1rem',
           animation: 'fadeIn 0.2s ease'
         }}>

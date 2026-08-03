@@ -872,7 +872,7 @@ export const InternalSchedulePage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 2147483647,
+          zIndex: 2147483600,
           backdropFilter: 'blur(4px)'
         }}>
           <div style={{
@@ -916,34 +916,74 @@ export const InternalSchedulePage: React.FC = () => {
                       <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
                         Buổi học &amp; Chuyên đề ({selectedDaySchedules.length})
                       </div>
-                      {selectedDaySchedules.map((evt, idx) => (
-                        <div key={idx} style={{ 
-                          padding: '12px', 
-                          background: 'var(--color-bg-light)', 
-                          borderRadius: '12px', 
-                          border: '1px solid var(--color-border-light)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ 
-                              fontSize: '0.625rem', 
-                              fontWeight: 800, 
-                              padding: '2px 8px', 
-                              borderRadius: '100px', 
-                              color: '#ffffff', 
-                              background: evt.type === 'school' ? '#3b82f6' : '#ef4444' 
-                            }}>
-                              {evt.type === 'school' ? 'Trường' : 'Chuyên đề'}
-                            </span>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
-                              {evt.subjectCode} - {evt.subjectName}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--color-text)' }}>{evt.title}</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.72rem', color: 'var(--color-text-light)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px', marginTop: '2px' }}>
-                            <div>Giờ: <strong style={{ color: 'var(--color-text)' }}>{evt.time}</strong></div>
+                       {selectedDaySchedules.map((evt, idx) => {
+                         const isPassed = (() => {
+                           if (!selectedDateStr) return false;
+                           const now = new Date();
+                           const [year, month, day] = selectedDateStr.split('-').map(Number);
+                           const eventDate = new Date(year, month - 1, day);
+                           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                           
+                           if (eventDate < today) return true;
+                           if (eventDate > today) return false;
+                           
+                           if (evt.time) {
+                             const parts = evt.time.split('-');
+                             if (parts.length === 2) {
+                               const endTimeStr = parts[1].trim();
+                               const [endHour, endMin] = endTimeStr.split(':').map(Number);
+                               if (!isNaN(endHour) && !isNaN(endMin)) {
+                                 const eventEndTime = new Date(year, month - 1, day, endHour, endMin);
+                                 return now > eventEndTime;
+                               }
+                             }
+                           }
+                           return false;
+                         })();
+
+                         return (
+                           <div key={idx} style={{ 
+                             padding: '12px', 
+                             background: 'var(--color-bg-light)', 
+                             borderRadius: '12px', 
+                             border: '1px solid var(--color-border-light)',
+                             display: 'flex',
+                             flexDirection: 'column',
+                             gap: '6px'
+                           }}>
+                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                               <span style={{ 
+                                 fontSize: '0.625rem', 
+                                 fontWeight: 800, 
+                                 padding: '2px 8px', 
+                                 borderRadius: '100px', 
+                                 color: '#ffffff', 
+                                 background: evt.type === 'school' ? '#3b82f6' : '#ef4444' 
+                               }}>
+                                 {evt.type === 'school' ? 'Trường' : 'Chuyên đề'}
+                               </span>
+                               <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>
+                                 {evt.subjectCode} - {evt.subjectName}
+                               </span>
+                             </div>
+                             <div style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--color-text)' }}>{evt.title}</div>
+                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.72rem', color: 'var(--color-text-light)', borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px', marginTop: '2px' }}>
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                 <span>Giờ: <strong style={{ color: 'var(--color-text)' }}>{evt.time}</strong></span>
+                                 {isPassed && (
+                                   <span style={{ 
+                                     fontSize: '0.6rem', 
+                                     fontWeight: 800, 
+                                     color: '#6b7280', 
+                                     background: '#e5e7eb', 
+                                     padding: '1px 5px', 
+                                     borderRadius: '4px', 
+                                     textTransform: 'uppercase'
+                                   }}>
+                                     Đã kết thúc
+                                   </span>
+                                 )}
+                               </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span>Giảng viên:</span>
                               <div 
@@ -972,26 +1012,45 @@ export const InternalSchedulePage: React.FC = () => {
                                 }}
                                 className={evt.lecturerId ? "hover-lift" : ""}
                               >
-                                <Avatar name={evt.lecturer} size={16} />
-                                <strong style={{ color: 'var(--color-text)' }}>{evt.lecturer}</strong>
-                              </div>
-                            </div>
-                            <div>Địa điểm: <strong style={{ color: 'var(--color-text)' }}>{evt.location}</strong></div>
-                          </div>
-                          {evt.zoom_link && (
+                                 <Avatar name={evt.lecturer} size={16} />
+                                 <strong style={{ color: 'var(--color-text)' }}>{evt.lecturer}</strong>
+                               </div>
+                             </div>
+                             <div>Địa điểm: <strong style={{ color: 'var(--color-text)' }}>{evt.location}</strong></div>
+                           </div>
+                           {evt.zoom_link && (
                              <div style={{ 
                                marginTop: '8px', 
-                               background: 'var(--color-primary-light)', 
-                               border: '1px solid var(--color-border-light)', 
+                               background: '#F0F7FF', 
+                               border: '1px solid #C2E0FF', 
                                borderRadius: '8px', 
                                padding: '8px 10px', 
                                display: 'flex', 
                                flexDirection: 'column', 
-                               gap: '6px' 
+                               gap: '6px'
                              }}>
                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                   <Video size={13} /> Phòng Zoom Trực tuyến
+                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#0B5CFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                   <img 
+                                     src="https://assets-global.website-files.com/637501ee593ea3846f81d45e/63ea7af9128d3e56379023e6_zoom-logo-in-blue-colors-meetings-app-logotype-illustration-free-png.png" 
+                                     style={{ width: '16px', height: '16px', objectFit: 'contain' }} 
+                                     alt="Zoom" 
+                                   />
+                                   Phòng Zoom Trực tuyến
+                                   {isPassed && (
+                                      <span style={{ 
+                                        fontSize: '0.6rem', 
+                                        fontWeight: 800, 
+                                        color: '#4b5563', 
+                                        background: '#e5e7eb', 
+                                        padding: '1px 5px', 
+                                        borderRadius: '4px', 
+                                        marginLeft: '6px',
+                                        textTransform: 'uppercase' 
+                                      }}>
+                                        Đã kết thúc
+                                      </span>
+                                    )}
                                  </span>
                                  <button
                                    onClick={() => {
@@ -1004,7 +1063,7 @@ export const InternalSchedulePage: React.FC = () => {
                                      display: 'flex',
                                      alignItems: 'center',
                                      gap: '4px',
-                                     background: 'var(--color-primary)',
+                                     background: '#2D8CFF',
                                      color: '#ffffff',
                                      border: 'none',
                                      borderRadius: '6px',
@@ -1012,7 +1071,7 @@ export const InternalSchedulePage: React.FC = () => {
                                      fontSize: '0.68rem',
                                      fontWeight: 750,
                                      cursor: 'pointer',
-                                     boxShadow: 'var(--shadow-xs)'
+                                     boxShadow: '0 2px 4px rgba(45, 140, 255, 0.2)'
                                    }}
                                    className="hover-lift"
                                  >
@@ -1029,7 +1088,7 @@ export const InternalSchedulePage: React.FC = () => {
                                  background: '#ffffff', 
                                  padding: '6px 8px', 
                                  borderRadius: '4px', 
-                                 border: '1px solid var(--color-border-light)'
+                                 border: '1px solid #C2E0FF'
                                }}>
                                  {/* Zoom Link Display */}
                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', wordBreak: 'break-all' }}>
@@ -1038,7 +1097,7 @@ export const InternalSchedulePage: React.FC = () => {
                                      href={evt.zoom_link} 
                                      target="_blank" 
                                      rel="noopener noreferrer" 
-                                     style={{ color: 'var(--color-primary)', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
+                                     style={{ color: '#2D8CFF', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}
                                    >
                                      {evt.zoom_link}
                                    </a>
@@ -1087,8 +1146,9 @@ export const InternalSchedulePage: React.FC = () => {
                                </div>
                              </div>
                            )}
-                        </div>
-                      ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 

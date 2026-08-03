@@ -145,6 +145,12 @@ class HRMController {
 
         if (empty($startDate) || empty($endDate) || empty($b['leave_type'])) {
             respond(400, null, 'Thiếu thông tin đăng ký nghỉ phép', false);
+            return;
+        }
+
+        if ($endDate < $startDate) {
+            respond(400, null, 'Ngày kết thúc nghỉ phép không thể nhỏ hơn ngày bắt đầu.', false);
+            return;
         }
 
         $approverId = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;

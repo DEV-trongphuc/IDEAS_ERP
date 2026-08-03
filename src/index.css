@@ -5772,9 +5772,6 @@ div.payroll-scroll-red.responsive-table-wrap::-webkit-scrollbar-thumb:hover {
 #react-hot-toast,
 .react-hot-toast-container,
 div[data-react-hot-toast],
-div:has(> [data-react-hot-toast]),
-div:has(> .custom-toast),
-div:has(> [role="status"]),
 div:not(#root):has(> [data-react-hot-toast]),
 div:not(#root):has(> [role="status"]),
 div:not(#root):has(> .custom-toast),
@@ -5783,9 +5780,6 @@ div:not(#root):has(> .custom-toast),
   z-index: 2147483647 !important;
 }
 
-body > div:has([role="status"]),
-body > div:has([data-react-hot-toast]),
-body > div:has(.custom-toast),
 body > div:not(#root):has([role="status"]),
 body > div:not(#root):has([data-react-hot-toast]),
 body > div:not(#root):has(.custom-toast) {
