@@ -11906,6 +11906,16 @@ switch ($action) {
                 require_once __DIR__ . '/run_migrations.php';
                 ob_clean();
                 $logResults[] = "Đã tự động kiểm tra và tái kích hoạt các INDEX tối ưu hiệu năng cơ sở dữ liệu.";
+            } else if ($actionType === 'run_tests') {
+                if (!defined('DIAG_TOKEN')) {
+                    define('DIAG_TOKEN', true);
+                }
+                ob_start();
+                include __DIR__ . '/master_all_backend_test_runner.php';
+                $rawOutput = ob_get_clean();
+                $logResults = array_values(array_filter(explode("\n", $rawOutput), function($line) {
+                    return trim($line) !== '';
+                }));
             }
 
             logAdminAction($conn, $decodedUser['id'], 'DB_MAINTENANCE', ['action_type' => $actionType, 'results' => $logResults]);

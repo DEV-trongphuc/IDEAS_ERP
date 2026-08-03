@@ -521,9 +521,9 @@ const SettingsInner = () => {
     setLoadingDb(false);
   };
 
-  const runDbAction = async (actionType: 'optimize' | 'clean_orphans' | 'fix_indexes') => {
+  const runDbAction = async (actionType: 'optimize' | 'clean_orphans' | 'fix_indexes' | 'run_tests') => {
     setDbActionRunning(true);
-    setDbLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Bắt đầu thực thi tác vụ: ${actionType === 'optimize' ? 'Tối ưu hóa bảng' : actionType === 'clean_orphans' ? 'Dọn dẹp bản ghi mồ côi' : 'Khôi phục Index'}...`]);
+    setDbLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Bắt đầu thực thi tác vụ: ${actionType === 'optimize' ? 'Tối ưu hóa bảng' : actionType === 'clean_orphans' ? 'Dọn dẹp bản ghi mồ côi' : actionType === 'fix_indexes' ? 'Khôi phục Index' : 'Chạy kịch bản kiểm thử tự động'}...`]);
     try {
       const res = await fetchAPI('optimize_db', {
         method: 'POST',
@@ -3102,6 +3102,17 @@ const SettingsInner = () => {
                     >
                       <Shield size={16} />
                       {t('Khôi phục Index')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn outline"
+                      disabled={dbActionRunning || loadingDb}
+                      onClick={() => runDbAction('run_tests')}
+                      style={{ color: '#059669', borderColor: '#059669' }}
+                    >
+                      <Activity size={16} />
+                      {t('Chạy tự động test')}
                     </button>
                   </div>
                 </div>
