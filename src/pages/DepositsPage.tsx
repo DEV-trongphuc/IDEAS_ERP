@@ -1424,7 +1424,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                     </div>
                   </div>
 
-                  <div className="stat-value" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: '4px 0', position: 'relative', zIndex: 2 }}>
+                  <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)', margin: '4px 0', position: 'relative', zIndex: 2 }}>
                     {k.value}
                   </div>
 

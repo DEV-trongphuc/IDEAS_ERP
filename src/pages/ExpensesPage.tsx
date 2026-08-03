@@ -1043,7 +1043,7 @@ export const ExpensesPage: React.FC = () => {
                 {loading ? (
                   <div className="skeleton" style={{ height: 28, width: '80%', borderRadius: 6, marginBottom: 8 }} />
                 ) : (
-                  <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.5rem', lineHeight: 1.2 }}>{k.value}</div>
+                  <div className="stat-value" style={{ fontWeight: 800, color: 'var(--color-text)', fontSize: '1.2rem', lineHeight: 1.2 }}>{k.value}</div>
                 )}
                 <div className="stat-desc" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '100%', fontWeight: 500 }} title={k.sub}>{k.sub}</div>
                 
