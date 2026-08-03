@@ -196,7 +196,7 @@ const AppTabs = () => {
           ? <Navigate to={`/contacts${location.search}`} replace />
           : <DataList key="data" />;
       case '/calendar':
-        return (user?.role === 'sale' || user?.role === 'sales')
+        return ((user?.role as any) === 'sale' || (user?.role as any) === 'sales')
           ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" />
           : <DataList key="data" />;
       case '/contacts':

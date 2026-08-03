@@ -242,21 +242,46 @@ class CheckInController {
         $stmtExisting->execute([$auth['user_id'], $today]);
         $existingRow = $stmtExisting->fetch(PDO::FETCH_ASSOC);
 
-        // Fetch user work hours
-        $stmtUser = $this->db->prepare("SELECT work_start_time, work_end_time, use_custom_work_hours FROM users WHERE id = ?");
+        // Fetch user work hours and custom schedule
+        $stmtUser = $this->db->prepare("SELECT work_start_time, work_end_time, use_custom_work_hours, work_schedule FROM users WHERE id = ?");
         $stmtUser->execute([$auth['user_id']]);
         $uRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
         
         $workStartTime = '08:00';
         $workEndTime = '17:30';
+        $workScheduleJson = null;
         if ($uRow) {
             if ((int)($uRow['use_custom_work_hours'] ?? 0) === 1) {
                 $workStartTime = $uRow['work_start_time'] ?: '08:00';
                 $workEndTime = $uRow['work_end_time'] ?: '17:30';
+                $workScheduleJson = $uRow['work_schedule'] ?? null;
             } else {
                 $workStartTime = $settingsMap['global_work_start_time'] ?? '08:00';
                 $workEndTime = $settingsMap['global_work_end_time'] ?? '17:30';
+                $workScheduleJson = $settingsMap['global_work_schedule'] ?? null;
             }
+        }
+
+        $dayOfWeek = (int)date('N', strtotime($today));
+        $todaySchedule = null;
+        if (!empty($workScheduleJson)) {
+            $parsedSched = json_decode($workScheduleJson, true);
+            if (is_array($parsedSched) && isset($parsedSched[$dayOfWeek])) {
+                $todaySchedule = $parsedSched[$dayOfWeek];
+            }
+        }
+
+        // Extract session times for today
+        $morningStart = $workStartTime;
+        $morningEnd = '12:00';
+        $afternoonStart = '13:00';
+        $afternoonEnd = $workEndTime;
+
+        if ($todaySchedule) {
+            $morningStart = substr($todaySchedule['start'] ?? $workStartTime, 0, 5);
+            $morningEnd = substr($todaySchedule['end'] ?? '12:00', 0, 5);
+            $afternoonStart = substr($todaySchedule['start_afternoon'] ?? '13:00', 0, 5);
+            $afternoonEnd = substr($todaySchedule['end_afternoon'] ?? $workEndTime, 0, 5);
         }
 
         // ==================== FLOW A: CHECK-OUT (RA CA) ====================
@@ -266,7 +291,7 @@ class CheckInController {
             }
 
             $outTimeStr = $today . ' ' . $currentTime;
-            $workEndStr = $today . ' ' . substr($workEndTime, 0, 5) . ':00';
+            $workEndStr = $today . ' ' . $afternoonEnd . ':00';
             
             $earlyMinutes = 0;
             $checkOutStatus = 'on_time';
@@ -368,9 +393,9 @@ class CheckInController {
         $isLate = false;
         $lateMinutes = 0;
 
-        // Check if checking in after 12:00 PM (afternoon shift)
-        if ($currentHM > '12:00') {
-            $afternoonStartHM = $settingsMap['global_afternoon_start_time'] ?? '13:30';
+        // Check if checking in during afternoon session (i.e. after morningEnd)
+        if ($currentHM > $morningEnd) {
+            $afternoonStartHM = !empty($afternoonStart) ? $afternoonStart : '13:00';
             // Check if user has approved morning leave request today
             $morningLeaveStmt = $this->db->prepare("
                 SELECT id 
@@ -383,17 +408,25 @@ class CheckInController {
             $morningLeaveStmt->execute([$auth['user_id'], $today]);
             $morningLeave = $morningLeaveStmt->fetch(PDO::FETCH_ASSOC);
 
-            // If there's a morning leave or they just check in after 12:00, compare with afternoon shift start
-            if ($morningLeave || $currentHM > '12:00') {
-                $isLate = ($currentHM > $afternoonStartHM);
-                if ($isLate) {
-                    $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $afternoonStartHM . ':00')) / 60);
+            // If there's a morning leave or they just check in after morningEnd, compare with afternoon shift start
+            if ($morningLeave || $currentHM > $morningEnd) {
+                // If afternoon session is not configured, compare with workStartHM
+                if (empty($todaySchedule['start_afternoon']) && empty($todaySchedule['end_afternoon'])) {
+                    $isLate = ($currentHM > $workStartHM);
+                    if ($isLate) {
+                        $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);
+                    }
+                } else {
+                    $isLate = ($currentHM > $afternoonStartHM);
+                    if ($isLate) {
+                        $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $afternoonStartHM . ':00')) / 60);
+                    }
                 }
             }
         } else {
-            $isLate = ($currentHM > $workStartHM);
+            $isLate = ($currentHM > $morningStart);
             if ($isLate) {
-                $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);
+                $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $morningStart . ':00')) / 60);
             }
         }
 

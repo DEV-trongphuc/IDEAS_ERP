@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Camera, AlertTriangle, CheckCircle2, Clock, Sparkles, RefreshCw, X, Fingerprint, MapPin } from 'lucide-react';
 import { CustomModal } from './CustomModal';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -125,16 +125,59 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
   }, []);
 
   const checkIsLate = () => {
-    const workStart = consultantProfile?.work_start_time || '08:00';
     const now = new Date();
-    const curHM = now.toTimeString().substring(0, 5);
-    return curHM > workStart;
+    const curHM = now.toTimeString().substring(0, 5); 
+    
+    let dayOfWeek = now.getDay();
+    if (dayOfWeek === 0) dayOfWeek = 7;
+    
+    const dayConfig = consultantProfile?.work_schedule?.[String(dayOfWeek)] || 
+                      consultantProfile?.work_schedule?.[dayOfWeek];
+                      
+    if (dayConfig && !dayConfig.active) {
+      return false; 
+    }
+    
+    const workStart = dayConfig?.start || consultantProfile?.work_start_time || '08:00';
+    const morningEnd = dayConfig?.end || '12:00';
+    const afternoonStart = dayConfig?.start_afternoon || '13:00';
+    
+    if (curHM > morningEnd) {
+      if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
+        return curHM > workStart;
+      }
+      return curHM > afternoonStart;
+    } else {
+      return curHM > workStart;
+    }
   };
 
   const getMinutesLate = () => {
-    const workStart = consultantProfile?.work_start_time || '08:00';
-    const [startH, startM] = workStart.split(':').map(Number);
     const now = new Date();
+    const curHM = now.toTimeString().substring(0, 5); 
+    
+    let dayOfWeek = now.getDay();
+    if (dayOfWeek === 0) dayOfWeek = 7;
+    
+    const dayConfig = consultantProfile?.work_schedule?.[String(dayOfWeek)] || 
+                      consultantProfile?.work_schedule?.[dayOfWeek];
+                      
+    if (dayConfig && !dayConfig.active) {
+      return 0; 
+    }
+    
+    const workStart = dayConfig?.start || consultantProfile?.work_start_time || '08:00';
+    const morningEnd = dayConfig?.end || '12:00';
+    const afternoonStart = dayConfig?.start_afternoon || '13:00';
+    
+    let startHM = workStart;
+    if (curHM > morningEnd) {
+      if (dayConfig?.start_afternoon || dayConfig?.end_afternoon) {
+        startHM = afternoonStart;
+      }
+    }
+    
+    const [startH, startM] = startHM.split(':').map(Number);
     const currentH = now.getHours();
     const currentM = now.getMinutes();
     const startTotal = startH * 60 + startM;

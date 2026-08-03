@@ -3322,13 +3322,34 @@ switch ($action) {
 
         $consultantProfile = null;
         if ($targetUserId > 0) {
-            $stmtP = $conn->prepare("SELECT id, full_name AS name, email, status, leave_start, leave_end, work_start_time, work_end_time, work_schedule, avatar_url AS avatar, vacation_mode, dob, gender, citizen_id, address, bank_name, bank_account, extra_fields_json, bio FROM users WHERE id = ?");
+            $stmtP = $conn->prepare("SELECT id, full_name AS name, email, status, leave_start, leave_end, work_start_time, work_end_time, work_schedule, avatar_url AS avatar, vacation_mode, dob, gender, citizen_id, address, bank_name, bank_account, extra_fields_json, bio, use_custom_work_hours FROM users WHERE id = ?");
             $stmtP->bind_param("i", $targetUserId);
             $stmtP->execute();
             $consultantProfile = $stmtP->get_result()->fetch_assoc();
             if ($consultantProfile) {
+                $useCustom = (int)($consultantProfile['use_custom_work_hours'] ?? 0);
+                if ($useCustom !== 1 || empty($consultantProfile['work_schedule'])) {
+                    $globalStart = '08:00';
+                    $globalEnd = '17:30';
+                    $globalSchedule = null;
+
+                    $resGlobal = $conn->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('global_work_start_time', 'global_work_end_time', 'global_work_schedule')");
+                    if ($resGlobal) {
+                        while ($gRow = $resGlobal->fetch_assoc()) {
+                            if ($gRow['setting_key'] === 'global_work_start_time') $globalStart = $gRow['setting_value'];
+                            if ($gRow['setting_key'] === 'global_work_end_time') $globalEnd = $gRow['setting_value'];
+                            if ($gRow['setting_key'] === 'global_work_schedule') $globalSchedule = $gRow['setting_value'];
+                        }
+                    }
+                    $consultantProfile['work_start_time'] = $globalStart;
+                    $consultantProfile['work_end_time'] = $globalEnd;
+                    $consultantProfile['work_schedule'] = $globalSchedule;
+                }
+
                 if (!empty($consultantProfile['work_schedule'])) {
-                    $consultantProfile['work_schedule'] = json_decode($consultantProfile['work_schedule'], true);
+                    if (is_string($consultantProfile['work_schedule'])) {
+                        $consultantProfile['work_schedule'] = json_decode($consultantProfile['work_schedule'], true);
+                    }
                 }
 
                 // Fetch night shift registrations for this user

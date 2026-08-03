@@ -3161,12 +3161,33 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   };
 
   const checkIsLate = () => {
-    const workStart = impersonatedSale
-      ? (impersonatedSale.work_start_time || '08:00')
-      : (data.consultant_profile?.work_start_time || '08:00');
+    const profile = impersonatedSale || data.consultant_profile;
+    const workStart = profile?.work_start_time || '08:00';
     const now = new Date();
     const curHM = now.toTimeString().substring(0, 5); 
-    return curHM > workStart;
+    
+    let dayOfWeek = now.getDay();
+    if (dayOfWeek === 0) dayOfWeek = 7;
+    
+    const dayConfig = profile?.work_schedule?.[String(dayOfWeek)] || 
+                      profile?.work_schedule?.[dayOfWeek];
+                      
+    if (dayConfig && !dayConfig.active) {
+      return false; 
+    }
+    
+    const morningEnd = dayConfig?.end || '12:00';
+    const afternoonStart = dayConfig?.start_afternoon || '13:00';
+    const activeWorkStart = dayConfig?.start || workStart;
+    
+    if (curHM > morningEnd) {
+      if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
+        return curHM > activeWorkStart;
+      }
+      return curHM > afternoonStart;
+    } else {
+      return curHM > activeWorkStart;
+    }
   };
   const isLate = checkIsLate();
 
