@@ -39,6 +39,9 @@ class CompanyController {
         if ($role === 'viewer') {
             return $action === 'read' ? 'all' : 'none';
         }
+        if ($role === 'accountant') {
+            return $action === 'read' ? 'all' : 'none';
+        }
         return 'none';
     }
 
