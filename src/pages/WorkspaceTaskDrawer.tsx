@@ -4,7 +4,7 @@ import {
   Settings, AlertCircle, Trash2, Plus, Send, Share2, FileText, Globe,
   Bold, Italic, List, ListOrdered, Image as ImageIcon, 
   Users, RefreshCw, Layers, CheckSquare2, Info, Receipt, Scale, ArrowUpRight, Search, Save, Bell, BellOff,
-  Eye, ExternalLink, UserPlus, UserCheck, Edit3, Play, Sparkles, ArrowRight, Building2, Megaphone, Loader2, RotateCcw,
+  Eye, EyeOff, ExternalLink, UserPlus, UserCheck, Edit3, Play, Sparkles, ArrowRight, Building2, Megaphone, Loader2, RotateCcw,
   CheckCircle2, XCircle, Camera, Target
 } from 'lucide-react';
 import api from '../api/axios';
@@ -2104,16 +2104,16 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   width: '36px',
                   height: '36px',
                   borderRadius: '8px',
-                  border: isHidden ? '1.5px solid #10b981' : '1px solid var(--color-border)',
-                  background: isHidden ? 'rgba(16, 185, 129, 0.08)' : 'var(--color-surface)',
-                  color: isHidden ? '#10b981' : 'var(--color-text-muted)',
+                  border: isHidden ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)',
+                  background: isHidden ? 'rgba(239, 68, 68, 0.08)' : 'var(--color-surface)',
+                  color: isHidden ? 'var(--color-danger)' : 'var(--color-text-muted)',
                   cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
                   transition: 'all 0.2s'
                 }}
                 title={isHidden ? t("Công việc đang ẩn (Bấm để hiển thị lại)") : t("Ẩn công việc khỏi bàn làm việc")}
               >
-                {isHidden ? <Eye size={18} style={{ color: '#10b981' }} /> : <Eye size={18} />}
+                {isHidden ? <EyeOff size={18} style={{ color: 'var(--color-danger)' }} /> : <Eye size={18} />}
               </button>
             )}
 
