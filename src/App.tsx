@@ -95,50 +95,62 @@ const AppTabs = () => {
 
   // Fallback for unrecognized paths
   if (!allPaths.includes(currentPath)) {
+    console.warn("[Router] Unrecognized path, redirecting to /:", currentPath);
     return <Navigate to="/" replace />;
   }
 
   if (currentPath === '/accounts') {
     if (!['admin', 'superadmin', 'super_admin', 'director', 'hr'].includes(user?.role || '')) {
+      console.warn("[Router] Access denied for /accounts, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/consultants') {
     if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
+      console.warn("[Router] Access denied for /consultants, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/attendance') {
     if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'attendance')) {
+      console.warn("[Router] Access denied for /attendance, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/contacts' || currentPath === '/deals') {
     if (['hr', 'accountant', 'sale_admin', 'saleadmin'].includes(user?.role || '')) {
+      console.warn("[Router] Access denied for /contacts or /deals, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/students') {
     if (user?.role === 'hr') {
+      console.warn("[Router] Access denied for /students, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (['/deposits', '/cash-flow'].includes(currentPath)) {
     if ((user?.role as string) === 'viewer' && !hasModuleApprovalAccess(user, 'deposit')) {
+      console.warn("[Router] Access denied for deposits/cashflow, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/financial-dashboard') {
     if (!['admin', 'superadmin', 'super_admin', 'director', 'accountant'].includes(user?.role || '')) {
+      console.warn("[Router] Access denied for /financial-dashboard, role:", user?.role);
       return <Navigate to="/" replace />;
     }
 
   } else if (currentPath === '/quotes') {
+    console.warn("[Router] Redirecting /quotes to /");
     return <Navigate to="/" replace />;
   } else if (currentPath === '/expenses') {
     if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'accountant', 'hr', 'sale_admin', 'saleadmin'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'expense')) {
+      console.warn("[Router] Access denied for /expenses, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/tickets') {
     if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'ticket')) {
+      console.warn("[Router] Access denied for /tickets, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/fair-share') {
     if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales'].includes(user?.role || '')) {
+      console.warn("[Router] Access denied for /fair-share, role:", user?.role);
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/activities') {

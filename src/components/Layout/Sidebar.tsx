@@ -34,7 +34,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     title: 'KHÁCH HÀNG',
     items: [
-      { name: 'Tiềm năng', href: '/contacts', icon: Users, hideForRoles: ['hr'] },
+      { name: 'Tiềm năng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
       { name: 'Học viên', href: '/students', icon: GraduationCap, hideForRoles: ['hr'] },
       { name: 'Pipeline', href: '/deals', icon: TrendingUp, hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
       { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant', 'sale_admin', 'saleadmin'] },
@@ -188,7 +188,7 @@ const GROUP_ORDER_BY_ROLE: Record<string, string[]> = {
   superadmin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
   super_admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
   director: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ', 'CÀI ĐẶT HỆ THỐNG'],
-  accountant: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
+  accountant: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
   hr: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'NHÂN SỰ', 'CHƯƠNG TRÌNH'],
   marketing: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'CHƯƠNG TRÌNH', 'KHÁCH HÀNG', 'CÀI ĐẶT HỆ THỐNG'],
   sale_admin: ['TỔNG QUAN', 'QUY TRÌNH & PHÊ DUYỆT', 'TÀI CHÍNH', 'KHÁCH HÀNG', 'CHƯƠNG TRÌNH', 'NHÂN SỰ'],
