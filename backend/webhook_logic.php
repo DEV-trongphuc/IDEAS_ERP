@@ -2336,8 +2336,18 @@ function isConsultantInWorkHours($timeStr, $start, $end, $workScheduleJson = nul
                 if (!$active) {
                     return false; // Closed today
                 }
+                
                 $start = $dayConfig['start'] ?? '00:00';
                 $end = $dayConfig['end'] ?? '23:59';
+                $startAfternoon = $dayConfig['start_afternoon'] ?? '';
+                $endAfternoon = $dayConfig['end_afternoon'] ?? '';
+
+                // If afternoon shift is set, check both sessions
+                if (!empty($startAfternoon) && !empty($endAfternoon)) {
+                    $inMorning = ($timeStr >= $start && $timeStr <= $end);
+                    $inAfternoon = ($timeStr >= $startAfternoon && $timeStr <= $endAfternoon);
+                    return ($inMorning || $inAfternoon);
+                }
             }
         }
     }

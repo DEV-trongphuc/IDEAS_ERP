@@ -31,13 +31,13 @@ interface Props {
 }
 
 const DEFAULT_SCHEDULE = {
-  "1": { active: true, start: "08:00", end: "17:30" },
-  "2": { active: true, start: "08:00", end: "17:30" },
-  "3": { active: true, start: "08:00", end: "17:30" },
-  "4": { active: true, start: "08:00", end: "17:30" },
-  "5": { active: true, start: "08:00", end: "17:30" },
-  "6": { active: true, start: "08:00", end: "17:30" },
-  "7": { active: false, start: "08:00", end: "17:30" }
+  "1": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+  "2": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+  "3": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+  "4": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+  "5": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+  "6": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+  "7": { active: false, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" }
 };
 
 const DAY_LABELS: Record<string, string> = {
@@ -2995,32 +2995,66 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                                     style={{ cursor: 'pointer' }}
                                   />
                                   {dayConfig.active ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <input 
-                                        type="time" 
-                                        className="form-input" 
-                                        style={{ padding: '4px 8px', fontSize: '0.75rem', height: 'auto', width: '90px' }}
-                                        value={dayConfig.start} 
-                                        onChange={e => {
-                                          setWorkSchedule({
-                                            ...workSchedule,
-                                            [dayKey]: { ...dayConfig, start: e.target.value }
-                                          });
-                                        }} 
-                                      />
-                                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('đến')}</span>
-                                      <input 
-                                        type="time" 
-                                        className="form-input" 
-                                        style={{ padding: '4px 8px', fontSize: '0.75rem', height: 'auto', width: '90px' }}
-                                        value={dayConfig.end} 
-                                        onChange={e => {
-                                          setWorkSchedule({
-                                            ...workSchedule,
-                                            [dayKey]: { ...dayConfig, end: e.target.value }
-                                          });
-                                        }} 
-                                      />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.725rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Sáng:')}</span>
+                                        <input 
+                                          type="time" 
+                                          className="form-input" 
+                                          style={{ padding: '4px 8px', fontSize: '0.75rem', height: 'auto', width: '90px' }}
+                                          value={dayConfig.start || "08:00"} 
+                                          onChange={e => {
+                                            setWorkSchedule({
+                                              ...workSchedule,
+                                              [dayKey]: { ...dayConfig, start: e.target.value }
+                                            });
+                                          }} 
+                                        />
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>-</span>
+                                        <input 
+                                          type="time" 
+                                          className="form-input" 
+                                          style={{ padding: '4px 8px', fontSize: '0.75rem', height: 'auto', width: '90px' }}
+                                          value={dayConfig.end || "12:00"} 
+                                          onChange={e => {
+                                            setWorkSchedule({
+                                              ...workSchedule,
+                                              [dayKey]: { ...dayConfig, end: e.target.value }
+                                            });
+                                          }} 
+                                        />
+                                      </div>
+
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.725rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Chiều:')}</span>
+                                        <input 
+                                          type="time" 
+                                          className="form-input" 
+                                          style={{ padding: '4px 8px', fontSize: '0.75rem', height: 'auto', width: '90px' }}
+                                          value={dayConfig.start_afternoon || ""} 
+                                          onChange={e => {
+                                            setWorkSchedule({
+                                              ...workSchedule,
+                                              [dayKey]: { ...dayConfig, start_afternoon: e.target.value }
+                                            });
+                                          }} 
+                                          placeholder="--:--"
+                                        />
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>-</span>
+                                        <input 
+                                          type="time" 
+                                          className="form-input" 
+                                          style={{ padding: '4px 8px', fontSize: '0.75rem', height: 'auto', width: '90px' }}
+                                          value={dayConfig.end_afternoon || ""} 
+                                          onChange={e => {
+                                            setWorkSchedule({
+                                              ...workSchedule,
+                                              [dayKey]: { ...dayConfig, end_afternoon: e.target.value }
+                                            });
+                                          }} 
+                                          placeholder="--:--"
+                                        />
+                                      </div>
                                     </div>
                                   ) : (
                                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{t('Nghỉ tuần')}</span>

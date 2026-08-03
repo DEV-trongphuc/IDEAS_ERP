@@ -354,16 +354,18 @@ const SettingsInner = () => {
   const [shiftHistoryRetentionDays, setShiftHistoryRetentionDays] = useState<number>(90);
   const [allowLeadDistributionOnPendingCheckin, setAllowLeadDistributionOnPendingCheckin] = useState<boolean>(false);
   const [globalWorkStartTime, setGlobalWorkStartTime] = useState<string>("08:00");
-  const [globalWorkEndTime, setGlobalWorkEndTime] = useState<string>("17:30");
+  const [globalWorkEndTime, setGlobalWorkEndTime] = useState<string>("12:00");
+  const [globalWorkStartTimeAfternoon, setGlobalWorkStartTimeAfternoon] = useState<string>("13:30");
+  const [globalWorkEndTimeAfternoon, setGlobalWorkEndTimeAfternoon] = useState<string>("17:30");
   const [globalScheduleMode, setGlobalScheduleMode] = useState<string>("daily");
   const [globalWorkSchedule, setGlobalWorkSchedule] = useState<any>({
-    "1": { active: true, start: "08:00", end: "17:30" },
-    "2": { active: true, start: "08:00", end: "17:30" },
-    "3": { active: true, start: "08:00", end: "17:30" },
-    "4": { active: true, start: "08:00", end: "17:30" },
-    "5": { active: true, start: "08:00", end: "17:30" },
-    "6": { active: true, start: "08:00", end: "17:30" },
-    "7": { active: true, start: "08:00", end: "17:30" }
+    "1": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+    "2": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+    "3": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+    "4": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+    "5": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+    "6": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" },
+    "7": { active: true, start: "08:00", end: "12:00", start_afternoon: "13:30", end_afternoon: "17:30" }
   });
   const [goldenHoursStartTime, setGoldenHoursStartTime] = useState<string>("06:00");
   const [goldenHoursEndTime, setGoldenHoursEndTime] = useState<string>("08:30");
@@ -989,12 +991,18 @@ const SettingsInner = () => {
             let isSimpleDaily = true;
             for (let i = 1; i <= 7; i++) {
               const day = parsed[String(i)] || parsed[i];
-              if (!day || !day.active || day.start !== parsed["1"].start || day.end !== parsed["1"].end) {
+              if (!day || !day.active || day.start !== parsed["1"].start || day.end !== parsed["1"].end || day.start_afternoon !== parsed["1"].start_afternoon || day.end_afternoon !== parsed["1"].end_afternoon) {
                 isSimpleDaily = false;
                 break;
               }
             }
             setGlobalScheduleMode(isSimpleDaily ? 'daily' : 'custom');
+            if (isSimpleDaily && parsed["1"]) {
+              setGlobalWorkStartTime(parsed["1"].start || "08:00");
+              setGlobalWorkEndTime(parsed["1"].end || "12:00");
+              setGlobalWorkStartTimeAfternoon(parsed["1"].start_afternoon || "");
+              setGlobalWorkEndTimeAfternoon(parsed["1"].end_afternoon || "");
+            }
           } catch (e) {
             console.error("Error parsing global work schedule", e);
           }
@@ -1465,13 +1473,13 @@ const SettingsInner = () => {
       global_work_end_time: globalWorkEndTime,
       global_work_schedule: JSON.stringify(globalScheduleMode === 'daily' 
         ? {
-            "1": { active: true, start: globalWorkStartTime, end: globalWorkEndTime },
-            "2": { active: true, start: globalWorkStartTime, end: globalWorkEndTime },
-            "3": { active: true, start: globalWorkStartTime, end: globalWorkEndTime },
-            "4": { active: true, start: globalWorkStartTime, end: globalWorkEndTime },
-            "5": { active: true, start: globalWorkStartTime, end: globalWorkEndTime },
-            "6": { active: true, start: globalWorkStartTime, end: globalWorkEndTime },
-            "7": { active: true, start: globalWorkStartTime, end: globalWorkEndTime }
+            "1": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon },
+            "2": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon },
+            "3": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon },
+            "4": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon },
+            "5": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon },
+            "6": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon },
+            "7": { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon }
           }
         : globalWorkSchedule),
       databank_limit_per_day: databankLimitPerDay,
@@ -5273,9 +5281,9 @@ function doPost(e) {
                     </div>
 
                     {globalScheduleMode === 'daily' ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '1.25rem' }}>
                         <div>
-                          <label className="form-label">{t('Bắt đầu làm việc')}</label>
+                          <label className="form-label">{t('Bắt đầu làm việc (Sáng)')}</label>
                           <input
                             type="time"
                             className="form-input"
@@ -5284,12 +5292,32 @@ function doPost(e) {
                           />
                         </div>
                         <div>
-                          <label className="form-label">{t('Kết thúc làm việc')}</label>
+                          <label className="form-label">{t('Kết thúc làm việc (Sáng)')}</label>
                           <input
                             type="time"
                             className="form-input"
                             value={globalWorkEndTime}
                             onChange={e => setGlobalWorkEndTime(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label">{t('Bắt đầu làm việc (Chiều)')}</label>
+                          <input
+                            type="time"
+                            className="form-input"
+                            value={globalWorkStartTimeAfternoon}
+                            onChange={e => setGlobalWorkStartTimeAfternoon(e.target.value)}
+                            placeholder="--:--"
+                          />
+                        </div>
+                        <div>
+                          <label className="form-label">{t('Kết thúc làm việc (Chiều)')}</label>
+                          <input
+                            type="time"
+                            className="form-input"
+                            value={globalWorkEndTimeAfternoon}
+                            onChange={e => setGlobalWorkEndTimeAfternoon(e.target.value)}
+                            placeholder="--:--"
                           />
                         </div>
                       </div>
@@ -5304,7 +5332,7 @@ function doPost(e) {
                           "6": "Thứ 7",
                           "7": "Chủ Nhật"
                         }).map(([dayKey, dayLabel]) => {
-                          const config = globalWorkSchedule[dayKey] || { active: true, start: globalWorkStartTime, end: globalWorkEndTime };
+                          const config = globalWorkSchedule[dayKey] || { active: true, start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon };
                           const isActive = config.active;
 
                           return (
@@ -5331,7 +5359,7 @@ function doPost(e) {
                                       const val = e.target.checked;
                                       setGlobalWorkSchedule((prev: any) => ({
                                         ...prev,
-                                        [dayKey]: { ...(prev[dayKey] || { start: globalWorkStartTime, end: globalWorkEndTime }), active: val }
+                                        [dayKey]: { ...(prev[dayKey] || { start: globalWorkStartTime, end: globalWorkEndTime, start_afternoon: globalWorkStartTimeAfternoon, end_afternoon: globalWorkEndTimeAfternoon }), active: val }
                                       }));
                                     }}
                                   />
@@ -5361,37 +5389,78 @@ function doPost(e) {
                                   <div style={{ 
                                     display: 'flex', 
                                     alignItems: 'center', 
-                                    gap: '6px',
+                                    gap: isMobile ? '8px' : '14px',
                                     width: isMobile ? '100%' : 'auto',
-                                    justifyContent: isMobile ? 'space-between' : 'flex-start'
+                                    flexDirection: isMobile ? 'column' : 'row',
+                                    justifyContent: isMobile ? 'stretch' : 'flex-end'
                                   }}>
-                                    <input
-                                      type="time"
-                                      className="form-input"
-                                      style={{ width: isMobile ? '45%' : '92px', height: '34px', fontSize: '0.8rem', padding: '0 6px', textAlign: 'center', borderRadius: '6px' }}
-                                      value={config.start || globalWorkStartTime}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setGlobalWorkSchedule((prev: any) => ({
-                                          ...prev,
-                                          [dayKey]: { ...(prev[dayKey] || { active: true, end: globalWorkEndTime }), start: val }
-                                        }));
-                                      }}
-                                    />
-                                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>-</span>
-                                    <input
-                                      type="time"
-                                      className="form-input"
-                                      style={{ width: isMobile ? '45%' : '92px', height: '34px', fontSize: '0.8rem', padding: '0 6px', textAlign: 'center', borderRadius: '6px' }}
-                                      value={config.end || globalWorkEndTime}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setGlobalWorkSchedule((prev: any) => ({
-                                          ...prev,
-                                          [dayKey]: { ...(prev[dayKey] || { active: true, start: globalWorkStartTime }), end: val }
-                                        }));
-                                      }}
-                                    />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
+                                      <span style={{ fontSize: '0.725rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Sáng:')}</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input
+                                          type="time"
+                                          className="form-input"
+                                          style={{ width: '92px', height: '34px', fontSize: '0.8rem', padding: '0 6px', textAlign: 'center', borderRadius: '6px' }}
+                                          value={config.start || "08:00"}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGlobalWorkSchedule((prev: any) => ({
+                                              ...prev,
+                                              [dayKey]: { ...(prev[dayKey] || {}), active: true, start: val }
+                                            }));
+                                          }}
+                                        />
+                                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>-</span>
+                                        <input
+                                          type="time"
+                                          className="form-input"
+                                          style={{ width: '92px', height: '34px', fontSize: '0.8rem', padding: '0 6px', textAlign: 'center', borderRadius: '6px' }}
+                                          value={config.end || "12:00"}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGlobalWorkSchedule((prev: any) => ({
+                                              ...prev,
+                                              [dayKey]: { ...(prev[dayKey] || {}), active: true, end: val }
+                                            }));
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
+                                      <span style={{ fontSize: '0.725rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Chiều:')}</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input
+                                          type="time"
+                                          className="form-input"
+                                          style={{ width: '92px', height: '34px', fontSize: '0.8rem', padding: '0 6px', textAlign: 'center', borderRadius: '6px' }}
+                                          value={config.start_afternoon || ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGlobalWorkSchedule((prev: any) => ({
+                                              ...prev,
+                                              [dayKey]: { ...(prev[dayKey] || {}), active: true, start_afternoon: val }
+                                            }));
+                                          }}
+                                          placeholder="--:--"
+                                        />
+                                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>-</span>
+                                        <input
+                                          type="time"
+                                          className="form-input"
+                                          style={{ width: '92px', height: '34px', fontSize: '0.8rem', padding: '0 6px', textAlign: 'center', borderRadius: '6px' }}
+                                          value={config.end_afternoon || ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGlobalWorkSchedule((prev: any) => ({
+                                              ...prev,
+                                              [dayKey]: { ...(prev[dayKey] || {}), active: true, end_afternoon: val }
+                                            }));
+                                          }}
+                                          placeholder="--:--"
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
                                 ) : (
                                   !isMobile && (
