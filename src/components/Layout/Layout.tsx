@@ -218,10 +218,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     const afternoonStart = dayConfig?.start_afternoon || '13:00';
     
     if (curHM > morningEnd) {
-      if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
+      if (consultantProfile?.has_morning_leave_today) {
+        if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
+          return curHM > workStart;
+        }
+        return curHM > afternoonStart;
+      } else {
         return curHM > workStart;
       }
-      return curHM > afternoonStart;
     } else {
       return curHM > workStart;
     }

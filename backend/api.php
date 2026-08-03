@@ -3352,6 +3352,25 @@ switch ($action) {
                     }
                 }
 
+                // Check if user has approved morning leave request today
+                $hasMorningLeave = false;
+                $morningLeaveStmt = $conn->prepare("
+                    SELECT 1 
+                    FROM hrm_leave_requests 
+                    WHERE user_id = ? AND status = 'approved' AND DATE(start_date) = ?
+                      AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid', 'remote_work')
+                      AND HOUR(start_date) < 12
+                    LIMIT 1
+                ");
+                if ($morningLeaveStmt) {
+                    $todayYmd = date('Y-m-d');
+                    $morningLeaveStmt->bind_param("is", $targetUserId, $todayYmd);
+                    $morningLeaveStmt->execute();
+                    $hasMorningLeave = (bool)$morningLeaveStmt->get_result()->fetch_assoc();
+                    $morningLeaveStmt->close();
+                }
+                $consultantProfile['has_morning_leave_today'] = $hasMorningLeave;
+
                 // Fetch night shift registrations for this user
                 $nightShifts = [];
                 $stmtNS = $conn->prepare("SELECT id, shift_date, approved, created_at FROM night_shift_registrations WHERE user_id = ? ORDER BY shift_date DESC LIMIT 100");

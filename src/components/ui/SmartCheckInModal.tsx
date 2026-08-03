@@ -143,10 +143,14 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     const afternoonStart = dayConfig?.start_afternoon || '13:00';
     
     if (curHM > morningEnd) {
-      if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
+      if (consultantProfile?.has_morning_leave_today) {
+        if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
+          return curHM > workStart;
+        }
+        return curHM > afternoonStart;
+      } else {
         return curHM > workStart;
       }
-      return curHM > afternoonStart;
     } else {
       return curHM > workStart;
     }
@@ -172,7 +176,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     
     let startHM = workStart;
     if (curHM > morningEnd) {
-      if (dayConfig?.start_afternoon || dayConfig?.end_afternoon) {
+      if (consultantProfile?.has_morning_leave_today && (dayConfig?.start_afternoon || dayConfig?.end_afternoon)) {
         startHM = afternoonStart;
       }
     }
