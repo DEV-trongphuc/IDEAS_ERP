@@ -109,6 +109,9 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [loadingMute, setLoadingMute] = useState(false);
   const [showMuteConfirmModal, setShowMuteConfirmModal] = useState(false);
 
+  const [isHidden, setIsHidden] = useState(false);
+  const [loadingHide, setLoadingHide] = useState(false);
+
   // Meeting action modals
   const [meetingToComplete, setMeetingToComplete] = useState<any>(null);
   const [completingMeeting, setCompletingMeeting] = useState(false);
@@ -132,7 +135,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen && task?.id) {
+    if (isOpen && task?.id && task.id !== 'new') {
       setLoadingMute(true);
       api.get(`/activities/${task.id}/mute-status`)
         .then(res => {
@@ -142,6 +145,14 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         })
         .catch(err => console.error("Lỗi lấy trạng thái thông báo task:", err))
         .finally(() => setLoadingMute(false));
+
+      api.get(`/activities/${task.id}/hide-status`)
+        .then(res => {
+          if (res.data && res.data.success) {
+            setIsHidden(!!res.data.is_hidden);
+          }
+        })
+        .catch(err => console.error("Lỗi lấy trạng thái ẩn task:", err));
       
       loadSubtaskCommentCounts();
     }
@@ -182,6 +193,23 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         toast.error(t('Lỗi tắt thông báo: ') + (err.response?.data?.message || err.message));
       })
       .finally(() => setLoadingMute(false));
+  };
+
+  const handleHideClick = () => {
+    if (!task?.id) return;
+    setLoadingHide(true);
+    api.post(`/activities/${task.id}/toggle-hide`)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setIsHidden(res.data.is_hidden);
+          toast.success(res.data.message);
+          onUpdate();
+        }
+      })
+      .catch(err => {
+        toast.error(t('Lỗi cập nhật trạng thái ẩn: ') + (err.response?.data?.message || err.message));
+      })
+      .finally(() => setLoadingHide(false));
   };
 
   const handleShareTask = () => {
@@ -2050,6 +2078,33 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             >
               {isMuted ? <BellOff size={18} /> : <Bell size={18} />}
             </button>
+
+            {/* Hide task eye button */}
+            {task?.id && task.id !== 'new' && (
+              <button
+                type="button"
+                onClick={handleHideClick}
+                disabled={loadingHide}
+                className="hover-lift"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  border: isHidden ? '1.5px solid #10b981' : '1px solid var(--color-border)',
+                  background: isHidden ? 'rgba(16, 185, 129, 0.08)' : 'var(--color-surface)',
+                  color: isHidden ? '#10b981' : 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.2s'
+                }}
+                title={isHidden ? t("Công việc đang ẩn (Bấm để hiển thị lại)") : t("Ẩn công việc khỏi bàn làm việc")}
+              >
+                {isHidden ? <Eye size={18} style={{ color: '#10b981' }} /> : <Eye size={18} />}
+              </button>
+            )}
 
             {!embedMode && (window.location.pathname === '/workspace' || window.location.pathname === '/') && (
               <button

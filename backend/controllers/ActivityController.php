@@ -310,6 +310,7 @@ class ActivityController {
                    camp.name as campaign_name,
                    t.name as team_name,
                    (SELECT COUNT(*) FROM activity_comments ac WHERE ac.activity_id = a.id) as comment_count,
+                   EXISTS(SELECT 1 FROM task_hidden_users thu WHERE thu.task_id = a.id AND thu.user_id = " . (int)$auth['user_id'] . ") as is_hidden,
                    (SELECT e.image_url FROM expenses e WHERE e.tenant_id = a.tenant_id AND e.title = REPLACE(a.subject, 'Ghi nhận Chi phí: ', '') AND e.image_url IS NOT NULL AND e.image_url != '' ORDER BY e.id DESC LIMIT 1) as expense_image_url
             FROM activities a 
             LEFT JOIN users u ON a.user_id=u.id
@@ -690,6 +691,49 @@ class ActivityController {
         $stmt = $this->db->prepare("UPDATE activities SET ".implode(',',$sets)." WHERE id=? AND tenant_id=?");
         $stmt->execute($params);
 
+        // Auto unhide triggers:
+        // 1. Main assignee (user_id)
+        if (isset($b['user_id']) && (int)$b['user_id'] > 0) {
+            $this->db->prepare("DELETE FROM task_hidden_users WHERE task_id = ? AND user_id = ?")->execute([$id, (int)$b['user_id']]);
+        }
+        // 2. Participants (participant_ids)
+        if (isset($b['participant_ids'])) {
+            $pIds = array_filter(array_map('intval', explode(',', $b['participant_ids'])));
+            if (!empty($pIds)) {
+                $placeholders = implode(',', array_fill(0, count($pIds), '?'));
+                $stmtDel = $this->db->prepare("DELETE FROM task_hidden_users WHERE task_id = ? AND user_id IN ($placeholders)");
+                $stmtDel->execute(array_merge([$id], $pIds));
+            }
+        }
+        // 3. Mentions in the body (checklist items or description)
+        if (isset($b['body']) && !empty($b['body'])) {
+            $mentions = [];
+            // Parse HTML data-user-id mentions
+            if (preg_match_all('/data-user-id="(\d+)"/i', $b['body'], $matches)) {
+                foreach ($matches[1] as $uid) {
+                    $mentions[(int)$uid] = true;
+                }
+            }
+            // Parse plaintext @mentions
+            if (preg_match_all('/@([a-zA-Z0-9_\x{00C0}-\x{1EF9}()]+)/u', $b['body'], $matches)) {
+                foreach ($matches[1] as $name) {
+                    $fullName = str_replace('_', ' ', $name);
+                    $stmtUser = $this->db->prepare("SELECT id FROM users WHERE tenant_id=? AND (full_name=? OR REPLACE(full_name, ' ', '_')=?)");
+                    $stmtUser->execute([$auth['tenant_id'], $fullName, $name]);
+                    $uid = $stmtUser->fetchColumn();
+                    if ($uid) {
+                        $mentions[(int)$uid] = true;
+                    }
+                }
+            }
+            if (!empty($mentions)) {
+                $pIds = array_keys($mentions);
+                $placeholders = implode(',', array_fill(0, count($pIds), '?'));
+                $stmtDel = $this->db->prepare("DELETE FROM task_hidden_users WHERE task_id = ? AND user_id IN ($placeholders)");
+                $stmtDel->execute(array_merge([$id], $pIds));
+            }
+        }
+
         // Update contact's last_contact whenever an activity is updated
         $checkRel = $this->db->prepare("SELECT related_type, related_id, contact_id FROM activities WHERE id=?");
         $checkRel->execute([$id]);
@@ -919,14 +963,19 @@ class ActivityController {
             $stmtParent->execute([$parentId]);
             $parentOwnerId = (int)$stmtParent->fetchColumn();
             
-            if ($parentOwnerId > 0 && $parentOwnerId !== (int)$auth['user_id'] && !$this->isTaskMuted($id, $parentOwnerId)) {
-                require_once __DIR__ . '/../NotificationService.php';
-                NotificationService::send($this->db, $auth['tenant_id'], 'MENTION_TAGGED', [
-                    'user_id' => $parentOwnerId,
-                    'author_name' => $auth['full_name'] ?? 'Đồng nghiệp',
-                    'comment' => "Đã trả lời bình luận của bạn trong hoạt động: " . ($activity['subject'] ?? 'Công việc'),
-                    'link' => "/contacts?id=" . ($activity['contact_id'] ?? $activity['related_id'] ?? '') . "&highlight_comment_id=" . $commentId
-                ]);
+            if ($parentOwnerId > 0 && $parentOwnerId !== (int)$auth['user_id']) {
+                // Auto unhide task for parent owner
+                $this->db->prepare("DELETE FROM task_hidden_users WHERE task_id = ? AND user_id = ?")->execute([$id, $parentOwnerId]);
+                
+                if (!$this->isTaskMuted($id, $parentOwnerId)) {
+                    require_once __DIR__ . '/../NotificationService.php';
+                    NotificationService::send($this->db, $auth['tenant_id'], 'MENTION_TAGGED', [
+                        'user_id' => $parentOwnerId,
+                        'author_name' => $auth['full_name'] ?? 'Đồng nghiệp',
+                        'comment' => "Đã trả lời bình luận của bạn trong hoạt động: " . ($activity['subject'] ?? 'Công việc'),
+                        'link' => "/contacts?id=" . ($activity['contact_id'] ?? $activity['related_id'] ?? '') . "&highlight_comment_id=" . $commentId
+                    ]);
+                }
             }
         }
 
@@ -979,6 +1028,9 @@ class ActivityController {
                 }
             }
             foreach ($mentions as $uid => $userRow) {
+                // Auto unhide task for this mentioned user
+                $this->db->prepare("DELETE FROM task_hidden_users WHERE task_id = ? AND user_id = ?")->execute([$id, $uid]);
+                
                 if ($this->isTaskMuted($id, $uid)) continue;
                 NotificationService::send($this->db, $auth['tenant_id'], 'MENTION_TAGGED', [
                     'user_id' => $uid,
@@ -1257,6 +1309,57 @@ class ActivityController {
                 'success' => true,
                 'is_muted' => $mute,
                 'message' => $mute ? 'Đã tắt thông báo cho công việc này' : 'Đã bật lại thông báo cho công việc này'
+            ]);
+        } catch (Throwable $e) {
+            echo json_encode(['success' => false, 'message' => 'Lỗi cập nhật trạng thái: ' . $e->getMessage()]);
+        }
+    }
+
+    public function isTaskHidden(int $taskId, int $userId): bool {
+        if ($taskId <= 0 || $userId <= 0) return false;
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM task_hidden_users WHERE task_id = ? AND user_id = ?");
+        $stmt->execute([$taskId, $userId]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    public function getHideStatus($auth, int $taskId): void {
+        $userId = (int)($auth['user_id'] ?? 0);
+        if ($userId <= 0 || $taskId <= 0) {
+            echo json_encode(['success' => true, 'is_hidden' => false]);
+            return;
+        }
+        $isHidden = $this->isTaskHidden($taskId, $userId);
+        echo json_encode(['success' => true, 'is_hidden' => $isHidden]);
+    }
+
+    public function toggleHide($auth, int $taskId): void {
+        $userId = (int)($auth['user_id'] ?? 0);
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $hide = isset($input['hide']) ? (bool)$input['hide'] : null;
+
+        if ($userId <= 0 || $taskId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Thông tin không hợp lệ']);
+            return;
+        }
+
+        if ($hide === null) {
+            $currentlyHidden = $this->isTaskHidden($taskId, $userId);
+            $hide = !$currentlyHidden;
+        }
+
+        try {
+            if ($hide) {
+                $stmt = $this->db->prepare("INSERT IGNORE INTO task_hidden_users (task_id, user_id, hidden_at) VALUES (?, ?, NOW())");
+                $stmt->execute([$taskId, $userId]);
+            } else {
+                $stmt = $this->db->prepare("DELETE FROM task_hidden_users WHERE task_id = ? AND user_id = ?");
+                $stmt->execute([$taskId, $userId]);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'is_hidden' => $hide,
+                'message' => $hide ? 'Đã ẩn công việc khỏi bàn làm việc' : 'Đã hiển thị lại công việc trên bàn làm việc'
             ]);
         } catch (Throwable $e) {
             echo json_encode(['success' => false, 'message' => 'Lỗi cập nhật trạng thái: ' . $e->getMessage()]);

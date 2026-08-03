@@ -167,6 +167,17 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
 
+    // Ensure task_hidden_users table exists
+    $conn->query("
+        CREATE TABLE IF NOT EXISTS `task_hidden_users` (
+          `task_id` INT(11) NOT NULL,
+          `user_id` INT(11) NOT NULL,
+          `hidden_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`task_id`, `user_id`),
+          KEY `idx_task_hidden_user` (`user_id`, `task_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+
     // 3. Ensure check_ins table has all necessary columns (late_minutes, selfie_url, reason, check_out_time, early_minutes, check_out_status)
     $chkColLM = $conn->query("SHOW COLUMNS FROM check_ins LIKE 'late_minutes'");
     if (!$chkColLM || $chkColLM->num_rows == 0) {

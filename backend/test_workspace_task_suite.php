@@ -228,6 +228,67 @@ try {
 }
 assertTest("Check Designated Approver (Dev Manager) can approve task successfully", $succeededAsManager);
 
+// ----------------------------------------------------
+// TEST CASE 5: Task Hiding & Auto-unhiding Triggers
+// ----------------------------------------------------
+echo "\n--- TEST CASE 5: Task Hiding & Auto-unhiding Triggers ---\n";
+
+// Ensure clean state
+$pdo->exec("DELETE FROM task_hidden_users WHERE task_id = $taskId");
+
+// 1. Toggle Hide (Hide the task)
+$ctrl->toggleHide($authDirector, $taskId);
+$isHidden1 = $ctrl->isTaskHidden($taskId, 100010);
+assertTest("Toggle hide sets task as hidden", $isHidden1 === true);
+
+// 2. Toggle Hide again (Unhide the task)
+$ctrl->toggleHide($authDirector, $taskId);
+$isHidden2 = $ctrl->isTaskHidden($taskId, 100010);
+assertTest("Toggle hide again unhides task", $isHidden2 === false);
+
+// 3. Hide again to test auto-unhide triggers
+$ctrl->toggleHide($authDirector, $taskId); // hidden now
+
+// 4. Trigger 1: Assign to Dev Director
+$mockedBody = [
+    'user_id' => 100010
+];
+try {
+    $ctrl->update($authAdmin, $taskId);
+} catch (Exception $e) {}
+
+$isHiddenAssignee = $ctrl->isTaskHidden($taskId, 100010);
+assertTest("Trigger 1: Task automatically unhides when assigned as main assignee", $isHiddenAssignee === false);
+
+// 5. Hide again to test trigger 2
+$ctrl->toggleHide($authDirector, $taskId); // hidden now
+
+// 6. Trigger 2: Add to participants
+$mockedBody = [
+    'participant_ids' => '100012,100010'
+];
+try {
+    $ctrl->update($authAdmin, $taskId);
+} catch (Exception $e) {}
+
+$isHiddenParticipant = $ctrl->isTaskHidden($taskId, 100010);
+assertTest("Trigger 2: Task automatically unhides when added to participants list", $isHiddenParticipant === false);
+
+// 7. Hide again to test trigger 3
+$ctrl->toggleHide($authDirector, $taskId); // hidden now
+
+// 8. Trigger 3: Tag/Mention in Comment
+$mockedBody = [
+    'content' => 'Nhắc nhở <span class="mention" data-user-id="100010">@Dev Director</span> làm việc này.',
+    'attachments' => []
+];
+try {
+    $ctrl->addComment($authAdmin, $taskId);
+} catch (Exception $e) {}
+
+$isHiddenMention = $ctrl->isTaskHidden($taskId, 100010);
+assertTest("Trigger 3: Task automatically unhides when tagged in a comment", $isHiddenMention === false);
+
 
 // ----------------------------------------------------
 // CLEANUP AFTER TEST

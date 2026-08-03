@@ -1032,6 +1032,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     let list = wsTasks;
     const targetUserId = wsUserId ? Number(wsUserId) : Number(currentUser?.id);
 
+    // Filter out hidden tasks
+    list = list.filter(task => !task.is_hidden || Number(task.is_hidden) === 0);
+
     // Filter by Priority
     if (wsPriority && wsPriority !== 'all') {
       list = list.filter(task => task.priority === wsPriority);
@@ -1162,6 +1165,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     let collaborator = 0;
 
     tabTasks.forEach(task => {
+      // Skip hidden tasks in statistics
+      if (task.is_hidden || Number(task.is_hidden) === 1) return;
+
       // Pending approval
       if (Number(task.require_approval) === 1 && task.approval_status === 'pending' && Number(task.approver_id) === Number(currentUser?.id)) {
         pendingApproval++;
