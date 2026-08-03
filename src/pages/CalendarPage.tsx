@@ -25,6 +25,17 @@ export const CalendarPage: React.FC = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const formatVND = (n: any) => {
+    const num = Math.round(Number(n || 0));
+    if (num >= 1e9) {
+      return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(num / 1e9) + ' Tỷ';
+    }
+    if (num >= 1e6) {
+      return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(num / 1e6) + ' Tr';
+    }
+    return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
+  };
+
   const fetchActivities = async () => {
     setLoading(true);
     try {
@@ -40,7 +51,49 @@ export const CalendarPage: React.FC = () => {
           limit: 200 // Ensure we get all for the month
         }
       });
-      setActivities(res.data.data?.items || res.data.data || []);
+      let fetched = res.data.data?.items || res.data.data || [];
+
+      // Load PO & SO if user is accountant or admin/director
+      const isAccountantOrAdmin = user && ['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(user.role);
+      if (isAccountantOrAdmin) {
+        try {
+          const [poRes, soRes] = await Promise.all([
+            api.get('/purchase-orders').catch(() => ({ data: [] })),
+            api.get('/deposits').catch(() => ({ data: [] }))
+          ]);
+
+          const poList = poRes.data?.data || poRes.data || [];
+          const soList = soRes.data?.data || soRes.data || [];
+
+          // Map POs
+          const poEvents = poList
+            .filter((po: any) => po.order_date && po.order_date >= startDate.substring(0, 10) && po.order_date <= endDate.substring(0, 10))
+            .map((po: any) => ({
+              id: `po-${po.id}`,
+              subject: `[PO] ${po.po_number} - ${po.supplier_name || 'NCC'} (${formatVND(po.total)})`,
+              due_date: po.order_date,
+              type: 'po',
+              status: po.status === 'received' ? 'done' : 'planned'
+            }));
+
+          // Map SOs
+          const soEvents = soList
+            .filter((so: any) => so.created_at && so.created_at.substring(0, 10) >= startDate.substring(0, 10) && so.created_at.substring(0, 10) <= endDate.substring(0, 10))
+            .map((so: any) => ({
+              id: `so-${so.id}`,
+              subject: `[SO] ${so.unit_code} - ${so.full_name || 'Khách'} (${formatVND(so.price)})`,
+              due_date: so.created_at.substring(0, 10),
+              type: 'so',
+              status: so.status === 'approved' ? 'done' : 'planned'
+            }));
+
+          fetched = [...fetched, ...poEvents, ...soEvents];
+        } catch (e) {
+          console.error('Error fetching PO/SO for calendar', e);
+        }
+      }
+
+      setActivities(fetched);
     } catch (err: any) {
       addToast('Lỗi khi tải lịch làm việc', 'error');
     } finally {
@@ -87,6 +140,7 @@ export const CalendarPage: React.FC = () => {
                {a.type === 'call' && <Phone size={10} />}
                {a.type === 'meeting' && <Video size={10} />}
                {a.type === 'task' && <CheckCircle2 size={10} />}
+               {(a.type === 'po' || a.type === 'so') && <FileText size={10} />}
                <span className="event-subject">{a.subject}</span>
              </div>
            ))}
@@ -235,9 +289,13 @@ export const CalendarPage: React.FC = () => {
         .calendar-event.call { background: #e0f2fe; color: #0369a1; border-left: 3px solid #0369a1; }
         .calendar-event.meeting { background: #fef3c7; color: #92400e; border-left: 3px solid #92400e; }
         .calendar-event.task { background: #dcfce7; color: #166534; border-left: 3px solid #166534; }
+        .calendar-event.po { background: #e0e7ff; color: #3730a3; border-left: 3px solid #3730a3; }
+        .calendar-event.so { background: #ecfdf5; color: #047857; border-left: 3px solid #047857; }
         [data-theme="dark"] .calendar-event.call { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-left-color: #3b82f6; }
         [data-theme="dark"] .calendar-event.meeting { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-left-color: #f59e0b; }
         [data-theme="dark"] .calendar-event.task { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border-left-color: #10b981; }
+        [data-theme="dark"] .calendar-event.po { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border-left-color: #6366f1; }
+        [data-theme="dark"] .calendar-event.so { background: rgba(16, 185, 129, 0.15); color: #a7f3d0; border-left-color: #10b981; }
         .calendar-event.completed { opacity: 0.5; text-decoration: line-through; }
         .more-events { font-size: 0.65rem; color: var(--color-text-muted); font-weight: 700; text-align: center; margin-top: 2px; }
       `}</style>
