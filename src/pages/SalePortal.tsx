@@ -8,7 +8,7 @@ import {
   Clock3, GitBranch, ArrowUpRight, ShieldAlert, Send, ArrowLeft,
   Sun, Moon, ChevronDown, ChevronUp, AlertTriangle, ChevronLeft, ChevronRight,
   LayoutDashboard, Database, Ticket, Calendar, RefreshCw, Menu, Tag, Server, Scale, Settings, Info, Cpu,
-  Camera, Video, Layers, Plus, Receipt, CreditCard, Building2, Users, User, UserCheck, UserPlus, Trash2, CheckSquare, X, Paperclip, LifeBuoy, Fingerprint, LayoutGrid, Monitor, Tv, Phone, Save, Award, Ban, RotateCcw, MoreHorizontal, Check, KeyRound, Loader2, Shield, Mail, ShieldCheck, Lock as LockIcon, Bell,
+  Camera, Video, Layers, Plus, Receipt, CreditCard, Building2, Users, User, UserCheck, UserPlus, Trash2, CheckSquare, Square, X, Paperclip, LifeBuoy, Fingerprint, LayoutGrid, Monitor, Tv, Phone, Save, Award, Ban, RotateCcw, MoreHorizontal, Check, KeyRound, Loader2, Shield, Mail, ShieldCheck, Lock as LockIcon, Bell,
   Play, Sparkles, ArrowRight, Eye, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -5421,7 +5421,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   setWsTaskFilter('all');
                 } else {
                   setWsTaskFilter('approve_by_me');
-                  setWsStatus('all');
+                  setWsStatus('planned');
                   setWsDatePreset('all');
                 }
                 if (!wsTeamId) setWsTeamId('all_teams_bypass');
@@ -5456,7 +5456,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   setWsTaskFilter('all');
                 } else {
                   setWsTaskFilter('assigned_to_me');
-                  setWsStatus('all');
+                  setWsStatus('planned');
                   setWsDatePreset('all');
                 }
                 if (!wsTeamId) setWsTeamId('all_teams_bypass');
@@ -5491,7 +5491,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   setWsTaskFilter('all');
                 } else {
                   setWsTaskFilter('collaborator');
-                  setWsStatus('all');
+                  setWsStatus('planned');
                   setWsDatePreset('all');
                 }
                 if (!wsTeamId) setWsTeamId('all_teams_bypass');
@@ -5594,6 +5594,35 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
             {/* View Mode Switcher */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', width: isMobile ? '100%' : 'auto', justifyContent: 'flex-end' }}>
+              
+              {/* Quick toggle to show/hide completed tasks */}
+              <button
+                onClick={() => setWsStatus(wsStatus === 'all' ? 'planned' : 'all')}
+                style={{
+                  height: isMobile ? '34px' : '38px',
+                  padding: isMobile ? '0 8px' : '0 12px',
+                  borderRadius: '8px',
+                  border: wsStatus === 'all' ? '1.5px solid var(--color-success)' : '1px solid var(--color-border)',
+                  background: wsStatus === 'all' ? 'rgba(16, 185, 129, 0.08)' : 'var(--color-surface)',
+                  color: wsStatus === 'all' ? 'var(--color-success)' : 'var(--color-text)',
+                  fontSize: isMobile ? '0.725rem' : '0.78rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                {wsStatus === 'all' ? (
+                  <CheckSquare size={isMobile ? 13 : 14} style={{ color: 'var(--color-success)' }} />
+                ) : (
+                  <Square size={isMobile ? 13 : 14} style={{ color: 'var(--color-text-muted)' }} />
+                )}
+                <span>{t('Hiện việc đã xong')}</span>
+              </button>
 
               {!isMobile && (
                 <div style={{
@@ -6909,15 +6938,15 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       setWsTaskFilter('all');
                     } else if (val === 'approve_by_me') {
                       setWsTaskFilter('approve_by_me');
-                      setWsStatus('all');
+                      setWsStatus('planned');
                       setWsDatePreset('all');
                     } else if (val === 'assigned_to_me') {
                       setWsTaskFilter('assigned_to_me');
-                      setWsStatus('all');
+                      setWsStatus('planned');
                       setWsDatePreset('all');
                     } else if (val === 'collaborator') {
                       setWsTaskFilter('collaborator');
-                      setWsStatus('all');
+                      setWsStatus('planned');
                       setWsDatePreset('all');
                     }
                   }}

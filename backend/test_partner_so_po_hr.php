@@ -3,6 +3,8 @@
 // IDEAS ERP - Script Kiểm thử Phân quyền Role Nhân sự (HR) & SO/PO cho Đối tác
 
 require_once __DIR__ . '/test_bootstrap.php';
+require_once __DIR__ . '/controllers/PurchaseOrderController.php';
+require_once __DIR__ . '/controllers/SalesOrderController.php';
 
 echo "====================================================\n";
 echo "🚀 BẮT ĐẦU TEST SUITE: ROLE NHÂN SỰ & SO/PO ĐỐI TÁC\n";

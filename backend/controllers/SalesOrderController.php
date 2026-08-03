@@ -177,7 +177,7 @@ class SalesOrderController {
 
         $subtotal = 0;
         $taxTotal = 0;
-        $discountTotal = 0;
+        $discountTotal = max(0, (float)($data['discount'] ?? 0));
 
         foreach ($items as $it) {
             $qty = max(0.01, (float)($it['quantity'] ?? 1));
@@ -190,7 +190,7 @@ class SalesOrderController {
 
         $taxPct = min(100, max(0, (float)($data['tax_percent'] ?? 0)));
         $taxTotal = $subtotal * ($taxPct / 100);
-        $total = $subtotal + $taxTotal;
+        $total = $subtotal + $taxTotal - $discountTotal;
 
         $this->db->beginTransaction();
         try {
@@ -232,7 +232,12 @@ class SalesOrderController {
             $this->db->commit();
             respond(201, ['id' => $soId, 'so_number' => $soNumber, 'total' => $total], 'Tạo đơn bán hàng thành công');
         } catch (\Throwable $e) {
-            $this->db->rollBack();
+            if ($e instanceof \Exception && (get_class($e) === 'ResponseException' || get_class($e) === 'RespondException')) {
+                throw $e;
+            }
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             respond(500, null, 'Lỗi tạo đơn bán hàng: ' . $e->getMessage(), false);
         }
     }
@@ -302,14 +307,14 @@ class SalesOrderController {
             $invId = (int)$this->db->lastInsertId();
 
             $invItemInsert = $this->db->prepare("
-                INSERT INTO invoice_items (invoice_id, product_id, name, description, quantity, unit_price, discount, subtotal, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO invoice_items (invoice_id, product_id, name, quantity, unit_price, subtotal)
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
 
             foreach ($items as $it) {
                 $invItemInsert->execute([
-                    $invId, $it['product_id'], $it['name'], $it['description'],
-                    $it['quantity'], $it['unit_price'], $it['discount'], $it['subtotal'], $it['sort_order']
+                    $invId, $it['product_id'], $it['name'],
+                    $it['quantity'], $it['unit_price'], $it['subtotal']
                 ]);
             }
 
@@ -319,7 +324,12 @@ class SalesOrderController {
             $this->db->commit();
             respond(201, ['invoice_id' => $invId, 'invoice_number' => $invNumber], 'Chuyển đơn bán hàng thành Hóa đơn thành công');
         } catch (\Throwable $e) {
-            $this->db->rollBack();
+            if ($e instanceof \Exception && (get_class($e) === 'ResponseException' || get_class($e) === 'RespondException')) {
+                throw $e;
+            }
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             respond(500, null, 'Lỗi chuyển SO thành Hóa đơn: ' . $e->getMessage(), false);
         }
     }

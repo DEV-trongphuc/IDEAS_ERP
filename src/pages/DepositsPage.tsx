@@ -1037,7 +1037,8 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                 customerName: d.full_name || '',
                 phone: d.phone,
                 unitCode: d.unit_code,
-                projectName: d.project_name
+                projectName: d.project_name,
+                customerAvatar: d.avatar_url
               });
             }
           }
@@ -1179,7 +1180,9 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
           type: 'receipt',
           title: `Dự thu: ${m.customerName} (${m.unitCode || 'Không có mã căn'})`,
           desc: `${m.projectName || 'Dự án'} - Đợt thanh toán: ${m.milestone_name}`,
-          amount: Number(m.expected_amount) || 0
+          amount: Number(m.expected_amount) || 0,
+          customerAvatar: m.customerAvatar,
+          customerName: m.customerName
         });
       });
     });
@@ -1991,15 +1994,26 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', paddingLeft: '1.5rem' }}>
                       {r.items.map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)' }}>{item.title}</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{item.desc}</span>
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--color-border-light)', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                            {item.type === 'receipt' && (
+                              <Avatar 
+                                src={item.customerAvatar} 
+                                name={item.customerName || ''} 
+                                size={32} 
+                                style={{ borderRadius: '50%', flexShrink: 0 }} 
+                              />
+                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.desc}</span>
+                            </div>
                           </div>
                           <span style={{ 
                             fontWeight: 800, 
                             fontSize: '0.9rem',
-                            color: item.type === 'receipt' ? 'var(--color-success)' : 'var(--color-danger)'
+                            color: item.type === 'receipt' ? 'var(--color-success)' : 'var(--color-danger)',
+                            flexShrink: 0
                           }}>
                             {item.type === 'receipt' ? '+' : '-'}{item.amount.toLocaleString('vi-VN')} đ
                           </span>

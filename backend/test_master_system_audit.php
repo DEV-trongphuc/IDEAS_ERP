@@ -23,6 +23,14 @@ try {
     // -------------------------------------------------------------------------
     echo "--- PART 1: Business Rules & CAPI Validation ---\n";
     
+    // Fetch active user dynamically to prevent foreign key errors
+    $uRes = $conn->query("SELECT id FROM users WHERE is_active = 1 LIMIT 1");
+    $activeUserId = ($uRes && $uRes->num_rows > 0) ? (int)$uRes->fetch_assoc()['id'] : 1;
+
+    // Fetch active project dynamically to prevent foreign key errors
+    $pRes = $conn->query("SELECT id FROM projects LIMIT 1");
+    $activeProjectId = ($pRes && $pRes->num_rows > 0) ? (int)$pRes->fetch_assoc()['id'] : 1;
+
     // Create temporary mock contact
     $phone = '0901234' . rand(100, 999);
     $conn->query("INSERT INTO persons (phone, full_name) VALUES ('$phone', 'Master Audit Contact')");
@@ -30,7 +38,7 @@ try {
 
     $conn->query("
         INSERT INTO contacts (tenant_id, person_id, created_by, full_name, phone, status, pipeline_status, temperature) 
-        VALUES (1, $personId, 1000, 'Master Audit', '$phone', 'lead', 'booking', 'hot')
+        VALUES (1, $personId, $activeUserId, 'Master Audit', '$phone', 'lead', 'booking', 'hot')
     ");
     $contactId = $conn->insert_id;
     echo "[SETUP] Created mock contact ID: $contactId\n";
@@ -38,7 +46,7 @@ try {
     // Scenario 1: Cancellation before revenue
     $conn->query("
         INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by) 
-        VALUES ($contactId, 1, 'MOCK-X1', 1500000000.00, 30000000.00, 'pending_admin', 1000)
+        VALUES ($contactId, $activeProjectId, 'MOCK-X1', 1500000000.00, 30000000.00, 'pending_admin', $activeUserId)
     ");
     $depositId1 = $conn->insert_id;
     
@@ -58,7 +66,7 @@ try {
     $conn->query("UPDATE contacts SET pipeline_status = 'dat_coc', status = 'customer' WHERE id = $contactId");
     $conn->query("
         INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by) 
-        VALUES ($contactId, 1, 'MOCK-X2', 2000000000.00, 40000000.00, 'pending_admin', 1000)
+        VALUES ($contactId, $activeProjectId, 'MOCK-X2', 2000000000.00, 40000000.00, 'pending_admin', $activeUserId)
     ");
     $depositId2 = $conn->insert_id;
 
@@ -144,7 +152,7 @@ try {
     $pastDate = date('Y-m-d H:i:s', strtotime('-1 day'));
     $conn->query("
         INSERT INTO contacts (tenant_id, person_id, created_by, full_name, phone, status, pipeline_status, security_expires_at, source) 
-        VALUES (1, $expPersonId, 1000, 'Expired Client', '$expiredPhone', 'lead', 'chua_xac_dinh', '$pastDate', 'R3_Fb')
+        VALUES (1, $expPersonId, $activeUserId, 'Expired Client', '$expiredPhone', 'lead', 'chua_xac_dinh', '$pastDate', 'R3_Fb')
     ");
     $expContactId = $conn->insert_id;
 

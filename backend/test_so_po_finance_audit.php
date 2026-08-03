@@ -3,6 +3,50 @@
 // IDEAS ERP - Script Kiểm thử toàn diện SO, PO, Hóa đơn và Performance Kế toán
 
 require_once __DIR__ . '/test_bootstrap.php';
+require_once __DIR__ . '/controllers/PurchaseOrderController.php';
+require_once __DIR__ . '/controllers/SalesOrderController.php';
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+class ResponseException extends Exception {
+    public int $statusCode;
+    public $responseData;
+    public string $responseMsg;
+    public bool $isSuccess;
+    public function __construct(int $code, $data, string $msg, bool $success) {
+        parent::__construct($msg, $code);
+        $this->statusCode = $code;
+        $this->responseData = $data;
+        $this->responseMsg = $msg;
+        $this->isSuccess = $success;
+    }
+}
+
+if (!class_exists('RespondException')) {
+    class RespondException extends ResponseException {}
+}
+
+$lastResponse = null;
+if (!function_exists('respond')) {
+    function respond(int $code, $data = null, string $message = '', bool $success = true): void {
+        global $lastResponse;
+        $lastResponse = [
+            'code' => $code,
+            'data' => $data,
+            'message' => $message,
+            'success' => $success
+        ];
+        throw new ResponseException($code, $data, $message, $success);
+    }
+}
+
+if (!function_exists('logActivity')) {
+    function logActivity($db, $tid, $uid, string $action, ?string $resource = null, $resourceId = null, ?string $data = null): void {
+        // Mock implementation to prevent call_to_undefined_function errors in tests
+    }
+}
 
 echo "====================================================\n";
 echo "🚀 BẮT ĐẦU TEST SUITE: AUDIT SO, PO & KẾ TOÁN ERP\n";
@@ -46,10 +90,10 @@ echo "\n📌 2. Kiểm thử Luồng Mua hàng (PO Flow & Stock Receiving)...\n"
 
 $poController = new PurchaseOrderController($pdo);
 
-// Tạo PO
+// Tạo PO (mặc định set approval_status = 'approved' để được quyền nhập kho)
 $poNumber = 'PO-TEST-' . date('Ymd-His');
-$poSql = "INSERT INTO purchase_orders (tenant_id, supplier_id, created_by, po_number, order_date, status, subtotal, tax, total, notes)
-          VALUES ({$tenantId}, {$supplierId}, {$adminUserId}, '{$poNumber}', CURDATE(), 'ordered', 1000000.00, 100000.00, 1100000.00, 'Test PO Audit')";
+$poSql = "INSERT INTO purchase_orders (tenant_id, supplier_id, created_by, po_number, order_date, status, approval_status, subtotal, tax, total, notes)
+          VALUES ({$tenantId}, {$supplierId}, {$adminUserId}, '{$poNumber}', CURDATE(), 'ordered', 'approved', 1000000.00, 100000.00, 1100000.00, 'Test PO Audit')";
 $conn->query($poSql);
 $poId = $conn->insert_id;
 
@@ -64,10 +108,12 @@ assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'ordered', "Tr
 // Thực hiện Nhập kho từ PO
 try {
     $poController->receive($auth, $poId);
-    assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'received', "Trạng thái PO sau khi nhận hàng phải là 'received'");
+} catch (ResponseException $e) {
+    assertTest("Thực hiện Nhập kho từ PO", $e->statusCode === 200 || $e->statusCode === 201, "Status code: " . $e->statusCode . " | Message: " . $e->responseMsg);
 } catch (\Throwable $e) {
     assertTest("Thực hiện Nhập kho từ PO", false, "Lỗi: " . $e->getMessage());
 }
+assertDbField($conn, 'purchase_orders', 'status', "id = {$poId}", 'received', "Trạng thái PO sau khi nhận hàng phải là 'received'");
 
 // --------------------------------------------------
 // TEST 3: Luồng Đơn Bán Hàng & Hóa Đơn (SO & Invoice Flow)
@@ -90,11 +136,23 @@ $conn->query("INSERT INTO sales_order_items (so_id, product_id, name, quantity, 
               VALUES ({$soId}, NULL, 'Dịch vụ Tư vấn ERP Test', 1.00, 2000000.00, 0.00, 2000000.00)");
 
 // Duyệt SO
-$soController->approve($auth, $soId);
+try {
+    $soController->approve($auth, $soId);
+} catch (ResponseException $e) {
+    assertTest("Duyệt đơn bán hàng SO", $e->statusCode === 200 || $e->statusCode === 201, "Status code: " . $e->statusCode . " | Message: " . $e->responseMsg);
+} catch (\Throwable $e) {
+    assertTest("Duyệt đơn bán hàng SO", false, "Lỗi: " . $e->getMessage());
+}
 assertDbField($conn, 'sales_orders', 'status', "id = {$soId}", 'approved', "Trạng thái SO sau khi duyệt phải là 'approved'");
 
 // Chuyển SO thành Hóa đơn Invoice
-$soController->convertToInvoice($auth, $soId);
+try {
+    $soController->convertToInvoice($auth, $soId);
+} catch (ResponseException $e) {
+    assertTest("Chuyển SO thành Hóa đơn Invoice", $e->statusCode === 200 || $e->statusCode === 201, "Status code: " . $e->statusCode . " | Message: " . $e->responseMsg);
+} catch (\Throwable $e) {
+    assertTest("Chuyển SO thành Hóa đơn Invoice", false, "Lỗi: " . $e->getMessage());
+}
 assertDbField($conn, 'sales_orders', 'status', "id = {$soId}", 'completed', "Trạng thái SO sau khi chuyển Hóa đơn phải là 'completed'");
 
 // Kiểm tra Hóa đơn Invoice được sinh tự động
@@ -112,7 +170,7 @@ if ($invRow) {
 echo "\n📌 4. Đo đạc Tốc độ Truy xuất (Performance Benchmark)...\n";
 
 $startTime = microtime(true);
-$resSo = $conn->query("SELECT so.*, c.name as contact_name 
+$resSo = $conn->query("SELECT so.*, c.full_name as contact_name 
                        FROM sales_orders so 
                        LEFT JOIN contacts c ON so.contact_id = c.id 
                        WHERE so.tenant_id = 1 AND so.status = 'completed' 
