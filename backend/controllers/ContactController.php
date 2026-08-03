@@ -1363,6 +1363,9 @@ class ContactController {
         if ($role === 'viewer') {
             return $action === 'read' ? 'all' : 'none';
         }
+        if ($role === 'accountant') {
+            return 'all';
+        }
 
         return 'none';
     }
