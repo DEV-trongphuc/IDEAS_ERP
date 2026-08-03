@@ -999,7 +999,6 @@ export const InternalSchedulePage: React.FC = () => {
                                      navigator.clipboard.writeText(infoText)
                                        .then(() => toast.success('Đã copy Link, ID và Pass!'))
                                        .catch(() => {});
-                                     window.open(evt.zoom_link, '_blank');
                                    }}
                                    style={{
                                      display: 'flex',
@@ -1017,7 +1016,7 @@ export const InternalSchedulePage: React.FC = () => {
                                    }}
                                    className="hover-lift"
                                  >
-                                   Vào học Zoom <ExternalLink size={11} />
+                                   Copy thông tin <Copy size={11} />
                                  </button>
                                </div>
                                
