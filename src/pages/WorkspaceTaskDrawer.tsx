@@ -5857,7 +5857,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             <div style={{ textAlign: 'left', lineHeight: '1.6', fontSize: '0.85rem', color: 'var(--color-text)' }}>
               <p style={{ marginBottom: '12px' }}>{t('Bạn có chắc chắn muốn ẩn công việc này khỏi Bàn làm việc của mình không?')}</p>
               <p style={{ fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                ⚠️ {t('Công việc này sẽ tự động hiển thị trở lại khi:')}
+                {t('Công việc này sẽ tự động hiển thị trở lại khi:')}
               </p>
               <ul style={{ listStyleType: 'disc', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--color-text-muted)' }}>
                 <li>{t('Bạn được phân công làm Người thực hiện chính mới.')}</li>
