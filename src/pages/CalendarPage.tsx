@@ -162,44 +162,46 @@ export const CalendarPage: React.FC = () => {
             <h1 className="page-title" style={{ margin: 0 }}>Lịch biểu &amp; Chấm công</h1>
             
             {/* Tabs for Calendar vs Attendance */}
-            <div style={{ display: 'flex', background: 'var(--color-border-light)', padding: '4px', borderRadius: '12px', gap: '4px' }}>
-              <button 
-                onClick={() => setActiveTab('calendar')}
-                style={{
-                  padding: '8px 20px',
-                  borderRadius: '10px',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: 'none',
-                  background: activeTab === 'calendar' ? 'var(--color-surface)' : 'transparent',
-                  color: activeTab === 'calendar' ? 'var(--color-primary)' : 'var(--color-text-light)',
-                  boxShadow: activeTab === 'calendar' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-                className={activeTab === 'calendar' ? '' : 'hover-lift'}
-              >
-                🗓️ Lịch biểu công việc
-              </button>
-              <button 
-                onClick={() => setActiveTab('attendance')}
-                style={{
-                  padding: '8px 20px',
-                  borderRadius: '10px',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: 'none',
-                  background: activeTab === 'attendance' ? 'var(--color-surface)' : 'transparent',
-                  color: activeTab === 'attendance' ? 'var(--color-primary)' : 'var(--color-text-light)',
-                  boxShadow: activeTab === 'attendance' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-                className={activeTab === 'attendance' ? '' : 'hover-lift'}
-              >
-                ⏰ Chấm công & Nghỉ phép
-              </button>
-            </div>
+            {user?.role !== 'accountant' && user?.role !== 'viewer' && (
+              <div style={{ display: 'flex', background: 'var(--color-border-light)', padding: '4px', borderRadius: '12px', gap: '4px' }}>
+                <button 
+                  onClick={() => setActiveTab('calendar')}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: activeTab === 'calendar' ? 'var(--color-surface)' : 'transparent',
+                    color: activeTab === 'calendar' ? 'var(--color-primary)' : 'var(--color-text-light)',
+                    boxShadow: activeTab === 'calendar' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  className={activeTab === 'calendar' ? '' : 'hover-lift'}
+                >
+                  Lịch biểu công việc
+                </button>
+                <button 
+                  onClick={() => setActiveTab('attendance')}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: activeTab === 'attendance' ? 'var(--color-surface)' : 'transparent',
+                    color: activeTab === 'attendance' ? 'var(--color-primary)' : 'var(--color-text-light)',
+                    boxShadow: activeTab === 'attendance' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                  className={activeTab === 'attendance' ? '' : 'hover-lift'}
+                >
+                  Chấm công & Nghỉ phép
+                </button>
+              </div>
+            )}
           </div>
           <p className="page-subtitle" style={{ marginTop: '0.25rem' }}>
             {activeTab === 'calendar' ? 'Theo dõi các cuộc hẹn, cuộc gọi và nhiệm vụ của bạn' : 'Quản lý thông tin giờ làm, bổ sung công và đăng ký nghỉ phép của bạn'}

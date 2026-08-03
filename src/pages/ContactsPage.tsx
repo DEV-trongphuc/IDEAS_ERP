@@ -920,7 +920,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
               transition: 'all 0.2s'
             }}
           >
-            💳 Đóng lệ phí hồ sơ
+            Đóng lệ phí hồ sơ
           </button>
           <button 
             onClick={() => { setStudentSubTab('chinh_thuc'); setPage(1); }}
@@ -936,7 +936,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
               transition: 'all 0.2s'
             }}
           >
-            🎓 Học viên chính thức
+            Học viên chính thức
           </button>
         </div>
       )}
