@@ -9,7 +9,7 @@ import {
   Sun, Moon, ChevronDown, ChevronUp, AlertTriangle, ChevronLeft, ChevronRight,
   LayoutDashboard, Database, Ticket, Calendar, RefreshCw, Menu, Tag, Server, Scale, Settings, Info, Cpu,
   Camera, Video, Layers, Plus, Receipt, CreditCard, Building2, Users, User, UserCheck, UserPlus, Trash2, CheckSquare, Square, X, Paperclip, LifeBuoy, Fingerprint, LayoutGrid, Monitor, Tv, Phone, Save, Award, Ban, RotateCcw, MoreHorizontal, Check, KeyRound, Loader2, Shield, Mail, ShieldCheck, Lock as LockIcon, Bell,
-  Play, Sparkles, ArrowRight, Eye, MapPin
+  Play, Sparkles, ArrowRight, Eye, EyeOff, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
@@ -1032,17 +1032,20 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     let list = wsTasks;
     const targetUserId = wsUserId ? Number(wsUserId) : Number(currentUser?.id);
 
-    // Filter out hidden tasks
-    list = list.filter(task => !task.is_hidden || Number(task.is_hidden) === 0);
+    // Filter out hidden tasks or filter by hidden status only
+    if (wsStatus === 'hidden') {
+      list = list.filter(task => task.is_hidden && Number(task.is_hidden) === 1);
+    } else {
+      list = list.filter(task => !task.is_hidden || Number(task.is_hidden) === 0);
+      // Filter by Status
+      if (wsStatus && wsStatus !== 'all') {
+        list = list.filter(task => task.status === wsStatus);
+      }
+    }
 
     // Filter by Priority
     if (wsPriority && wsPriority !== 'all') {
       list = list.filter(task => task.priority === wsPriority);
-    }
-
-    // Filter by Status
-    if (wsStatus && wsStatus !== 'all') {
-      list = list.filter(task => task.status === wsStatus);
     }
 
     // Filter by Date Preset
@@ -5630,6 +5633,35 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 <span>{t('Hiện việc đã xong')}</span>
               </button>
 
+              {/* Quick toggle to show/hide hidden tasks */}
+              <button
+                onClick={() => setWsStatus(wsStatus === 'hidden' ? 'planned' : 'hidden')}
+                style={{
+                  height: isMobile ? '34px' : '38px',
+                  padding: isMobile ? '0 8px' : '0 12px',
+                  borderRadius: '8px',
+                  border: wsStatus === 'hidden' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)',
+                  background: wsStatus === 'hidden' ? 'rgba(239, 68, 68, 0.08)' : 'var(--color-surface)',
+                  color: wsStatus === 'hidden' ? 'var(--color-danger)' : 'var(--color-text)',
+                  fontSize: isMobile ? '0.725rem' : '0.78rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                {wsStatus === 'hidden' ? (
+                  <EyeOff size={isMobile ? 13 : 14} style={{ color: 'var(--color-danger)' }} />
+                ) : (
+                  <Eye size={isMobile ? 13 : 14} style={{ color: 'var(--color-text-muted)' }} />
+                )}
+                <span>{t('Hiện việc đã ẩn')}</span>
+              </button>
+
               {!isMobile && (
                 <div style={{
                   display: 'flex',
@@ -5729,7 +5761,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       options={[
                         { value: 'planned', label: t('Chưa hoàn thành') },
                         { value: '', label: t('Tất cả trạng thái') },
-                        { value: 'done', label: t('Đã hoàn thành') }
+                        { value: 'done', label: t('Đã hoàn thành') },
+                        { value: 'hidden', label: t('Việc đã ẩn') }
                       ]}
                       value={wsStatus}
                       onChange={val => setWsStatus(String(val))}
