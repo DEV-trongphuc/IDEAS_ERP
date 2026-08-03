@@ -142,7 +142,8 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   accountant: [
-    { name: 'Học viên', href: '/students', icon: GraduationCap },
+    { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
+    { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
     { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
     { name: 'Dự báo dòng tiền', href: '/cash-flow', icon: TrendingUp },
@@ -166,7 +167,8 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   sale_admin: [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-    { name: 'Học viên', href: '/students', icon: GraduationCap },
+    { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
+    { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
     { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
@@ -175,7 +177,8 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   saleadmin: [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-    { name: 'Học viên', href: '/students', icon: GraduationCap },
+    { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
+    { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
     { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
@@ -356,6 +359,22 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
 
   let visibleGroups = SIDEBAR_GROUPS.map(group => {
     let items = [...group.items];
+    const role = user?.role as string;
+    const isSpecialRole = ['accountant', 'sale_admin', 'saleadmin'].includes(role);
+
+    if (group.title === 'KHÁCH HÀNG' && isSpecialRole) {
+      const newItems: typeof items = [];
+      items.forEach(item => {
+        if (item.name === 'Học viên') {
+          newItems.push({ name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap });
+          newItems.push({ name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap });
+        } else {
+          newItems.push(item);
+        }
+      });
+      items = newItems;
+    }
+
     if (group.title === 'TỔNG QUAN' && user?.role === 'sale') {
       items = [
         { name: 'Tổng quan', href: '/', icon: LayoutDashboard, end: true },

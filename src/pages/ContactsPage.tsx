@@ -233,7 +233,19 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     };
   }, []);
   const [contacts, setContacts] = useState<any[]>([]);
-  const [studentSubTab, setStudentSubTab] = useState<'le_phi' | 'chinh_thuc'>('le_phi');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [studentSubTab, setStudentSubTab] = useState<'le_phi' | 'chinh_thuc'>(() => {
+    const tab = searchParams.get('tab');
+    return (tab === 'chinh_thuc' || tab === 'le_phi') ? tab : 'le_phi';
+  });
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'chinh_thuc' || tab === 'le_phi') {
+      setStudentSubTab(tab);
+    }
+  }, [searchParams]);
+
   const [scoringRules, setScoringRules] = useState<any>(null);
   const [decayDays, setDecayDays] = useState<number>(5);
   const [loading, setLoading] = useState(true);
@@ -243,7 +255,6 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     return Number(localStorage.getItem('Ideas_contacts_page_size')) || 10;
   });
 
-  const [searchParams, setSearchParams] = useSearchParams();
   const openContactId = searchParams.get('open_contact_id') || searchParams.get('id');
 
   useEffect(() => {
@@ -907,7 +918,14 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
           boxShadow: 'var(--shadow-sm)'
         }}>
           <button 
-            onClick={() => { setStudentSubTab('le_phi'); setPage(1); }}
+            onClick={() => {
+              setStudentSubTab('le_phi');
+              setPage(1);
+              setSearchParams(prev => {
+                prev.set('tab', 'le_phi');
+                return prev;
+              });
+            }}
             style={{
               padding: '8px 16px',
               borderRadius: '10px',
@@ -923,7 +941,14 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
             Đóng lệ phí hồ sơ
           </button>
           <button 
-            onClick={() => { setStudentSubTab('chinh_thuc'); setPage(1); }}
+            onClick={() => {
+              setStudentSubTab('chinh_thuc');
+              setPage(1);
+              setSearchParams(prev => {
+                prev.set('tab', 'chinh_thuc');
+                return prev;
+              });
+            }}
             style={{
               padding: '8px 16px',
               borderRadius: '10px',
