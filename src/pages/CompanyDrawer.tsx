@@ -488,7 +488,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             style={{
-              zIndex: 2147483646,
+              zIndex: 2147483600,
               background: 'rgba(0,0,0,0.45)',
               backdropFilter: 'blur(8px)',
               position: 'fixed',
@@ -502,7 +502,7 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
             animate={{ y: 0, x: 0, opacity: 1 }}
             exit={isMobileOrTablet ? { y: '100%' } : { opacity: 0, x: '250px' }}
             transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
-            style={{ zIndex: 2147483600 }}
+            style={{ zIndex: 2147483605 }}
           >
             {/* Header / Sticky Top Bar */}
             {isMobileOrTablet ? (
