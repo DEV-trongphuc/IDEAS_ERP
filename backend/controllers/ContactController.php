@@ -32,6 +32,7 @@ class ContactController {
         $dateField = $_GET['date_field'] ?? 'created_at';
         $sortBy  = $_GET['sort'] ?? 'created_at';
         $order   = $_GET['order'] ?? 'DESC';
+        $studentSubTab = $_GET['student_sub_tab'] ?? '';
 
         $where  = ['c.tenant_id = ?', 'c.deleted_at IS NULL', 'c.owner_id IS NOT NULL'];
         $params = [$tid];
@@ -185,7 +186,24 @@ class ContactController {
         switch ($segment) {
             case 'tiem_nang':  $where[] = "c.status != 'customer'"; break;
             case 'hot':        $where[] = 'c.lead_score >= 80'; break;
-            case 'customer':   $where[] = "c.status = 'customer'"; break;
+            case 'customer':
+                $where[] = "c.status = 'customer'";
+                if ($studentSubTab === 'le_phi') {
+                    $stmtStage = $this->db->prepare("SELECT id FROM pipeline_stages WHERE tenant_id = ? AND system_slug = 'dong_le_phi_ho_so' LIMIT 1");
+                    $stmtStage->execute([$tid]);
+                    $stageId = $stmtStage->fetchColumn();
+                    if ($stageId !== false) {
+                        $where[] = "c.stage_id = " . (int)$stageId;
+                    }
+                } elseif ($studentSubTab === 'chinh_thuc') {
+                    $stmtStage = $this->db->prepare("SELECT order_index FROM pipeline_stages WHERE tenant_id = ? AND system_slug = 'dong_le_phi_ho_so' LIMIT 1");
+                    $stmtStage->execute([$tid]);
+                    $minOrderIndex = $stmtStage->fetchColumn();
+                    if ($minOrderIndex !== false) {
+                        $where[] = "EXISTS (SELECT 1 FROM pipeline_stages ps WHERE ps.id = c.stage_id AND ps.order_index > " . (int)$minOrderIndex . ")";
+                    }
+                }
+                break;
             case 'has_deal':   $where[] = "EXISTS (SELECT 1 FROM deals d WHERE d.contact_id = c.id AND d.deleted_at IS NULL)"; break;
             case 'no_contact': $where[] = "c.last_contact < DATE_SUB(NOW(), INTERVAL 30 DAY)"; break;
             case 'not_contacted': $where[] = "NOT EXISTS (SELECT 1 FROM activities WHERE related_type = 'contact' AND related_id = c.id) AND NOT EXISTS (SELECT 1 FROM notes WHERE entity_type = 'contact' AND entity_id = c.id)"; break;

@@ -233,6 +233,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     };
   }, []);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [studentSubTab, setStudentSubTab] = useState<'le_phi' | 'chinh_thuc'>('le_phi');
   const [scoringRules, setScoringRules] = useState<any>(null);
   const [decayDays, setDecayDays] = useState<number>(5);
   const [loading, setLoading] = useState(true);
@@ -481,6 +482,10 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
         order: 'DESC',
         segment
       };
+
+      if (segment === 'customer') {
+        params.student_sub_tab = studentSubTab;
+      }
       
       if (activeFilters.status) {
         if (/^\d+$/.test(activeFilters.status)) {
@@ -531,7 +536,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     if (initialMetadataLoaded) {
       fetchData();
     }
-  }, [page, pageSize, debouncedSearch, sortBy, activeFilters, segment, initialMetadataLoaded]);
+  }, [page, pageSize, debouncedSearch, sortBy, activeFilters, segment, studentSubTab, initialMetadataLoaded]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -885,6 +890,53 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
           </div>
           <button className="btn danger sm" style={{ height: 32, borderRadius: 8, fontSize: '0.8rem', padding: '0 12px' }}>
             Đi tới Bàn làm việc
+          </button>
+        </div>
+      )}
+
+      {segment === 'customer' && (
+        <div style={{
+          display: 'flex',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border-light)',
+          padding: '4px',
+          borderRadius: '12px',
+          gap: '4px',
+          width: 'fit-content',
+          marginBottom: '1rem',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <button 
+            onClick={() => { setStudentSubTab('le_phi'); setPage(1); }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              background: studentSubTab === 'le_phi' ? 'var(--color-primary-light)' : 'transparent',
+              color: studentSubTab === 'le_phi' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            💳 Đóng lệ phí hồ sơ
+          </button>
+          <button 
+            onClick={() => { setStudentSubTab('chinh_thuc'); setPage(1); }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              background: studentSubTab === 'chinh_thuc' ? 'var(--color-primary-light)' : 'transparent',
+              color: studentSubTab === 'chinh_thuc' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            🎓 Học viên chính thức
           </button>
         </div>
       )}
