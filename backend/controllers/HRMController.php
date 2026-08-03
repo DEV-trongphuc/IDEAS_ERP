@@ -625,7 +625,6 @@ class HRMController {
                 }
             }
         }
-
         foreach ($employees as $emp) {
             $userId = (int)$emp['id'];
 
@@ -637,22 +636,25 @@ class HRMController {
                 $waivedDates = [];
                 $checkinsList = [];
             } else {
+                $startDateOfMonth = $monthYear . '-01';
+                $endDateOfMonth = date('Y-m-t', strtotime($startDateOfMonth));
+
                 // 1. Calculate Actual Work Days from check_ins & apply late_early waivers
                 $leStmt = $this->db->prepare("
                     SELECT DATE(start_date) as le_date
                     FROM hrm_leave_requests
                     WHERE user_id = ? AND status = 'approved' AND leave_type = 'late_early'
-                      AND DATE_FORMAT(start_date, '%Y-%m') = ?
+                      AND start_date BETWEEN ? AND ?
                 ");
-                $leStmt->execute([$userId, $monthYear]);
+                $leStmt->execute([$userId, $startDateOfMonth . ' 00:00:00', $endDateOfMonth . ' 23:59:59']);
                 $waivedDates = $leStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
                 $attStmt = $this->db->prepare("
                     SELECT check_in_date, late_minutes
                     FROM check_ins
-                    WHERE user_id = ? AND status = 'approved' AND DATE_FORMAT(check_in_date, '%Y-%m') = ?
+                    WHERE user_id = ? AND status = 'approved' AND check_in_date BETWEEN ? AND ?
                 ");
-                $attStmt->execute([$userId, $monthYear]);
+                $attStmt->execute([$userId, $startDateOfMonth, $endDateOfMonth]);
                 $checkinsList = $attStmt->fetchAll(PDO::FETCH_ASSOC);
 
                 $actualWorkedDays = count($checkinsList);
