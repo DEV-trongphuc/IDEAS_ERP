@@ -1814,7 +1814,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                   <TrendingUp size={16} />
                 </div>
               </div>
-              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
                 {projectedRec7Days.toLocaleString('vi-VN')} đ
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
@@ -1839,7 +1839,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                   <Calendar size={16} />
                 </div>
               </div>
-              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
                 {projectedRec30Days.toLocaleString('vi-VN')} đ
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
@@ -1864,7 +1864,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                   <CreditCard size={16} />
                 </div>
               </div>
-              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
                 {projectedExp7Days.toLocaleString('vi-VN')} đ
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
@@ -1889,7 +1889,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                   <AlertCircle size={16} />
                 </div>
               </div>
-              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.45rem', fontWeight: 800 }}>
+              <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
                 {projectedExp30Days.toLocaleString('vi-VN')} đ
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: '8px', fontWeight: 600 }}>
