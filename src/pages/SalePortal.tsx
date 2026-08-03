@@ -7174,6 +7174,18 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     const pendingTasks = portalTasks.filter((t: any) => t.status !== 'done' && (!t.due_date || t.due_date <= todayStr));
     const pendingTasksCount = pendingTasks.length;
 
+    const profile = impersonatedSale || data.consultant_profile;
+    let isWorkDay = true;
+    if (profile && profile.work_schedule) {
+      const now = new Date();
+      let dayOfWeek = now.getDay();
+      if (dayOfWeek === 0) dayOfWeek = 7;
+      const dayConfig = profile.work_schedule[String(dayOfWeek)] || profile.work_schedule[dayOfWeek];
+      if (dayConfig && !dayConfig.active) {
+        isWorkDay = false;
+      }
+    }
+
     const issues = [];
     if (pendingCoopsCount > 0) {
       issues.push({
@@ -7196,7 +7208,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
         action: () => setActiveTab('workspace')
       });
     }
-    if (isCheckInLoaded && !isAdmin && !isOvertime && (!todayCheckIn || todayCheckIn.status === 'rejected')) {
+    if (isCheckInLoaded && !isAdmin && !isOvertime && isWorkDay && (!todayCheckIn || todayCheckIn.status === 'rejected')) {
       issues.push({
         type: 'checkin',
         text: t('Bạn chưa hoàn thành chấm công ngày hôm nay.'),
