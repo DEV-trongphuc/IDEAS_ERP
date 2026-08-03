@@ -396,31 +396,16 @@ class CheckInController {
         // Check if checking in during afternoon session (i.e. after morningEnd)
         if ($currentHM > $morningEnd) {
             $afternoonStartHM = !empty($afternoonStart) ? $afternoonStart : '13:00';
-            // Check if user has approved morning leave request today
-            $morningLeaveStmt = $this->db->prepare("
-                SELECT id 
-                FROM hrm_leave_requests 
-                WHERE user_id = ? AND status = 'approved' AND DATE(start_date) = ?
-                  AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid')
-                  AND HOUR(start_date) < 12
-                LIMIT 1
-            ");
-            $morningLeaveStmt->execute([$auth['user_id'], $today]);
-            $morningLeave = $morningLeaveStmt->fetch(PDO::FETCH_ASSOC);
-
-            // If there's a morning leave or they just check in after morningEnd, compare with afternoon shift start
-            if ($morningLeave || $currentHM > $morningEnd) {
-                // If afternoon session is not configured, compare with workStartHM
-                if (empty($todaySchedule['start_afternoon']) && empty($todaySchedule['end_afternoon'])) {
-                    $isLate = ($currentHM > $workStartHM);
-                    if ($isLate) {
-                        $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);
-                    }
-                } else {
-                    $isLate = ($currentHM > $afternoonStartHM);
-                    if ($isLate) {
-                        $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $afternoonStartHM . ':00')) / 60);
-                    }
+            // If afternoon session is not configured, compare with workStartHM
+            if (empty($todaySchedule['start_afternoon']) && empty($todaySchedule['end_afternoon'])) {
+                $isLate = ($currentHM > $workStartHM);
+                if ($isLate) {
+                    $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);
+                }
+            } else {
+                $isLate = ($currentHM > $afternoonStartHM);
+                if ($isLate) {
+                    $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $afternoonStartHM . ':00')) / 60);
                 }
             }
         } else {

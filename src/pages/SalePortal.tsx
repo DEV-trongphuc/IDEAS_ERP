@@ -3181,14 +3181,10 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     const activeWorkStart = dayConfig?.start || workStart;
     
     if (curHM > morningEnd) {
-      if (profile?.has_morning_leave_today) {
-        if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
-          return curHM > activeWorkStart;
-        }
-        return curHM > afternoonStart;
-      } else {
+      if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
         return curHM > activeWorkStart;
       }
+      return curHM > afternoonStart;
     } else {
       return curHM > activeWorkStart;
     }
