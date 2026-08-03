@@ -41,7 +41,8 @@ const workflowList = [
   { id: 'it_request', name: 'Cấp thiết bị IT', description: 'Yêu cầu cấp phát laptop, màn hình, tài khoản phần mềm.', category: 'admin', icon: Server, bg: 'rgba(6, 182, 212, 0.08)', color: '#06b6d4' },
   { id: 'meeting_room', name: 'Sử dụng phòng họp', description: 'Đăng ký phòng họp lớn, họp trực tuyến.', category: 'admin', icon: Users, bg: 'rgba(16, 185, 129, 0.08)', color: '#10b981' },
   { id: 'stationery', name: 'Đề xuất văn phòng phẩm', description: 'Yêu cầu cung cấp giấy in, bút, tài liệu văn phòng.', category: 'admin', icon: FileText, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' },
-  { id: 'document_approval', name: 'Phê duyệt văn bản', description: 'Đề xuất duyệt hợp đồng, quy chế, quyết định hoặc tài liệu nội bộ.', category: 'admin', icon: FileCheck, bg: 'rgba(99, 102, 241, 0.08)', color: '#6366f1' }
+  { id: 'document_approval', name: 'Phê duyệt văn bản', description: 'Đề xuất duyệt hợp đồng, quy chế, quyết định hoặc tài liệu nội bộ.', category: 'admin', icon: FileCheck, bg: 'rgba(99, 102, 241, 0.08)', color: '#6366f1' },
+  { id: 'print_stamp_send', name: 'In, đóng dấu và gửi hồ sơ', description: 'Quy trình in, đóng dấu tài liệu và gửi đi cho đối tác/khách hàng.', category: 'admin', icon: FileText, bg: 'rgba(245, 158, 11, 0.08)', color: '#f59e0b' }
 ];
 
 const getWorkflowColor = (colorHex: string) => {
@@ -468,6 +469,17 @@ export default function Approvals() {
   const [stationeryItem, setStationeryItem] = useState('');
   const [stationeryQty, setStationeryQty] = useState('');
   const [intermittentDates, setIntermittentDates] = useState<{ date: string; session: 'full' | 'morning' | 'afternoon' }[]>([{ date: '', session: 'full' }]);
+
+  // Form fields for "In, đóng dấu và gửi hồ sơ" (print_stamp_send)
+  const [pssReqEmployeeId, setPssReqEmployeeId] = useState<string>('');
+  const [pssReqDate, setPssReqDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [pssExecutorId, setPssExecutorId] = useState<string>('');
+  const [pssSendMethod, setPssSendMethod] = useState<string>('Chuyển phát nhanh');
+  const [pssSendTimeFrame, setPssSendTimeFrame] = useState<string>('Sáng (08:00 - 12:00)');
+  const [pssRecipientName, setPssRecipientName] = useState<string>('');
+  const [pssRecipientAddress, setPssRecipientAddress] = useState<string>('');
+  const [pssRecipientPhone, setPssRecipientPhone] = useState<string>('');
+  const [pssRequiredSendDate, setPssRequiredSendDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   const [myBalance, setMyBalance] = useState<{
     annual_leave_total: number;
@@ -476,6 +488,53 @@ export default function Approvals() {
     compensatory_leave_used: number;
   } | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
+
+  const resetPssStates = () => {
+    setPssReqEmployeeId(user ? String(user.id) : '');
+    setPssReqDate(new Date().toISOString().split('T')[0]);
+    if (users && users.length > 0) {
+      const phuong = users.find(u => u.full_name?.includes('Nguyễn Thị Duy Phương') || u.name?.includes('Nguyễn Thị Duy Phương'));
+      if (phuong) {
+        setPssExecutorId(String(phuong.id));
+      } else {
+        const anyHr = users.find(u => u.role?.toLowerCase() === 'hr' || u.job_title?.toLowerCase()?.includes('hành chính'));
+        setPssExecutorId(anyHr ? String(anyHr.id) : '');
+      }
+    } else {
+      setPssExecutorId('');
+    }
+    setPssSendMethod('Chuyển phát nhanh');
+    setPssSendTimeFrame('Sáng (08:00 - 12:00)');
+    setPssRecipientName('');
+    setPssRecipientAddress('');
+    setPssRecipientPhone('');
+    setPssRequiredSendDate(new Date().toISOString().split('T')[0]);
+    setAttachments([]);
+  };
+
+  useEffect(() => {
+    if (selectedWorkflowDef?.id === 'print_stamp_send') {
+      resetPssStates();
+    }
+  }, [selectedWorkflowDef]);
+
+  useEffect(() => {
+    if (user && !pssReqEmployeeId) {
+      setPssReqEmployeeId(String(user.id));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (users && users.length > 0 && !pssExecutorId) {
+      const phuong = users.find(u => u.full_name?.includes('Nguyễn Thị Duy Phương') || u.name?.includes('Nguyễn Thị Duy Phương'));
+      if (phuong) {
+        setPssExecutorId(String(phuong.id));
+      } else {
+        const anyHr = users.find(u => u.role?.toLowerCase() === 'hr' || u.job_title?.toLowerCase()?.includes('hành chính'));
+        if (anyHr) setPssExecutorId(String(anyHr.id));
+      }
+    }
+  }, [users]);
 
   const fetchMyBalance = async () => {
     try {
@@ -2225,6 +2284,43 @@ export default function Approvals() {
                               finalApproverId = proposerUser?.id || 1003;
                             }
 
+                            if (selectedWorkflowDef?.id === 'print_stamp_send') {
+                              finalApproverId = Number(pssExecutorId) || finalApproverId;
+                            }
+
+                            if (selectedWorkflowDef?.id === 'print_stamp_send') {
+                              if (!pssReqEmployeeId) {
+                                toast.error(t('Vui lòng chọn nhân viên yêu cầu.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              if (!pssExecutorId) {
+                                toast.error(t('Vui lòng chọn người thực hiện.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              if (!pssRecipientName.trim()) {
+                                toast.error(t('Vui lòng nhập tên người nhận.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              if (!pssRecipientAddress.trim()) {
+                                toast.error(t('Vui lòng nhập địa chỉ người nhận.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              if (!pssRecipientPhone.trim()) {
+                                toast.error(t('Vui lòng nhập số điện thoại người nhận.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              if (attachments.length === 0) {
+                                toast.error(t('Vui lòng đính kèm hồ sơ cần đóng dấu.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                            }
+
                             if (formType === 'attendance_bulk') {
                               if (suggestedDays.length === 0) {
                                 toast.error(t('Vui lòng quét và chọn ít nhất 1 ngày đề xuất bổ sung công.'));
@@ -3175,103 +3271,312 @@ export default function Approvals() {
                           </div>
                         ) : formType === 'general' ? (
                           /* GENERAL / OPERATIONAL FORM FIELDS */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                          selectedWorkflowDef?.id === 'print_stamp_send' ? (
+                            /* PRINT STAMP SEND CUSTOM FORM FIELDS */
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Nhân viên yêu cầu')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <CustomSelect
+                                    value={pssReqEmployeeId}
+                                    onChange={val => setPssReqEmployeeId(val)}
+                                    options={users.map(u => ({ 
+                                      value: String(u.id), 
+                                      label: u.full_name || u.name,
+                                      avatar: u.avatar || u.avatar_url
+                                    }))}
+                                    placeholder={t('Chọn nhân viên...')}
+                                    searchable
+                                    showAvatars
+                                    width="100%"
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Ngày yêu cầu')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <input
+                                    type="date"
+                                    className="form-input"
+                                    value={pssReqDate}
+                                    onChange={e => setPssReqDate(e.target.value)}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                              </div>
+
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                  {selectedWorkflowDef?.id === 'document_approval' ? t('Tên văn bản / Quyết định') : t('Tiêu đề đề xuất')}
+                                  {t('Hồ sơ cần đóng dấu và gửi đi')} <span style={{ color: 'red' }}>*</span>
+                                </label>
+                                <div style={{
+                                  border: '2px dashed var(--color-border)',
+                                  borderRadius: '12px',
+                                  padding: '1.5rem',
+                                  textAlign: 'center',
+                                  background: 'var(--color-bg-secondary)',
+                                  cursor: 'pointer'
+                                }} onClick={() => {
+                                  const fileEl = document.getElementById('print-stamp-send-file-upload');
+                                  if (fileEl) fileEl.click();
+                                }}>
+                                  <input
+                                    id="print-stamp-send-file-upload"
+                                    type="file"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                      const files = Array.from(e.target.files || []);
+                                      setAttachments([...attachments, ...files.map(f => ({ name: f.name, size: f.size }))]);
+                                      toast.success(t('Đã thêm tài liệu!'));
+                                    }}
+                                  />
+                                  <Paperclip size={24} style={{ color: 'var(--color-primary)', marginBottom: '8px' }} />
+                                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '0 0 4px 0', fontWeight: 650 }}>
+                                    {t('Tải lên hoặc kéo thả tài liệu vào đây')}
+                                  </p>
+                                </div>
+                                {attachments.length > 0 && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                                    {attachments.map((att, index) => (
+                                      <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                          <Paperclip size={14} style={{ color: 'var(--color-text-muted)' }} />
+                                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {att.name}
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                                          style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                        >
+                                          {t('Xóa')}
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Người thực hiện')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <CustomSelect
+                                    value={pssExecutorId}
+                                    onChange={val => setPssExecutorId(val)}
+                                    options={users.map(u => ({ 
+                                      value: String(u.id), 
+                                      label: u.full_name || u.name,
+                                      avatar: u.avatar || u.avatar_url
+                                    }))}
+                                    placeholder={t('Chọn người thực hiện...')}
+                                    searchable
+                                    showAvatars
+                                    width="100%"
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Hình thức gửi')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <CustomSelect
+                                    value={pssSendMethod}
+                                    onChange={val => setPssSendMethod(val)}
+                                    options={[
+                                      { value: 'Chuyển phát nhanh', label: t('Chuyển phát nhanh') },
+                                      { value: 'Giao hàng trực tiếp', label: t('Giao hàng trực tiếp') },
+                                      { value: 'Gửi EMS', label: t('Gửi EMS') },
+                                      { value: 'Gửi Grab/Ahamove', label: t('Gửi Grab/Ahamove') },
+                                      { value: 'Hình thức khác', label: t('Hình thức khác') }
+                                    ]}
+                                    width="100%"
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Khung giờ gửi')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <CustomSelect
+                                    value={pssSendTimeFrame}
+                                    onChange={val => setPssSendTimeFrame(val)}
+                                    options={[
+                                      { value: 'Sáng (08:00 - 12:00)', label: t('Sáng (08:00 - 12:00)') },
+                                      { value: 'Chiều (13:00 - 17:00)', label: t('Chiều (13:00 - 17:00)') }
+                                    ]}
+                                    width="100%"
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Tên người nhận')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    value={pssRecipientName}
+                                    onChange={e => setPssRecipientName(e.target.value)}
+                                    placeholder={t('Nhập tên người nhận...')}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Địa chỉ người nhận')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    value={pssRecipientAddress}
+                                    onChange={e => setPssRecipientAddress(e.target.value)}
+                                    placeholder={t('Nhập địa chỉ nhận hồ sơ...')}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('SĐT người nhận')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    value={pssRecipientPhone}
+                                    onChange={e => setPssRecipientPhone(e.target.value)}
+                                    placeholder={t('Nhập số điện thoại người nhận...')}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {t('Ngày cần gửi hồ sơ')} <span style={{ color: 'red' }}>*</span>
+                                  </label>
+                                  <input
+                                    type="date"
+                                    className="form-input"
+                                    value={pssRequiredSendDate}
+                                    onChange={e => setPssRequiredSendDate(e.target.value)}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                    {selectedWorkflowDef?.id === 'document_approval' ? t('Tên văn bản / Quyết định') : t('Tiêu đề đề xuất')}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-input"
+                                    value={expenseTitle}
+                                    onChange={e => setExpenseTitle(e.target.value)}
+                                    placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Ví dụ: Quy chế hoạt động phòng kinh doanh') : t('Ví dụ: Giải trình chấm công ngày 25/07')}
+                                    style={{ height: '36px', fontSize: '0.8rem' }}
+                                    required
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Bộ phận / Phòng ban')}</label>
+                                  <CustomSelect
+                                    value={departmentName}
+                                    onChange={val => setDepartmentName(val)}
+                                    options={teams.length > 0 ? teams.map(t => ({
+                                      value: t.name,
+                                      label: t.name
+                                    })) : [
+                                      { value: 'Ban Giám đốc', label: t('Ban Giám đốc') },
+                                      { value: 'Phòng Kinh doanh', label: t('Phòng Kinh doanh (Sales)') },
+                                      { value: 'Phòng Marketing', label: t('Phòng Marketing') },
+                                      { value: 'Phòng Kế toán', label: t('Phòng Kế toán - Tài chính') },
+                                      { value: 'Phòng Nhân sự', label: t('Phòng Nhân sự (HR)') },
+                                      { value: 'Phòng IT', label: t('Phòng IT / Kỹ thuật') },
+                                      { value: 'Bộ phận Vận hành', label: t('Bộ phận Vận hành') }
+                                    ]}
+                                    placeholder={t('Chọn phòng ban / bộ phận...')}
+                                    width="100%"
+                                  />
+                                </div>
+                              </div>
+
+                              {selectedWorkflowDef?.id === 'stationery' && (
+                                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đề xuất cái gì')}</label>
+                                    <input
+                                      type="text"
+                                      className="form-input"
+                                      value={stationeryItem}
+                                      onChange={e => setStationeryItem(e.target.value)}
+                                      placeholder={t('Nhập tên văn phòng phẩm... (Ví dụ: Giấy A4 Double A)')}
+                                      style={{ height: '36px', fontSize: '0.8rem' }}
+                                      required
+                                    />
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số lượng bao nhiêu')}</label>
+                                    <input
+                                      type="number"
+                                      className="form-input"
+                                      value={stationeryQty}
+                                      onChange={e => setStationeryQty(e.target.value)}
+                                      placeholder={t('Ví dụ: 5')}
+                                      style={{ height: '36px', fontSize: '0.8rem' }}
+                                      min="1"
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                  {selectedWorkflowDef?.id === 'document_approval' ? t('Nội dung tóm tắt văn bản') : t('Nội dung đề xuất / Giải trình chi tiết')}
+                                </label>
+                                <textarea
+                                  className="form-input"
+                                  value={paymentDetails}
+                                  onChange={e => setPaymentDetails(e.target.value)}
+                                  placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Tóm tắt các điểm chính hoặc nội dung cần phê duyệt của văn bản...') : t('Nhập nội dung giải trình hoặc đề xuất chi tiết...')}
+                                  style={{ minHeight: '100px', fontSize: '0.8rem', padding: '8px', resize: 'vertical' }}
+                                  required
+                                />
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
+                                  {selectedWorkflowDef?.id === 'document_approval' ? t('Lý do trình ký / Căn cứ phê duyệt') : t('Lý do & Ý kiến đề xuất')}
                                 </label>
                                 <input
                                   type="text"
                                   className="form-input"
-                                  value={expenseTitle}
-                                  onChange={e => setExpenseTitle(e.target.value)}
-                                  placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Ví dụ: Quy chế hoạt động phòng kinh doanh') : t('Ví dụ: Giải trình chấm công ngày 25/07')}
+                                  value={leaveReason}
+                                  onChange={e => setLeaveReason(e.target.value)}
+                                  placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Ví dụ: Theo nghị quyết Đại hội đồng cổ đông...') : t('Lý do đề xuất (nếu có)...')}
                                   style={{ height: '36px', fontSize: '0.8rem' }}
-                                  required
-                                />
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Bộ phận / Phòng ban')}</label>
-                                <CustomSelect
-                                  value={departmentName}
-                                  onChange={val => setDepartmentName(val)}
-                                  options={teams.length > 0 ? teams.map(t => ({
-                                    value: t.name,
-                                    label: t.name
-                                  })) : [
-                                    { value: 'Ban Giám đốc', label: t('Ban Giám đốc') },
-                                    { value: 'Phòng Kinh doanh', label: t('Phòng Kinh doanh (Sales)') },
-                                    { value: 'Phòng Marketing', label: t('Phòng Marketing') },
-                                    { value: 'Phòng Kế toán', label: t('Phòng Kế toán - Tài chính') },
-                                    { value: 'Phòng Nhân sự', label: t('Phòng Nhân sự (HR)') },
-                                    { value: 'Phòng IT', label: t('Phòng IT / Kỹ thuật') },
-                                    { value: 'Bộ phận Vận hành', label: t('Bộ phận Vận hành') }
-                                  ]}
-                                  placeholder={t('Chọn phòng ban / bộ phận...')}
-                                  width="100%"
                                 />
                               </div>
                             </div>
-
-                            {selectedWorkflowDef?.id === 'stationery' && (
-                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đề xuất cái gì')}</label>
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    value={stationeryItem}
-                                    onChange={e => setStationeryItem(e.target.value)}
-                                    placeholder={t('Nhập tên văn phòng phẩm... (Ví dụ: Giấy A4 Double A)')}
-                                    style={{ height: '36px', fontSize: '0.8rem' }}
-                                    required
-                                  />
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số lượng bao nhiêu')}</label>
-                                  <input
-                                    type="number"
-                                    className="form-input"
-                                    value={stationeryQty}
-                                    onChange={e => setStationeryQty(e.target.value)}
-                                    placeholder={t('Ví dụ: 5')}
-                                    style={{ height: '36px', fontSize: '0.8rem' }}
-                                    min="1"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                            )}
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                {selectedWorkflowDef?.id === 'document_approval' ? t('Nội dung tóm tắt văn bản') : t('Nội dung đề xuất / Giải trình chi tiết')}
-                              </label>
-                              <textarea
-                                className="form-input"
-                                value={paymentDetails}
-                                onChange={e => setPaymentDetails(e.target.value)}
-                                placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Tóm tắt các điểm chính hoặc nội dung cần phê duyệt của văn bản...') : t('Nhập nội dung giải trình hoặc đề xuất chi tiết...')}
-                                style={{ minHeight: '100px', fontSize: '0.8rem', padding: '8px', resize: 'vertical' }}
-                                required
-                              />
-                            </div>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                {selectedWorkflowDef?.id === 'document_approval' ? t('Lý do trình ký / Căn cứ phê duyệt') : t('Lý do & Ý kiến đề xuất')}
-                              </label>
-                              <input
-                                type="text"
-                                className="form-input"
-                                value={leaveReason}
-                                onChange={e => setLeaveReason(e.target.value)}
-                                placeholder={selectedWorkflowDef?.id === 'document_approval' ? t('Ví dụ: Theo nghị quyết Đại hội đồng cổ đông...') : t('Lý do đề xuất (nếu có)...')}
-                                style={{ height: '36px', fontSize: '0.8rem' }}
-                              />
-                            </div>
-                          </div>
+                          )
                         ) : (
                           /* EXPENSE AND PAYMENT FORM FIELDS */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -3661,67 +3966,69 @@ export default function Approvals() {
                       )}
 
                       {/* Card 4: Document Attachments dropzone */}
-                      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
-                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {t('Tài liệu chứng từ đính kèm')}
-                        </div>
-                        <div style={{
-                          border: '2px dashed var(--color-border)',
-                          borderRadius: '12px',
-                          padding: '1.5rem',
-                          textAlign: 'center',
-                          background: 'var(--color-bg-secondary)',
-                          cursor: 'pointer'
-                        }} onClick={() => {
-                          const fileEl = document.getElementById('drawer-file-upload');
-                          if (fileEl) fileEl.click();
-                        }}>
-                          <input
-                            id="drawer-file-upload"
-                            type="file"
-                            multiple
-                            style={{ display: 'none' }}
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              setAttachments([...attachments, ...files.map(f => ({ name: f.name, size: f.size }))]);
-                              toast.success(t('Đã thêm tệp đính kèm!'));
-                            }}
-                          />
-                          <Paperclip size={24} style={{ color: 'var(--color-primary)', marginBottom: '8px' }} />
-                          <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '0 0 4px 0', fontWeight: 650 }}>
-                            {t('Nhấn để tải tệp lên hoặc kéo thả tệp vào đây')}
-                          </p>
-                          <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                            {t('Hỗ trợ PDF, PNG, JPG, XLSX kích thước tối đa 25MB')}
-                          </span>
-                        </div>
-
-                        {/* List of uploaded files */}
-                        {attachments.length > 0 && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                            {attachments.map((att, index) => (
-                              <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                                  <Paperclip size={14} style={{ color: 'var(--color-text-muted)' }} />
-                                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {att.name}
-                                  </span>
-                                  <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                    ({(att.size / (1024 * 1024)).toFixed(2)} MB)
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
-                                  style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.85rem' }}
-                                >
-                                  {t('Xóa')}
-                                </button>
-                              </div>
-                            ))}
+                      {selectedWorkflowDef?.id !== 'print_stamp_send' && (
+                        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {t('Tài liệu chứng từ đính kèm')}
                           </div>
-                        )}
-                      </div>
+                          <div style={{
+                            border: '2px dashed var(--color-border)',
+                            borderRadius: '12px',
+                            padding: '1.5rem',
+                            textAlign: 'center',
+                            background: 'var(--color-bg-secondary)',
+                            cursor: 'pointer'
+                          }} onClick={() => {
+                            const fileEl = document.getElementById('drawer-file-upload');
+                            if (fileEl) fileEl.click();
+                          }}>
+                            <input
+                              id="drawer-file-upload"
+                              type="file"
+                              multiple
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const files = Array.from(e.target.files || []);
+                                setAttachments([...attachments, ...files.map(f => ({ name: f.name, size: f.size }))]);
+                                toast.success(t('Đã thêm tệp đính kèm!'));
+                              }}
+                            />
+                            <Paperclip size={24} style={{ color: 'var(--color-primary)', marginBottom: '8px' }} />
+                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '0 0 4px 0', fontWeight: 650 }}>
+                              {t('Nhấn để tải tệp lên hoặc kéo thả tệp vào đây')}
+                            </p>
+                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                              {t('Hỗ trợ PDF, PNG, JPG, XLSX kích thước tối đa 25MB')}
+                            </span>
+                          </div>
+
+                          {/* List of uploaded files */}
+                          {attachments.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                              {attachments.map((att, index) => (
+                                <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                    <Paperclip size={14} style={{ color: 'var(--color-text-muted)' }} />
+                                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {att.name}
+                                    </span>
+                                    <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                      ({(att.size / (1024 * 1024)).toFixed(2)} MB)
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                                    style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.85rem' }}
+                                  >
+                                    {t('Xóa')}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Card 5: Thảo luận & Hoạt động (Bình luận như bên workspace) */}
                       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)', marginTop: '1.25rem' }}>
@@ -3877,6 +4184,114 @@ export default function Approvals() {
                         </div>
 
                         {(() => {
+                          if (selectedWorkflowDef?.id === 'print_stamp_send') {
+                            const reqUser = users.find(u => String(u.id) === String(pssReqEmployeeId)) || proposerUser;
+                            const execUser = users.find(u => String(u.id) === String(pssExecutorId));
+                            
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '12px', position: 'relative', paddingLeft: '30px' }}>
+                                <div style={{ position: 'absolute', left: '10px', top: '10px', bottom: '10px', width: '2px', background: 'var(--color-border-light)' }} />
+                                
+                                {/* Step 1: Submitter */}
+                                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-30px',
+                                    top: '0px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '50%',
+                                    background: 'var(--color-primary)',
+                                    color: '#ffffff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    zIndex: 2
+                                  }}>
+                                    1
+                                  </div>
+                                  <div>
+                                    <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>{t('Thông tin hồ sơ')}</strong>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: '8px', 
+                                      padding: '6px 12px', 
+                                      background: 'var(--color-bg-light)', 
+                                      border: '1px solid var(--color-border-light)', 
+                                      borderRadius: '8px',
+                                      height: '38px'
+                                    }}>
+                                      <Avatar 
+                                        src={reqUser?.avatar_url || reqUser?.avatar} 
+                                        name={reqUser?.full_name || reqUser?.name || 'User'} 
+                                        size={20} 
+                                      />
+                                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                        {reqUser?.full_name || reqUser?.name || t('Người lập')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Step 2: Executor */}
+                                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-30px',
+                                    top: '0px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '50%',
+                                    background: execUser ? 'var(--color-primary)' : 'var(--color-surface)',
+                                    border: `2px solid ${execUser ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                                    color: execUser ? '#ffffff' : 'var(--color-text-muted)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    zIndex: 2
+                                  }}>
+                                    2
+                                  </div>
+                                  <div>
+                                    <strong style={{ fontSize: '0.8rem', color: execUser ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>{t('Xác nhận hoàn thành')}</strong>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: '8px', 
+                                      padding: '6px 12px', 
+                                      background: execUser ? 'var(--color-bg-light)' : 'var(--color-surface)', 
+                                      border: '1px solid var(--color-border-light)', 
+                                      borderRadius: '8px',
+                                      height: '38px'
+                                    }}>
+                                      {execUser ? (
+                                        <>
+                                          <Avatar 
+                                            src={execUser?.avatar_url || execUser?.avatar} 
+                                            name={execUser?.full_name || execUser?.name || 'User'} 
+                                            size={20} 
+                                          />
+                                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                            {execUser?.full_name || execUser?.name}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                                          {t('Chưa chọn người thực hiện')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+
                           let currentStepIndex = 1;
                           const stepIndex1 = currentStepIndex++;
                           const stepIndex2 = showStepManager ? currentStepIndex++ : null;
@@ -4511,6 +4926,8 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     }
 
     const creatorUser = users.find(u => String(u.full_name) === String(getEmployeeName()) || String(u.name) === String(getEmployeeName()) || String(u.id) === String(detail?.user_id || detail?.created_by));
+    const rawDesc = detail?.notes || detail?.description || item.description || '';
+    const isPrintStampSend = item.type === 'expense' && rawDesc.includes('Quy trình: In, đóng dấu và gửi hồ sơ');
 
     let currentStepIndex = 1;
     const stepIndex1 = currentStepIndex++;
@@ -4610,7 +5027,9 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
                 {sDetails.iconContent}
               </div>
               <div style={{ width: '100%' }}>
-                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>{t('Lập đề xuất & gửi')}</strong>
+                <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', display: 'block', marginBottom: '6px' }}>
+                  {isPrintStampSend ? t('Thông tin hồ sơ') : t('Lập đề xuất & gửi')}
+                </strong>
                 <CustomSelect
                   options={users.map(u => ({
                     value: String(u.id),
@@ -4836,7 +5255,7 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
               <div style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>
-                    {item.type === 'expense' ? t('Phê duyệt đề xuất chi phí') : t('Phê duyệt giải trình chấm công')}
+                    {isPrintStampSend ? t('Xác nhận hoàn thành') : (item.type === 'expense' ? t('Phê duyệt đề xuất chi phí') : t('Phê duyệt giải trình chấm công'))}
                   </strong>
                   {sDetails.showBell && (
                     <button 
@@ -4933,6 +5352,22 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
     const rawDesc = detail?.notes || detail?.description || item.description || '';
     const hasInstallments = rawDesc.includes('[Thanh toán theo đợt]');
     const hasRecurring = rawDesc.includes('[Lặp lại định kỳ]');
+    const isPrintStampSend = item.type === 'expense' && rawDesc.includes('Quy trình: In, đóng dấu và gửi hồ sơ');
+
+    let printStampSendFields: Record<string, string> = {};
+    if (isPrintStampSend) {
+      const lines = rawDesc.split('\n');
+      lines.forEach((line: string) => {
+        const parts = line.split(': ');
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const val = parts.slice(1).join(': ').trim();
+          if (key && key !== 'Quy trình') {
+            printStampSendFields[key] = val;
+          }
+        }
+      });
+    }
 
     let installmentText = '';
     if (hasInstallments) {
@@ -5110,29 +5545,45 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
           )}
         </div>
 
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {t('Lý do / Mô tả chi tiết')}
+        {isPrintStampSend ? (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              {t('Thông Tin Quy Trình Gửi Hồ Sơ')}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '12px 24px', fontSize: '0.85rem' }}>
+              {Object.entries(printStampSendFields).map(([key, val]) => (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '0.75rem' }}>{key}</span>
+                  <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>{val}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <textarea
-            rows={3}
-            value={detail?.reason || detail?.notes || item.description || ''}
-            disabled
-            style={{
-              width: '100%',
-              background: '#fffbeb',
-              color: '#713f12',
-              border: '1px solid #fef08a',
-              borderLeft: '4px solid #eab308',
-              borderRadius: 0,
-              fontStyle: 'italic',
-              padding: '10px 12px',
-              fontSize: '0.8rem',
-              lineHeight: 1.45,
-              resize: 'none'
-            }}
-          />
-        </div>
+        ) : (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {t('Lý do / Mô tả chi tiết')}
+            </div>
+            <textarea
+              rows={3}
+              value={detail?.reason || detail?.notes || item.description || ''}
+              disabled
+              style={{
+                width: '100%',
+                background: '#fffbeb',
+                color: '#713f12',
+                border: '1px solid #fef08a',
+                borderLeft: '4px solid #eab308',
+                borderRadius: 0,
+                fontStyle: 'italic',
+                padding: '10px 12px',
+                fontSize: '0.8rem',
+                lineHeight: 1.45,
+                resize: 'none'
+              }}
+            />
+          </div>
+        )}
 
         {/* Card 4: Cấu hình nâng cao (Chỉ hiện khi có thiết lập được bật) */}
         {((item.type === 'expense' && hasInstallments) || hasRecurring) && (
