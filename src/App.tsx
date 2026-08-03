@@ -33,6 +33,7 @@ const SalePortal = lazy(() => import('./pages/SalePortal').then(module => ({ def
 const FairShareAudit = lazy(() => import('./pages/FairShareAudit').then(module => ({ default: module.FairShareAudit })));
 const PersonalAccount = lazy(() => import('./pages/PersonalAccount').then(module => ({ default: module.PersonalAccount })));
 const FinancialDashboard = lazy(() => import('./pages/FinancialDashboard').then(module => ({ default: module.FinancialDashboard })));
+const CalendarPage = lazy(() => import('./pages/CalendarPage').then(module => ({ default: module.CalendarPage })));
 
 const ContactsPage = lazy(() => import('./pages/ContactsPage').then(module => ({ default: module.ContactsPage })));
 const CompaniesPage = lazy(() => import('./pages/CompaniesPage').then(module => ({ default: module.CompaniesPage })));
@@ -183,7 +184,9 @@ const AppTabs = () => {
           ? <Navigate to={`/contacts${location.search}`} replace />
           : <DataList key="data" />;
       case '/calendar':
-        return <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" />;
+        return (user?.role === 'sale' || user?.role === 'sales')
+          ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" />
+          : <CalendarPage key="calendar" />;
       case '/contacts':
         return <ContactsPage key="contacts" defaultSegment="tiem_nang" />;
       case '/students':
