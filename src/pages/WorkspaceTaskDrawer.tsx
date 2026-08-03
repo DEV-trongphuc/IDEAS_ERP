@@ -197,6 +197,16 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   const handleHideClick = () => {
     if (!task?.id) return;
+    if (isHidden) {
+      // Unhide doesn't need confirmation
+      executeToggleHide();
+    } else {
+      setShowHideConfirmModal(true);
+    }
+  };
+
+  const executeToggleHide = () => {
+    if (!task?.id) return;
     setLoadingHide(true);
     api.post(`/activities/${task.id}/toggle-hide`)
       .then(res => {
@@ -246,6 +256,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
   const [showTeamDropdown, setShowTeamDropdown] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+  const [showHideConfirmModal, setShowHideConfirmModal] = useState(false);
 
   const [allowedProjects, setAllowedProjects] = useState<any[]>([]);
   const [allowedCampaigns, setAllowedCampaigns] = useState<any[]>([]);
@@ -5828,6 +5839,34 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             cancelText={t('Hủy')}
             confirmType="danger"
           />
+
+          {/* Confirm Hide Task Modal */}
+          <ConfirmModal
+            isOpen={showHideConfirmModal}
+            onClose={() => setShowHideConfirmModal(false)}
+            onConfirm={() => {
+              setShowHideConfirmModal(false);
+              executeToggleHide();
+            }}
+            title={t('Ẩn công việc khỏi bàn làm việc?')}
+            confirmText={t('Xác nhận ẩn')}
+            cancelText={t('Hủy')}
+            confirmType="danger"
+            width={480}
+          >
+            <div style={{ textAlign: 'left', lineHeight: '1.6', fontSize: '0.85rem', color: 'var(--color-text)' }}>
+              <p style={{ marginBottom: '12px' }}>{t('Bạn có chắc chắn muốn ẩn công việc này khỏi Bàn làm việc của mình không?')}</p>
+              <p style={{ fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                ⚠️ {t('Công việc này sẽ tự động hiển thị trở lại khi:')}
+              </p>
+              <ul style={{ listStyleType: 'disc', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--color-text-muted)' }}>
+                <li>{t('Bạn được phân công làm Người thực hiện chính mới.')}</li>
+                <li>{t('Bạn được thêm vào danh sách Người liên quan (Người tham gia).')}</li>
+                <li>{t('Ai đó nhắc tên (mention) bạn bằng cú pháp @tên hoặc tag trực tiếp bạn trong phần mô tả/checklist.')}</li>
+                <li>{t('Ai đó nhắc tên (mention) bạn hoặc trả lời bình luận của bạn trong phần Thảo luận.')}</li>
+              </ul>
+            </div>
+          </ConfirmModal>
     </>,
     document.body
   );
