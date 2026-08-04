@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 211;
+$targetVersion = 212;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1190,9 +1190,21 @@ try {
         $logMsg("Nâng cấp lên phiên bản 211 hoàn tất.", "success");
     }
 
-    // 18. Update DB version in system_settings
-    $targetVersion = 211;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '211') ON DUPLICATE KEY UPDATE setting_value = '211'");
+    // 18. Upgrade to 212: Fix legacy mismatched Sales Orders totals
+    if ($currentVersion < 212) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 212 (Sửa các dòng SO legacy bị lệch tổng tiền)...", "info");
+        try {
+            $conn->query("UPDATE `sales_orders` SET `total` = `subtotal` + `tax` - `discount` WHERE `id` IN (3, 6)");
+            $logMsg("Đã sửa lệch tổng tiền cho các SO legacy thành công.", "success");
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 212: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 212 hoàn tất.", "success");
+    }
+
+    // 19. Update DB version in system_settings
+    $targetVersion = 212;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '212') ON DUPLICATE KEY UPDATE setting_value = '212'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

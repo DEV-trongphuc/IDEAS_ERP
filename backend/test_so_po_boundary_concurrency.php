@@ -35,10 +35,14 @@ $auth = [
 // Clean old test PO records
 $pdo->exec("DELETE FROM purchase_orders WHERE po_number LIKE 'PO-TEST-LIMIT-%'");
 
+if (!class_exists('ResponseException')) {
+    class ResponseException extends Exception {}
+}
+
 // Helper mock respond to capture controller outputs
 if (!function_exists('respond')) {
     function respond($code, $data = null, $message = '', $success = true) {
-        throw new Exception("RESPOND_CODE_{$code}: {$message}");
+        throw new ResponseException("RESPOND_CODE_{$code}: {$message}");
     }
 }
 
@@ -115,4 +119,6 @@ $pdo->exec("DELETE FROM purchase_orders WHERE po_number LIKE 'PO-TEST-LIMIT-%'")
 
 echo "\n";
 printTestSummary();
-exit($testStats['fail'] > 0 ? 1 : 0);
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
+    exit($testStats['fail'] > 0 ? 1 : 0);
+}

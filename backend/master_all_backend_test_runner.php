@@ -63,6 +63,21 @@ require_once __DIR__ . '/test_shared_class_aggregation.php';
 echo "\n--- 13. CHAY TEST SUITE: ALL LECTURERS SCHEDULE INTEGRITY ---\n";
 require_once __DIR__ . '/test_all_lecturers_schedule.php';
 
+echo "\n--- 14. CHAY TEST SUITE: WORKSPACE OPERATIONS INTEGRITY ---\n";
+require_once __DIR__ . '/test_workspace_operations_suite.php';
+
+echo "\n--- 15. CHAY TEST SUITE: WORKSPACE CONTACTS NOTIFICATIONS AUDIT ---\n";
+require_once __DIR__ . '/test_workspace_contacts_notifications_audit.php';
+
+echo "\n--- 16. CHAY TEST SUITE: SO/PO BOUNDARY CONCURRENCY AUDIT ---\n";
+require_once __DIR__ . '/test_so_po_boundary_concurrency.php';
+
+echo "\n--- 17. CHAY TEST SUITE: SO/PO APPROVALS AUDIT ---\n";
+require_once __DIR__ . '/test_so_po_approvals_audit.php';
+
+echo "\n--- 18. CHAY TEST SUITE: PARTNER PO BANKING INTEGRITY ---\n";
+require_once __DIR__ . '/test_partner_po_banking.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 

@@ -123,4 +123,18 @@ if (!function_exists('printTestSummary')) {
     }
 }
 
+if (!class_exists('RespondException')) {
+    class RespondException extends Exception {}
+}
+
+if (!class_exists('ResponseException')) {
+    class ResponseException extends RespondException {}
+}
+
+if (!function_exists('respond')) {
+    function respond($code, $data = null, $message = '', $success = true) {
+        throw new ResponseException("RESPOND_CODE_{$code}: " . (is_string($message) ? $message : '') . " " . json_encode($data));
+    }
+}
+
 // Sẵn sàng cho các file script test require_once __DIR__ . '/test_bootstrap.php';

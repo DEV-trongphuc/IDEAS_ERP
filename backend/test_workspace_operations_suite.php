@@ -23,10 +23,10 @@ if (!function_exists('respond')) {
 }
 
 if (!function_exists('getBody')) {
-    global $mockedBody;
+    global $mockBody;
     function getBody() {
-        global $mockedBody;
-        return $mockedBody;
+        global $mockBody;
+        return $mockBody;
     }
 }
 
@@ -48,8 +48,8 @@ $authAdmin = [
 // ----------------------------------------------------
 echo "--- TEST CASE 1: Task Required Approval State Transitions ---\n";
 // Create a task requiring approval
-global $mockedBody;
-$mockedBody = [
+global $mockBody;
+$mockBody = [
     'type' => 'task',
     'subject' => '[TEST_WORKFLOW] Implement Workspace Task Workflow Tests',
     'body' => 'Test body',
@@ -75,7 +75,7 @@ try {
 assertTest("Create task requiring approval", $taskId > 0, "Created Task ID: " . $taskId);
 
 // Try to update task status to 'done' (should auto-set progress to 100 and approval_status to pending)
-$mockedBody = [
+$mockBody = [
     'status' => 'done'
 ];
 
@@ -114,7 +114,7 @@ $pdo->exec("DELETE FROM task_muted_notifications WHERE task_id = {$taskId} AND u
 $pdo->prepare("INSERT INTO task_muted_notifications (task_id, user_id) VALUES (?, ?)")->execute([$taskId, $targetUserId]);
 
 // Step B: User A comments and mentions User B
-$mockedBody = [
+$mockBody = [
     'content' => 'Chào <span class="mention" data-user-id="' . $targetUserId . '">@Dev Director</span>, hãy vào kiểm tra tiến độ nhé.',
     'attachments' => []
 ];
@@ -135,7 +135,7 @@ assertTest("Mute prevents mention notification", $notifCount === 0, "Notificatio
 $pdo->prepare("DELETE FROM task_muted_notifications WHERE task_id = ? AND user_id = ?")->execute([$taskId, $targetUserId]);
 
 // Step D: User A comments and mentions User B again
-$mockedBody = [
+$mockBody = [
     'content' => 'Nhắc lại lần 2 <span class="mention" data-user-id="' . $targetUserId . '">@Dev Director</span> nhé.',
     'attachments' => []
 ];
@@ -157,4 +157,6 @@ $pdo->exec("DELETE FROM notifications WHERE link LIKE '%highlight_activity_id%'"
 
 echo "\n";
 printTestSummary();
-exit($testStats['fail'] > 0 ? 1 : 0);
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
+    exit($testStats['fail'] > 0 ? 1 : 0);
+}

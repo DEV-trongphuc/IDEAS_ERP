@@ -11,9 +11,11 @@ header('Content-Type: text/plain; charset=utf-8');
 ob_implicit_flush(true);
 while (ob_get_level()) ob_end_clean();
 
-class RespondException extends Exception {
-    public function __construct(int $code, string $message) {
-        parent::__construct($message, $code);
+if (!class_exists('RespondException')) {
+    class RespondException extends Exception {
+        public function __construct(int $code, string $message) {
+            parent::__construct($message, $code);
+        }
     }
 }
 
