@@ -123,4 +123,6 @@ try {
 
 echo "\n";
 printTestSummary();
-exit($testStats['fail'] > 0 ? 1 : 0);
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
+    exit($testStats['fail'] > 0 ? 1 : 0);
+}

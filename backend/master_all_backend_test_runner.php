@@ -51,6 +51,18 @@ require_once __DIR__ . '/test_smart_logic_audit.php';
 echo "\n--- 9. CHAY TEST SUITE: APPROVALS REJECTION REASON AUDIT ---\n";
 require_once __DIR__ . '/test_approvals_rejection_audit.php';
 
+echo "\n--- 10. CHAY TEST SUITE: COMPLETE ACADEMIC AUDIT ---\n";
+require_once __DIR__ . '/test_complete_academic_audit.php';
+
+echo "\n--- 11. CHAY TEST SUITE: ACADEMIC REMINDERS PAYLOAD AUDIT ---\n";
+require_once __DIR__ . '/test_academic_reminders_payload.php';
+
+echo "\n--- 12. CHAY TEST SUITE: SHARED CLASS AGGREGATION AUDIT ---\n";
+require_once __DIR__ . '/test_shared_class_aggregation.php';
+
+echo "\n--- 13. CHAY TEST SUITE: ALL LECTURERS SCHEDULE INTEGRITY ---\n";
+require_once __DIR__ . '/test_all_lecturers_schedule.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 

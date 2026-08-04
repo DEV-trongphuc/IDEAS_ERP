@@ -1818,14 +1818,15 @@ export default function ProjectsPage() {
       }
 
       if (Array.isArray(sub.seminars)) {
-        totalSeminars += sub.seminars.length;
         sub.seminars.forEach((sem: any) => {
+          const semWeight = Number(sem.sessions_count) === 2 ? 2 : 1;
+          totalSeminars += semWeight;
           const semLecturerId = sem.lecturer_id ? String(sem.lecturer_id).trim() : mainLecturerId;
           if (semLecturerId) {
             const lect = getOrInitLecturer(semLecturerId);
             if (lect) {
-              lect.seminarsCount += 1;
-              lect.totalClassesCount += 1;
+              lect.seminarsCount += semWeight;
+              lect.totalClassesCount += semWeight;
               lect.subjectIds.add(sub.id);
             }
           }
