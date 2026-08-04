@@ -78,6 +78,12 @@ require_once __DIR__ . '/test_so_po_approvals_audit.php';
 echo "\n--- 18. CHAY TEST SUITE: PARTNER PO BANKING INTEGRITY ---\n";
 require_once __DIR__ . '/test_partner_po_banking.php';
 
+echo "\n--- 19. CHAY TEST SUITE: CRON JOBS READINESS ---\n";
+require_once __DIR__ . '/test_cron_jobs.php';
+
+echo "\n--- 20. CHAY TEST SUITE: COOPERATION SLIPS PERFORMANCE BENCHMARK ---\n";
+require_once __DIR__ . '/test_coop_slips_performance.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 
