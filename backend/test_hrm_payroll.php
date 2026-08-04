@@ -14,25 +14,28 @@ echo "=== STARTING HRM & PAYROLL SYSTEM INTEGRATION TEST ===\n\n";
 $testStats = ['pass' => 0, 'fail' => 0];
 
 // Mock getBody and respond functions
-$mockPayload = [];
+global $mockBody;
+$mockBody = [];
 if (!function_exists('getBody')) {
     function getBody() {
-        global $mockPayload;
-        return $mockPayload;
+        global $mockBody;
+        return $mockBody;
     }
 }
 
-class RespondException extends Exception {
-    public int $statusCode;
-    public $responseData;
-    public string $responseMsg;
-    public bool $isSuccess;
-    public function __construct(int $code, $data, string $msg, bool $success) {
-        parent::__construct($msg, $code);
-        $this->statusCode = $code;
-        $this->responseData = $data;
-        $this->responseMsg = $msg;
-        $this->isSuccess = $success;
+if (!class_exists('RespondException')) {
+    class RespondException extends Exception {
+        public int $statusCode;
+        public $responseData;
+        public string $responseMsg;
+        public bool $isSuccess;
+        public function __construct(int $code, $data, string $msg, bool $success) {
+            parent::__construct($msg, $code);
+            $this->statusCode = $code;
+            $this->responseData = $data;
+            $this->responseMsg = $msg;
+            $this->isSuccess = $success;
+        }
     }
 }
 
@@ -137,7 +140,7 @@ try {
     $leaveId = $pdo->lastInsertId();
 
     // Approve the leave request
-    $mockPayload = [
+    $mockBody = [
         'id' => $leaveId,
         'status' => 'approved',
         'note' => 'Duyệt phép năm'
@@ -161,7 +164,7 @@ try {
     $insOverdraftLeave->execute([$testUserId]);
     $overdraftLeaveId = $pdo->lastInsertId();
 
-    $mockPayload = [
+    $mockBody = [
         'id' => $overdraftLeaveId,
         'status' => 'approved',
         'note' => 'Duyệt phép năm vượt hạn mức'
@@ -189,7 +192,7 @@ try {
     $insMorningLeave->execute([$testUserId]);
 
     // 2. Perform check-in at 13:00 (afternoon shift start is 13:30)
-    $mockPayload = [
+    $mockBody = [
         'action' => 'checkin',
         'check_in_date' => '2026-07-21',
         'check_in_time' => '13:00:00',
@@ -215,7 +218,7 @@ try {
     $insAfternoonLeave->execute([$testUserId]);
 
     // 2. Perform check-out at 16:30 (work end time is 17:30)
-    $mockPayload = [
+    $mockBody = [
         'action' => 'checkout',
         'check_in_date' => '2026-07-21',
         'check_in_time' => '16:30:00',
@@ -259,7 +262,7 @@ try {
     ")->execute([$testUserId]);
 
     // 3. Run calculatePayroll
-    $mockPayload = [
+    $mockBody = [
         'month_year' => $monthYear,
         'work_days_required' => 26
     ];

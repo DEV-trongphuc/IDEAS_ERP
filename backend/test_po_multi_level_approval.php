@@ -2,17 +2,19 @@
 // backend/test_po_multi_level_approval.php
 // IDEAS ERP - Script Kiểm thử luồng Duyệt PO nhiều cấp
 
-class ResponseException extends Exception {
-    public $code;
-    public $data;
-    public $msg;
-    public $success;
-    public function __construct(int $code, $data, string $message, bool $success) {
-        $this->code = $code;
-        $this->data = $data;
-        $this->msg = $message;
-        $this->success = $success;
-        parent::__construct($message, $code);
+if (!class_exists('ResponseException')) {
+    class ResponseException extends Exception {
+        public $code;
+        public $data;
+        public $msg;
+        public $success;
+        public function __construct(int $code, $data, string $message, bool $success) {
+            $this->code = $code;
+            $this->data = $data;
+            $this->msg = $message;
+            $this->success = $success;
+            parent::__construct($message, $code);
+        }
     }
 }
 

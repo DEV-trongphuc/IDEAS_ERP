@@ -18,10 +18,10 @@ if (!function_exists('respond')) {
 }
 
 if (!function_exists('getBody')) {
-    global $mockedBody;
+    global $mockBody;
     function getBody() {
-        global $mockedBody;
-        return $mockedBody;
+        global $mockBody;
+        return $mockBody;
     }
 }
 
@@ -67,8 +67,8 @@ assertTest("Create test activity task", $taskId > 0, "Inserted Task ID: " . $tas
 // TEST CASE 1: Add a comment with HTML mention tag and check notification creation
 // ----------------------------------------------------
 echo "\n--- TEST CASE 1: HTML Mentions & Notification Notification Triggering ---\n";
-global $mockedBody;
-$mockedBody = [
+global $mockBody;
+$mockBody = [
     'content' => 'Chào <span class="mention" data-user-id="100010">@Dev Director</span>, hãy vào kiểm tra tiến độ nhé.',
     'attachments' => []
 ];
@@ -83,7 +83,7 @@ $authAdmin = [
 try {
     $ctrl->addComment($authAdmin, $taskId);
 } catch (Exception $e) {
-    if (strpos($e->getMessage(), 'RESPOND_TRIGGERED') === false) {
+    if (strpos($e->getMessage(), 'RESPOND_TRIGGERED') === false && strpos($e->getMessage(), 'RESPOND_CODE_200') === false && strpos($e->getMessage(), 'RESPOND_CODE_201') === false) {
         echo "Unexpected error: " . $e->getMessage() . "\n";
     }
 }
@@ -110,7 +110,7 @@ $pdo->exec("INSERT INTO task_muted_notifications (task_id, user_id, muted_at) VA
 $pdo->exec("DELETE FROM notifications WHERE user_id = 100010");
 
 // Try to tag again
-$mockedBody = [
+$mockBody = [
     'content' => 'Nhắc lại lần nữa <span class="mention" data-user-id="100010">@Dev Director</span> nhé.',
     'attachments' => []
 ];
@@ -135,7 +135,7 @@ $pdo->exec("DELETE FROM task_muted_notifications WHERE task_id = $taskId AND use
 // ----------------------------------------------------
 echo "\n--- TEST CASE 3: Comment Reply Parent Notification ---\n";
 // Dev Director (100010) makes a comment first
-$mockedBody = [
+$mockBody = [
     'content' => 'Ý kiến của tôi về công việc này...',
     'attachments' => []
 ];
@@ -160,7 +160,7 @@ try {
 assertTest("Create parent comment for reply testing", $commentId > 0, "Comment ID: " . $commentId);
 
 // Dev Admin (100009) replies to Dev Director's comment
-$mockedBody = [
+$mockBody = [
     'content' => 'Tôi đồng ý với ý kiến của sếp.',
     'parent_id' => $commentId,
     'attachments' => []
@@ -184,7 +184,7 @@ assertTest("Check notification created for parent comment owner", $hasReplyNotif
 // ----------------------------------------------------
 echo "\n--- TEST CASE 4: Approval & Rejection Permissions ---\n";
 // Dev Sale (100012) tries to approve task (should fail with 403)
-$mockedBody = [
+$mockBody = [
     'approval_status' => 'approved'
 ];
 
@@ -212,7 +212,7 @@ $authManager = [
     'role' => 'manager',
     'full_name' => 'Dev Manager'
 ];
-$mockedBody = [
+$mockBody = [
     'approval_status' => 'approved',
     'status' => 'done'
 ];
@@ -222,7 +222,7 @@ try {
     $ctrl->update($authManager, $taskId);
     $succeededAsManager = true;
 } catch (Exception $e) {
-    if (strpos($e->getMessage(), 'RESPOND_TRIGGERED') !== false) {
+    if (strpos($e->getMessage(), 'RESPOND_TRIGGERED') !== false || strpos($e->getMessage(), 'RESPOND_CODE_200') !== false || (isset($e->code) && $e->code === 200)) {
         $succeededAsManager = true;
     }
 }
@@ -250,7 +250,7 @@ assertTest("Toggle hide again unhides task", $isHidden2 === false);
 $ctrl->toggleHide($authDirector, $taskId); // hidden now
 
 // 4. Trigger 1: Assign to Dev Director
-$mockedBody = [
+$mockBody = [
     'user_id' => 100010
 ];
 try {
@@ -264,7 +264,7 @@ assertTest("Trigger 1: Task automatically unhides when assigned as main assignee
 $ctrl->toggleHide($authDirector, $taskId); // hidden now
 
 // 6. Trigger 2: Add to participants
-$mockedBody = [
+$mockBody = [
     'participant_ids' => '100012,100010'
 ];
 try {
@@ -278,7 +278,7 @@ assertTest("Trigger 2: Task automatically unhides when added to participants lis
 $ctrl->toggleHide($authDirector, $taskId); // hidden now
 
 // 8. Trigger 3: Tag/Mention in Comment
-$mockedBody = [
+$mockBody = [
     'content' => 'Nhắc nhở <span class="mention" data-user-id="100010">@Dev Director</span> làm việc này.',
     'attachments' => []
 ];

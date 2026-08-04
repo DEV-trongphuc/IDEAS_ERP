@@ -7,11 +7,11 @@ require_once __DIR__ . '/test_bootstrap.php';
 echo "🚀 BẮT ĐẦU KIỂM THỬ QUY TẮC HIỂN THỊ DỮ LIỆU LEAD (ROLES: SALE_ADMIN, ACCOUNTANT)\n\n";
 
 // 1. Kiểm tra cấu trúc CSDL và cài đặt hiện tại
-$result = $conn->query("SELECT value FROM system_settings WHERE setting_key = 'sale_admin_lead_visibility_stage' LIMIT 1");
-$saleAdminStage = $result && $result->num_rows > 0 ? $result->fetch_assoc()['value'] : null;
+$result = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sale_admin_lead_visibility_stage' LIMIT 1");
+$saleAdminStage = $result && $result->num_rows > 0 ? $result->fetch_assoc()['setting_value'] : null;
 
-$result2 = $conn->query("SELECT value FROM system_settings WHERE setting_key = 'accountant_lead_visibility_stage' LIMIT 1");
-$accountantStage = $result2 && $result2->num_rows > 0 ? $result2->fetch_assoc()['value'] : null;
+$result2 = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'accountant_lead_visibility_stage' LIMIT 1");
+$accountantStage = $result2 && $result2->num_rows > 0 ? $result2->fetch_assoc()['setting_value'] : null;
 
 echo "Cấu hình hiện tại:\n";
 echo "- Mốc Sale Admin: " . ($saleAdminStage ?? 'Chưa cấu hình (Mặc định: nop_ho_so)') . "\n";
@@ -39,7 +39,7 @@ assertTest("Trạng thái cấu hình của Kế toán tồn tại trong CSDL", 
 $saleAdminIndex = $stages[$saleAdminSlug] ?? 999;
 echo "\nGiả lập lọc dữ liệu cho Sale Admin (Index >= {$saleAdminIndex}):\n";
 $saleAdminQuery = "
-    SELECT c.id, c.fullname, c.status, ps.name as stage_name, ps.order_index
+    SELECT c.id, c.full_name, c.status, ps.name as stage_name, ps.order_index
     FROM contacts c
     LEFT JOIN pipeline_stages ps ON c.status = ps.system_slug
     WHERE ps.order_index >= ? AND c.deleted_at IS NULL
@@ -53,7 +53,7 @@ $allPassedSaleAdmin = true;
 while ($lead = $leadsRes->fetch_assoc()) {
     $matched = $lead['order_index'] >= $saleAdminIndex;
     if (!$matched) $allPassedSaleAdmin = false;
-    echo "  - Lead #{$lead['id']}: {$lead['fullname']} | Status: {$lead['status']} (Thứ tự: {$lead['order_index']}) -> " . ($matched ? "HỢP LỆ" : "KHÔNG HỢP LỆ") . "\n";
+    echo "  - Lead #{$lead['id']}: {$lead['full_name']} | Status: {$lead['status']} (Thứ tự: {$lead['order_index']}) -> " . ($matched ? "HỢP LỆ" : "KHÔNG HỢP LỆ") . "\n";
 }
 $stmt->close();
 assertTest("Toàn bộ lead được tải cho Sale Admin đều >= mốc cấu hình", $allPassedSaleAdmin);
@@ -62,7 +62,7 @@ assertTest("Toàn bộ lead được tải cho Sale Admin đều >= mốc cấu 
 $accountantIndex = $stages[$accountantSlug] ?? 999;
 echo "\nGiả lập lọc dữ liệu cho Kế toán (Index >= {$accountantIndex}):\n";
 $accountantQuery = "
-    SELECT c.id, c.fullname, c.status, ps.name as stage_name, ps.order_index
+    SELECT c.id, c.full_name, c.status, ps.name as stage_name, ps.order_index
     FROM contacts c
     LEFT JOIN pipeline_stages ps ON c.status = ps.system_slug
     WHERE ps.order_index >= ? AND c.deleted_at IS NULL
@@ -76,7 +76,7 @@ $allPassedAccountant = true;
 while ($lead = $leadsRes2->fetch_assoc()) {
     $matched = $lead['order_index'] >= $accountantIndex;
     if (!$matched) $allPassedAccountant = false;
-    echo "  - Lead #{$lead['id']}: {$lead['fullname']} | Status: {$lead['status']} (Thứ tự: {$lead['order_index']}) -> " . ($matched ? "HỢP LỆ" : "KHÔNG HỢP LỆ") . "\n";
+    echo "  - Lead #{$lead['id']}: {$lead['full_name']} | Status: {$lead['status']} (Thứ tự: {$lead['order_index']}) -> " . ($matched ? "HỢP LỆ" : "KHÔNG HỢP LỆ") . "\n";
 }
 $stmt2->close();
 assertTest("Toàn bộ lead được tải cho Kế toán đều >= mốc cấu hình", $allPassedAccountant);

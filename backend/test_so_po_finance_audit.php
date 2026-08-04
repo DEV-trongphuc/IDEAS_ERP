@@ -10,17 +10,19 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-class ResponseException extends Exception {
-    public int $statusCode;
-    public $responseData;
-    public string $responseMsg;
-    public bool $isSuccess;
-    public function __construct(int $code, $data, string $msg, bool $success) {
-        parent::__construct($msg, $code);
-        $this->statusCode = $code;
-        $this->responseData = $data;
-        $this->responseMsg = $msg;
-        $this->isSuccess = $success;
+if (!class_exists('ResponseException')) {
+    class ResponseException extends Exception {
+        public int $statusCode;
+        public $responseData;
+        public string $responseMsg;
+        public bool $isSuccess;
+        public function __construct(int $code, $data, string $msg, bool $success) {
+            parent::__construct($msg, $code);
+            $this->statusCode = $code;
+            $this->responseData = $data;
+            $this->responseMsg = $msg;
+            $this->isSuccess = $success;
+        }
     }
 }
 

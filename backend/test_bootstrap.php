@@ -124,16 +124,49 @@ if (!function_exists('printTestSummary')) {
 }
 
 if (!class_exists('RespondException')) {
-    class RespondException extends Exception {}
+    class RespondException extends Exception {
+        public $code;
+        public $data;
+        public $msg;
+        public $success;
+        // Synonyms for compatibility
+        public $statusCode;
+        public $responseData;
+        public $responseMsg;
+        public $isSuccess;
+    }
 }
 
 if (!class_exists('ResponseException')) {
-    class ResponseException extends RespondException {}
+    class ResponseException extends RespondException {
+        public function __construct($code, $data = null, $message = '', $success = true) {
+            $this->code = $code;
+            $this->data = $data;
+            $this->msg = $message;
+            $this->success = $success;
+            // Map synonyms
+            $this->statusCode = $code;
+            $this->responseData = $data;
+            $this->responseMsg = $message;
+            $this->isSuccess = $success;
+            parent::__construct("RESPOND_CODE_{$code}: " . (is_string($message) ? $message : '') . " " . json_encode($data), is_numeric($code) ? (int)$code : 0);
+        }
+    }
 }
 
 if (!function_exists('respond')) {
     function respond($code, $data = null, $message = '', $success = true) {
-        throw new ResponseException("RESPOND_CODE_{$code}: " . (is_string($message) ? $message : '') . " " . json_encode($data));
+        global $lastResponse, $throwOnRespond;
+        $lastResponse = [
+            'code' => $code,
+            'data' => $data,
+            'message' => $message,
+            'success' => $success
+        ];
+        if (isset($throwOnRespond) && $throwOnRespond === false) {
+            return;
+        }
+        throw new ResponseException($code, $data, $message, $success);
     }
 }
 

@@ -1,19 +1,20 @@
 <?php
 // backend/test_deposit_currency_approval.php
 require_once __DIR__ . '/test_bootstrap.php';
+$throwOnRespond = false;
 require_once __DIR__ . '/controllers/DepositController.php';
 
 // Mock getBody and respond functions
-global $mockPayload;
-$mockPayload = [];
+global $mockBody;
+$mockBody = [];
 
 global $lastResponse;
 $lastResponse = null;
 
 if (!function_exists('getBody')) {
     function getBody() {
-        global $mockPayload;
-        return $mockPayload;
+        global $mockBody;
+        return $mockBody;
     }
 }
 
@@ -59,11 +60,20 @@ $db->exec("
 ");
 $contactId = $db->lastInsertId();
 
+// Fetch a valid project ID to satisfy FK constraint
+$projIdStmt = $db->query("SELECT id FROM projects LIMIT 1");
+$projectId = (int)$projIdStmt->fetchColumn();
+if (!$projectId) {
+    // Fallback: insert a temporary project
+    $db->exec("INSERT INTO projects (tenant_id, name, code) VALUES (1, '[TEST_CURR] Project', 'TESTCURR')");
+    $projectId = (int)$db->lastInsertId();
+}
+
 // Create test deposit (foreign currency USD)
 $db->prepare("
     INSERT INTO deposits (contact_id, project_id, unit_code, price, expected_commission, status, created_by, currency, exchange_rate)
-    VALUES (?, 2, '[TEST_CURR] Unit', 25000000.00, 1000000.00, 'pending_admin', 100009, 'USD', 25000.00)
-")->execute([$contactId]);
+    VALUES (?, ?, '[TEST_CURR] Unit', 25000000.00, 1000000.00, 'pending_admin', 100009, 'USD', 25000.00)
+")->execute([$contactId, $projectId]);
 $depositId = $db->lastInsertId();
 
 // Create test milestone
@@ -82,7 +92,7 @@ $auth = [
 $controller = new DepositController($db);
 
 // --- TEST 1: Approve foreign currency milestone without actual_amount (Should Fail 400) ---
-$mockPayload = []; // Empty body, actual_amount = null
+$mockBody = []; // Empty body, actual_amount = null
 $lastResponse = null;
 
 try {
@@ -96,7 +106,7 @@ try {
 }
 
 // --- TEST 2: Approve foreign currency milestone with actual_amount (Should Succeed 200) ---
-$mockPayload = ['actual_amount' => 24500000.00];
+$mockBody = ['actual_amount' => 24500000.00];
 $lastResponse = null;
 
 try {
@@ -129,5 +139,7 @@ try {
 $db->exec("DELETE FROM deposit_milestones WHERE milestone_name LIKE '[TEST_CURR]%'");
 $db->exec("DELETE FROM deposits WHERE unit_code LIKE '[TEST_CURR]%'");
 $db->exec("DELETE FROM contacts WHERE phone = '0999999999'");
+$db->exec("DELETE FROM projects WHERE name = '[TEST_CURR] Project'");
+unset($GLOBALS['throwOnRespond']);
 
 printTestSummary();

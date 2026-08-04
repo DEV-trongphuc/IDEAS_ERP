@@ -84,6 +84,30 @@ require_once __DIR__ . '/test_cron_jobs.php';
 echo "\n--- 20. CHAY TEST SUITE: COOPERATION SLIPS PERFORMANCE BENCHMARK ---\n";
 require_once __DIR__ . '/test_coop_slips_performance.php';
 
+echo "\n--- 21. CHAY TEST SUITE: HRM PAYROLL FORMULAS ---\n";
+require_once __DIR__ . '/test_hrm_payroll.php';
+
+echo "\n--- 22. CHAY TEST SUITE: PO MULTI LEVEL APPROVALS ---\n";
+require_once __DIR__ . '/test_po_multi_level_approval.php';
+
+echo "\n--- 23. CHAY TEST SUITE: SO/PO FINANCIAL TRANSACTION INTEGRITY ---\n";
+require_once __DIR__ . '/test_so_po_finance_audit.php';
+
+echo "\n--- 24. CHAY TEST SUITE: DEPOSIT CURRENCY EXCHANGE RATE APPROVALS ---\n";
+require_once __DIR__ . '/test_deposit_currency_approval.php';
+
+echo "\n--- 25. CHAY TEST SUITE: TELESALES LEAD VISIBILITY BOUNDARIES ---\n";
+require_once __DIR__ . '/test_lead_visibility_rules.php';
+
+echo "\n--- 26. CHAY TEST SUITE: SYSTEM ROLE PERMISSIONS RBAC MATRIX ---\n";
+require_once __DIR__ . '/test_extended_rbac_suite.php';
+
+echo "\n--- 27. CHAY TEST SUITE: WORKSPACE TASK CHECKLISTS & TREE RENDERING ---\n";
+require_once __DIR__ . '/test_workspace_task_suite.php';
+
+echo "\n--- 28. CHAY TEST SUITE: AI DATASETS & PARAMETERS SCHEMA ---\n";
+require_once __DIR__ . '/test_ai_training_structure.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 
