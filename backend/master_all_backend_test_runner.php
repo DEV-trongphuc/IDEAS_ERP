@@ -45,6 +45,12 @@ require_once __DIR__ . '/test_extended_business_rules.php';
 echo "\n--- 7. CHAY TEST SUITE: SQLSTATE & 500 STRESS TEST ---\n";
 require_once __DIR__ . '/test_sqlstate_stress.php';
 
+echo "\n--- 8. CHAY TEST SUITE: SMART LOGIC & DEFAULT CONFIGS AUDIT ---\n";
+require_once __DIR__ . '/test_smart_logic_audit.php';
+
+echo "\n--- 9. CHAY TEST SUITE: APPROVALS REJECTION REASON AUDIT ---\n";
+require_once __DIR__ . '/test_approvals_rejection_audit.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 

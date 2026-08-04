@@ -2500,11 +2500,31 @@ export default function Approvals() {
                               let generalDesc = '';
                               if (selectedWorkflowDef?.id === 'stationery') {
                                 generalDesc = `Đồ vật đề xuất: ${stationeryItem}\nSố lượng: ${stationeryQty}\n`;
+                              } else if (selectedWorkflowDef?.id === 'print_stamp_send') {
+                                const reqEmployee = users.find(u => String(u.id) === String(pssReqEmployeeId))?.full_name || pssReqEmployeeId;
+                                const executor = users.find(u => String(u.id) === String(pssExecutorId))?.full_name || pssExecutorId;
+                                const baseUrl = import.meta.env.VITE_API_URL || '/backend';
+                                const attsStr = attachments.map(a => `${a.name} (${baseUrl}/${a.url})`).join(', ');
+                                generalDesc = `Quy trình: In, đóng dấu và gửi hồ sơ\n` +
+                                  `Nhân viên yêu cầu: ${reqEmployee}\n` +
+                                  `Ngày yêu cầu: ${pssReqDate}\n` +
+                                  `Người thực hiện: ${executor}\n` +
+                                  `Hình thức gửi: ${pssSendMethod}\n` +
+                                  `Khung giờ gửi: ${pssSendTimeFrame}\n` +
+                                  `Tên người nhận: ${pssRecipientName}\n` +
+                                  `Địa chỉ người nhận: ${pssRecipientAddress}\n` +
+                                  `SĐT người nhận: ${pssRecipientPhone}\n` +
+                                  `Ngày cần gửi hồ sơ: ${pssRequiredSendDate}\n` +
+                                  `Hồ sơ đính kèm: ${attsStr}`;
                               }
-                              generalDesc += `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
-                              if (isRecurring) {
-                                generalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
+                              
+                              if (selectedWorkflowDef?.id !== 'print_stamp_send') {
+                                generalDesc += `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
+                                if (isRecurring) {
+                                  generalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
+                                }
                               }
+
                               await api.post('/expenses', {
                                 title: expenseTitle || selectedWorkflowDef.name,
                                 description: generalDesc,
@@ -2512,7 +2532,8 @@ export default function Approvals() {
                                 amount: 0,
                                 status: 'pending',
                                 approver_id: finalApproverId,
-                                currency: currencyType
+                                currency: currencyType,
+                                image_url: attachments[0]?.url || null
                               });
                             } else {
                               let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
@@ -3328,10 +3349,29 @@ export default function Approvals() {
                                     type="file"
                                     multiple
                                     style={{ display: 'none' }}
-                                    onChange={(e) => {
+                                    onChange={async (e) => {
                                       const files = Array.from(e.target.files || []);
-                                      setAttachments([...attachments, ...files.map(f => ({ name: f.name, size: f.size }))]);
-                                      toast.success(t('Đã thêm tài liệu!'));
+                                      if (files.length === 0) return;
+                                      const toastId = toast.loading(t('Đang tải tài liệu lên...'));
+                                      try {
+                                        const uploaded = [];
+                                        for (const file of files) {
+                                          const fd = new FormData();
+                                          fd.append('file', file);
+                                          const res = await api.post('/upload', fd, {
+                                            headers: { 'Content-Type': 'multipart/form-data' }
+                                          });
+                                          if (res.data && res.data.success && res.data.data?.url) {
+                                            uploaded.push({ name: file.name, size: file.size, url: res.data.data.url });
+                                          } else {
+                                            throw new Error(res.data?.message || t('Tải lên thất bại'));
+                                          }
+                                        }
+                                        setAttachments([...attachments, ...uploaded]);
+                                        toast.success(t('Tải tài liệu lên thành công!'), { id: toastId });
+                                      } catch (err: any) {
+                                        toast.error(t('Lỗi tải tài liệu lên: ') + (err.message || ''), { id: toastId });
+                                      }
                                     }}
                                   />
                                   <Paperclip size={24} style={{ color: 'var(--color-primary)', marginBottom: '8px' }} />
@@ -4063,7 +4103,7 @@ export default function Approvals() {
                                 border: '1px solid var(--color-border-light)',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.01)'
                               }}>
-                                <Avatar name={c.author} size={28} />
+                                          <Avatar name={c.author} size={28} />
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                                     <strong style={{ fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 700 }}>{c.author}</strong>
@@ -4104,15 +4144,27 @@ export default function Approvals() {
                             <label style={{ position: 'absolute', right: '10px', bottom: '10px', cursor: createUploadingFile ? 'not-allowed' : 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('Đính kèm file')}>
                               <input 
                                 type="file" 
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
                                   setCreateUploadingFile(true);
-                                  setTimeout(() => {
-                                    setCreateCommentAttachments([...createCommentAttachments, { name: file.name, file }]);
+                                  try {
+                                    const fd = new FormData();
+                                    fd.append('file', file);
+                                    const res = await api.post('/upload', fd, {
+                                      headers: { 'Content-Type': 'multipart/form-data' }
+                                    });
+                                    if (res.data && res.data.success && res.data.data?.url) {
+                                      setCreateCommentAttachments([...createCommentAttachments, { name: file.name, url: res.data.data.url }]);
+                                      toast.success(t('Đã đính kèm tệp!'));
+                                    } else {
+                                      throw new Error(res.data?.message || t('Tải lên thất bại'));
+                                    }
+                                  } catch (err: any) {
+                                    toast.error(t('Lỗi tải tệp: ') + (err.message || ''));
+                                  } finally {
                                     setCreateUploadingFile(false);
-                                    toast.success(t('Đã đính kèm tệp!'));
-                                  }, 500);
+                                  }
                                 }} 
                                 style={{ display: 'none' }} 
                                 disabled={createUploadingFile} 
@@ -4741,15 +4793,27 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
   const [commentAttachments, setCommentAttachments] = useState<any[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
 
-  const handleCommentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCommentFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingFile(true);
-    setTimeout(() => {
-      setCommentAttachments([...commentAttachments, { name: file.name, file }]);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post('/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data && res.data.success && res.data.data?.url) {
+        setCommentAttachments([...commentAttachments, { name: file.name, url: res.data.data.url }]);
+        toast.success(t('Đã đính kèm tệp!'));
+      } else {
+        throw new Error(res.data?.message || t('Tải lên thất bại'));
+      }
+    } catch (err: any) {
+      toast.error(t('Lỗi tải tệp: ') + (err.message || ''));
+    } finally {
       setUploadingFile(false);
-      toast.success(t('Đã đính kèm tệp!'));
-    }, 500);
+    }
   };
 
   const handleAddComment = async () => {

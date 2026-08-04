@@ -1138,8 +1138,11 @@ if (!function_exists('releasePendingWorkHoursLeads')) {
 }
 if (!function_exists('recallInactiveLeads')) {
     function recallInactiveLeads($conn) {
-        logSync("Checking for inactive unaccepted leads to recall... Disabled for IDEAS education model.");
-        return;
+        $enableLeadRecall = (int) get_system_setting($conn, 'enable_lead_recall') === 1;
+        if (!$enableLeadRecall) {
+            logSync("Checking for inactive unaccepted leads to recall... Disabled by system setting.");
+            return;
+        }
         
         $sql = "SELECT l.id as lead_id, l.name as lead_name, l.phone as lead_phone, l.email as lead_email,
                        l.source as lead_source, l.type as lead_type, l.note as lead_note,

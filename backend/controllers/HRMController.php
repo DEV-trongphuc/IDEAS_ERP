@@ -243,6 +243,14 @@ class HRMController {
                 $updateFields[] = "approved_by = ?";
                 $params[] = $auth['user_id'];
             }
+            
+            if (!empty($approverNote) && $approverNote !== 'Không có ghi chú thêm') {
+                $reasonAppend = "\n[Từ chối: " . $approverNote . "]";
+                try {
+                    $stmtReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?) WHERE id = ?");
+                    $stmtReason->execute([$reasonAppend, $id]);
+                } catch (\Throwable $e) {}
+            }
         } else {
             if ($isApprover1) {
                 $updateFields[] = "status_level_1 = 'approved'";
@@ -491,6 +499,14 @@ class HRMController {
                 $updateFields[] = "status_level_1 = 'rejected'";
                 $updateFields[] = "status_level_2 = 'rejected'";
             }
+            
+            if (!empty($approverNote) && $approverNote !== 'Không có ghi chú thêm') {
+                $reasonAppend = "\n[Từ chối: " . $approverNote . "]";
+                try {
+                    $stmtReason = $this->db->prepare("UPDATE hrm_salary_advances SET reason = CONCAT(COALESCE(reason, ''), ?) WHERE id = ?");
+                    $stmtReason->execute([$reasonAppend, $id]);
+                } catch (\Throwable $e) {}
+            }
         } else {
             if ($isApprover1) {
                 $updateFields[] = "status_level_1 = 'approved'";
@@ -705,7 +721,8 @@ class HRMController {
                 }
                 
                 $penalizedLateMinutes = max(0, $totalLateMinutes - $graceMinutes);
-                $latenessPenalty = $penalizedLateMinutes * 5000;
+                $enableLatenessPenalty = (int) get_system_setting($this->db, 'hrm_lateness_penalty_enabled') === 1;
+                $latenessPenalty = $enableLatenessPenalty ? ($penalizedLateMinutes * 5000) : 0.0;
             }
 
             // 5. Allowances

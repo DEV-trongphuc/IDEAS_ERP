@@ -379,6 +379,12 @@ try {
     // Add default setting for lead_recall_cooldown_minutes
     $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('lead_recall_cooldown_minutes', '30') ON DUPLICATE KEY UPDATE setting_value = IFNULL(setting_value, '30')");
 
+    // Add default setting for enable_lead_recall
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('enable_lead_recall', '0') ON DUPLICATE KEY UPDATE setting_value = IFNULL(setting_value, '0')");
+
+    // Add default setting for hrm_lateness_penalty_enabled
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('hrm_lateness_penalty_enabled', '0') ON DUPLICATE KEY UPDATE setting_value = IFNULL(setting_value, '0')");
+
     // Add default setting for parallel_assignment_trigger_status
     $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('parallel_assignment_trigger_status', 'chua_xac_dinh') ON DUPLICATE KEY UPDATE setting_value = IFNULL(setting_value, 'chua_xac_dinh')");
 
