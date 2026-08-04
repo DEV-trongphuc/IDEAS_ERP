@@ -1736,7 +1736,6 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     }
   };
 
-  if (!task) return null;
 
   // Common card style override
   const cardStyle: React.CSSProperties = {
@@ -1808,6 +1807,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       erpMeta: cleanObj(erpMeta)
     });
   }, [formData, erpMeta]);
+
+  if (!task) return null;
 
   const handleImageClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
