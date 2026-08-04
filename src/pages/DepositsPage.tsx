@@ -121,6 +121,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
+  const [salesOrders, setSalesOrders] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -340,7 +341,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resDep, resCont, resProj, resCoop, resUsr, resPO, resExp, resComp, resSup] = await Promise.all([
+      const [resDep, resCont, resProj, resCoop, resUsr, resPO, resExp, resComp, resSup, resSO] = await Promise.all([
         fetchAPI('deposits'),
         fetchAPI('contacts?limit=1000'),
         fetchAPI('projects?bypass_roster=1'),
@@ -349,7 +350,8 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
         fetchAPI('purchase-orders').catch(() => ({ success: false, data: [] })),
         fetchAPI('expenses?limit=5000').catch(() => ({ success: false, data: [] })),
         fetchAPI('companies?limit=1000').catch(() => ({ success: false, data: [] })),
-        fetchAPI('suppliers').catch(() => ({ success: false, data: [] }))
+        fetchAPI('suppliers').catch(() => ({ success: false, data: [] })),
+        fetchAPI('sales-orders?limit=5000').catch(() => ({ success: false, data: [] }))
       ]);
 
       if (resDep.success) setDeposits(resDep.data || []);
@@ -378,6 +380,10 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       if (resPO) {
         const poData = resPO.data?.items || resPO.data || resPO;
         setPurchaseOrders(Array.isArray(poData) ? poData : []);
+      }
+      if (resSO) {
+        const soData = resSO.data?.orders || resSO.data || resSO;
+        setSalesOrders(Array.isArray(soData) ? soData : []);
       }
       if (resExp) {
         const expData = resExp.data?.items || resExp.data || resExp;
@@ -1015,39 +1021,74 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     const todayStr = new Date().toISOString().substring(0, 10);
     const map: Record<string, { date: string; totalAmount: number; milestones: any[] }> = {};
 
-    deposits.forEach(d => {
-      // Exclude milestones of pending/reserved students (học viên bảo lưu)
+    const depList = Array.isArray(deposits) ? deposits : [];
+    depList.forEach(d => {
       if (d.pipeline_status === 'pending') return;
 
       if (d.milestones && d.milestones.length > 0) {
         d.milestones.forEach(m => {
           if (m.status !== 'approved' && m.expected_pay_date) {
-            const dateStr = m.expected_pay_date.substring(0, 10);
-            if (dateStr >= todayStr) {
-              if (!map[dateStr]) {
-                map[dateStr] = {
-                  date: dateStr,
-                  totalAmount: 0,
-                  milestones: []
-                };
-              }
-              map[dateStr].totalAmount += Number(m.expected_amount) || 0;
-              map[dateStr].milestones.push({
-                ...m,
-                customerName: d.full_name || '',
-                phone: d.phone,
-                unitCode: d.unit_code,
-                projectName: d.project_name,
-                customerAvatar: d.avatar_url
-              });
+            const rawDateStr = m.expected_pay_date.substring(0, 10);
+            const dateStr = rawDateStr < todayStr ? todayStr : rawDateStr;
+            
+            if (!map[dateStr]) {
+              map[dateStr] = {
+                date: dateStr,
+                totalAmount: 0,
+                milestones: []
+              };
             }
+            map[dateStr].totalAmount += Number(m.expected_amount) || 0;
+            map[dateStr].milestones.push({
+              ...m,
+              milestone_name: m.milestone_name || t('Thanh toán đợt cọc'),
+              customerName: d.full_name || '',
+              phone: d.phone,
+              unitCode: d.unit_code,
+              projectName: d.project_name,
+              customerAvatar: d.avatar_url,
+              isOverdue: rawDateStr < todayStr
+            });
           }
         });
       }
     });
 
+    const soList = Array.isArray(salesOrders) ? salesOrders : [];
+    soList.forEach(so => {
+      if (so.payment_status !== 'paid' && so.status !== 'cancelled' && so.order_date) {
+        const rawDateStr = so.order_date.substring(0, 10);
+        const dateStr = rawDateStr < todayStr ? todayStr : rawDateStr;
+        const unpaid = (Number(so.total) || 0) - (Number(so.paid_amount) || 0);
+
+        if (unpaid > 0) {
+          if (!map[dateStr]) {
+            map[dateStr] = {
+              date: dateStr,
+              totalAmount: 0,
+              milestones: []
+            };
+          }
+          map[dateStr].totalAmount += unpaid;
+          map[dateStr].milestones.push({
+            id: `so-${so.id}`,
+            expected_amount: unpaid,
+            expected_pay_date: dateStr,
+            milestone_name: t('Thanh toán đơn hàng'),
+            status: 'pending',
+            customerName: so.contact_name || so.company_name || t('Khách hàng'),
+            phone: so.contact_phone || '',
+            unitCode: so.so_number,
+            projectName: t('Đơn bán hàng'),
+            isSO: true,
+            isOverdue: rawDateStr < todayStr
+          });
+        }
+      }
+    });
+
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-  }, [deposits]);
+  }, [deposits, salesOrders]);
 
   const projectedExpenditures = React.useMemo(() => {
     const todayStr = new Date().toISOString().substring(0, 10);
@@ -1059,42 +1100,42 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     // 1. Add pending expenses
     expList.forEach(e => {
       if (e.status === 'pending' && e.date) {
-        const dateStr = e.date.substring(0, 10);
-        if (dateStr >= todayStr) {
-          if (!map[dateStr]) {
-            map[dateStr] = { date: dateStr, totalAmount: 0, items: [] };
-          }
-          map[dateStr].totalAmount += Number(e.amount) || 0;
-          map[dateStr].items.push({
-            type: 'Expense',
-            title: e.title,
-            category: e.category,
-            amount: Number(e.amount) || 0,
-            vendor: e.vendor_name || 'Khác'
-          });
+        const rawDateStr = e.date.substring(0, 10);
+        const dateStr = rawDateStr < todayStr ? todayStr : rawDateStr;
+        if (!map[dateStr]) {
+          map[dateStr] = { date: dateStr, totalAmount: 0, items: [] };
         }
+        map[dateStr].totalAmount += Number(e.amount) || 0;
+        map[dateStr].items.push({
+          type: 'Expense',
+          title: e.title,
+          category: e.category,
+          amount: Number(e.amount) || 0,
+          vendor: e.vendor_name || 'Khác',
+          isOverdue: rawDateStr < todayStr
+        });
       }
     });
 
     // 2. Add unpaid/partial POs
     poList.forEach(po => {
       if (po.payment_status !== 'paid' && po.order_date) {
-        const dateStr = po.order_date.substring(0, 10);
-        if (dateStr >= todayStr) {
-          const unpaid = (Number(po.total) || 0) - (Number(po.paid_amount) || 0);
-          if (unpaid > 0) {
-            if (!map[dateStr]) {
-              map[dateStr] = { date: dateStr, totalAmount: 0, items: [] };
-            }
-            map[dateStr].totalAmount += unpaid;
-            map[dateStr].items.push({
-              type: 'PO',
-              title: `Đơn mua hàng: ${po.po_number}`,
-              category: 'Mua hàng',
-              amount: unpaid,
-              vendor: po.supplier_name || 'Nhà cung cấp'
-            });
+        const rawDateStr = po.order_date.substring(0, 10);
+        const dateStr = rawDateStr < todayStr ? todayStr : rawDateStr;
+        const unpaid = (Number(po.total) || 0) - (Number(po.paid_amount) || 0);
+        if (unpaid > 0) {
+          if (!map[dateStr]) {
+            map[dateStr] = { date: dateStr, totalAmount: 0, items: [] };
           }
+          map[dateStr].totalAmount += unpaid;
+          map[dateStr].items.push({
+            type: 'PO',
+            title: `Đơn mua hàng: ${po.po_number}`,
+            category: 'Mua hàng',
+            amount: unpaid,
+            vendor: po.supplier_name || 'Nhà cung cấp',
+            isOverdue: rawDateStr < todayStr
+          });
         }
       }
     });
