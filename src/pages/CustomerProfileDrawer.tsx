@@ -1814,6 +1814,16 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [showScrollArrows, setShowScrollArrows] = useState(false);
   const pipelineContainerRef = useRef<HTMLDivElement>(null);
 
+  const getStageFromVal = (val: any) => {
+    if (!val) return null;
+    const searchVal = String(val).trim().toLowerCase();
+    return pipelineStages.find(s => 
+      String(s.id).toLowerCase() === searchVal ||
+      String(s.system_slug).toLowerCase() === searchVal ||
+      String(s.name).toLowerCase() === searchVal
+    );
+  };
+
   const checkScrollable = () => {
     if (pipelineContainerRef.current) {
       const { scrollWidth, clientWidth } = pipelineContainerRef.current;
@@ -4776,7 +4786,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   if (typeof document === 'undefined') return null;
 
   const handleStageTransition = (targetId: string, targetName: string) => {
-    const currentIdx = pipelineStages.findIndex(s => String(s.id) === String(formData.pipeline_status || 'chua_xac_dinh'));
+    const currentStage = getStageFromVal(formData.pipeline_status || 'chua_xac_dinh');
+    const currentIdx = currentStage ? pipelineStages.indexOf(currentStage) : -1;
     const safeIndex = currentIdx === -1 ? 0 : currentIdx;
 
     // Guard: Only owner or admin can change pipeline status
@@ -4828,7 +4839,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       <div ref={pipelineContainerRef} id="pipeline-scroll-container" className="no-scrollbar" style={{ display: 'flex', padding: isMobileOrTablet ? '0.625rem 1rem' : (showScrollArrows ? '0.625rem 3rem' : '0.625rem 1.5rem'), gap: '12px', overflowX: 'auto', flex: 1, scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', position: 'relative', justifyContent: showScrollArrows ? 'flex-start' : 'center' }}>
         <style dangerouslySetInnerHTML={{ __html: `#pipeline-scroll-container::-webkit-scrollbar { display: none; }` }} />
         {(() => {
-          const currentIdx = pipelineStages.findIndex(s => String(s.id) === String(formData.pipeline_status || 'chua_xac_dinh'));
+          const currentStage = getStageFromVal(formData.pipeline_status || 'chua_xac_dinh');
+          const currentIdx = currentStage ? pipelineStages.indexOf(currentStage) : -1;
           const safeIndex = currentIdx === -1 ? 0 : currentIdx;
 
           return pipelineStages.map((st, i) => {
@@ -5778,7 +5790,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 700 }}>Trạng thái:</span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   {(() => {
-                                    const currentStageObj = pipelineStages.find(s => String(s.id) === String(formData.pipeline_status || 'chua_xac_dinh'));
+                                    const currentStageObj = getStageFromVal(formData.pipeline_status || 'chua_xac_dinh');
                                     const stColor = currentStageObj ? overridePurpleColor(currentStageObj.color) : 'var(--color-text-muted)';
                                     return (
                                       <button 
@@ -11609,7 +11621,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             >
               <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: '0.25rem' }}>Cập nhật trạng thái Pipeline</h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem' }}>
-                Từ <strong>{pipelineStages.find(x => String(x.id) === String(formData.pipeline_status || 'chua_xac_dinh'))?.name || pipelineStages[0]?.name || 'Bước 1'}</strong>
+                Từ <strong>{getStageFromVal(formData.pipeline_status || 'chua_xac_dinh')?.name || pipelineStages[0]?.name || 'Bước 1'}</strong>
                 <span style={{ margin: '0 4px' }}>→</span>
                 <strong style={{ color: pipelineStages.find(x => String(x.id) === pipelineModal.targetId)?.color || 'var(--color-primary)' }}>{pipelineModal.targetLabel}</strong>
               </p>
@@ -13128,9 +13140,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }} className="no-scrollbar">
               {(() => {
-                const currentIdx = pipelineStages.findIndex(s => String(s.id) === String(formData.pipeline_status || 'chua_xac_dinh'));
+                const currentStage = getStageFromVal(formData.pipeline_status || 'chua_xac_dinh');
+                const currentIdx = currentStage ? pipelineStages.indexOf(currentStage) : -1;
                 return pipelineStages.map((st, idx) => {
-                  const isCurrent = String(st.id) === String(formData.pipeline_status || 'chua_xac_dinh');
+                  const isCurrent = currentStage ? st.id === currentStage.id : false;
                   const isBackward = idx < currentIdx;
                   const stColor = overridePurpleColor(st.color);
                   return (
