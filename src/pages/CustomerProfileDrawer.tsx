@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Users, Phone, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2, BookOpen, ExternalLink } from 'lucide-react';
+import { X, User, Users, Phone, PhoneOff, Mail, MapPin, Briefcase, Plus, Search, Send, History, CheckSquare, DollarSign, HelpCircle, FileText, ShoppingCart, Tag as TagIcon, Target, Pencil, Trash2, LifeBuoy, AlertCircle, Clock, UserCheck, Activity, Calendar, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Check, Camera, Loader2, MessageSquare, PenTool, Lightbulb, Upload, Paperclip, CreditCard, Ban, ShieldAlert, Copy, Folder, FolderPlus, ArrowRightLeft, List, LayoutGrid, RotateCcw, RefreshCw, Layers, Save, LogOut, XCircle, Eye, TrendingUp, Wallet, Lock, Zap, Link2, BookOpen, ExternalLink } from 'lucide-react';
 import { triggerFullConfetti } from '../utils/confettiHelper';
 import { LeadScoreRing } from '../components/ui/LeadScoreRing';
 import { TagInput } from '../components/ui/TagInput';
@@ -12,15 +12,15 @@ import { AddressSelect } from '../components/ui/AddressSelect';
 import { PhoneLink } from '../components/ui/PhoneLink';
 import { ActivityModal } from '../components/ui/ActivityModal';
 import { MentionInput } from '../components/ui/MentionInput';
-import { ExpenseCreateDrawer } from '../components/ExpenseCreateDrawer';
-import { DepositDetailDrawer } from '../components/DepositDetailDrawer';
 import { QuoteEditorModal } from '../components/ui/QuoteEditorModal';
 import { Avatar } from '../components/ui/Avatar';
 import { CustomModal } from '../components/ui/CustomModal';
 import { SignaturePadModal } from '../components/ui/SignaturePadModal';
 import { compressToWebP } from '../utils/imageCompress';
-import { TicketDrawer } from './TicketDrawer';
 const WorkspaceTaskDrawer = lazy(() => import('./WorkspaceTaskDrawer').then(module => ({ default: module.WorkspaceTaskDrawer })));
+const ExpenseCreateDrawer = lazy(() => import('../components/ExpenseCreateDrawer').then(module => ({ default: module.ExpenseCreateDrawer })));
+const DepositDetailDrawer = lazy(() => import('../components/DepositDetailDrawer').then(module => ({ default: module.DepositDetailDrawer })));
+const TicketDrawer = lazy(() => import('./TicketDrawer').then(module => ({ default: module.TicketDrawer })));
 import { Skeleton, StatRowSkeleton } from '../components/ui/Skeleton';
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { numberToText } from '../utils/numberToText';
@@ -1526,6 +1526,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [baseData, setBaseData] = useState<any>(contact || {});
   const [baseTags, setBaseTags] = useState<string[]>(contact?.tags || []);
 
+
   const hasChanges = useMemo(() => {
     if (!contact || !formData || !formData.id) return false;
     
@@ -1573,7 +1574,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       'mobile', 'job_title', 'department', 'source', 'status', 'notes',
       'birthday', 'address', 'city', 'ward', 'expected_revenue', 'win_probability', 'last_contact', 'created_at',
       'gender', 'zalo_link', 'fb_link', 'customer_type', 'industry', 'budget_range', 'project_id', 'campaign_id', 'ttl1_completed', 'ttl1_data',
-      'stage_id', 'pipeline_status', 'temperature', 'suggested_temperature', 'collaborator_ids', 'citizen_id', 'passport'
+      'stage_id', 'pipeline_status', 'temperature', 'suggested_temperature', 'collaborator_ids', 'citizen_id', 'passport',
+      'utm_campaign', 'utm_medium', 'utm_content', 'utm_term', 'platform', 'form_name'
     ];
     const payload: Record<string, any> = {};
     allowedFields.forEach(f => { if (formData[f] !== undefined) payload[f] = formData[f]; });
@@ -2906,6 +2908,32 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [drawerActivities, setDrawerActivities] = useState<any[]>([]);
   const [showQuoteEditor, setShowQuoteEditor] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
+
+  useEffect(() => {
+    const hasUnqualified = tags.some(t => String(t).toLowerCase().includes('unqualified'));
+    const boTheoDoiStage = stages.find(s => s.system_slug === 'bo_theo_doi');
+    const boTheoDoiStageId = boTheoDoiStage ? Number(boTheoDoiStage.id) : 30;
+
+    if (hasUnqualified) {
+      if (Number(formData.stage_id) !== boTheoDoiStageId || formData.pipeline_status !== 'bo_theo_doi') {
+        setFormData((prev: any) => ({
+          ...prev,
+          stage_id: boTheoDoiStageId,
+          pipeline_status: 'bo_theo_doi'
+        }));
+      }
+    } else {
+      if (Number(formData.stage_id) === boTheoDoiStageId || formData.pipeline_status === 'bo_theo_doi') {
+        const chuaXacDinhStage = stages.find(s => s.system_slug === 'chua_xac_dinh');
+        const chuaXacDinhStageId = chuaXacDinhStage ? Number(chuaXacDinhStage.id) : 1;
+        setFormData((prev: any) => ({
+          ...prev,
+          stage_id: chuaXacDinhStageId,
+          pipeline_status: 'chua_xac_dinh'
+        }));
+      }
+    }
+  }, [tags, stages, formData.stage_id, formData.pipeline_status]);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [quickUserCard, setQuickUserCard] = useState<{ id: number; name: string; role: string; email?: string; phone?: string; vacationMode?: number; avatarUrl?: string; visible: boolean; x: number; y: number } | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -2954,12 +2982,45 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
     });
   };
 
+  const normalizeContactData = (c: any) => {
+    if (!c) return c;
+    const newC = { ...c };
+    
+    // Normalize source
+    if (newC.source) {
+      const src = String(newC.source).trim().toLowerCase();
+      if (src === 'fb ads' || src === 'fb_ads' || src === 'fb' || src === 'facebook ads') {
+        newC.source = 'facebook';
+      }
+    }
+    
+    // Normalize utm_campaign
+    if (newC.utm_campaign) {
+      const camp = String(newC.utm_campaign).trim();
+      if (camp.toLowerCase() === 'fb ads' || camp.toLowerCase() === 'fb_ads' || camp.toLowerCase() === 'fb') {
+        newC.utm_campaign = 'Facebook Ads';
+      }
+    }
+    
+    // Normalize utm_medium
+    if (newC.utm_medium) {
+      const med = String(newC.utm_medium).trim();
+      if (med.toLowerCase() === 'fb ads' || med.toLowerCase() === 'fb_ads' || med.toLowerCase() === 'fb') {
+        newC.utm_medium = 'Facebook Ads';
+      }
+    }
+
+    return newC;
+  };
+
   const formatNote = (text: string) => {
     if (!text) return '';
-    if (/<[a-z][\s\S]*>/i.test(text)) {
-      return <span className="rich-text-editor-content" dangerouslySetInnerHTML={{ __html: text }} style={{ display: 'block', wordBreak: 'break-word' }} />;
+    // Chuẩn hóa kbm/knm (Không bắt máy / Không nghe máy) -> Không nghe máy
+    const normalizedText = text.replace(/\b(kbm|knm)\b/gi, 'Không nghe máy');
+    if (/<[a-z][\s\S]*>/i.test(normalizedText)) {
+      return <span className="rich-text-editor-content" dangerouslySetInnerHTML={{ __html: normalizedText }} style={{ display: 'block', wordBreak: 'break-word' }} />;
     }
-    const parts = text.split(/(@[a-zA-Z0-9_\u00C0-\u1EF9]+)/g);
+    const parts = normalizedText.split(/(@[a-zA-Z0-9_\u00C0-\u1EF9]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith('@')) {
         const name = part.substring(1);
@@ -3019,8 +3080,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           const contactRes = await api.get(`/contacts/${contact.id}`);
           const freshContact = contactRes.data.data || contactRes.data;
           if (freshContact && freshContact.id) {
-            setFormData(prev => ({ ...prev, ...freshContact }));
-            setBaseData(freshContact);
+            const normalized = normalizeContactData(freshContact);
+            setFormData(prev => ({ ...prev, ...normalized }));
+            setBaseData(normalized);
             lastLoadedContactIdRef.current = freshContact.id;
           }
         } catch (err) {} finally {
@@ -3078,10 +3140,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         })));
       }
 
-      if (true || tabToLoad === 'tasks' || tabToLoad === 'timeline') {
+      if (true) {
+        const isTaskOrTimelineTab = tabToLoad === 'tasks' || tabToLoad === 'timeline';
         const [tasksRes, allTasksRes] = await Promise.all([
           api.get(`/activities?related_type=contact&related_id=${contact.id}`),
-          api.get(`/activities?type=task&limit=200`)
+          isTaskOrTimelineTab 
+            ? api.get(`/activities?type=task&limit=200`)
+            : Promise.resolve({ data: { data: [] } })
         ]);
         const rawActivities = tasksRes.data.data?.items || tasksRes.data.data || [];
         const allTasks = allTasksRes.data.data?.items || allTasksRes.data.data || [];
@@ -3457,13 +3522,14 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         setZaloSource('none');
       }
 
-      setFormData(contact);
-      setIsPartnerSource(!!contact.company_id);
+      const normalizedContact = normalizeContactData(contact);
+      setFormData(normalizedContact);
+      setIsPartnerSource(!!normalizedContact.company_id);
       const cleanRegex = /^\d+\.\s*(status\s*-\s*)?/i;
-      const cleanedLoadedTags = (contact.tags || []).map((tag: string) => tag.replace(cleanRegex, '').trim()).filter(Boolean);
-      const uniqueLoadedTags = Array.from(new Set(cleanedLoadedTags));
+      const cleanedLoadedTags = (normalizedContact.tags || []).map((tag: string) => tag.replace(cleanRegex, '').trim()).filter(Boolean);
+      const uniqueLoadedTags: string[] = Array.from(new Set(cleanedLoadedTags)) as string[];
       setTags(uniqueLoadedTags);
-      setBaseData(contact);
+      setBaseData(normalizedContact);
       setBaseTags(uniqueLoadedTags);
       
       let initialTtl1 = { group1: false, group2: false, group3: false, group4: false, group5: false };
@@ -3587,7 +3653,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   const mappedStages = hierarchy.map((slug: string, idx: number) => ({
                     id: slug,
                     name: labels[slug] || slug,
-                    color: slug === 'hoc_vien' ? '#ec4899' : slug === 'dong_le_phi_ho_so' ? '#10b981' : slug === 'co_hoi' || slug === 'dang_tu_van' || slug === 'nop_ho_so' ? '#f59e0b' : '#3b82f6',
+                    color: slug === 'bo_theo_doi' ? '#64748b' : slug === 'hoc_vien' ? '#ec4899' : slug === 'dong_le_phi_ho_so' ? '#10b981' : slug === 'co_nhu_cau' || slug === 'dang_tu_van' || slug === 'nop_ho_so' ? '#f59e0b' : '#3b82f6',
                     order_index: idx
                   }));
                   setPipelineStages(mappedStages);
@@ -3738,25 +3804,65 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const timeline = useMemo(() => {
     if (!contact?.id) return [];
     let source = drawerActivities;
+    
+    // Map activities first to normalize migrated call notes to type 'call'
+    const mapped = source.map((a: any) => {
+      let type = a.type;
+      const title = a.subject || '';
+      const note = a.body || a.note || '';
+      const lowerTitle = title.toLowerCase();
+      const lowerNote = note.toLowerCase();
+
+      if (type === 'note') {
+        const isNoAnswer = lowerNote.includes('không nghe máy') || 
+                           lowerNote.includes('không bắt máy') || 
+                           /\b(kbm|knm)\b/i.test(lowerNote);
+        const isCallSource = lowerTitle.includes('zalo') || 
+                             lowerTitle.includes('cuộc gọi') || 
+                             lowerTitle.includes('call') ||
+                             lowerTitle.includes('inbound') ||
+                             lowerTitle.includes('outbound');
+        
+        if (isCallSource && isNoAnswer) {
+          type = 'call';
+        }
+      }
+
+      const isNoConnect = type === 'call' && (
+        String(a.tags).includes('no_connect') ||
+        lowerTitle.includes('không nghe máy') || 
+        lowerTitle.includes('máy bận') ||
+        lowerTitle.includes('không kết nối') ||
+        lowerNote.includes('không nghe máy') || 
+        lowerNote.includes('không bắt máy') || 
+        /\b(kbm|knm)\b/i.test(lowerNote)
+      );
+
+      return {
+        id: a.id,
+        title: a.subject,
+        type: type,
+        status: a.status,
+        user: a.user_name || 'Hệ thống',
+        avatar: a.avatar_url || undefined,
+        time: a.created_at,
+        due_date: a.due_date,
+        color: a.status === 'cancelled' ? '#6b7280' : (isNoConnect ? '#7c3aed' : type === 'zalo_connect' ? '#0084FF' : type === 'call' ? '#3b82f6' : type === 'meeting' ? '#BD1D2D' : type === 'task' ? '#f59e0b' : type === 'system' ? '#64748b' : type === 'note' ? '#6366f1' : '#10b981'),
+        icon: isNoConnect ? <PhoneOff size={16} /> : (type === 'call' ? <Phone size={16} /> : type === 'zalo_connect' ? <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain', borderRadius: '4px' }} alt="Zalo" /> : type === 'meeting' ? <User size={16} /> : type === 'task' ? <CheckSquare size={16} /> : type === 'system' ? <History size={16} /> : type === 'note' ? <FileText size={16} /> : <Mail size={16} />),
+        note: a.body || a.note || '',
+        comment_count: a.comment_count,
+        expense_image_url: a.expense_image_url,
+        rawActivity: a
+      };
+    });
+
+    // Then filter based on the normalized type
+    let filtered = mapped;
     if (timelineFilter !== 'all') {
-      source = source.filter((a: any) => a.type === timelineFilter);
+      filtered = filtered.filter((item: any) => item.type === timelineFilter);
     }
-    return source.map((a: any) => ({
-      id: a.id,
-      title: a.subject,
-      type: a.type,
-      status: a.status,
-      user: a.user_name || 'Hệ thống',
-      avatar: a.avatar_url || undefined,
-      time: a.created_at,
-      due_date: a.due_date,
-      color: a.status === 'cancelled' ? '#6b7280' : (a.type === 'zalo_connect' ? '#0084FF' : a.type === 'call' ? '#3b82f6' : a.type === 'meeting' ? '#BD1D2D' : a.type === 'task' ? '#f59e0b' : a.type === 'system' ? '#64748b' : a.type === 'note' ? '#6366f1' : '#10b981'),
-      icon: a.type === 'call' ? <Phone size={16} /> : a.type === 'zalo_connect' ? <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain', borderRadius: '4px' }} alt="Zalo" /> : a.type === 'meeting' ? <User size={16} /> : a.type === 'task' ? <CheckSquare size={16} /> : a.type === 'system' ? <History size={16} /> : a.type === 'note' ? <FileText size={16} /> : <Mail size={16} />,
-      note: a.body || a.note || '',
-      comment_count: a.comment_count,
-      expense_image_url: a.expense_image_url,
-      rawActivity: a
-    })).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+    return filtered.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   }, [drawerActivities, contact?.id, timelineFilter]);
   const fullName = (formData.full_name || '').trim() || 'Chưa cập nhật tên';
   const ownerUser = users.find(u => u.full_name === formData.owner_name || u.name === formData.owner_name || u.username === formData.owner_name);
@@ -7486,8 +7592,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
                   {/* TAGS TAB */}
                   {activeTab === 'tags' && (
-                    <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                    <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <TagIcon size={24} />
                         </div>
@@ -7506,19 +7612,52 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             suggestions={allTags.map(t => t.name)}
                             placeholder="Chọn thẻ tag..."
                           />
-                          <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '100%', marginBottom: '0.25rem' }}>Các tag trong hệ thống:</span>
-                            {allTags.map(t => (
-                              <button
-                                key={t.id}
-                                onClick={() => !tags.includes(t.name) && setTags([...tags, t.name])}
-                                className="btn ghost sm"
-                                style={{ borderRadius: '10px', fontSize: '0.75rem', padding: '4px 12px', border: '1px dashed var(--color-border)' }}
-                              >
-                                + {t.name}
-                              </button>
-                            ))}
-                          </div>
+                          {(() => {
+                            const statusTagNames = ['new', 'needed', 'considering', 'qualified', 'badtiming', 'unqualified'];
+                            const availableTags = allTags.filter(t => !tags.includes(t.name));
+                            const statusSuggestions = availableTags.filter(t => statusTagNames.includes(t.name.toLowerCase()));
+                            const otherSuggestions = availableTags.filter(t => !statusTagNames.includes(t.name.toLowerCase()));
+
+                            return (
+                              <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '100%', marginBottom: '0.25rem' }}>Các tag trong hệ thống:</span>
+                                
+                                {statusSuggestions.length > 0 && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', width: '100%' }}>
+                                    {statusSuggestions.map(t => (
+                                      <button
+                                        key={t.id}
+                                        onClick={() => !tags.includes(t.name) && setTags([...tags, t.name])}
+                                        className="btn ghost sm"
+                                        style={{ borderRadius: '10px', fontSize: '0.75rem', padding: '4px 12px', border: '1px dashed var(--color-border)', backgroundColor: 'var(--color-surface-hover)' }}
+                                      >
+                                        + {t.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {statusSuggestions.length > 0 && otherSuggestions.length > 0 && (
+                                  <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--color-border-light)', margin: '0.5rem 0' }} />
+                                )}
+
+                                {otherSuggestions.length > 0 && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', width: '100%' }}>
+                                    {otherSuggestions.map(t => (
+                                      <button
+                                        key={t.id}
+                                        onClick={() => !tags.includes(t.name) && setTags([...tags, t.name])}
+                                        className="btn ghost sm"
+                                        style={{ borderRadius: '10px', fontSize: '0.75rem', padding: '4px 12px', border: '1px dashed var(--color-border)' }}
+                                      >
+                                        + {t.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -7537,6 +7676,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               options={[
                                 { value: 'website', label: 'Từ Website' },
                                 { value: 'facebook', label: 'Facebook Ads' },
+                                { value: 'google', label: 'Google Ads' },
+                                { value: 'tiktok', label: 'Tiktok Ads' },
+                                { value: 'zalo', label: 'Zalo Ads' },
+                                { value: 'youtube', label: 'Youtube Ads' },
                                 { value: 'gioi_thieu', label: 'Giới thiệu' },
                                 { value: 'ca_nhan', label: 'Cá nhân tự khai thác' },
                                 { value: 'cold_call', label: 'Cold Call' }
@@ -7562,6 +7705,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               onChange={val => setFormData((prev: any) => ({ ...prev, industry: val as string }))}
                             />
                           </div>
+
+
 
                           {!isStudent && (
                             <div className="form-group">
@@ -7905,6 +8050,108 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '6px', display: 'block' }}>
                               Cho phép các sale khác có quyền xem và cùng chăm sóc khách hàng này.
                             </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card-panel" style={{ borderTop: '4px solid #3b82f6', marginTop: '2rem' }}>
+                        <h4 className="panel-title">Chiến dịch & Chỉ số MKT</h4>
+                        <div className="grid grid-2">
+                          <div className="form-group">
+                            <label className="form-label">Chiến dịch (UTM Campaign)</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Ví dụ: campaign_tieng_anh"
+                              value={formData.utm_campaign || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, utm_campaign: e.target.value }))}
+                              style={{ height: '36px', fontSize: '0.875rem' }}
+                              list="campaign-suggestions"
+                            />
+                            <datalist id="campaign-suggestions">
+                              <option value="Facebook Ads" />
+                              <option value="Google Ads" />
+                              <option value="Tiktok Ads" />
+                              <option value="Zalo Ads" />
+                              <option value="Youtube Ads" />
+                              <option value="Website" />
+                              <option value="Email Marketing" />
+                            </datalist>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Hình thức Ads (UTM Medium)</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Ví dụ: cpc, facebook_post, email"
+                              value={formData.utm_medium || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, utm_medium: e.target.value }))}
+                              style={{ height: '36px', fontSize: '0.875rem' }}
+                              list="medium-suggestions"
+                            />
+                            <datalist id="medium-suggestions">
+                              <option value="cpc" />
+                              <option value="cpm" />
+                              <option value="organic" />
+                              <option value="referral" />
+                              <option value="social" />
+                              <option value="post" />
+                              <option value="email" />
+                              <option value="chat" />
+                            </datalist>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Nền tảng (Platform)</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Ví dụ: facebook, google, tiktok"
+                              value={formData.platform || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, platform: e.target.value }))}
+                              style={{ height: '36px', fontSize: '0.875rem' }}
+                              list="platform-suggestions"
+                            />
+                            <datalist id="platform-suggestions">
+                              <option value="Facebook" />
+                              <option value="Google" />
+                              <option value="Tiktok" />
+                              <option value="Zalo" />
+                              <option value="Website" />
+                              <option value="Youtube" />
+                            </datalist>
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Tên Form đăng ký (Form Name)</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Ví dụ: form_dang_ky_tu_van"
+                              value={formData.form_name || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, form_name: e.target.value }))}
+                              style={{ height: '36px', fontSize: '0.875rem' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Nội dung Ads (UTM Content)</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Ví dụ: ad_uu_dai_thang_8"
+                              value={formData.utm_content || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, utm_content: e.target.value }))}
+                              style={{ height: '36px', fontSize: '0.875rem' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Từ khóa Ads (UTM Term)</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Ví dụ: hoc_tieng_anh"
+                              value={formData.utm_term || ''}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, utm_term: e.target.value }))}
+                              style={{ height: '36px', fontSize: '0.875rem' }}
+                            />
                           </div>
                         </div>
                       </div>
@@ -11393,20 +11640,20 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           try {
             // Map CallLog to activities table schema exactly
             const subject = `Cuộc gọi ${log.direction === 'outbound' ? 'đi' : 'đến'}: ${log.outcome === 'reached' ? 'Đã kết nối' :
-              log.outcome === 'no_answer' ? 'Không nghe máy' :
-                log.outcome === 'busy' ? 'Máy bận' :
-                  log.outcome === 'voicemail' ? 'Hộp thư thoại' : 'Sai số'
+              log.outcome === 'no_answer' || log.outcome === 'busy' ? 'Không kết nối được' :
+                log.outcome === 'voicemail' ? 'Hộp thư thoại' : 'Sai số'
               }`;
             await api.post('/activities', {
               type: 'call',
-              subject,
-              body: log.note || null,
-              status: 'done',
-              related_type: 'contact',
-              related_id: contact?.id,
-              user_id: currentUser?.id,
-              due_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
-              done_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+               subject,
+               body: log.note || null,
+               status: 'done',
+               related_type: 'contact',
+               related_id: contact?.id,
+               user_id: currentUser?.id,
+               due_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+               done_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+               tags: log.outcome === 'no_answer' || log.outcome === 'busy' ? 'no_connect' : null
             });
 
 
@@ -12323,22 +12570,26 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           </div>
         </div>
       </CustomModal>
-      <ExpenseCreateDrawer
-        isOpen={showExpenseModal}
-        onClose={() => setShowExpenseModal(false)}
-        user={currentUser}
-        editItem={{
-          entity_type: 'contact',
-          entity_id: contact?.id || formData?.id,
-          contact_id: contact?.id || formData?.id,
-          contact_name: (formData?.full_name || contact?.full_name || '').trim(),
-          created_by: currentUser?.id
-        }}
-        onSaveSuccess={() => {
-          setShowExpenseModal(false);
-          fetchData();
-        }}
-      />
+      {showExpenseModal && (
+        <Suspense fallback={null}>
+          <ExpenseCreateDrawer
+            isOpen={showExpenseModal}
+            onClose={() => setShowExpenseModal(false)}
+            user={currentUser}
+            editItem={{
+              entity_type: 'contact',
+              entity_id: contact?.id || formData?.id,
+              contact_id: contact?.id || formData?.id,
+              contact_name: (formData?.full_name || contact?.full_name || '').trim(),
+              created_by: currentUser?.id
+            }}
+            onSaveSuccess={() => {
+              setShowExpenseModal(false);
+              fetchData();
+            }}
+          />
+        </Suspense>
+      )}
       <QuoteEditorModal
         isOpen={showQuoteEditor}
         onClose={() => setShowQuoteEditor(false)}
@@ -12349,21 +12600,25 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           fetchData();
         }}
       />
-      <TicketDrawer
-        isOpen={!!selectedTicketDetail}
-        onClose={() => setSelectedTicketDetail(null)}
-        ticket={selectedTicketDetail}
-        onUpdate={async (updated) => {
-          try {
-            await api.put(`/tickets/${updated.id}`, updated);
-            setDrawerTickets(prev => prev.map(t => t.id === updated.id ? updated : t));
-          } catch (e: any) {
-            addToast(e.response?.data?.message || 'Không thể cập nhật Ticket', 'error');
-          }
-        }}
-        contacts={contacts}
-        users={users}
-      />
+      {!!selectedTicketDetail && (
+        <Suspense fallback={null}>
+          <TicketDrawer
+            isOpen={!!selectedTicketDetail}
+            onClose={() => setSelectedTicketDetail(null)}
+            ticket={selectedTicketDetail}
+            onUpdate={async (updated) => {
+              try {
+                await api.put(`/tickets/${updated.id}`, updated);
+                setDrawerTickets(prev => prev.map(t => t.id === updated.id ? updated : t));
+              } catch (e: any) {
+                addToast(e.response?.data?.message || 'Không thể cập nhật Ticket', 'error');
+              }
+            }}
+            contacts={contacts}
+            users={users}
+          />
+        </Suspense>
+      )}
 
       {/* Signature Modal */}
       {isSignModalOpen && coopSlip && createPortal(
@@ -13412,13 +13667,15 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         </div>
       )}
       {showManageModal && selectedDepForManage && (
-        <DepositDetailDrawer
-          isOpen={showManageModal}
-          onClose={() => setShowManageModal(false)}
-          deposit={selectedDepForManage}
-          onSaveSuccess={() => fetchData('deals')}
-          zIndex={zIndex ? zIndex + 20 : 1000100}
-        />
+        <Suspense fallback={null}>
+          <DepositDetailDrawer
+            isOpen={showManageModal}
+            onClose={() => setShowManageModal(false)}
+            deposit={selectedDepForManage}
+            onSaveSuccess={() => fetchData('deals')}
+            zIndex={zIndex ? zIndex + 20 : 1000100}
+          />
+        </Suspense>
       )}
     </>,
     document.body

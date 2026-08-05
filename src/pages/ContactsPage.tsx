@@ -1946,6 +1946,13 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px' }}>
                                   {uniqueTags.map((tag: string, idx: number) => {
                                     const lowerTag = tag.toLowerCase();
+                                    const isProgramTag = lowerTag.includes('mba') || 
+                                                         lowerTag.includes('bba') || 
+                                                         lowerTag.includes('dba') || 
+                                                         lowerTag.includes('msc') || 
+                                                         lowerTag.includes('umef') || 
+                                                         lowerTag.includes('emba');
+
                                     const matchedDbTag = Array.isArray(dbTags) 
                                       ? dbTags.find(t => String(t.name).trim().toLowerCase() === lowerTag)
                                       : null;
@@ -1953,7 +1960,9 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                     let bg = matchedDbTag?.color || '#2563eb';
                                     let color = '#ffffff';
 
-                                    if (!matchedDbTag) {
+                                    if (isProgramTag) {
+                                      bg = '#3b82f6'; // Force blue for program/course tags
+                                    } else if (!matchedDbTag) {
                                       if (lowerTag.includes('new')) {
                                         bg = '#f97316';
                                       } else if (lowerTag.includes('needed') || lowerTag.includes('considering')) {
@@ -1964,8 +1973,6 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                         bg = '#ef4444';
                                       } else if (lowerTag.includes('bad timing') || lowerTag.includes('bad_timing') || lowerTag.includes('baddtiming')) {
                                         bg = '#7c3aed';
-                                      } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
-                                        bg = '#059669';
                                       }
                                     }
 
@@ -1996,6 +2003,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                             })()}
                           </td>
                         )}
+
                         {columns.find(col => col.id === 'status')?.visible && (
                           <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
                             {c.report_status === 'approved' || c.report_status === 'approved_no_comp' ? (

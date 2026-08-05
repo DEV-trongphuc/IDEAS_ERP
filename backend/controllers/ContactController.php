@@ -358,9 +358,35 @@ class ContactController {
         }
 
         $stageId = $b['stage_id'] ?? null;
+        
+        // Auto-assign Bỏ theo dõi if unqualified tag exists
+        $hasUnqualified = false;
+        $tagsArray = $b['tags'] ?? [];
+        if (is_array($tagsArray)) {
+            foreach ($tagsArray as $tg) {
+                if (stripos(strval($tg), 'unqualified') !== false) {
+                    $hasUnqualified = true;
+                    break;
+                }
+            }
+        }
+        if ($hasUnqualified) {
+            $stmtBt = $this->db->prepare("SELECT id FROM pipeline_stages WHERE system_slug = 'bo_theo_doi' AND tenant_id = ? LIMIT 1");
+            $stmtBt->execute([$auth['tenant_id']]);
+            $boTheoDoiId = $stmtBt->fetchColumn();
+            $stageId = $boTheoDoiId ?: 30;
+        }
+
         if (!$stageId) {
             $s = $this->db->prepare("SELECT id FROM pipeline_stages WHERE tenant_id=? ORDER BY order_index LIMIT 1");
             $s->execute([$auth['tenant_id']]); $stageId = $s->fetchColumn();
+        }
+
+        $pipelineStatus = 'chua_xac_dinh';
+        if ($stageId) {
+            $stmtSlug = $this->db->prepare("SELECT system_slug FROM pipeline_stages WHERE id=? AND tenant_id=? LIMIT 1");
+            $stmtSlug->execute([$stageId, $auth['tenant_id']]);
+            $pipelineStatus = $stmtSlug->fetchColumn() ?: 'chua_xac_dinh';
         }
 
         // Resolve person_id (Master Identity Link)
@@ -391,8 +417,8 @@ class ContactController {
         $stmt = $this->db->prepare("
             INSERT INTO contacts (tenant_id,company_id,owner_id,created_by,full_name,
                 email,phone,mobile,job_title,department,source,status,tags,notes,stage_id,
-                birthday,address,city,ward,expected_revenue,win_probability,last_contact,lead_score,person_id,collaborator_ids)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                birthday,address,city,ward,expected_revenue,win_probability,last_contact,lead_score,person_id,collaborator_ids,pipeline_status)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ");
         $stmt->execute([
             $auth['tenant_id'],
@@ -406,7 +432,8 @@ class ContactController {
             $b['expected_revenue'] ?? 0, $b['win_probability'] ?? 50,
             $last_contact, $b['lead_score'] ?? 0,
             $personId,
-            $b['collaborator_ids'] ?? null
+            $b['collaborator_ids'] ?? null,
+            $pipelineStatus
         ]);
         $id = (int)$this->db->lastInsertId();
         if ($duplicateFlag) {
@@ -584,7 +611,7 @@ class ContactController {
         }
 
         if (empty($hierarchyList)) {
-            $hierarchyList = ['chua_xac_dinh', 'co_hoi', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
+            $hierarchyList = ['bo_theo_doi', 'chua_xac_dinh', 'co_nhu_cau', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
         }
 
         $statusHierarchy = [];
@@ -720,6 +747,34 @@ class ContactController {
         } elseif (array_key_exists('company_id', $b)) {
             $sets[] = "company_id=?";
             $params[] = $b['company_id'] ? (int)$b['company_id'] : null;
+        }
+
+        // Auto-assign Bỏ theo dõi if unqualified tag is saved
+        if (isset($b['tags'])) {
+            $hasUnqualified = false;
+            $tagsToCheck = is_array($b['tags']) ? $b['tags'] : [];
+            foreach ($tagsToCheck as $tg) {
+                if (stripos(strval($tg), 'unqualified') !== false) {
+                    $hasUnqualified = true;
+                    break;
+                }
+            }
+            if ($hasUnqualified) {
+                $stmtBt = $this->db->prepare("SELECT id FROM pipeline_stages WHERE system_slug = 'bo_theo_doi' AND tenant_id = ? LIMIT 1");
+                $stmtBt->execute([$auth['tenant_id']]);
+                $boTheoDoiId = $stmtBt->fetchColumn();
+                $b['stage_id'] = $boTheoDoiId ?: 30;
+                $b['pipeline_status'] = 'bo_theo_doi';
+            } else {
+                $targetStatus = $b['pipeline_status'] ?? $currStatus;
+                if ($targetStatus === 'bo_theo_doi') {
+                    $stmtCxd = $this->db->prepare("SELECT id FROM pipeline_stages WHERE system_slug = 'chua_xac_dinh' AND tenant_id = ? LIMIT 1");
+                    $stmtCxd->execute([$auth['tenant_id']]);
+                    $chuaXacDinhId = $stmtCxd->fetchColumn();
+                    $b['stage_id'] = $chuaXacDinhId ?: 1;
+                    $b['pipeline_status'] = 'chua_xac_dinh';
+                }
+            }
         }
 
         foreach ($fields as $f) {

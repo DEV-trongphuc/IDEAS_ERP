@@ -60,13 +60,14 @@ try {
 
     // 0. Pipeline Stages
     $conn->query("INSERT INTO pipeline_stages (id, tenant_id, name, system_slug, order_index, is_won, is_lost) VALUES 
-        (1, 1, 'Chưa xác định', 'chua_xac_dinh', 0, 0, 0),
-        (2, 1, 'Cơ hội', 'co_hoi', 1, 0, 0),
-        (3, 1, 'Đang tư vấn', 'dang_tu_van', 2, 0, 0),
-        (4, 1, 'Nộp hồ sơ', 'nop_ho_so', 3, 0, 0),
-        (5, 1, 'Đóng lệ phí hồ sơ', 'dong_le_phi_ho_so', 4, 0, 0),
-        (6, 1, 'Học viên', 'hoc_vien', 5, 1, 0),
-        (7, 1, 'Pending', 'pending', 6, 0, 0)
+        (30, 1, 'Bỏ theo dõi', 'bo_theo_doi', 0, 0, 1),
+        (1, 1, 'Chưa xác định', 'chua_xac_dinh', 1, 0, 0),
+        (2, 1, 'Có nhu cầu', 'co_nhu_cau', 2, 0, 0),
+        (3, 1, 'Đang tư vấn', 'dang_tu_van', 3, 0, 0),
+        (4, 1, 'Nộp hồ sơ', 'nop_ho_so', 4, 0, 0),
+        (5, 1, 'Đóng lệ phí hồ sơ', 'dong_le_phi_ho_so', 5, 0, 0),
+        (6, 1, 'Học viên', 'hoc_vien', 6, 1, 0),
+        (7, 1, 'Pending', 'pending', 7, 0, 0)
     ON DUPLICATE KEY UPDATE name=VALUES(name), system_slug=VALUES(system_slug), order_index=VALUES(order_index), is_won=VALUES(is_won), is_lost=VALUES(is_lost)");
 
     // 1. Projects
@@ -81,7 +82,7 @@ try {
         (101, 1, 'Nguyễn Văn A', 'client.a@gmail.test', '0912345678', 'customer', 'hoc_vien', 100012, 100012, 1),
         (102, 1, 'Trần Thị B', 'client.b@gmail.test', '0987654321', 'lead', 'dong_le_phi_ho_so', 100012, 100012, 2),
         (103, 1, 'Phạm Văn C', 'client.c@gmail.test', '0905123456', 'lead', 'nop_ho_so', 100012, 100012, 3),
-        (104, 1, 'Lê Văn D', 'client.d@gmail.test', '0934123456', 'lead', 'co_hoi', 100015, 100015, 1),
+        (104, 1, 'Lê Văn D', 'client.d@gmail.test', '0934123456', 'lead', 'co_nhu_cau', 100015, 100015, 1),
         (105, 1, 'Hoàng Thị E', 'client.e@gmail.test', '0978123456', 'lead', 'dong_le_phi_ho_so', 100015, 100015, 2)
     ON DUPLICATE KEY UPDATE full_name=VALUES(full_name)");
 

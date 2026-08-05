@@ -105,8 +105,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
     if (formData.type === 'call') {
       const directionLabel = formData.call_direction === 'outbound' ? 'đi' : 'đến';
       const outcomeLabel = formData.call_outcome === 'reached' ? 'Đã kết nối' :
-                           formData.call_outcome === 'no_answer' ? 'Không nghe máy' :
-                           formData.call_outcome === 'busy' ? 'Máy bận' :
+                           formData.call_outcome === 'no_answer' || formData.call_outcome === 'busy' ? 'Không kết nối được' :
                            formData.call_outcome === 'voicemail' ? 'Hộp thư thoại' : 'Sai số';
       subject = `Cuộc gọi ${directionLabel}: ${outcomeLabel}`;
       status = 'done';
@@ -327,9 +326,8 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))', gap: '6px' }}>
                     {[
                       { value: 'reached', label: 'Đã kết nối', color: '#10b981' },
-                      { value: 'no_answer', label: 'Không nghe máy', color: '#f59e0b' },
+                      { value: 'no_answer', label: 'Không kết nối được', color: '#f59e0b' },
                       { value: 'voicemail', label: 'Hộp thư thoại', color: '#BD1D2D' },
-                      { value: 'busy', label: 'Máy bận', color: '#ef4444' },
                       { value: 'wrong_number', label: 'Sai số', color: '#6b7280' }
                     ].map(out => (
                       <button

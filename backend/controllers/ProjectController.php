@@ -864,9 +864,9 @@ class ProjectController {
 
         $resHier = $this->db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'pipeline_status_hierarchy' LIMIT 1");
         $hierJson = $resHier ? $resHier->fetchColumn() : null;
-        $hierarchy = $hierJson ? json_decode($hierJson, true) : ['chua_xac_dinh', 'co_hoi', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
+        $hierarchy = $hierJson ? json_decode($hierJson, true) : ['bo_theo_doi', 'chua_xac_dinh', 'co_nhu_cau', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
         if (!is_array($hierarchy)) {
-            $hierarchy = ['chua_xac_dinh', 'co_hoi', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
+            $hierarchy = ['bo_theo_doi', 'chua_xac_dinh', 'co_nhu_cau', 'dang_tu_van', 'nop_ho_so', 'dong_le_phi_ho_so', 'hoc_vien', 'pending'];
         }
 
         // Find opportunity stages from $oppStatus onwards in hierarchy

@@ -15736,7 +15736,7 @@ switch ($action) {
             }
         }
         if (empty($sources)) {
-            $sources = ['FB Ads', 'Google Ads', 'TikTok Ads', 'Google Sheet'];
+            $sources = ['Facebook Ads', 'Google Ads', 'TikTok Ads', 'Google Sheet'];
         }
 
         // Query lead assignment counts grouped by status (adjust pending compensation to be counted as compensation)
