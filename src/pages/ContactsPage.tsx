@@ -252,7 +252,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim(), 300); // 300ms debounce
   const [pageSize, setPageSize] = useState<number>(() => {
-    return Number(localStorage.getItem('Ideas_contacts_page_size')) || 10;
+    return Number(localStorage.getItem('Ideas_contacts_page_size')) || 50;
   });
 
   const openContactId = searchParams.get('open_contact_id') || searchParams.get('id');
