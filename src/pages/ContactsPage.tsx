@@ -1924,15 +1924,20 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                               return (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px' }}>
                                   {tagList.map((tag: string, idx: number) => {
-                                    let bg = '#4f46e5';
+                                    let bg = '#2563eb';
                                     let color = '#ffffff';
-                                    let border = 'none';
                                     
                                     const lowerTag = tag.toLowerCase();
-                                    if (lowerTag.includes('bad timing') || lowerTag.includes('considering')) {
-                                      bg = '#d97706';
-                                    } else if (lowerTag.includes('new') || lowerTag.includes('needed')) {
+                                    if (lowerTag.includes('new')) {
+                                      bg = '#f97316';
+                                    } else if (lowerTag.includes('needed') || lowerTag.includes('considering')) {
                                       bg = '#db2777';
+                                    } else if (lowerTag.includes('unqualified')) {
+                                      bg = '#ca8a04';
+                                    } else if (lowerTag.includes('qualified')) {
+                                      bg = '#ef4444';
+                                    } else if (lowerTag.includes('bad timing') || lowerTag.includes('bad_timing') || lowerTag.includes('baddtiming')) {
+                                      bg = '#7c3aed';
                                     } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
                                       bg = '#059669';
                                     }
@@ -1947,7 +1952,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                           height: '14px',
                                           fontSize: '0.52rem', 
                                           fontWeight: 600, 
-                                          padding: '0 5px', 
+                                          padding: '0 8px', 
                                           borderRadius: '10px', 
                                           background: bg,
                                           color: color,
