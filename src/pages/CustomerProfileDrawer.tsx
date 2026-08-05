@@ -3459,9 +3459,12 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
       setFormData(contact);
       setIsPartnerSource(!!contact.company_id);
-      setTags(contact.tags || []);
+      const cleanRegex = /^\d+\.\s*(status\s*-\s*)?/i;
+      const cleanedLoadedTags = (contact.tags || []).map((tag: string) => tag.replace(cleanRegex, '').trim()).filter(Boolean);
+      const uniqueLoadedTags = Array.from(new Set(cleanedLoadedTags));
+      setTags(uniqueLoadedTags);
       setBaseData(contact);
-      setBaseTags(contact.tags || []);
+      setBaseTags(uniqueLoadedTags);
       
       let initialTtl1 = { group1: false, group2: false, group3: false, group4: false, group5: false };
       try {
@@ -7484,7 +7487,42 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   {/* TAGS TAB */}
                   {activeTab === 'tags' && (
                     <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                      <div className="card-panel">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <TagIcon size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-text)', letterSpacing: '-0.01em' }}>Phân loại khách hàng</h3>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-light)' }}>Sử dụng các thẻ tag để phân nhóm và tối ưu hóa quy trình tìm kiếm.</p>
+                        </div>
+                      </div>
+
+                      <div className="card-panel" style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)' }}>
+                        <div>
+                          <label className="form-label" style={{ fontWeight: 700, marginBottom: '1rem', display: 'block', fontSize: '0.9375rem' }}>Gắn thẻ thông minh</label>
+                          <TagInput
+                            tags={tags}
+                            onChange={setTags}
+                            suggestions={allTags.map(t => t.name)}
+                            placeholder="Chọn thẻ tag..."
+                          />
+                          <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '100%', marginBottom: '0.25rem' }}>Các tag trong hệ thống:</span>
+                            {allTags.map(t => (
+                              <button
+                                key={t.id}
+                                onClick={() => !tags.includes(t.name) && setTags([...tags, t.name])}
+                                className="btn ghost sm"
+                                style={{ borderRadius: '10px', fontSize: '0.75rem', padding: '4px 12px', border: '1px dashed var(--color-border)' }}
+                              >
+                                + {t.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card-panel" style={{ borderTop: '4px solid var(--color-primary)' }}>
                         <h4 className="panel-title">Phân loại & Trạng thái Sales</h4>
                         <div className="grid grid-2">
                           <div className="form-group">
@@ -7871,42 +7909,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         </div>
                       </div>
 
-                      <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                          <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <TagIcon size={24} />
-                          </div>
-                          <div>
-                            <h3 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-text)', letterSpacing: '-0.01em' }}>Phân loại khách hàng</h3>
-                            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-light)' }}>Sử dụng các thẻ tag để phân nhóm và tối ưu hóa quy trình tìm kiếm.</p>
-                          </div>
-                        </div>
 
-                        <div className="card-panel" style={{ padding: '1.5rem', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)' }}>
-                          <div>
-                            <label className="form-label" style={{ fontWeight: 700, marginBottom: '1rem', display: 'block', fontSize: '0.9375rem' }}>Gắn thẻ thông minh</label>
-                            <TagInput
-                              tags={tags}
-                              onChange={setTags}
-                              suggestions={allTags.map(t => t.name)}
-                              placeholder="Chọn thẻ tag..."
-                            />
-                            <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '100%', marginBottom: '0.25rem' }}>Các tag trong hệ thống:</span>
-                              {allTags.map(t => (
-                                <button
-                                  key={t.id}
-                                  onClick={() => !tags.includes(t.name) && setTags([...tags, t.name])}
-                                  className="btn ghost sm"
-                                  style={{ borderRadius: '10px', fontSize: '0.75rem', padding: '4px 12px', border: '1px dashed var(--color-border)' }}
-                                >
-                                  + {t.name}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Notes Section (Combined here!) */}
                       <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '2rem' }}>
