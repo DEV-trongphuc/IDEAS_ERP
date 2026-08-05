@@ -207,7 +207,7 @@ const resolveAttachmentUrl = (url: string | null | undefined): string => {
 const TABS = [
   { id: 'info', label: 'Thông tin chung', icon: <User size={16} /> },
   { id: 'learning', label: 'Học tập', icon: <BookOpen size={16} /> },
-  { id: 'tags', label: 'Tags & Ghi chú', icon: <TagIcon size={16} /> },
+  { id: 'tags', label: 'Phân loại', icon: <TagIcon size={16} /> },
   { id: 'tasks', label: 'Công việc', icon: <CheckSquare size={16} /> },
   { id: 'docs', label: 'Hồ sơ & Tài liệu', icon: <Paperclip size={16} /> },
   { id: 'timeline', label: 'Lịch sử tương tác', icon: <History size={16} /> },
@@ -6920,392 +6920,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       </div>
 
 
-                      <div className="card-panel">
-                        <h4 className="panel-title">Phân loại & Trạng thái Sales</h4>
-                        <div className="grid grid-2">
-                          <div className="form-group">
-                            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span>Nguồn khách (Source)</span>
-                              {currentUser?.role === 'sale' && (
-                                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Lock size={11} /> Chỉ Quản lý/Admin</span>
-                              )}
-                            </label>
-                            <CustomSelect
-                              disabled={currentUser?.role === 'sale'}
-                              options={[
-                                { value: 'website', label: 'Từ Website' },
-                                { value: 'facebook', label: 'Facebook Ads' },
-                                { value: 'gioi_thieu', label: 'Giới thiệu' },
-                                { value: 'ca_nhan', label: 'Cá nhân tự khai thác' },
-                                { value: 'cold_call', label: 'Cold Call' }
-                              ]}
-                              value={formData.source || 'website'}
-                              onChange={val => setFormData((prev: any) => ({ ...prev, source: val as string }))}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label className="form-label">Ngành nghề kinh doanh</label>
-                            <CustomSelect
-                              options={[
-                                { value: '', label: '— Chưa chọn —' },
-                                { value: 'real_estate', label: 'Bất động sản' },
-                                { value: 'finance', label: 'Tài chính / Ngân hàng' },
-                                { value: 'tech', label: 'Công nghệ / IT' },
-                                { value: 'manufacturing', label: 'Sản xuất / Xây dựng' },
-                                { value: 'medical', label: 'Y tế / Dược phẩm' },
-                                { value: 'education', label: 'Giáo dục' },
-                                { value: 'other', label: 'Ngành nghề khác' }
-                              ]}
-                              value={formData.industry || ''}
-                              onChange={val => setFormData((prev: any) => ({ ...prev, industry: val as string }))}
-                            />
-                          </div>
 
-                          {!isStudent && (
-                            <div className="form-group">
-                              <label className="form-label">Chương trình quan tâm</label>
-                              <CustomSelect
-                                searchable
-                                options={[
-                                  { value: '', label: '— Không chọn —' },
-                                  ...projectsList.map(p => ({ value: String(p.id), label: p.name }))
-                                ]}
-                                value={String(formData.project_id || '')}
-                                onChange={val => {
-                                  const selectedId = val ? Number(val) : null;
-                                  setFormData((prev: any) => ({
-                                    ...prev,
-                                    project_id: selectedId,
-                                    campaign_id: null
-                                  }));
-                                }}
-                              />
-                            </div>
-                          )}
-
-                          <div className="form-group">
-                            <label className="form-label">Dự kiến doanh thu</label>
-                            <CurrencyInput
-                              value={formData.expected_revenue || 0}
-                              onChange={val => setFormData((prev: any) => ({ ...prev, expected_revenue: val }))}
-                              placeholder="VD: 1.500.000.000"
-                            />
-                          </div>
-                          <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <label className="form-label" style={{ marginBottom: 0 }}>Xác suất chốt</label>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  placeholder="50"
-                                  value={formData.win_probability || 0}
-                                  onChange={e => {
-                                    let val = Number(e.target.value);
-                                    if (val < 0) val = 0;
-                                    if (val > 100) val = 100;
-                                    setFormData((prev: any) => ({ ...prev, win_probability: val }));
-                                  }}
-                                  style={{
-                                    width: '64px',
-                                    height: '28px',
-                                    textAlign: 'center',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 800,
-                                    padding: '2px 4px',
-                                    border: '1px solid var(--color-border)',
-                                    borderRadius: '6px',
-                                    background: 'var(--color-surface)',
-                                    color: (formData.win_probability ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)'
-                                  }}
-                                />
-                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-muted)' }}>%</span>
-                              </div>
-                            </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              value={formData.win_probability ?? 0}
-                              onChange={e => setFormData((prev: any) => ({ ...prev, win_probability: Number(e.target.value) }))}
-                              className="progress-slider"
-                              style={{
-                                background: (formData.win_probability ?? 0) === 100
-                                  ? 'var(--color-success)'
-                                  : 'linear-gradient(to right, #BD1D2D 0%, #F97316 ' + (formData.win_probability ?? 0) + '%, var(--color-border-light) ' + (formData.win_probability ?? 0) + '%, var(--color-border-light) 100%)'
-                              }}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                              <span>0%</span>
-                              <span>50%</span>
-                              <span>100%</span>
-                            </div>
-                          </div>
-                          
-                          {/* Toggle Nguồn khách đối tác */}
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between', 
-                            background: 'var(--color-bg-light, #f8fafc)', 
-                            padding: '10px 14px', 
-                            borderRadius: '12px', 
-                            border: '1px solid var(--color-border-light)',
-                            marginBottom: '14px'
-                          }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                                {t('Nguồn khách đối tác')}
-                              </span>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                {t('Khách hàng đến từ CTV hoặc Đại lý đối tác')}
-                              </span>
-                            </div>
-                            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px' }}>
-                              <input 
-                                type="checkbox" 
-                                checked={isPartnerSource}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  setIsPartnerSource(checked);
-                                  if (!checked) {
-                                    setFormData((prev: any) => ({
-                                      ...prev,
-                                      company_id: null,
-                                      company_name: ''
-                                    }));
-                                  } else {
-                                    setFormData((prev: any) => ({
-                                      ...prev,
-                                      company_id: '',
-                                      company_name: ''
-                                    }));
-                                  }
-                                }}
-                                style={{ opacity: 0, width: 0, height: 0 }}
-                              />
-                              <span 
-                                className="slider round" 
-                                style={{
-                                  position: 'absolute',
-                                  cursor: 'pointer',
-                                  top: 0, left: 0, right: 0, bottom: 0,
-                                  backgroundColor: isPartnerSource ? '#10b981' : '#cbd5e1',
-                                  transition: '0.3s',
-                                  borderRadius: '20px'
-                                }}
-                              >
-                                <span 
-                                  style={{
-                                    position: 'absolute',
-                                    content: '""',
-                                    height: '14px', width: '14px',
-                                    left: isPartnerSource ? '19px' : '3px',
-                                    bottom: '3px',
-                                    backgroundColor: 'white',
-                                    transition: '0.3s',
-                                    borderRadius: '50%'
-                                  }}
-                                />
-                              </span>
-                            </label>
-                          </div>
-
-                          <div className="form-group">
-                            <label className="form-label">
-                              {isPartnerSource ? t('Đối tác / CTV chăm sóc (Nguồn đối tác)') : t('Người đang chăm sóc (Sale)')}
-                            </label>
-                            {isPartnerSource ? (
-                              currentUser?.role === 'sale' ? (
-                                <div 
-                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
-                                >
-                                  <span>{formData.company_name || t('Chưa liên kết đối tác')}</span>
-                                </div>
-                              ) : (
-                                <CustomSelect
-                                  options={companiesList.map(c => ({
-                                    value: c.id,
-                                    label: c.name,
-                                    sublabel: [c.phone, c.email, c.tier ? `Cấp: ${c.tier.toUpperCase()}` : ''].filter(Boolean).join(' - ')
-                                  }))}
-                                  value={formData.company_id || ''}
-                                  onChange={val => {
-                                    const comp = companiesList.find(x => Number(x.id) === Number(val));
-                                    setFormData({ ...formData, company_id: val, company_name: comp?.name || '' });
-                                  }}
-                                  placeholder={t('Chọn đối tác / CTV phụ trách...')}
-                                  searchable
-                                />
-                              )
-                            ) : (
-                              currentUser?.role === 'sale' ? (
-                                <div 
-                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-                                  onClick={() => {
-                                    const ownerName = formData.owner_name || contact?.owner_name || contact?.consultant_name || 'chủ sở hữu';
-                                    addToast(`Chặn thao tác: Chỉ chủ sở hữu (${ownerName}) hoặc Admin mới có quyền chuyển nhượng người chăm sóc!`, 'error');
-                                  }}
-                                  title="Chỉ Owner hoặc Admin mới có quyền chuyển nhượng người chăm sóc"
-                                >
-                                  <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
-                                  <span>{formData.owner_name || 'Chưa giao'}</span>
-                                </div>
-                              ) : (
-                                <CustomSelect
-                                  options={users.map(u => ({
-                                    value: u.id,
-                                    label: u.full_name,
-                                    avatar: u.avatar_url,
-                                    sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                                  }))}
-                                  value={formData.owner_id || ''}
-                                  onChange={val => {
-                                    const u = users.find(x => x.id === Number(val));
-                                    setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
-                                  }}
-                                  placeholder="Chọn sale phụ trách..."
-                                  searchable
-                                  showAvatars
-                                />
-                              )
-                            )}
-                          </div>
-
-                          {isPartnerSource && (
-                            <div className="form-group" style={{ marginTop: '10px' }}>
-                              <label className="form-label">{t('Sale hỗ trợ nội bộ')}</label>
-                              {currentUser?.role === 'sale' ? (
-                                <div 
-                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
-                                >
-                                  <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
-                                  <span>{formData.owner_name || t('Chưa giao')}</span>
-                                </div>
-                              ) : (
-                                <CustomSelect
-                                  options={users.map(u => ({
-                                    value: u.id,
-                                    label: u.full_name,
-                                    avatar: u.avatar_url,
-                                    sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                                  }))}
-                                  value={formData.owner_id || ''}
-                                  onChange={val => {
-                                    const u = users.find(x => x.id === Number(val));
-                                    setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
-                                  }}
-                                  placeholder={t('Chọn sale hỗ trợ nội bộ...')}
-                                  searchable
-                                  showAvatars
-                                />
-                              )}
-                            </div>
-                          )}
-                          <div className="form-group">
-                            <label className="form-label">Nhân sự chăm sóc phụ (Co-care)</label>
-                            <div
-                              onClickCapture={(e) => {
-                                if (isViewer || !isMainOwnerOrManagerAdmin) {
-                                  e.stopPropagation();
-                                  const ownerName = formData.owner_name || contact?.owner_name || contact?.consultant_name || 'chủ sở hữu';
-                                  addToast(`Chặn thao tác: Chỉ chủ sở hữu (${ownerName}) mới có quyền chỉnh sửa nhân sự chăm sóc phụ (Co-care)!`, 'error');
-                                }
-                              }}
-                            >
-                              <CustomSelect
-                                multiple
-                                options={Array.from(new Map(
-                                  users
-                                    .filter(u => Number(u.id) !== Number(formData.owner_id))
-                                    .map(u => [String(u.id), {
-                                      value: String(u.id),
-                                      label: u.full_name,
-                                      avatar: u.avatar_url,
-                                      sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
-                                    }])
-                                ).values())}
-                                value={Array.from(new Set((formData.collaborator_ids || '').split(',').map((s: string) => s.trim()).filter(Boolean)))}
-                                onChange={val => {
-                                  const list = Array.isArray(val) ? Array.from(new Set(val.filter((v: any) => v !== 'all'))) : [];
-                                  setFormData((prev: any) => ({ ...prev, collaborator_ids: list.join(',') }));
-                                }}
-                                placeholder="Chọn nhân sự chăm sóc phụ..."
-                                searchable
-                                showAvatars
-                                disabled={isViewer || !isMainOwnerOrManagerAdmin}
-                              />
-                            </div>
-                            
-                            {(() => {
-                              const list = (formData.collaborator_ids || '').split(',').map((s: string) => s.trim()).filter(Boolean);
-                              if (list.length === 0) return null;
-                              return (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-                                  {list.map(cId => {
-                                    const u = users.find(x => String(x.id) === String(cId));
-                                    if (!u) return null;
-                                    return (
-                                      <div
-                                        key={cId}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '6px',
-                                          background: 'rgba(59, 130, 246, 0.05)',
-                                          border: '1px solid rgba(59, 130, 246, 0.15)',
-                                          borderRadius: '20px',
-                                          padding: '4px 10px 4px 4px',
-                                          fontSize: '0.785rem',
-                                          fontWeight: 600,
-                                          color: 'var(--color-primary)'
-                                        }}
-                                      >
-                                        <Avatar src={u.avatar_url} name={u.full_name} size={22} />
-                                        <span>{u.full_name}</span>
-                                        {!(isViewer || !isMainOwnerOrManagerAdmin) && (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const remaining = list.filter(x => x !== cId);
-                                              setFormData((prev: any) => ({ ...prev, collaborator_ids: remaining.join(',') }));
-                                            }}
-                                            style={{
-                                              border: 'none',
-                                              background: 'none',
-                                              padding: 0,
-                                              marginLeft: '4px',
-                                              cursor: 'pointer',
-                                              color: 'var(--color-text-muted)',
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center',
-                                              fontWeight: 'bold',
-                                              fontSize: '1rem',
-                                              width: '14px',
-                                              height: '14px',
-                                              borderRadius: '50%'
-                                            }}
-                                            title="Xóa nhân sự này"
-                                            className="hover-remove-btn"
-                                          >
-                                            ×
-                                          </button>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '6px', display: 'block' }}>
-                              Cho phép các sale khác có quyền xem và cùng chăm sóc khách hàng này.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   )}
 
@@ -7767,7 +7382,394 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   {/* TAGS TAB */}
                   {activeTab === 'tags' && (
                     <div className="animate-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                      <div>
+                      <div className="card-panel">
+                        <h4 className="panel-title">Phân loại & Trạng thái Sales</h4>
+                        <div className="grid grid-2">
+                          <div className="form-group">
+                            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span>Nguồn khách (Source)</span>
+                              {currentUser?.role === 'sale' && (
+                                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Lock size={11} /> Chỉ Quản lý/Admin</span>
+                              )}
+                            </label>
+                            <CustomSelect
+                              disabled={currentUser?.role === 'sale'}
+                              options={[
+                                { value: 'website', label: 'Từ Website' },
+                                { value: 'facebook', label: 'Facebook Ads' },
+                                { value: 'gioi_thieu', label: 'Giới thiệu' },
+                                { value: 'ca_nhan', label: 'Cá nhân tự khai thác' },
+                                { value: 'cold_call', label: 'Cold Call' }
+                              ]}
+                              value={formData.source || 'website'}
+                              onChange={val => setFormData((prev: any) => ({ ...prev, source: val as string }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Ngành nghề kinh doanh</label>
+                            <CustomSelect
+                              options={[
+                                { value: '', label: '— Chưa chọn —' },
+                                { value: 'real_estate', label: 'Bất động sản' },
+                                { value: 'finance', label: 'Tài chính / Ngân hàng' },
+                                { value: 'tech', label: 'Công nghệ / IT' },
+                                { value: 'manufacturing', label: 'Sản xuất / Xây dựng' },
+                                { value: 'medical', label: 'Y tế / Dược phẩm' },
+                                { value: 'education', label: 'Giáo dục' },
+                                { value: 'other', label: 'Ngành nghề khác' }
+                              ]}
+                              value={formData.industry || ''}
+                              onChange={val => setFormData((prev: any) => ({ ...prev, industry: val as string }))}
+                            />
+                          </div>
+
+                          {!isStudent && (
+                            <div className="form-group">
+                              <label className="form-label">Chương trình quan tâm</label>
+                              <CustomSelect
+                                searchable
+                                options={[
+                                  { value: '', label: '— Không chọn —' },
+                                  ...projectsList.map(p => ({ value: String(p.id), label: p.name }))
+                                ]}
+                                value={String(formData.project_id || '')}
+                                onChange={val => {
+                                  const selectedId = val ? Number(val) : null;
+                                  setFormData((prev: any) => ({
+                                    ...prev,
+                                    project_id: selectedId,
+                                    campaign_id: null
+                                  }));
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          <div className="form-group">
+                            <label className="form-label">Dự kiến doanh thu</label>
+                            <CurrencyInput
+                              value={formData.expected_revenue || 0}
+                              onChange={val => setFormData((prev: any) => ({ ...prev, expected_revenue: val }))}
+                              placeholder="VD: 1.500.000.000"
+                            />
+                          </div>
+                          <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <label className="form-label" style={{ marginBottom: 0 }}>Xác suất chốt</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  placeholder="50"
+                                  value={formData.win_probability || 0}
+                                  onChange={e => {
+                                    let val = Number(e.target.value);
+                                    if (val < 0) val = 0;
+                                    if (val > 100) val = 100;
+                                    setFormData((prev: any) => ({ ...prev, win_probability: val }));
+                                  }}
+                                  style={{
+                                    width: '64px',
+                                    height: '28px',
+                                    textAlign: 'center',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 800,
+                                    padding: '2px 4px',
+                                    border: '1px solid var(--color-border)',
+                                    borderRadius: '6px',
+                                    background: 'var(--color-surface)',
+                                    color: (formData.win_probability ?? 0) === 100 ? 'var(--color-success)' : 'var(--color-primary)'
+                                  }}
+                                />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-muted)' }}>%</span>
+                              </div>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={formData.win_probability ?? 0}
+                              onChange={e => setFormData((prev: any) => ({ ...prev, win_probability: Number(e.target.value) }))}
+                              className="progress-slider"
+                              style={{
+                                background: (formData.win_probability ?? 0) === 100
+                                  ? 'var(--color-success)'
+                                  : 'linear-gradient(to right, #BD1D2D 0%, #F97316 ' + (formData.win_probability ?? 0) + '%, var(--color-border-light) ' + (formData.win_probability ?? 0) + '%, var(--color-border-light) 100%)'
+                              }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                              <span>0%</span>
+                              <span>50%</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                          
+                          {/* Toggle Nguồn khách đối tác */}
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between', 
+                            background: 'var(--color-bg-light, #f8fafc)', 
+                            padding: '10px 14px', 
+                            borderRadius: '12px', 
+                            border: '1px solid var(--color-border-light)',
+                            marginBottom: '14px'
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                {t('Nguồn khách đối tác')}
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                {t('Khách hàng đến từ CTV hoặc Đại lý đối tác')}
+                              </span>
+                            </div>
+                            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={isPartnerSource}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setIsPartnerSource(checked);
+                                  if (!checked) {
+                                    setFormData((prev: any) => ({
+                                      ...prev,
+                                      company_id: null,
+                                      company_name: ''
+                                    }));
+                                  } else {
+                                    setFormData((prev: any) => ({
+                                      ...prev,
+                                      company_id: '',
+                                      company_name: ''
+                                    }));
+                                  }
+                                }}
+                                style={{ opacity: 0, width: 0, height: 0 }}
+                              />
+                              <span 
+                                className="slider round" 
+                                style={{
+                                  position: 'absolute',
+                                  cursor: 'pointer',
+                                  top: 0, left: 0, right: 0, bottom: 0,
+                                  backgroundColor: isPartnerSource ? '#10b981' : '#cbd5e1',
+                                  transition: '0.3s',
+                                  borderRadius: '20px'
+                                }}
+                              >
+                                <span 
+                                  style={{
+                                    position: 'absolute',
+                                    content: '""',
+                                    height: '14px', width: '14px',
+                                    left: isPartnerSource ? '19px' : '3px',
+                                    bottom: '3px',
+                                    backgroundColor: 'white',
+                                    transition: '0.3s',
+                                    borderRadius: '50%'
+                                  }}
+                                />
+                              </span>
+                            </label>
+                          </div>
+
+                          <div className="form-group">
+                            <label className="form-label">
+                              {isPartnerSource ? t('Đối tác / CTV chăm sóc (Nguồn đối tác)') : t('Người đang chăm sóc (Sale)')}
+                            </label>
+                            {isPartnerSource ? (
+                              currentUser?.role === 'sale' ? (
+                                <div 
+                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                  <span>{formData.company_name || t('Chưa liên kết đối tác')}</span>
+                                </div>
+                              ) : (
+                                <CustomSelect
+                                  options={companiesList.map(c => ({
+                                    value: c.id,
+                                    label: c.name,
+                                    sublabel: [c.phone, c.email, c.tier ? `Cấp: ${c.tier.toUpperCase()}` : ''].filter(Boolean).join(' - ')
+                                  }))}
+                                  value={formData.company_id || ''}
+                                  onChange={val => {
+                                    const comp = companiesList.find(x => Number(x.id) === Number(val));
+                                    setFormData({ ...formData, company_id: val, company_name: comp?.name || '' });
+                                  }}
+                                  placeholder={t('Chọn đối tác / CTV phụ trách...')}
+                                  searchable
+                                />
+                              )
+                            ) : (
+                              currentUser?.role === 'sale' ? (
+                                <div 
+                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                                  onClick={() => {
+                                    const ownerName = formData.owner_name || contact?.owner_name || contact?.consultant_name || 'chủ sở hữu';
+                                    addToast(`Chặn thao tác: Chỉ chủ sở hữu (${ownerName}) hoặc Admin mới có quyền chuyển nhượng người chăm sóc!`, 'error');
+                                  }}
+                                  title="Chỉ Owner hoặc Admin mới có quyền chuyển nhượng người chăm sóc"
+                                >
+                                  <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
+                                  <span>{formData.owner_name || 'Chưa giao'}</span>
+                                </div>
+                              ) : (
+                                <CustomSelect
+                                  options={users.map(u => ({
+                                    value: u.id,
+                                    label: u.full_name,
+                                    avatar: u.avatar_url,
+                                    sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                                  }))}
+                                  value={formData.owner_id || ''}
+                                  onChange={val => {
+                                    const u = users.find(x => x.id === Number(val));
+                                    setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
+                                  }}
+                                  placeholder="Chọn sale phụ trách..."
+                                  searchable
+                                  showAvatars
+                                />
+                              )
+                            )}
+                          </div>
+
+                          {isPartnerSource && (
+                            <div className="form-group" style={{ marginTop: '10px' }}>
+                              <label className="form-label">{t('Sale hỗ trợ nội bộ')}</label>
+                              {currentUser?.role === 'sale' ? (
+                                <div 
+                                  style={{ padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                  <Avatar src={formData.owner_avatar} name={formData.owner_name} size="sm" />
+                                  <span>{formData.owner_name || t('Chưa giao')}</span>
+                                </div>
+                              ) : (
+                                <CustomSelect
+                                  options={users.map(u => ({
+                                    value: u.id,
+                                    label: u.full_name,
+                                    avatar: u.avatar_url,
+                                    sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                                  }))}
+                                  value={formData.owner_id || ''}
+                                  onChange={val => {
+                                    const u = users.find(x => x.id === Number(val));
+                                    setFormData({ ...formData, owner_id: val, owner_name: u?.full_name || '' });
+                                  }}
+                                  placeholder={t('Chọn sale hỗ trợ nội bộ...')}
+                                  searchable
+                                  showAvatars
+                                />
+                              )}
+                            </div>
+                          )}
+                          <div className="form-group">
+                            <label className="form-label">Nhân sự chăm sóc phụ (Co-care)</label>
+                            <div
+                              onClickCapture={(e) => {
+                                if (isViewer || !isMainOwnerOrManagerAdmin) {
+                                  e.stopPropagation();
+                                  const ownerName = formData.owner_name || contact?.owner_name || contact?.consultant_name || 'chủ sở hữu';
+                                  addToast(`Chặn thao tác: Chỉ chủ sở hữu (${ownerName}) mới có quyền chỉnh sửa nhân sự chăm sóc phụ (Co-care)!`, 'error');
+                                }
+                              }}
+                            >
+                              <CustomSelect
+                                multiple
+                                options={Array.from(new Map(
+                                  users
+                                    .filter(u => Number(u.id) !== Number(formData.owner_id))
+                                    .map(u => [String(u.id), {
+                                      value: String(u.id),
+                                      label: u.full_name,
+                                      avatar: u.avatar_url,
+                                      sublabel: [u.phone, u.email, u.role].filter(Boolean).join(' - ')
+                                    }])
+                                ).values())}
+                                value={Array.from(new Set((formData.collaborator_ids || '').split(',').map((s: string) => s.trim()).filter(Boolean)))}
+                                onChange={val => {
+                                  const list = Array.isArray(val) ? Array.from(new Set(val.filter((v: any) => v !== 'all'))) : [];
+                                  setFormData((prev: any) => ({ ...prev, collaborator_ids: list.join(',') }));
+                                }}
+                                placeholder="Chọn nhân sự chăm sóc phụ..."
+                                searchable
+                                showAvatars
+                                disabled={isViewer || !isMainOwnerOrManagerAdmin}
+                              />
+                            </div>
+                            
+                            {(() => {
+                              const list = (formData.collaborator_ids || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+                              if (list.length === 0) return null;
+                              return (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                                  {list.map(cId => {
+                                    const u = users.find(x => String(x.id) === String(cId));
+                                    if (!u) return null;
+                                    return (
+                                      <div
+                                        key={cId}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          background: 'rgba(59, 130, 246, 0.05)',
+                                          border: '1px solid rgba(59, 130, 246, 0.15)',
+                                          borderRadius: '20px',
+                                          padding: '4px 10px 4px 4px',
+                                          fontSize: '0.785rem',
+                                          fontWeight: 600,
+                                          color: 'var(--color-primary)'
+                                        }}
+                                      >
+                                        <Avatar src={u.avatar_url} name={u.full_name} size={22} />
+                                        <span>{u.full_name}</span>
+                                        {!(isViewer || !isMainOwnerOrManagerAdmin) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const remaining = list.filter(x => x !== cId);
+                                              setFormData((prev: any) => ({ ...prev, collaborator_ids: remaining.join(',') }));
+                                            }}
+                                            style={{
+                                              border: 'none',
+                                              background: 'none',
+                                              padding: 0,
+                                              marginLeft: '4px',
+                                              cursor: 'pointer',
+                                              color: 'var(--color-text-muted)',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              fontWeight: 'bold',
+                                              fontSize: '1rem',
+                                              width: '14px',
+                                              height: '14px',
+                                              borderRadius: '50%'
+                                            }}
+                                            title="Xóa nhân sự này"
+                                            className="hover-remove-btn"
+                                          >
+                                            ×
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '6px', display: 'block' }}>
+                              Cho phép các sale khác có quyền xem và cùng chăm sóc khách hàng này.
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '2rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                           <div style={{ width: 48, height: 48, borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <TagIcon size={24} />

@@ -1886,6 +1886,54 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                     {c.company_name} {c.job_title ? `• ${c.job_title}` : ''}
                                   </p>
                                 )}
+                                {(() => {
+                                  const tagList = typeof c.tags === 'string' 
+                                    ? c.tags.split(',').map((t: string) => t.trim()).filter(Boolean) 
+                                    : (Array.isArray(c.tags) ? c.tags : []);
+                                  if (tagList.length === 0) return null;
+                                  return (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                      {tagList.map((tag: string, idx: number) => {
+                                        let bg = 'rgba(79, 70, 229, 0.08)';
+                                        let color = '#4f46e5';
+                                        let border = '1px solid rgba(79, 70, 229, 0.2)';
+                                        
+                                        const lowerTag = tag.toLowerCase();
+                                        if (lowerTag.includes('bad timing') || lowerTag.includes('considering')) {
+                                          bg = 'rgba(217, 119, 6, 0.08)';
+                                          color = '#d97706';
+                                          border = '1px solid rgba(217, 119, 6, 0.2)';
+                                        } else if (lowerTag.includes('new') || lowerTag.includes('needed')) {
+                                          bg = 'rgba(219, 39, 119, 0.08)';
+                                          color = '#db2777';
+                                          border = '1px solid rgba(219, 39, 119, 0.2)';
+                                        } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
+                                          bg = 'rgba(5, 150, 105, 0.08)';
+                                          color = '#059669';
+                                          border = '1px solid rgba(5, 150, 105, 0.2)';
+                                        }
+                                        
+                                        return (
+                                          <span 
+                                            key={idx} 
+                                            style={{ 
+                                              fontSize: '0.675rem', 
+                                              fontWeight: 600, 
+                                              padding: '1px 6px', 
+                                              borderRadius: '4px', 
+                                              background: bg,
+                                              color: color,
+                                              border: border,
+                                              whiteSpace: 'nowrap'
+                                            }}
+                                          >
+                                            {tag}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </td>
@@ -2090,13 +2138,18 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                         )}
                         {columns.find(col => col.id === 'created_at')?.visible && (
                           <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
-                            <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-                              {(segment === 'customer' ? (c.closed_date || c.created_at) : c.created_at) ? (() => {
-                                const d = new Date(segment === 'customer' ? (c.closed_date || c.created_at) : c.created_at);
-                                const pad = (n: number) => String(n).padStart(2, '0');
-                                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-                              })() : '—'}
-                            </p>
+                            {(segment === 'customer' ? (c.closed_date || c.created_at) : c.created_at) ? (() => {
+                              const d = new Date(segment === 'customer' ? (c.closed_date || c.created_at) : c.created_at);
+                              const pad = (n: number) => String(n).padStart(2, '0');
+                              const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                              const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                              return (
+                                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', lineHeight: 1.35 }}>
+                                  <div style={{ fontWeight: 600 }}>{dateStr}</div>
+                                  <div style={{ fontSize: '0.725rem', opacity: 0.85 }}>{timeStr}</div>
+                                </div>
+                              );
+                            })() : '—'}
                           </td>
                         )}
                         {/* Removed interaction column */}
