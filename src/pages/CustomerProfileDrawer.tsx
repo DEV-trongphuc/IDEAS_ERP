@@ -2012,6 +2012,26 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const isStudent = useMemo(() => {
     return String(formData.pipeline_status || contact?.pipeline_status || 'chua_xac_dinh') === 'hoc_vien';
   }, [formData.pipeline_status, contact?.pipeline_status]);
+
+  const isAtLeastDongLePhiHoSo = useMemo(() => {
+    const currentStatus = String(formData.pipeline_status || contact?.pipeline_status || 'chua_xac_dinh').trim().toLowerCase();
+    
+    const currentStage = pipelineStages.find(s => 
+      String(s.id).toLowerCase() === currentStatus ||
+      String(s.system_slug).toLowerCase() === currentStatus ||
+      String(s.name).toLowerCase() === currentStatus
+    );
+    const targetStage = pipelineStages.find(s => 
+      String(s.id).toLowerCase() === 'dong_le_phi_ho_so' ||
+      String(s.system_slug).toLowerCase() === 'dong_le_phi_ho_so' ||
+      String(s.name).toLowerCase() === 'dong_le_phi_ho_so'
+    );
+
+    if (!currentStage || !targetStage) {
+      return currentStatus === 'dong_le_phi_ho_so' || currentStatus === 'hoc_vien';
+    }
+    return currentStage.order_index >= targetStage.order_index;
+  }, [formData.pipeline_status, contact?.pipeline_status, pipelineStages]);
   const isAdmin = currentUser?.role && ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'manager'].includes(currentUser.role);
   const isViewer = currentUser?.role === 'viewer';
   const isMainOwnerOrManagerAdmin = useMemo(() => {
@@ -9485,9 +9505,20 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Phiếu thanh toán - {deals.length}</h3>
                         {!isViewer && (
-                          <button className="btn primary sm" onClick={() => {
-                            useUIStore.getState().setShowPOS(contact || formData);
-                          }}><Plus size={14} /> Tạo phiếu thanh toán</button>
+                          <button 
+                            className="btn primary sm" 
+                            onClick={() => {
+                              if (!isAtLeastDongLePhiHoSo) {
+                                addToast('Chặn thao tác: Chỉ được tạo phiếu thanh toán khi khách hàng ở bước Đóng lệ phí hồ sơ trở đi!', 'warning');
+                                return;
+                              }
+                              useUIStore.getState().setShowPOS(contact || formData);
+                            }}
+                            style={!isAtLeastDongLePhiHoSo ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                            title={!isAtLeastDongLePhiHoSo ? 'Chỉ được tạo phiếu thanh toán khi khách hàng ở bước Đóng lệ phí hồ sơ trở đi' : ''}
+                          >
+                            <Plus size={14} /> Tạo phiếu thanh toán
+                          </button>
                         )}
                       </div>
                       {loadingRelated ? (
