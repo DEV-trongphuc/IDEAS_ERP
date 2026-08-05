@@ -1924,33 +1924,27 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                               return (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px' }}>
                                   {tagList.map((tag: string, idx: number) => {
-                                    let bg = 'rgba(79, 70, 229, 0.08)';
-                                    let color = '#4f46e5';
-                                    let border = '1px solid rgba(79, 70, 229, 0.2)';
+                                    let bg = '#4f46e5';
+                                    let color = '#ffffff';
+                                    let border = 'none';
                                     
                                     const lowerTag = tag.toLowerCase();
                                     if (lowerTag.includes('bad timing') || lowerTag.includes('considering')) {
-                                      bg = 'rgba(217, 119, 6, 0.08)';
-                                      color = '#d97706';
-                                      border = '1px solid rgba(217, 119, 6, 0.2)';
+                                      bg = '#d97706';
                                     } else if (lowerTag.includes('new') || lowerTag.includes('needed')) {
-                                      bg = 'rgba(219, 39, 119, 0.08)';
-                                      color = '#db2777';
-                                      border = '1px solid rgba(219, 39, 119, 0.2)';
+                                      bg = '#db2777';
                                     } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
-                                      bg = 'rgba(5, 150, 105, 0.08)';
-                                      color = '#059669';
-                                      border = '1px solid rgba(5, 150, 105, 0.2)';
+                                      bg = '#059669';
                                     }
                                     
                                     return (
                                       <span 
                                         key={idx} 
                                         style={{ 
-                                          fontSize: '0.675rem', 
+                                          fontSize: '0.625rem', 
                                           fontWeight: 600, 
-                                          padding: '1px 6px', 
-                                          borderRadius: '4px', 
+                                          padding: '1px 5px', 
+                                          borderRadius: '3px', 
                                           background: bg,
                                           color: color,
                                           border: border,
