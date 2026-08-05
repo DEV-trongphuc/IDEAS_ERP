@@ -431,6 +431,15 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     { id: 'score', label: 'Lead Score', visible: false },
   ]);
   const [showColumns, setShowColumns] = useState(false);
+  const [dbTags, setDbTags] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/tags')
+      .then(r => {
+        setDbTags(r.data || r.data.data || []);
+      })
+      .catch(() => {});
+  }, []);
 
   // Report data/Ticket states
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -1917,31 +1926,44 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                         {columns.find(col => col.id === 'tags')?.visible && (
                           <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
                             {(() => {
-                              const tagList = typeof c.tags === 'string' 
+                              const rawTagList = typeof c.tags === 'string' 
                                 ? c.tags.split(',').map((t: string) => t.trim()).filter(Boolean) 
                                 : (Array.isArray(c.tags) ? c.tags : []);
-                              if (tagList.length === 0) return <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>—</span>;
+
+                              const cleanRegex = /^\d+\.\s*(status\s*-\s*)?/i;
+                              const cleanedTags = rawTagList.map((tag: string) => {
+                                return tag.replace(cleanRegex, '').trim();
+                              }).filter(Boolean);
+
+                              const uniqueTags = Array.from(new Set(cleanedTags));
+
+                              if (uniqueTags.length === 0) return <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>—</span>;
+                              
                               return (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px' }}>
-                                  {tagList.map((tag: string, idx: number) => {
-                                    let bg = '#2563eb';
-                                    let color = '#ffffff';
-                                    
+                                  {uniqueTags.map((tag: string, idx: number) => {
                                     const lowerTag = tag.toLowerCase();
-                                    if (lowerTag.includes('new')) {
-                                      bg = '#f97316';
-                                    } else if (lowerTag.includes('needed') || lowerTag.includes('considering')) {
-                                      bg = '#db2777';
-                                    } else if (lowerTag.includes('unqualified')) {
-                                      bg = '#ca8a04';
-                                    } else if (lowerTag.includes('qualified')) {
-                                      bg = '#ef4444';
-                                    } else if (lowerTag.includes('bad timing') || lowerTag.includes('bad_timing') || lowerTag.includes('baddtiming')) {
-                                      bg = '#7c3aed';
-                                    } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
-                                      bg = '#059669';
-                                    }
+                                    const matchedDbTag = dbTags.find(t => String(t.name).trim().toLowerCase() === lowerTag);
                                     
+                                    let bg = matchedDbTag?.color || '#2563eb';
+                                    let color = '#ffffff';
+
+                                    if (!matchedDbTag) {
+                                      if (lowerTag.includes('new')) {
+                                        bg = '#f97316';
+                                      } else if (lowerTag.includes('needed') || lowerTag.includes('considering')) {
+                                        bg = '#db2777';
+                                      } else if (lowerTag.includes('unqualified')) {
+                                        bg = '#ca8a04';
+                                      } else if (lowerTag.includes('qualified')) {
+                                        bg = '#ef4444';
+                                      } else if (lowerTag.includes('bad timing') || lowerTag.includes('bad_timing') || lowerTag.includes('baddtiming')) {
+                                        bg = '#7c3aed';
+                                      } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
+                                        bg = '#059669';
+                                      }
+                                    }
+
                                     return (
                                       <span 
                                         key={idx} 
@@ -1949,15 +1971,14 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                           display: 'inline-flex',
                                           alignItems: 'center',
                                           justifyContent: 'center',
-                                          height: '14px',
                                           fontSize: '0.52rem', 
                                           fontWeight: 600, 
-                                          padding: '0 8px', 
+                                          padding: '2px 8px', 
                                           borderRadius: '10px', 
                                           background: bg,
                                           color: color,
                                           whiteSpace: 'nowrap',
-                                          lineHeight: '1',
+                                          lineHeight: '1.2',
                                           boxSizing: 'border-box'
                                         }}
                                       >
