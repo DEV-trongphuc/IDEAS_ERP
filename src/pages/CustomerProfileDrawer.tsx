@@ -214,7 +214,7 @@ const TABS = [
   { id: 'scoring', label: 'Scoring', icon: <Target size={16} /> },
   { id: 'deals', label: 'Thanh toán', icon: <CreditCard size={16} /> },
   { id: 'expenses', label: 'Chi phí', icon: <DollarSign size={16} /> },
-  { id: 'tickets', label: 'Hỗ trợ & Khiếu nại', icon: <LifeBuoy size={16} /> },
+  { id: 'tickets', label: 'Helpdesk', icon: <LifeBuoy size={16} /> },
 ];
 
 const renderColoredTabIcon = (tabId: string, IconComponent: any) => {
@@ -11244,7 +11244,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   {activeTab === 'tickets' && (
                     <div className="animate-fade">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Hỗ trợ / Khiếu nại (Tickets)</h3>
+                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Helpdesk (Tickets)</h3>
                         {!isViewer && (
                           <button className="btn outline sm" onClick={() => setShowTicketModal(true)}>
                             <Plus size={14} /> Tạo Ticket
