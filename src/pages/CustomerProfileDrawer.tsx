@@ -11308,8 +11308,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Helpdesk (Tickets)</h3>
                         {!isViewer && (
-                          <button className="btn outline sm" onClick={() => setShowTicketModal(true)}>
-                            <Plus size={14} /> Tạo Ticket
+                          <button className="btn primary sm" onClick={() => setShowTicketModal(true)}>
+                            <Plus size={14} /> Tạo Helpdesk
                           </button>
                         )}
                       </div>
@@ -12153,7 +12153,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     <HelpCircle size={20} />
                   </div>
                   <div>
-                    <h3 style={{ fontWeight: 800 }}>Tạo Ticket hỗ trợ</h3>
+                    <h3 style={{ fontWeight: 800 }}>Tạo yêu cầu Helpdesk</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: 2 }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Khách hàng:</span>
                       <Avatar name={fullName} size={22} />
@@ -12168,22 +12168,22 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   <label className="form-label">Loại hỗ trợ *</label>
                   <CustomSelect
                     options={[
-                      { value: 'technical_support', label: 'Hỗ trợ kỹ thuật / Yêu cầu chung' },
-                      { value: 'lead_error_compensation', label: 'Báo lỗi data / Yêu cầu bù data' }
+                      { value: 'technical_support', label: 'Hỗ trợ học tập / Hướng dẫn học vụ' },
+                      { value: 'lead_error_compensation', label: 'Yêu cầu chuyên đề / Khóa luận & Hỗ trợ khác' }
                     ]}
                     value={ticketForm.category || 'technical_support'}
                     onChange={val => setTicketForm({ ...ticketForm, category: val.toString() })}
                   />
                   {(['ca_nhan', 'cold_call', 'gioi_thieu'].includes(formData.source || contact?.source) || (formData.dl_status || contact?.dl_status) === 'databank_claim') && (
                     <span style={{ fontSize: '0.725rem', color: '#dc2626', fontWeight: 600, display: 'block', marginTop: '4px' }}>
-                      * Khách hàng tự khai thác / Databank chỉ hỗ trợ gửi ticket Hỗ trợ kỹ thuật (không hỗ trợ báo lỗi bù data).
+                      * Học viên tự khai thác / Databank chỉ hỗ trợ gửi yêu cầu Hỗ trợ học tập.
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group">
                     <label className="form-label">Tiêu đề hỗ trợ *</label>
-                    <input className="form-input" placeholder="Tóm tắt yêu cầu/lỗi..." value={ticketForm.subject} onChange={e => setTicketForm({ ...ticketForm, subject: e.target.value })} autoFocus />
+                    <input className="form-input" placeholder="Tóm tắt nội dung yêu cầu hỗ trợ..." value={ticketForm.subject} onChange={e => setTicketForm({ ...ticketForm, subject: e.target.value })} autoFocus />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Độ ưu tiên</label>
@@ -12207,8 +12207,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   <label className="form-label">Ảnh chụp màn hình / Tài liệu đính kèm</label>
                   <PasteDropzoneArea
                     compact={true}
-                    placeholder="Kéo thả tệp hoặc nhấn Ctrl+V để dán ảnh màn hình lỗi"
-                    subtext="Chụp ảnh màn hình lỗi (Ctrl+V) dán trực tiếp tại đây"
+                    placeholder="Kéo thả tệp hoặc nhấn Ctrl+V để dán hình ảnh đính kèm"
+                    subtext="Chụp ảnh màn hình (Ctrl+V) dán trực tiếp tại đây"
                     onConfirmUpload={async (item) => {
                       if (item.file) {
                         const fd = new FormData();
@@ -12236,7 +12236,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
               <div className="modal-footer">
                 <button className="btn outline" onClick={() => setShowTicketModal(false)} disabled={isSubmitting}>Hủy</button>
                 <button className="btn primary" onClick={handleCreateTicket} disabled={isSubmitting}>
-                  {isSubmitting ? 'Đang tạo...' : 'Tạo Ticket'}
+                  {isSubmitting ? 'Đang tạo...' : 'Tạo yêu cầu'}
                 </button>
               </div>
             </motion.div>
