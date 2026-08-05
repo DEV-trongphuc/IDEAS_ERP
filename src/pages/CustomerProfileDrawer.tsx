@@ -1651,6 +1651,88 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
+  const [quickTaskSubject, setQuickTaskSubject] = useState('Gọi lại khách hàng');
+  const [quickTaskCustomSubject, setQuickTaskCustomSubject] = useState('');
+  const [quickTaskDateType, setQuickTaskDateType] = useState('tomorrow');
+  const [quickTaskCustomDate, setQuickTaskCustomDate] = useState('');
+  const [quickTaskDescription, setQuickTaskDescription] = useState('');
+  const [quickTaskAssigneeId, setQuickTaskAssigneeId] = useState('');
+  const [savingQuickTask, setSavingQuickTask] = useState(false);
+
+  const handleOpenQuickTaskModal = () => {
+    setQuickTaskSubject('Gọi lại khách hàng');
+    setQuickTaskCustomSubject('');
+    setQuickTaskDateType('tomorrow');
+    setQuickTaskCustomDate('');
+    setQuickTaskDescription('');
+    setQuickTaskAssigneeId(String(formData.owner_id || contact?.owner_id || currentUser?.id || ''));
+    setShowQuickTaskModal(true);
+  };
+
+  const handleSaveQuickTask = async () => {
+    let finalSubject = quickTaskSubject;
+    if (quickTaskSubject === 'Khác') {
+      if (!quickTaskCustomSubject.trim()) {
+        addToast('Vui lòng nhập tiêu đề công việc!', 'error');
+        return;
+      }
+      finalSubject = quickTaskCustomSubject.trim();
+    }
+
+    let finalDate = '';
+    const today = new Date();
+    if (quickTaskDateType === 'today') {
+      finalDate = today.toISOString().slice(0, 10);
+    } else if (quickTaskDateType === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(today.getDate() + 1);
+      finalDate = tomorrow.toISOString().slice(0, 10);
+    } else if (quickTaskDateType === 'day_after') {
+      const dayAfter = new Date();
+      dayAfter.setDate(today.getDate() + 2);
+      finalDate = dayAfter.toISOString().slice(0, 10);
+    } else {
+      if (!quickTaskCustomDate) {
+        addToast('Vui lòng chọn ngày!', 'error');
+        return;
+      }
+      finalDate = quickTaskCustomDate;
+    }
+
+    setSavingQuickTask(true);
+    try {
+      const payload = {
+        subject: finalSubject,
+        due_date: finalDate,
+        description: quickTaskDescription.trim(),
+        user_id: quickTaskAssigneeId ? Number(quickTaskAssigneeId) : null,
+        created_by: currentUser?.id ? Number(currentUser.id) : null,
+        require_approval: 0,
+        approval_status: 'none',
+        related_id: Number(formData.id || contact?.id),
+        related_type: 'contact',
+        contact_id: Number(formData.id || contact?.id),
+        type: 'task',
+        priority: 'medium',
+        progress: 0
+      };
+
+      const res = await api.post('/activities', payload);
+      if (res.data && res.data.success) {
+        addToast('Đã tạo công việc thành công!', 'success');
+        setShowQuickTaskModal(false);
+        fetchData();
+      } else {
+        addToast('Tạo công việc thất bại!', 'error');
+      }
+    } catch (e: any) {
+      console.error(e);
+      addToast('Đã xảy ra lỗi khi tạo công việc!', 'error');
+    } finally {
+      setSavingQuickTask(false);
+    }
+  };
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReasonType, setReportReasonType] = useState('');
   const [reportDetails, setReportDetails] = useState('');
@@ -9655,36 +9737,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             </button>
                           </div>
                           {!isViewer && (
-                            <button className="btn primary" style={{ padding: '8px 16px', fontSize: '0.875rem', height: '34px' }} onClick={() => {
-                              const today = new Date().toISOString().slice(0, 10);
-                              const fullName = (formData.full_name || '').trim();
-                              setSelectedTaskForDetails({
-                                id: 'new',
-                                subject: '',
-                                priority: 'medium',
-                                due_date: today,
-                                description: '',
-                                link: '',
-                                user_id: String(formData?.owner_id || currentUser?.id || ''),
-                                progress: 0,
-                                require_approval: 0,
-                                approver_id: '',
-                                participant_ids: '',
-                                related_contact_ids: [],
-                                checklist: [],
-                                recurrence_pattern: 'none',
-                                recurrence_weekly_days: [],
-                                recurrence_monthly_day: 1,
-                                project_id: '',
-                                campaign_id: '',
-                                team_id: '',
-                                campaign_target: '',
-                                related_id: formData?.id || contact?.id,
-                                related_type: 'contact',
-                                contact_name: fullName,
-                                contact_id: formData?.id || contact?.id
-                              });
-                            }}><Plus size={14} /> Thêm công việc</button>
+                            <button 
+                              className="btn primary" 
+                              style={{ padding: '8px 16px', fontSize: '0.875rem', height: '34px' }} 
+                              onClick={handleOpenQuickTaskModal}
+                            >
+                              <Plus size={14} /> Thêm công việc
+                            </button>
                           )}
                         </div>
                       </div>
@@ -11942,6 +12001,139 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       )}
 
 {/* CREATE TICKET MODAL */}
+      <AnimatePresence>
+        {showQuickTaskModal && (
+          <div className="overlay-backdrop" style={{ zIndex: 1000030 }} onClick={() => setShowQuickTaskModal(false)}>
+            <motion.div
+              className="modal-sheet"
+              style={{ width: '100%', maxWidth: 480 }}
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CheckSquare size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: 800 }}>Tạo công việc nhanh</h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>Tạo lịch nhắc nhở gọi lại hoặc gặp mặt</p>
+                  </div>
+                </div>
+                <button className="btn-icon sm" onClick={() => setShowQuickTaskModal(false)}><X size={18} /></button>
+              </div>
+
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700 }}>Loại công việc / Tiêu đề *</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                    {['Gọi lại khách hàng', 'Gặp mặt tư vấn', 'Gửi tài liệu/báo giá', 'Khác'].map(subj => (
+                      <button
+                        key={subj}
+                        type="button"
+                        onClick={() => {
+                          setQuickTaskSubject(subj);
+                          if (subj !== 'Khác') setQuickTaskCustomSubject('');
+                        }}
+                        className={`btn sm ${quickTaskSubject === subj ? 'primary' : 'outline'}`}
+                        style={{ borderRadius: '8px', fontSize: '0.75rem', padding: '4px 10px' }}
+                      >
+                        {subj}
+                      </button>
+                    ))}
+                  </div>
+                  {quickTaskSubject === 'Khác' && (
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Nhập tiêu đề công việc..."
+                      value={quickTaskCustomSubject}
+                      onChange={e => setQuickTaskCustomSubject(e.target.value)}
+                      style={{ fontSize: '0.85rem' }}
+                    />
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700 }}>Hạn hoàn thành *</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                    {[
+                      { value: 'tomorrow', label: 'Ngày mai' },
+                      { value: 'day_after', label: 'Ngày kia' },
+                      { value: 'today', label: 'Hôm nay' },
+                      { value: 'custom', label: 'Chọn ngày khác' }
+                    ].map(item => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setQuickTaskDateType(item.value)}
+                        className={`btn sm ${quickTaskDateType === item.value ? 'primary' : 'outline'}`}
+                        style={{ borderRadius: '8px', fontSize: '0.75rem', padding: '4px 10px' }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  {quickTaskDateType === 'custom' && (
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={quickTaskCustomDate}
+                      onChange={e => setQuickTaskCustomDate(e.target.value)}
+                      style={{ fontSize: '0.85rem' }}
+                    />
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700 }}>Người thực hiện</label>
+                  <CustomSelect
+                    options={users.map(u => ({
+                      value: String(u.id),
+                      label: u.full_name,
+                      avatar: u.avatar_url,
+                      sublabel: u.role
+                    }))}
+                    value={quickTaskAssigneeId}
+                    onChange={val => setQuickTaskAssigneeId(String(val))}
+                    placeholder="Chọn nhân sự thực hiện..."
+                    searchable
+                    showAvatars
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700 }}>Ghi chú / Chi tiết (Không bắt buộc)</label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    placeholder="Nhập nội dung cần ghi chú khi làm việc..."
+                    value={quickTaskDescription}
+                    onChange={e => setQuickTaskDescription(e.target.value)}
+                    style={{ fontSize: '0.85rem', resize: 'vertical' }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                <button type="button" className="btn outline" onClick={() => setShowQuickTaskModal(false)}>Hủy</button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={handleSaveQuickTask}
+                  disabled={savingQuickTask}
+                >
+                  {savingQuickTask ? 'Đang tạo...' : 'Tạo công việc'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showTicketModal && (
           <div className="overlay-backdrop" style={{ zIndex: 1000020 }} onClick={() => setShowTicketModal(false)}>
