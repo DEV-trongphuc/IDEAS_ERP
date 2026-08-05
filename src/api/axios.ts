@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import { API_BASE } from '../config/env';
 
 // Auto-detect: local dev uses Vite proxy, production uses real URL
@@ -10,6 +10,99 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 });
+
+// --- CACHING & DEDUPLICATION LAYER ---
+const CACHE_LIFETIME = 5 * 60 * 1000; // 5 minutes
+const cacheMap = new Map<string, { data: any; timestamp: number }>();
+const pendingRequests = new Map<string, Promise<any>>();
+
+export function clearApiCache() {
+  cacheMap.clear();
+  pendingRequests.clear();
+}
+
+function isCacheable(config: any): boolean {
+  const method = (config.method || 'get').toLowerCase();
+  if (method !== 'get') {
+    return false;
+  }
+  const url = config.url || '';
+  let cleanUrl = url.replace(/^\//, '').split('?')[0];
+  
+  if (cleanUrl === 'api.php' && config.params?.action) {
+    cleanUrl = config.params.action.replace(/^\//, '').split('?')[0];
+  }
+  
+  const cacheableEndpoints = [
+    'users',
+    'projects',
+    'marketing-campaigns',
+    'teams',
+    'tags',
+    'pipeline-stages',
+    'custom-fields'
+  ];
+  
+  return cacheableEndpoints.includes(cleanUrl);
+}
+
+function getCacheKey(config: any): string {
+  const url = config.url || '';
+  let cleanUrl = url.replace(/^\//, '').split('?')[0];
+  const params = { ...(config.params || {}) };
+  
+  if (cleanUrl === 'api.php' && params.action) {
+    cleanUrl = params.action.replace(/^\//, '').split('?')[0];
+    delete params.action;
+  }
+  
+  return `${cleanUrl}::${JSON.stringify(params)}`;
+}
+
+const originalRequest = api.request.bind(api);
+api.request = function (urlOrConfig: any, config?: any) {
+  let finalConfig = urlOrConfig;
+  if (typeof urlOrConfig === 'string') {
+    finalConfig = { ...config, url: urlOrConfig };
+  } else {
+    finalConfig = urlOrConfig || {};
+  }
+  
+  const method = (finalConfig.method || 'get').toLowerCase();
+  
+  // Clear cache on any mutating request
+  if (['post', 'put', 'delete', 'patch'].includes(method)) {
+    clearApiCache();
+  }
+
+  if (isCacheable(finalConfig)) {
+    const key = getCacheKey(finalConfig);
+    const cached = cacheMap.get(key);
+    
+    if (cached && (Date.now() - cached.timestamp < CACHE_LIFETIME)) {
+      return Promise.resolve(cached.data);
+    }
+    
+    let pending = pendingRequests.get(key);
+    if (!pending) {
+      pending = originalRequest(urlOrConfig, config)
+        .then((response) => {
+          cacheMap.set(key, { data: response, timestamp: Date.now() });
+          pendingRequests.delete(key);
+          return response;
+        })
+        .catch((err) => {
+          pendingRequests.delete(key);
+          throw err;
+        });
+      pendingRequests.set(key, pending);
+    }
+    return pending;
+  }
+  
+  return originalRequest(urlOrConfig, config);
+};
+// -------------------------------------
 
 
 // Attach access token

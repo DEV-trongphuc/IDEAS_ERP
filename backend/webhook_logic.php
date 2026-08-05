@@ -1375,8 +1375,17 @@ function insertLead($conn, $data, $assignedConsultantId, $phone, $email, $name, 
         $note = empty(trim($note ?? '')) ? $sourceUpdateNote : $note . "\n" . $sourceUpdateNote;
     }
 
-    $stmt = $conn->prepare("INSERT INTO leads (phone, email, name, source, type, note, last_interaction_date, assigned_to, connection_id) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    // Get claim setting
+    $requireClaim = 0;
+    $reqRes = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'require_lead_claim' LIMIT 1");
+    if ($reqRes && $rRow = $reqRes->fetch_assoc()) {
+        $requireClaim = (int)$rRow['setting_value'];
+    }
+    $isAcceptedVal = ($assignedConsultantId > 0 && $requireClaim === 0) ? 1 : 0;
+    $acceptedAtVal = ($assignedConsultantId > 0 && $requireClaim === 0) ? $dateVal : null;
+
+    $stmt = $conn->prepare("INSERT INTO leads (phone, email, name, source, type, note, last_interaction_date, assigned_to, connection_id, is_accepted, accepted_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                             ON DUPLICATE KEY UPDATE 
                                 name = IF(VALUES(name) IS NOT NULL AND VALUES(name) != '' AND (name = '' OR name IS NULL), VALUES(name), name),
                                 email = IF(VALUES(email) IS NOT NULL AND VALUES(email) != '' AND (email = '' OR email IS NULL), VALUES(email), email),
@@ -1384,9 +1393,11 @@ function insertLead($conn, $data, $assignedConsultantId, $phone, $email, $name, 
                                 type = VALUES(type),
                                 note = IF(TRIM(VALUES(note)) = '', note, IF(IFNULL(note, '') = '', VALUES(note), CONCAT(note, '\n___\n[Ngày ', DATE_FORMAT(NOW(), '%d/%m/%Y'), ']\n', VALUES(note)))),
                                 last_interaction_date = VALUES(last_interaction_date),
+                                is_accepted = IF(assigned_to IS NULL OR assigned_to = 0, VALUES(is_accepted), is_accepted),
+                                accepted_at = IF(assigned_to IS NULL OR assigned_to = 0, VALUES(accepted_at), accepted_at),
                                 assigned_to = IF(assigned_to IS NULL OR assigned_to = 0, VALUES(assigned_to), assigned_to),
                                 connection_id = IF(VALUES(connection_id) IS NOT NULL, VALUES(connection_id), connection_id)");
-    $stmt->bind_param("sssssssii", $phone, $email, $name, $source, $type, $note, $dateVal, $assignedConsultantId, $connectionId);
+    $stmt->bind_param("sssssssiisi", $phone, $email, $name, $source, $type, $note, $dateVal, $assignedConsultantId, $connectionId, $isAcceptedVal, $acceptedAtVal);
     $stmt->execute();
     $id = $stmt->insert_id;
     $stmt->close();
@@ -1591,6 +1602,15 @@ function updateLead($conn, $phone, $email, $assignedConsultantId, $source, $type
             $uStmt = $conn->prepare("UPDATE leads SET last_interaction_date = ? WHERE id = ?");
             $uStmt->bind_param("si", $dateVal, $id);
         } else if ($assignedConsultantId) {
+            // Get claim setting
+            $requireClaim = 0;
+            $reqRes = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'require_lead_claim' LIMIT 1");
+            if ($reqRes && $rRow = $reqRes->fetch_assoc()) {
+                $requireClaim = (int)$rRow['setting_value'];
+            }
+            $isAcceptedVal = ($requireClaim === 0) ? 1 : 0;
+            $acceptedAtVal = ($requireClaim === 0) ? $dateVal : null;
+
             $uStmt = $conn->prepare("UPDATE leads SET 
                 name = IF(? != '' AND (name = '' OR name IS NULL), ?, name),
                 email = IF(? != '' AND (email = '' OR email IS NULL), ?, email),
@@ -1599,10 +1619,12 @@ function updateLead($conn, $phone, $email, $assignedConsultantId, $source, $type
                 type = ?, 
                 note = IF(TRIM(?) = '', note, CONCAT(IFNULL(note, ''), IF(IFNULL(note, '') = '', '', CONCAT('\n___\n[Ngày ', DATE_FORMAT(NOW(), '%d/%m/%Y'), ']\n')), ?)), 
                 last_interaction_date = ?, 
-                assigned_to = ?, 
+                is_accepted = IF(assigned_to IS NULL OR assigned_to = 0, ?, is_accepted),
+                accepted_at = IF(assigned_to IS NULL OR assigned_to = 0, ?, accepted_at),
+                assigned_to = IF(assigned_to IS NULL OR assigned_to = 0, ?, assigned_to), 
                 connection_id = IF(? IS NOT NULL, ?, connection_id) 
                 WHERE id = ?");
-            $uStmt->bind_param("sssssssssssiiii", $name, $name, $email, $email, $phone, $phone, $source, $type, $note, $note, $dateVal, $assignedConsultantId, $connectionId, $connectionId, $id);
+            $uStmt->bind_param("sssssssssssisiiii", $name, $name, $email, $email, $phone, $phone, $source, $type, $note, $note, $dateVal, $isAcceptedVal, $acceptedAtVal, $assignedConsultantId, $connectionId, $connectionId, $id);
         } else {
             // Don't overwrite assigned_to when lead is pending/unassigned
             $uStmt = $conn->prepare("UPDATE leads SET 
@@ -1651,54 +1673,63 @@ function sendDirectSaleLeadNotification($conn, $leadId, $assignedToId, $roundId 
 
         if (!$lead) return;
 
-        $botToken = get_system_setting($conn, 'zalo_bot_token');
-
-        $custName = !empty($lead['name']) ? $lead['name'] : 'Khách hàng mới';
-        $custPhone = !empty($lead['phone']) ? $lead['phone'] : 'Không có';
-        $custEmail = !empty($lead['email']) ? $lead['email'] : 'Không có';
-
-        // 3. Construct Zalo message for Sale
-        $zaloMsg = "🚨 [ CÓ LEAD MỚI ĐƯỢC PHÂN BỔ CHO BẠN! ] 🚨\n"
-            . "━━━━━━━━━━━━━━━━━━━━\n"
-            . "👤 Khách hàng: " . $custName . "\n"
-            . "📞 Số ĐT: " . $custPhone . "\n"
-            . "✉️ Email: " . $custEmail . "\n"
-            . "🌐 Nguồn: " . ($lead['source'] ?? 'Không có') . "\n"
-            . "📋 Phân loại: " . ($lead['type'] ?? 'Không có') . "\n"
-            . "📝 Ghi chú: " . ($lead['note'] ?? 'Không có') . "\n\n"
-            . "⏰ Vui lòng truy cập hệ thống CRM để TIẾP NHẬN LEAD NGAY!";
-
-        // 4. Construct Email message for Sale
-        $emailSubj = "[IDEAS CRM] 🚨 Bạn vừa nhận được Lead mới: " . $custName;
-        $emailBody = "<h3>🚨 Thông báo Lead mới phân bổ!</h3>"
-            . "<p>Chào <strong>" . htmlspecialchars($sale['name']) . "</strong>,</p>"
-            . "<p>Hệ thống vừa tự động phân bổ cho bạn một Lead mới từ vòng chia:</p>"
-            . "<ul>"
-            . "    <li><strong>Khách hàng:</strong> " . htmlspecialchars($custName) . "</li>"
-            . "    <li><strong>Số điện thoại:</strong> " . htmlspecialchars($custPhone) . "</li>"
-            . "    <li><strong>Email:</strong> " . htmlspecialchars($custEmail) . "</li>"
-            . "    <li><strong>Nguồn:</strong> " . htmlspecialchars($lead['source'] ?? '-') . "</li>"
-            . "    <li><strong>Phân loại:</strong> " . htmlspecialchars($lead['type'] ?? '-') . "</li>"
-            . "    <li><strong>Ghi chú:</strong> " . nl2br(htmlspecialchars($lead['note'] ?? '-')) . "</li>"
-            . "</ul>"
-            . "<p>Vui lòng đăng nhập hệ thống CRM để tiếp nhận và tương tác với khách hàng kịp thời!</p>";
-
-        // 5. Send Zalo
-        if (!empty($botToken) && !empty($sale['zalo_chat_id'])) {
-            require_once __DIR__ . '/zalo_bot.php';
-            sendZaloMessage($botToken, $sale['zalo_chat_id'], $zaloMsg, false, (int)$leadId);
+        // 3. Resolve round name and CC emails
+        $roundName = '';
+        $ccEmails = '';
+        if ($roundId > 0) {
+            $rStmt = $conn->prepare("SELECT round_name, cc_emails FROM distribution_rounds WHERE id = ?");
+            if ($rStmt) {
+                $rStmt->bind_param("i", $roundId);
+                $rStmt->execute();
+                $rRow = $rStmt->get_result()->fetch_assoc();
+                if ($rRow) {
+                    $roundName = $rRow['round_name'] ?? '';
+                    $ccEmails = $rRow['cc_emails'] ?? '';
+                }
+                $rStmt->close();
+            }
         }
 
-        // 6. Send Email
-        if (!empty($sale['email'])) {
-            require_once __DIR__ . '/mailer.php';
-            sendEmailNotification($sale['email'], $emailSubj, 'Phân bổ Lead mới', $emailBody, '');
-        }
+        // 4. Send Zalo
+        require_once __DIR__ . '/zalo_bot.php';
+        sendLeadAssignedZaloMessageToSale(
+            $assignedToId,
+            $sale['name'],
+            $lead['name'] ?: 'Khách hàng ẩn danh',
+            $lead['phone'] ?: '',
+            $lead['note'] ?: '',
+            $lead['source'] ?: '',
+            $roundName,
+            $leadId,
+            $roundId,
+            $lead['email'] ?: '',
+            $lead['type'] ?: ''
+        );
 
-        // 7. Send Telegram if configured
+        // 5. Send Email
+        require_once __DIR__ . '/mailer.php';
+        sendLeadAssignedEmailToSale(
+            $sale['email'],
+            $sale['name'],
+            $lead['name'] ?: 'Khách hàng ẩn danh',
+            $lead['phone'] ?: '',
+            $lead['note'] ?: '',
+            $lead['source'] ?: '',
+            $ccEmails,
+            $roundName,
+            $leadId,
+            $assignedToId,
+            $roundId
+        );
+
+        // 6. Send Telegram if configured
         $teleBotToken = get_system_setting($conn, 'telegram_bot_token');
         if (!empty($teleBotToken) && !empty($sale['telegram_chat_id'])) {
             require_once __DIR__ . '/telegram_bot.php';
+            $custName = !empty($lead['name']) ? $lead['name'] : 'Khách hàng mới';
+            $custPhone = !empty($lead['phone']) ? $lead['phone'] : 'Không có';
+            $custEmail = !empty($lead['email']) ? $lead['email'] : 'Không có';
+            
             $teleMsg = "🚨 <b>[ CÓ LEAD MỚI ĐƯỢC PHÂN BỔ CHO BẠN! ]</b> 🚨\n"
                 . "━━━━━━━━━━━━━━━━━━━━\n"
                 . "👤 <b>Khách hàng:</b> " . htmlspecialchars($custName) . "\n"
@@ -2152,7 +2183,10 @@ function checkConsultantGates($conn, $consultantId, $lead = null)
         $bypassCheckIn = $isWeekendOrHoliday || $isApprovedNightShift;
     }
 
-    if (!$bypassCheckIn) {
+    $requireCheckinLead = get_system_setting($conn, 'require_checkin_lead');
+    $requireCheckinLead = ($requireCheckinLead === null) ? 1 : (int)$requireCheckinLead;
+
+    if ($requireCheckinLead === 1 && !$bypassCheckIn) {
         $allowPendingCheckin = (int) get_system_setting($conn, 'allow_lead_distribution_on_pending_checkin');
         if ($allowPendingCheckin === 1) {
             $stmtCheck = $conn->prepare("SELECT 1 FROM check_ins WHERE user_id = ? AND check_in_date = ? AND status IN ('approved', 'pending_approval')");

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { clearApiCache } from '../api/axios';
 
 export interface AuthUser {
   id: number;
@@ -58,6 +59,7 @@ export const useAuthStore = create<AuthStore>()(
       clearAuth: () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        clearApiCache();
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
       },
     }),

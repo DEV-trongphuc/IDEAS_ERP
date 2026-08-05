@@ -219,6 +219,7 @@ try {
     $conn->query("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('auto_approve_checkin', '1')");
     $conn->query("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('golden_hours_max_leads_per_consultant', '0')");
     $conn->query("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('require_lead_claim', '0')");
+    $conn->query("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('require_checkin_lead', '1')");
 
     // 5. Ensure 2FA columns exist in users table
     $chk2FA = $conn->query("SHOW COLUMNS FROM users LIKE 'two_factor_enabled'");

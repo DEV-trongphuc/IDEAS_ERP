@@ -3403,7 +3403,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         setUsers(team);
       }).catch(() => {});
       api.get('/tags').then(r => setAllTags(r.data.data || [])).catch(() => { });
-      api.get('/contacts?limit=1000').then(r => setContacts(r.data.data?.items || r.data.data || [])).catch(() => { });
+      // api.get('/contacts?limit=1000') removed for performance. TicketDrawer fetches contacts dynamically.
       const isRosterRestricted = ['sale', 'sales', 'manager', 'director'].includes(currentUser?.role || '');
       const bypassProj = isRosterRestricted ? '' : '?bypass_roster=1';
       api.get(`/projects${bypassProj}`).then(r => setAllowedProjects(r.data.data || r.data || [])).catch(() => {});

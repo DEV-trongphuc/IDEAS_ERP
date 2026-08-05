@@ -181,8 +181,8 @@ const AppTabs = () => {
     }
   }
 
-  const renderPageComponent = () => {
-    switch (currentPath) {
+  const renderPageComponent = (path: string) => {
+    switch (path) {
       case '/':
         return ((user?.role as any) === 'sale' || (user?.role as any) === 'sales')
           ? <SalePortal embedMode={true} activeTabProp="dashboard" key="dashboard" />
@@ -270,26 +270,53 @@ const AppTabs = () => {
     }
   };
 
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [visitedPaths, setVisitedPaths] = useState<string[]>(() => [location.pathname]);
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!visitedPaths.includes(location.pathname)) {
+      setVisitedPaths(prev => [...prev, location.pathname]);
+    }
+  }, [location.pathname, visitedPaths]);
 
   useEffect(() => {
     const handleRefresh = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail && customEvent.detail.path === location.pathname) {
-        setRefreshKey(prev => prev + 1);
+      if (customEvent.detail && customEvent.detail.path) {
+        const p = customEvent.detail.path;
+        setRefreshKeys(prev => ({
+          ...prev,
+          [p]: (prev[p] || 0) + 1
+        }));
       }
     };
     window.addEventListener('refresh-page', handleRefresh);
     return () => {
       window.removeEventListener('refresh-page', handleRefresh);
     };
-  }, [location.pathname]);
+  }, []);
 
   return (
-    <div key={location.pathname + '_' + refreshKey} style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <Suspense fallback={<PageLoader />}>
-        {renderPageComponent()}
-      </Suspense>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {visitedPaths.map(path => {
+        const isActive = path === location.pathname;
+        const rKey = refreshKeys[path] || 0;
+        return (
+          <div
+            key={path + '_' + rKey}
+            style={{
+              display: isActive ? 'block' : 'none',
+              width: '100%',
+              height: '100%',
+              position: 'relative'
+            }}
+          >
+            <Suspense fallback={<PageLoader />}>
+              {renderPageComponent(path)}
+            </Suspense>
+          </div>
+        );
+      })}
     </div>
   );
 };
