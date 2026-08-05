@@ -419,7 +419,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     { id: 'email', label: 'Email', visible: true },
     { id: 'phone', label: 'SĐT', visible: true },
     { id: 'company', label: 'Công ty', visible: false },
-    { id: 'tags', label: 'Phân loại (Tags)', visible: false },
+    { id: 'tags', label: 'Phân loại (Tags)', visible: true },
     { id: 'status', label: 'Trạng thái', visible: true },
     { id: 'contact', label: 'Liên lạc cuối', visible: true },
     { id: 'deal', label: 'Deal hiện tại', visible: false },
@@ -1818,7 +1818,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                     {columns.find(c => c.id === 'company')?.visible && !columns.find(c => c.id === 'name')?.visible && (
                       <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Công ty</th>
                     )}
-                    {/* {columns.find(c => c.id === 'tags')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Tags</th>} */}
+                    {columns.find(c => c.id === 'tags')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Phân loại (Tags)</th>}
                     {columns.find(c => c.id === 'status')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Trạng thái</th>}
                     {columns.find(c => c.id === 'contact')?.visible && !columns.find(c => c.id === 'owner')?.visible && (
                       <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Liên lạc cuối</th>
@@ -1886,54 +1886,6 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                     {c.company_name} {c.job_title ? `• ${c.job_title}` : ''}
                                   </p>
                                 )}
-                                {(() => {
-                                  const tagList = typeof c.tags === 'string' 
-                                    ? c.tags.split(',').map((t: string) => t.trim()).filter(Boolean) 
-                                    : (Array.isArray(c.tags) ? c.tags : []);
-                                  if (tagList.length === 0) return null;
-                                  return (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                                      {tagList.map((tag: string, idx: number) => {
-                                        let bg = 'rgba(79, 70, 229, 0.08)';
-                                        let color = '#4f46e5';
-                                        let border = '1px solid rgba(79, 70, 229, 0.2)';
-                                        
-                                        const lowerTag = tag.toLowerCase();
-                                        if (lowerTag.includes('bad timing') || lowerTag.includes('considering')) {
-                                          bg = 'rgba(217, 119, 6, 0.08)';
-                                          color = '#d97706';
-                                          border = '1px solid rgba(217, 119, 6, 0.2)';
-                                        } else if (lowerTag.includes('new') || lowerTag.includes('needed')) {
-                                          bg = 'rgba(219, 39, 119, 0.08)';
-                                          color = '#db2777';
-                                          border = '1px solid rgba(219, 39, 119, 0.2)';
-                                        } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
-                                          bg = 'rgba(5, 150, 105, 0.08)';
-                                          color = '#059669';
-                                          border = '1px solid rgba(5, 150, 105, 0.2)';
-                                        }
-                                        
-                                        return (
-                                          <span 
-                                            key={idx} 
-                                            style={{ 
-                                              fontSize: '0.675rem', 
-                                              fontWeight: 600, 
-                                              padding: '1px 6px', 
-                                              borderRadius: '4px', 
-                                              background: bg,
-                                              color: color,
-                                              border: border,
-                                              whiteSpace: 'nowrap'
-                                            }}
-                                          >
-                                            {tag}
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                })()}
                               </div>
                             </div>
                           </td>
@@ -1959,6 +1911,59 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                           <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
                             <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{c.company_name || '—'}</p>
                             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{c.job_title || ''}</p>
+                          </td>
+                        )}
+
+                        {columns.find(col => col.id === 'tags')?.visible && (
+                          <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+                            {(() => {
+                              const tagList = typeof c.tags === 'string' 
+                                ? c.tags.split(',').map((t: string) => t.trim()).filter(Boolean) 
+                                : (Array.isArray(c.tags) ? c.tags : []);
+                              if (tagList.length === 0) return <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>—</span>;
+                              return (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px' }}>
+                                  {tagList.map((tag: string, idx: number) => {
+                                    let bg = 'rgba(79, 70, 229, 0.08)';
+                                    let color = '#4f46e5';
+                                    let border = '1px solid rgba(79, 70, 229, 0.2)';
+                                    
+                                    const lowerTag = tag.toLowerCase();
+                                    if (lowerTag.includes('bad timing') || lowerTag.includes('considering')) {
+                                      bg = 'rgba(217, 119, 6, 0.08)';
+                                      color = '#d97706';
+                                      border = '1px solid rgba(217, 119, 6, 0.2)';
+                                    } else if (lowerTag.includes('new') || lowerTag.includes('needed')) {
+                                      bg = 'rgba(219, 39, 119, 0.08)';
+                                      color = '#db2777';
+                                      border = '1px solid rgba(219, 39, 119, 0.2)';
+                                    } else if (lowerTag.includes('umef') || lowerTag.includes('msc')) {
+                                      bg = 'rgba(5, 150, 105, 0.08)';
+                                      color = '#059669';
+                                      border = '1px solid rgba(5, 150, 105, 0.2)';
+                                    }
+                                    
+                                    return (
+                                      <span 
+                                        key={idx} 
+                                        style={{ 
+                                          fontSize: '0.675rem', 
+                                          fontWeight: 600, 
+                                          padding: '1px 6px', 
+                                          borderRadius: '4px', 
+                                          background: bg,
+                                          color: color,
+                                          border: border,
+                                          whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        {tag}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
                           </td>
                         )}
                         {columns.find(col => col.id === 'status')?.visible && (
