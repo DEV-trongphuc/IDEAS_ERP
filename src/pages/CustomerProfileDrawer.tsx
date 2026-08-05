@@ -7892,8 +7892,8 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               placeholder="Chọn thẻ tag..."
                             />
                             <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '100%', marginBottom: '0.25rem' }}>Gợi ý hệ thống:</span>
-                              {allTags.slice(0, 8).map(t => (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', width: '100%', marginBottom: '0.25rem' }}>Các tag trong hệ thống:</span>
+                              {allTags.map(t => (
                                 <button
                                   key={t.id}
                                   onClick={() => !tags.includes(t.name) && setTags([...tags, t.name])}
