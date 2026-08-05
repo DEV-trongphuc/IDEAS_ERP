@@ -2858,6 +2858,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           return uName === searchVal || uName.includes(searchVal);
         });
 
+        if (!taggedUser) {
+          return part;
+        }
+
         const displayName = taggedUser?.full_name || name.replace(/_/g, ' ');
         const avatarUrl = taggedUser?.avatar_url || taggedUser?.avatar;
 

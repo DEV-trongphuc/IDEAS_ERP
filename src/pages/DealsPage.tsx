@@ -165,7 +165,7 @@ export const DealsPage: React.FC = () => {
   
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState<number>(() => {
-    return Number(localStorage.getItem('Ideas_deals_page_size')) || 20;
+    return Number(localStorage.getItem('Ideas_deals_page_size')) || 50;
   });
   const [total, setTotal] = useState(0);
   const [allowPipelineBackward, setAllowPipelineBackward] = useState<boolean>(false);
