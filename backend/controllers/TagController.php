@@ -106,10 +106,7 @@ class TagController {
         foreach ($rows as $rawTags) {
             if (empty($rawTags)) continue;
             
-            // Thử giải mã JSON
             $tags = json_decode($rawTags, true);
-            
-            // Nếu không phải JSON, thử tách bằng dấu phẩy
             if (!is_array($tags)) {
                 $tags = explode(',', $rawTags);
             }
@@ -117,29 +114,51 @@ class TagController {
             foreach ($tags as $tag) {
                 $tag = trim((string)$tag);
                 if ($tag === '') continue;
-                $counts[$tag] = ($counts[$tag] ?? 0) + 1;
+                
+                $cleanedTag = preg_replace('/^\d+\.\s*(status\s*-\s*)?/i', '', $tag);
+                $cleanedTag = trim($cleanedTag);
+                if ($cleanedTag === '') continue;
+
+                $counts[$cleanedTag] = ($counts[$cleanedTag] ?? 0) + 1;
             }
         }
 
-        // Fetch tag colors from the tags table
         $tagRows = $this->db->prepare("SELECT name, color FROM tags WHERE tenant_id = ?");
         $tagRows->execute([$auth['tenant_id']]);
         $colorMap = [];
         foreach ($tagRows->fetchAll(PDO::FETCH_ASSOC) as $r) {
-            $colorMap[$r['name']] = $r['color'];
+            $colorMap[strtolower(trim($r['name']))] = $r['color'];
         }
 
-        $palette = ['#7c3aed','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
-        $i = 0;
         $result = [];
         arsort($counts);
         foreach ($counts as $tag => $count) {
+            $lowerTag = strtolower($tag);
+            $bg = $colorMap[$lowerTag] ?? '';
+            
+            if (empty($bg)) {
+                if (strpos($lowerTag, 'new') !== false) {
+                    $bg = '#f97316';
+                } else if (strpos($lowerTag, 'needed') !== false || strpos($lowerTag, 'considering') !== false) {
+                    $bg = '#db2777';
+                } else if (strpos($lowerTag, 'unqualified') !== false) {
+                    $bg = '#ca8a04';
+                } else if (strpos($lowerTag, 'qualified') !== false) {
+                    $bg = '#ef4444';
+                } else if (strpos($lowerTag, 'bad timing') !== false || strpos($lowerTag, 'bad_timing') !== false || strpos($lowerTag, 'baddtiming') !== false) {
+                    $bg = '#7c3aed';
+                } else if (strpos($lowerTag, 'umef') !== false || strpos($lowerTag, 'msc') !== false) {
+                    $bg = '#059669';
+                } else {
+                    $bg = '#2563eb';
+                }
+            }
+
             $result[] = [
                 'tag'   => $tag,
                 'count' => $count,
-                'color' => $colorMap[$tag] ?? $palette[$i % count($palette)],
+                'color' => $bg,
             ];
-            $i++;
         }
 
         respond(200, $result);
