@@ -1981,6 +1981,10 @@ export default function ProjectsPage() {
           return normalizedUser === cleanMentionVal;
         });
 
+        if (!taggedUser) {
+          return part;
+        }
+
         const displayName = taggedUser?.full_name || taggedUser?.name || taggedUser?.fullname || taggedUser?.username || part.substring(1).replace(/_/g, ' ');
         const avatarUrl = taggedUser?.avatar_url || taggedUser?.avatar;
 

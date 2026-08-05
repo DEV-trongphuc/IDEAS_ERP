@@ -125,6 +125,10 @@ export const DealDrawer: React.FC<DealDrawerProps> = ({ isOpen, onClose, deal, o
           return normalizedUser === cleanMentionVal;
         });
 
+        if (!taggedUser) {
+          return part;
+        }
+
         const displayName = taggedUser?.full_name || part.substring(1).replace(/_/g, ' ');
         const avatarUrl = taggedUser?.avatar_url || taggedUser?.avatar;
         const initial = displayName ? displayName.charAt(0).toUpperCase() : '?';

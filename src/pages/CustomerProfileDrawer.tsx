@@ -280,6 +280,10 @@ const renderFormattedText = (text: string, users: any[], onMentionClick?: (e: Re
         return normalizedUser === cleanMentionVal;
       });
 
+      if (!taggedUser) {
+        return part;
+      }
+
       const displayName = taggedUser?.full_name || part.substring(1).replace(/_/g, ' ');
       const avatarUrl = taggedUser?.avatar_url || taggedUser?.avatar;
 
@@ -1229,6 +1233,10 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           const normalizedUser = (u.full_name || '').trim().replace(/\s+/g, '_').toLowerCase();
           return normalizedUser === cleanMention;
         });
+
+        if (!taggedUser) {
+          return part;
+        }
 
         const displayName = taggedUser?.full_name || part.substring(1).replace(/_/g, ' ');
         const avatarUrl = taggedUser?.avatar_url || taggedUser?.avatar;
