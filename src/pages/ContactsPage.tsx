@@ -1941,14 +1941,19 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                       <span 
                                         key={idx} 
                                         style={{ 
-                                          fontSize: '0.625rem', 
-                                          fontWeight: 600, 
-                                          padding: '1px 5px', 
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          height: '16px',
+                                          fontSize: '0.6rem', 
+                                          fontWeight: 700, 
+                                          padding: '0 5px', 
                                           borderRadius: '3px', 
                                           background: bg,
                                           color: color,
-                                          border: border,
-                                          whiteSpace: 'nowrap'
+                                          whiteSpace: 'nowrap',
+                                          lineHeight: '1',
+                                          boxSizing: 'border-box'
                                         }}
                                       >
                                         {tag}
