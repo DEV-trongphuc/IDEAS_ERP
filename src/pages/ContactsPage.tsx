@@ -436,7 +436,10 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   useEffect(() => {
     api.get('/tags')
       .then(r => {
-        setDbTags(r.data || r.data.data || []);
+        const arr = r.data && Array.isArray(r.data.data) 
+          ? r.data.data 
+          : (Array.isArray(r.data) ? r.data : []);
+        setDbTags(arr);
       })
       .catch(() => {});
   }, []);
@@ -1943,7 +1946,9 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px' }}>
                                   {uniqueTags.map((tag: string, idx: number) => {
                                     const lowerTag = tag.toLowerCase();
-                                    const matchedDbTag = dbTags.find(t => String(t.name).trim().toLowerCase() === lowerTag);
+                                    const matchedDbTag = Array.isArray(dbTags) 
+                                      ? dbTags.find(t => String(t.name).trim().toLowerCase() === lowerTag)
+                                      : null;
                                     
                                     let bg = matchedDbTag?.color || '#2563eb';
                                     let color = '#ffffff';
