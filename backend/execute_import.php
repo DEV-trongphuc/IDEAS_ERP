@@ -70,6 +70,12 @@ foreach ($students as $student) {
         
         // 2. Build Notes text
         $newNotesArr = [];
+        if (!empty($school)) {
+            $newNotesArr[] = "Trường: " . trim($school);
+        }
+        if (!empty($intake)) {
+            $newNotesArr[] = "Intake: " . trim($intake);
+        }
         if (!empty($studentId)) {
             $newNotesArr[] = "Mã học viên: " . trim($studentId);
         }

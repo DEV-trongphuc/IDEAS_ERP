@@ -7206,6 +7206,32 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         </div>
                       </div>
 
+                      <div className="card-panel" style={{ marginTop: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
+                          <FileText size={18} style={{ color: 'var(--color-primary)' }} />
+                          <h4 className="panel-title" style={{ margin: 0 }}>Ghi chú học viên / ban đầu</h4>
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                          <textarea
+                            className="form-input"
+                            style={{ 
+                              minHeight: '140px', 
+                              fontSize: '0.875rem', 
+                              lineHeight: 1.5, 
+                              padding: '10px 12px', 
+                              fontFamily: 'inherit',
+                              resize: 'vertical'
+                            }}
+                            placeholder="Nhập ghi chú hoặc thông tin học viên..."
+                            value={formData.notes || ''}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setFormData((prev: any) => ({ ...prev, notes: val }));
+                            }}
+                          />
+                        </div>
+                      </div>
+
 
 
                     </div>
@@ -8248,30 +8274,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           }} style={{ fontWeight: 600 }}><Plus size={14} /> Thêm ghi chú</button>
                         </div>
 
-                        {formData.notes && formData.notes.trim() && (
-                          <div 
-                            style={{ 
-                              padding: '1.25rem', 
-                              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
-                              border: '1px solid #bfdbfe', 
-                              borderLeft: '5px solid #2563eb', 
-                              borderRadius: '12px', 
-                              marginBottom: '1.5rem',
-                              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.05)',
-                              animation: 'fadeIn 0.3s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
-                              <FileText size={18} style={{ color: '#2563eb' }} />
-                              <h4 style={{ fontWeight: 800, fontSize: '0.9375rem', color: '#1e40af', margin: 0 }}>
-                                {t('Ghi chú / Thông tin ban đầu từ Marketing')}
-                              </h4>
-                            </div>
-                            <div style={{ fontSize: '0.875rem', color: '#1e3a8a', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                              {formatNote(formData.notes)}
-                            </div>
-                          </div>
-                        )}
+
 
                         {(() => {
                           // Retrieve stored note IDs sorting order
