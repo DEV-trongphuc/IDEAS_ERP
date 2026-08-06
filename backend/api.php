@@ -118,10 +118,17 @@ if (!empty($frontendUrl)) {
 $originToSet = '*';
 if (!empty($httpOrigin)) {
     $cleanedOrigin = rtrim($httpOrigin, '/');
-    foreach ($allowedOrigins as $allowed) {
-        if (strcasecmp(rtrim($allowed, '/'), $cleanedOrigin) === 0) {
-            $originToSet = $httpOrigin;
-            break;
+    $isLocalhost = (bool) preg_match('#^https?://localhost(:\d+)?$#', $cleanedOrigin);
+    $isVercel = (bool) preg_match('#^https?://.*\.vercel\.app$#', $cleanedOrigin);
+    
+    if ($isLocalhost || $isVercel) {
+        $originToSet = $httpOrigin;
+    } else {
+        foreach ($allowedOrigins as $allowed) {
+            if (strcasecmp(rtrim($allowed, '/'), $cleanedOrigin) === 0) {
+                $originToSet = $httpOrigin;
+                break;
+            }
         }
     }
 }

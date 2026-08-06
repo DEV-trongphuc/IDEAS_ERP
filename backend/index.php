@@ -65,7 +65,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_user_role') {
 
 // Also allow any localhost origin (any port) for local dev
 $isLocalhost = (bool) preg_match('#^https?://localhost(:\d+)?$#', $origin);
-if ($isLocalhost || in_array($origin, $allowed, true)) {
+$isVercel = (bool) preg_match('#^https?://.*\.vercel\.app$#', $origin);
+if ($isLocalhost || $isVercel || in_array($origin, $allowed, true)) {
     header("Access-Control-Allow-Origin: $origin");
     header('Access-Control-Allow-Credentials: true');
 } else {
