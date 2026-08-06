@@ -125,7 +125,7 @@ for sheet in excel_file.sheet_names:
     col_map = {}
     for col in df.columns:
         col_lower = str(col).lower()
-        if 'name' in col_lower or 'tên' in col_lower:
+        if ('name' in col_lower or 'tên' in col_lower) and 'công ty' not in col_lower and 'company' not in col_lower:
             col_map['name'] = col
         elif 'gender' in col_lower or 'tính' in col_lower:
             col_map['gender'] = col
