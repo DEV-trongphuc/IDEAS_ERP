@@ -7212,10 +7212,16 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                           <h4 className="panel-title" style={{ margin: 0 }}>Ghi chú học viên / ban đầu</h4>
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
+                          <style>{`
+                            #notes-textarea {
+                              min-height: 260px !important;
+                              height: 280px !important;
+                            }
+                          `}</style>
                           <textarea
+                            id="notes-textarea"
                             className="form-input"
                             style={{ 
-                              minHeight: '140px', 
                               fontSize: '0.875rem', 
                               lineHeight: 1.5, 
                               padding: '10px 12px', 
