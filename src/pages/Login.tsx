@@ -378,58 +378,148 @@ export const Login = () => {
             </div>
           )}
 
-          <div className="login-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '2rem' }}>
+          <div className="login-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '2rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+              QUICK LOGIN ACCOUNTS:
+            </div>
+            
+            {/* Admin */}
             <button
               onClick={() => handleQuickLogin('turniodev@gmail.com', 'pass123', 'Admin')}
               className="submit-btn-custom"
               disabled={loading}
               style={{
-                height: '48px',
-                fontSize: '1rem',
+                height: '44px',
+                fontSize: '0.9rem',
                 fontWeight: 700,
                 background: 'var(--color-primary, #BD1D2D)',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 color: 'white',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                boxShadow: '0 8px 16px rgba(189, 29, 45, 0.2)'
+                boxShadow: '0 4px 8px rgba(189, 29, 45, 0.15)'
               }}
             >
               {loading ? (
-                <><Loader2 className="animate-spin" size={18} /> {t('Đang xác thực...')}</>
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
               ) : (
-                <><LogIn size={18} /> Login Admin App</>
+                <><LogIn size={16} /> Admin: Dev Admin</>
               )}
             </button>
 
+            {/* Kế toán */}
             <button
               onClick={() => handleQuickLogin('thaont@ideas.edu.vn', 'accountant123', 'Accountant')}
               className="submit-btn-custom"
               disabled={loading}
               style={{
-                height: '48px',
-                fontSize: '1rem',
+                height: '44px',
+                fontSize: '0.9rem',
                 fontWeight: 700,
                 background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '10px',
                 color: 'white',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                boxShadow: '0 8px 16px rgba(2, 132, 199, 0.2)'
+                boxShadow: '0 4px 8px rgba(2, 132, 199, 0.15)'
               }}
             >
               {loading ? (
-                <><Loader2 className="animate-spin" size={18} /> {t('Đang xác thực...')}</>
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
               ) : (
-                <><LogIn size={18} /> Login Kế toán App</>
+                <><LogIn size={16} /> Kế toán: Nguyễn Thu Thảo</>
+              )}
+            </button>
+
+            {/* Nhân sự */}
+            <button
+              onClick={() => handleQuickLogin('phuongntd@ideas.edu.vn', 'phuong123', 'HR')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '44px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 8px rgba(16, 185, 129, 0.15)'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={16} /> Nhân sự: Nguyễn Thị Duy Phương</>
+              )}
+            </button>
+
+            {/* Sale Admin */}
+            <button
+              onClick={() => handleQuickLogin('linhdk@ideas.edu.vn', 'linh123', 'Sale Admin')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '44px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 8px rgba(245, 158, 11, 0.15)'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={16} /> Sale Admin: Đặng Khánh Linh</>
+              )}
+            </button>
+
+            {/* Director */}
+            <button
+              onClick={() => handleQuickLogin('numt@ideas.edu.vn', 'director123', 'Director')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '44px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 8px rgba(139, 92, 246, 0.15)'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={16} /> Director: Mai Thị Nữ</>
               )}
             </button>
           </div>

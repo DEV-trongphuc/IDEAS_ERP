@@ -265,6 +265,8 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   };
 
   const handleUploadUncFromModal = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const m = tempMilestones[index];
+    if (!selectedDepForManage || !m.id) return;
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
@@ -272,24 +274,18 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
       const compressedFile = await compressToWebP(file);
       const formData = new FormData();
       formData.append('file', compressedFile);
-      const token = localStorage.getItem('access_token') || localStorage.getItem('Ideas_token') || '';
-      const url = `${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=upload&token=${token}`;
 
-      const response = await fetch(url, {
+      const res = await fetchAPI(`deposits/${selectedDepForManage.id}/milestones/${m.id}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Auth-Token': token
-        },
         body: formData
       });
 
-      const res = await response.json();
-      if (res.success && res.data?.url) {
-        addToast('Tải ảnh UNC thành công! Hãy nhấn "Lưu lịch trình" để hoàn tất lưu.', 'success');
+      if (res.success && res.data?.unc_file_path) {
+        addToast('Tải ảnh UNC thành công!', 'success');
         const updated = [...tempMilestones];
-        updated[index] = { ...updated[index], status: 'paid', unc_file_path: res.data.url };
+        updated[index] = { ...updated[index], status: 'paid', unc_file_path: res.data.unc_file_path };
         setTempMilestones(updated);
+        onSaveSuccess();
       } else {
         addToast(res.message || 'Lỗi tải UNC', 'error');
       }
@@ -539,13 +535,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
   const totalApprovedMilestones = tempMilestones
     .filter(m => m.status === 'approved')
-    .reduce((sum, m) => sum + (m.expected_amount || 0), 0);
+    .reduce((sum, m) => sum + (parseFloat(m.expected_amount) || 0), 0);
 
   const totalApprovedMilestonesOriginal = tempMilestones
     .filter(m => m.status === 'approved')
     .reduce((sum, m) => {
       const amt = m.original_amount !== null && m.original_amount !== undefined ? m.original_amount : m.expected_amount;
-      return sum + (amt || 0);
+      return sum + (parseFloat(amt) || 0);
     }, 0);
 
   const totalCount = tempMilestones.length;
@@ -1759,6 +1755,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
         onClose={() => setIsCancelOpen(false)}
         title="Yêu cầu hủy giao dịch"
         width="400px"
+        zIndex={baseZIndex + 50}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="form-group" style={{ margin: 0 }}>
@@ -1787,6 +1784,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
         onClose={() => setPreviewReminderMilestone(null)}
         title="Xem trước thông báo nhắc nợ"
         width="550px"
+        zIndex={baseZIndex + 50}
       >
         {previewReminderMilestone && (() => {
           const sendToCaretaker = remindTargetManage === 2 || !selectedDepForManage.email;
