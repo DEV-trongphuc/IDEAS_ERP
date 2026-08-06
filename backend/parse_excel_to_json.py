@@ -143,8 +143,14 @@ for sheet in excel_file.sheet_names:
             col_map['industry'] = col
         elif 'tvv' in col_lower:
             col_map['tvv'] = col
-        elif 'intake' in col_lower:
+        elif 'intake' in col_lower and 'đang học' not in col_lower:
             col_map['intake'] = col
+        elif col_lower == 'id':
+            col_map['student_id'] = col
+        elif 'loại bằng' in col_lower:
+            col_map['degree_type'] = col
+        elif 'đang học theo intake' in col_lower:
+            col_map['current_intake_status'] = col
             
     # Process rows
     for index, row in df.iterrows():
@@ -183,6 +189,9 @@ for sheet in excel_file.sheet_names:
         industry = str(row.get(col_map.get('industry'))).strip() if 'industry' in col_map and not pd.isna(row.get(col_map.get('industry'))) else None
         tvv = str(row.get(col_map.get('tvv'))).strip() if 'tvv' in col_map and not pd.isna(row.get(col_map.get('tvv'))) else None
         intake = str(row.get(col_map.get('intake'))).strip() if 'intake' in col_map and not pd.isna(row.get(col_map.get('intake'))) else None
+        student_id = str(row.get(col_map.get('student_id'))).strip() if 'student_id' in col_map and not pd.isna(row.get(col_map.get('student_id'))) else None
+        degree_type = str(row.get(col_map.get('degree_type'))).strip() if 'degree_type' in col_map and not pd.isna(row.get(col_map.get('degree_type'))) else None
+        current_intake_status = str(row.get(col_map.get('current_intake_status'))).strip() if 'current_intake_status' in col_map and not pd.isna(row.get(col_map.get('current_intake_status'))) else None
         
         owner_assigned = get_assigned_owner(tvv)
         
@@ -199,6 +208,9 @@ for sheet in excel_file.sheet_names:
             'industry': industry,
             'school': school,
             'intake': intake,
+            'student_id': student_id,
+            'degree_type': degree_type,
+            'current_intake_status': current_intake_status,
             'tvv_original': tvv,
             'owner_assigned': owner_assigned
         })
