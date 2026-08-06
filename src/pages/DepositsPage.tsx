@@ -343,15 +343,15 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     try {
       const [resDep, resCont, resProj, resCoop, resUsr, resPO, resExp, resComp, resSup, resSO] = await Promise.all([
         fetchAPI('deposits'),
-        fetchAPI('contacts?limit=1000'),
+        Promise.resolve({ success: true, data: [] }), // Avoid pre-loading 1000 contacts (from 24k database records)
         fetchAPI('projects?bypass_roster=1'),
         fetchAPI('cooperation-slips').catch(() => ({ success: false, data: [] })),
         fetchAPI('users?all=1').catch(() => ({ success: false, data: [] })),
         fetchAPI('purchase-orders').catch(() => ({ success: false, data: [] })),
-        fetchAPI('expenses?limit=5000').catch(() => ({ success: false, data: [] })),
-        fetchAPI('companies?limit=1000').catch(() => ({ success: false, data: [] })),
-        fetchAPI('suppliers').catch(() => ({ success: false, data: [] })),
-        fetchAPI('sales-orders?limit=5000').catch(() => ({ success: false, data: [] }))
+        fetchAPI('expenses?status=pending&limit=1000').catch(() => ({ success: false, data: [] })), // Only pending expenses are used in the forecast
+        Promise.resolve({ success: true, data: [] }), // Avoid pre-loading 1000 companies
+        Promise.resolve({ success: true, data: [] }), // Avoid pre-loading suppliers
+        fetchAPI('sales-orders?limit=1000').catch(() => ({ success: false, data: [] })) // Limit to 1000 orders
       ]);
 
       if (resDep.success) setDeposits(resDep.data || []);
@@ -1019,11 +1019,11 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
 
   const projectedReceivables = React.useMemo(() => {
     const todayStr = new Date().toISOString().substring(0, 10);
-    const map: Record<string, { date: string; totalAmount: number; milestones: any[] }> = {};
+    const map: Record<string, { date: string; totalAmount: number; pendingAmount: number; milestones: any[] }> = {};
 
     const depList = Array.isArray(deposits) ? deposits : [];
     depList.forEach(d => {
-      if (d.pipeline_status === 'pending') return;
+      const isPendingStudent = d.pipeline_status === 'pending';
 
       if (d.milestones && d.milestones.length > 0) {
         d.milestones.forEach(m => {
@@ -1035,12 +1035,18 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
               map[dateStr] = {
                 date: dateStr,
                 totalAmount: 0,
+                pendingAmount: 0,
                 milestones: []
               };
             }
-            map[dateStr].totalAmount += Number(m.expected_amount) || 0;
+            if (isPendingStudent) {
+              map[dateStr].pendingAmount += Number(m.expected_amount) || 0;
+            } else {
+              map[dateStr].totalAmount += Number(m.expected_amount) || 0;
+            }
             map[dateStr].milestones.push({
               ...m,
+              isPendingStudent,
               milestone_name: m.milestone_name || t('Thanh toán đợt cọc'),
               customerName: d.full_name || '',
               phone: d.phone,
@@ -1155,6 +1161,20 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
       return diff <= 30;
     }).reduce((sum, r) => sum + r.totalAmount, 0);
+  }, [projectedReceivables]);
+
+  const pendingRec7Days = React.useMemo(() => {
+    return projectedReceivables.filter(r => {
+      const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+      return diff <= 7;
+    }).reduce((sum, r) => sum + (r.pendingAmount || 0), 0);
+  }, [projectedReceivables]);
+
+  const pendingRec30Days = React.useMemo(() => {
+    return projectedReceivables.filter(r => {
+      const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+      return diff <= 30;
+    }).reduce((sum, r) => sum + (r.pendingAmount || 0), 0);
   }, [projectedReceivables]);
 
   const projectedExp7Days = React.useMemo(() => {
@@ -1851,8 +1871,26 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Dự thu 7 ngày tới</span>
-                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <TrendingUp size={16} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {pendingRec7Days > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 6px',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(245, 158, 11, 0.2)'
+                    }} title={`Dự thu tạm dừng (học viên bảo lưu): ${pendingRec7Days.toLocaleString('vi-VN')} đ`}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
+                      <span style={{ fontSize: '0.625rem', color: '#d97706', fontWeight: 800 }}>
+                        {pendingRec7Days.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(37, 99, 235, 0.08)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <TrendingUp size={16} />
+                  </div>
                 </div>
               </div>
               <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
@@ -1862,7 +1900,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                 Có {projectedReceivables.filter(r => {
                   const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
                   return diff <= 7;
-                }).reduce((sum, r) => sum + r.milestones.length, 0)} đợt dự kiến thu
+                }).reduce((sum, r) => sum + r.milestones.filter(m => !m.isPendingStudent).length, 0)} đợt dự kiến thu
               </div>
               <div className="stat-change up" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-success)', fontWeight: 700 }}>
                 <span>Dòng tiền dự kiến tăng</span>
@@ -1876,8 +1914,26 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Dự thu 30 ngày tới</span>
-                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Calendar size={16} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {pendingRec30Days > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 6px',
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(245, 158, 11, 0.2)'
+                    }} title={`Dự thu tạm dừng (học viên bảo lưu): ${pendingRec30Days.toLocaleString('vi-VN')} đ`}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
+                      <span style={{ fontSize: '0.625rem', color: '#d97706', fontWeight: 800 }}>
+                        {pendingRec30Days.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Calendar size={16} />
+                  </div>
                 </div>
               </div>
               <div className="stat-value" style={{ color: 'var(--color-text)', margin: '4px 0', fontSize: '1.2rem', fontWeight: 800 }}>
@@ -1887,7 +1943,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                 Có {projectedReceivables.filter(r => {
                   const diff = (new Date(r.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
                   return diff <= 30;
-                }).reduce((sum, r) => sum + r.milestones.length, 0)} đợt dự kiến thu
+                }).reduce((sum, r) => sum + r.milestones.filter(m => !m.isPendingStudent).length, 0)} đợt dự kiến thu
               </div>
               <div className="stat-change up" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-success)', fontWeight: 700 }}>
                 <span>Chu kỳ thanh toán 30 ngày</span>
