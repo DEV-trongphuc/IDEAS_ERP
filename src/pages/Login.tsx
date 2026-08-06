@@ -297,13 +297,12 @@ export const Login = () => {
       {/* Left Side: Brand & Visual Marquee */}
       <div className="left-side">
         <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-          {/* Header Badge */}
-          <div className="badge-container animate-float">
+          <a href="https://portfo-turnio.vercel.app/" target="_blank" rel="noopener noreferrer" className="badge-container animate-float" style={{ textDecoration: 'none', display: 'inline-flex', width: 'fit-content' }}>
             <Sparkles size={14} style={{ color: '#f87171' }} />
             <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#fca5a5' }}>
-              {t("Data Automation Ecosystem")}
+              Power by TurnioDEV
             </span>
-          </div>
+          </a>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <h1 className="title-main">
