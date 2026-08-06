@@ -379,157 +379,33 @@ export const Login = () => {
             </div>
           )}
 
-          <div className="login-card">
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="form-label-custom">{t("Email đăng nhập")}</label>
-                <div className="input-wrapper">
-                  <Mail size={16} className="input-icon" />
-                  <input
-                    type="email"
-                    className="input-field"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t("VD: ten@ideas.edu.vn")}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label-custom">{t("Mật khẩu")}</label>
-                <div className="input-wrapper">
-                  <Lock size={16} className="input-icon" />
-                  <input
-                    type="password"
-                    className="input-field"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t("Nhập mật khẩu")}
-                    autoComplete="current-password"
-                    required
-                  />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowForgotPasswordModal(true);
-                      setForgotEmail(email);
-                      setForgotStep(1);
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#f43f5e',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {t("Quên mật khẩu?")}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="submit-btn-custom"
-                disabled={loading}
-              >
-                {loading ? t('Đang xác thực...') : <><LogIn size={16} /> {t("Đăng nhập")}</>}
-              </button>
-
-              {isDemoMode && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoading(true);
-                    setTimeout(() => {
-                      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@Ideas.net', name: 'Admin Demo', role: 'admin' });
-                      navigate('/');
-                      setLoading(false);
-                    }, 500);
-                  }}
-                  className="submit-btn-custom"
-                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)' }}
-                >
-                  <LogIn size={16} /> {t("Đăng nhập Demo (Admin)")}
-                </button>
+          <div className="login-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '2rem' }}>
+            <button
+              onClick={() => handleQuickLogin('turniodev@gmail.com', 'pass123', 'Admin')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '48px',
+                fontSize: '1rem',
+                fontWeight: 700,
+                background: 'var(--color-primary, #BD1D2D)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 8px 16px rgba(189, 29, 45, 0.2)'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={18} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={18} /> Login Admin App</>
               )}
-            </form>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '20px 0' }}>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
-              <span style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', letterSpacing: '1px' }}>{t("Hoặc")}</span>
-              <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-              <div ref={googleBtnRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', minHeight: '44px' }}></div>
-            </div>
-
-            <p style={{ fontSize: '10px', color: '#475569', fontWeight: 500, textAlign: 'center', lineHeight: 1.5, marginTop: '16px' }}>
-              {t("Bằng cách đăng nhập, bạn đồng ý với các chính sách bảo mật và điều khoản sử dụng của hệ thống.")}
-            </p>
-          </div>
-
-          {/* Dev Quick Login Section */}
-          <div style={{ padding: '16px', background: 'rgba(15, 23, 42, 0.25)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <p style={{ fontSize: '10px', color: '#475569', fontWeight: 900, textTransform: 'uppercase', textAlign: 'center', letterSpacing: '1px', margin: 0 }}>
-              {t("Developer Quick Login")}
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-              <button
-                onClick={() => handleQuickLogin('turniodev@gmail.com', 'pass123', 'Admin')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Admin
-              </button>
-              <button
-                onClick={() => handleQuickLogin('director@Ideas.test', 'director123', 'Director')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Director
-              </button>
-              <button
-                onClick={() => handleQuickLogin('manager@Ideas.test', 'manager123', 'Manager')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Manager
-              </button>
-              <button
-                onClick={() => handleQuickLogin('dom.marketing.vn@gmail.com', '123456', 'Sale')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Sale
-              </button>
-              <button
-                onClick={() => handleQuickLogin('saleadmin@ideas.edu.vn', '123456', 'Sale Admin')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Sale Admin
-              </button>
-              <button
-                onClick={() => handleQuickLogin('hr@Ideas.test', 'hr123', 'HR')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                HR (Nhân sự)
-              </button>
-              <button
-                onClick={() => handleQuickLogin('accountant@Ideas.test', 'accountant123', 'Accountant')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Kế toán
-              </button>
-              <button
-                onClick={() => handleQuickLogin('marketing@Ideas.test', 'marketing123', 'Marketing')}
-                style={{ height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(15, 23, 42, 0.6)', color: '#cbd5e1', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Marketing
-              </button>
-            </div>
+            </button>
           </div>
         </div>
 
