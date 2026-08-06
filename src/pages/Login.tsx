@@ -407,7 +407,7 @@ export const Login = () => {
             </button>
 
             <button
-              onClick={() => handleQuickLogin('accountant@Ideas.test', 'accountant123', 'Accountant')}
+              onClick={() => handleQuickLogin('thaont@ideas.edu.vn', 'accountant123', 'Accountant')}
               className="submit-btn-custom"
               disabled={loading}
               style={{
