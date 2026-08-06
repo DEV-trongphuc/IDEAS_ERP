@@ -223,7 +223,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
         setPendingLeadsCount(0);
 
         // Fetch undone tasks for all roles
-        const resTasks = await fetchAPI('activities&status=planned&limit=200');
+        const resTasks = await fetchAPI('activities&status=planned&limit=200&type=task,meeting');
         if (resTasks && resTasks.success) {
           const rawTasks = resTasks.data?.items || resTasks.data || [];
           if (Array.isArray(rawTasks)) {

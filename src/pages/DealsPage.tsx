@@ -362,8 +362,6 @@ export const DealsPage: React.FC = () => {
     try {
       const endpoint = pipelineView === 'contacts' ? '/contacts' : (pipelineView === 'companies' ? '/companies' : '/deals');
       const params: any = {
-        page: viewMode === 'kanban' ? 1 : page,
-        limit: viewMode === 'kanban' ? 500 : limit,
         search: debouncedSearch,
         owner_id: filterAssignee,
         stage_id: filterStage,
@@ -382,34 +380,80 @@ export const DealsPage: React.FC = () => {
         params.to = filterDateTo;
       }
 
-      const r = await api.get(endpoint, { params });
-      let dataItems = r.data.data?.items || [];
-
       const currentUser = useAuthStore.getState().user;
-      if (currentUser?.role === 'sale') {
-        dataItems = dataItems.filter((c: any) => Number(c.owner_id) === Number(currentUser.id));
-      } else if (currentUser?.role === 'manager') {
-        const activeTeamId = getEffectiveTeamId();
-        if (activeTeamId && allUsers.length > 0) {
-          const teamMemberIds = allUsers.map((u: any) => u.id);
-          if (!teamMemberIds.includes(currentUser.id)) {
-            teamMemberIds.push(currentUser.id);
+
+      if (viewMode === 'kanban') {
+        // Fetch contacts/deals/companies for each stage in parallel (limit 100 per stage)
+        const promises = stages.map(async (stage) => {
+          const stageParams = {
+            ...params,
+            page: 1,
+            limit: 100,
+            stage_id: stage.id
+          };
+          const res = await api.get(endpoint, { params: stageParams });
+          let stageItems = res.data.data?.items || res.data.data || [];
+          
+          if (currentUser?.role === 'sale') {
+            stageItems = stageItems.filter((c: any) => Number(c.owner_id) === Number(currentUser.id));
+          } else if (currentUser?.role === 'manager') {
+            const activeTeamId = getEffectiveTeamId();
+            if (activeTeamId && allUsers.length > 0) {
+              const teamMemberIds = allUsers.map((u: any) => u.id);
+              if (!teamMemberIds.includes(currentUser.id)) {
+                teamMemberIds.push(currentUser.id);
+              }
+              stageItems = stageItems.filter((c: any) => teamMemberIds.includes(Number(c.owner_id)));
+            }
           }
-          dataItems = dataItems.filter((c: any) => teamMemberIds.includes(Number(c.owner_id)));
+          return { stageId: stage.id, items: stageItems };
+        });
+
+        const results = await Promise.all(promises);
+        const grouped: Record<number, any[]> = {};
+        let totalCount = 0;
+        results.forEach(res => {
+          grouped[res.stageId] = res.items;
+          totalCount += res.items.length;
+        });
+
+        setItems(grouped);
+        setTotal(totalCount);
+      } else {
+        // Table list view mode - single global request
+        const tableParams = {
+          ...params,
+          page,
+          limit
+        };
+        const r = await api.get(endpoint, { params: tableParams });
+        let dataItems = r.data.data?.items || [];
+
+        if (currentUser?.role === 'sale') {
+          dataItems = dataItems.filter((c: any) => Number(c.owner_id) === Number(currentUser.id));
+        } else if (currentUser?.role === 'manager') {
+          const activeTeamId = getEffectiveTeamId();
+          if (activeTeamId && allUsers.length > 0) {
+            const teamMemberIds = allUsers.map((u: any) => u.id);
+            if (!teamMemberIds.includes(currentUser.id)) {
+              teamMemberIds.push(currentUser.id);
+            }
+            dataItems = dataItems.filter((c: any) => teamMemberIds.includes(Number(c.owner_id)));
+          }
         }
+
+        const grouped: Record<number, any[]> = {};
+        dataItems.forEach((d: any) => {
+          const sid = (!d.stage_id || d.stage_id === '0' || d.stage_id === 0) 
+            ? (stagesRef.current.length > 0 ? stagesRef.current[0].id : 0) 
+            : d.stage_id;
+          if (!grouped[sid]) grouped[sid] = [];
+          grouped[sid].push(d);
+        });
+
+        setItems(grouped);
+        setTotal(r.data.data?.total || dataItems.length);
       }
-
-      const grouped: Record<number, any[]> = {};
-      dataItems.forEach((d: any) => {
-        const sid = (!d.stage_id || d.stage_id === '0' || d.stage_id === 0) 
-          ? (stagesRef.current.length > 0 ? stagesRef.current[0].id : 0) 
-          : d.stage_id;
-        if (!grouped[sid]) grouped[sid] = [];
-        grouped[sid].push(d);
-      });
-
-      setItems(grouped);
-      setTotal(r.data.data?.total || dataItems.length);
     } catch (e: any) {
       console.error("Failed to fetch data", e);
       setItems({});

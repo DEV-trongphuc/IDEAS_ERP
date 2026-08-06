@@ -919,66 +919,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
         </div>
       )}
 
-      {segment === 'customer' && (
-        <div style={{
-          display: 'flex',
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border-light)',
-          padding: '4px',
-          borderRadius: '12px',
-          gap: '4px',
-          width: 'fit-content',
-          marginBottom: '1rem',
-          boxShadow: 'var(--shadow-sm)'
-        }}>
-          <button 
-            onClick={() => {
-              setStudentSubTab('chinh_thuc');
-              setPage(1);
-              setSearchParams(prev => {
-                prev.set('tab', 'chinh_thuc');
-                return prev;
-              });
-            }}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              background: studentSubTab === 'chinh_thuc' ? 'var(--color-primary-light)' : 'transparent',
-              color: studentSubTab === 'chinh_thuc' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              transition: 'all 0.2s'
-            }}
-          >
-            Học viên chính thức
-          </button>
-          <button 
-            onClick={() => {
-              setStudentSubTab('le_phi');
-              setPage(1);
-              setSearchParams(prev => {
-                prev.set('tab', 'le_phi');
-                return prev;
-              });
-            }}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              background: studentSubTab === 'le_phi' ? 'var(--color-primary-light)' : 'transparent',
-              color: studentSubTab === 'le_phi' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              transition: 'all 0.2s'
-            }}
-          >
-            Đóng lệ phí hồ sơ
-          </button>
-        </div>
-      )}
+
 
       {/* Search + filter row */}
       <div className={isMobile ? "" : "card"} style={{ padding: isMobile ? '0' : '0.75rem 1rem', marginBottom:'0.75rem', display:'flex', gap:'0.75rem', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', background: isMobile ? 'transparent' : undefined, border: isMobile ? 'none' : undefined, boxShadow: isMobile ? 'none' : undefined }}>

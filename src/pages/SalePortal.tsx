@@ -551,7 +551,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   const [wsStartDate, setWsStartDate] = useState('');
   const [wsEndDate, setWsEndDate] = useState('');
   const [wsTasks, setWsTasks] = useState<any[]>([]);
-  const [wsTeamId, setWsTeamId] = useState('');
+  const [wsTeamId, setWsTeamId] = useState('all_teams_bypass');
   const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, '').trim() : '';
   const [wsUserId, setWsUserId] = useState('');
   const [wsActivityType, setWsActivityType] = useState('task');
@@ -2015,7 +2015,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     if (!token) return;
     setLoadingTasks(true);
     try {
-      const res = await api.get('/activities?status=planned&limit=200');
+      const res = await api.get('/activities?status=planned&limit=200&type=task,meeting');
       if (res.data && res.data.data) {
         const raw = res.data.data.items || res.data.data || [];
         const filtered = raw.filter((item: any) => item.type === 'task' || item.type === 'meeting');
@@ -2218,7 +2218,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     try {
       let url = '/activities?limit=5000';
       if (wsActivityType && wsActivityType !== 'all') {
-        if (wsActivityType !== 'task') {
+        if (wsActivityType === 'task') {
+          url += '&type=task,meeting';
+        } else {
           url += `&type=${wsActivityType}`;
         }
       }

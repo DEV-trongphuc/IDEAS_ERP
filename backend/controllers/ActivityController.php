@@ -267,7 +267,19 @@ class ActivityController {
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
         }
-        if ($type)     { $where[]='a.type=?';    $params[]=$type; }
+        if ($type)     { 
+            if (strpos($type, ',') !== false) {
+                $types = explode(',', $type);
+                $placeholders = implode(',', array_fill(0, count($types), '?'));
+                $where[] = "a.type IN ($placeholders)";
+                foreach ($types as $t) {
+                    $params[] = $t;
+                }
+            } else {
+                $where[]='a.type=?';
+                $params[]=$type;
+            }
+        }
         if ($status)   { $where[]='a.status=?';  $params[]=$status; }
         if ($uid)      { $where[]='a.user_id=?'; $params[]=(int)$uid; }
         if ($teamId)   { 
@@ -301,9 +313,9 @@ class ActivityController {
         $stmt=$this->db->prepare("
             SELECT a.*, u.full_name as user_name, u.avatar_url,
                    creator.full_name as created_by_name, creator.avatar_url as created_by_avatar,
-                   COALESCE(NULLIF(TRIM(ct.full_name), ''), NULLIF(TRIM(deal_ct.full_name), '')) as contact_name,
-                   COALESCE(a.contact_id, ct.id, deal_ct.id) as contact_id,
-                   COALESCE(ct.avatar_url, deal_ct.avatar_url) as contact_avatar,
+                   COALESCE(NULLIF(TRIM(ct.full_name), ''), NULLIF(TRIM(ct2.full_name), ''), NULLIF(TRIM(deal_ct.full_name), '')) as contact_name,
+                   COALESCE(a.contact_id, ct.id, ct2.id, deal_ct.id) as contact_id,
+                   COALESCE(ct.avatar_url, ct2.avatar_url, deal_ct.avatar_url) as contact_avatar,
                    d.title as deal_name,
                    c.name as company_name,
                    p.name as project_name,
@@ -315,7 +327,8 @@ class ActivityController {
             FROM activities a 
             LEFT JOIN users u ON a.user_id=u.id
             LEFT JOIN users creator ON a.created_by=creator.id
-            LEFT JOIN contacts ct ON ((a.related_type='contact' AND a.related_id=ct.id) OR a.contact_id=ct.id) AND ct.deleted_at IS NULL
+            LEFT JOIN contacts ct ON a.related_type='contact' AND a.related_id=ct.id AND ct.deleted_at IS NULL
+            LEFT JOIN contacts ct2 ON a.contact_id=ct2.id AND ct2.deleted_at IS NULL
             LEFT JOIN deals d ON a.related_type='deal' AND a.related_id=d.id AND d.deleted_at IS NULL
             LEFT JOIN contacts deal_ct ON a.related_type='deal' AND d.contact_id=deal_ct.id AND deal_ct.deleted_at IS NULL
             LEFT JOIN companies c ON a.related_type='company' AND a.related_id=c.id AND c.deleted_at IS NULL
@@ -492,9 +505,9 @@ class ActivityController {
         $stmt=$this->db->prepare("
             SELECT a.*, u.full_name as user_name,
                    creator.full_name as created_by_name, creator.avatar_url as created_by_avatar,
-                   COALESCE(NULLIF(TRIM(ct.full_name), ''), NULLIF(TRIM(deal_ct.full_name), '')) as contact_name,
-                   COALESCE(a.contact_id, ct.id, deal_ct.id) as contact_id,
-                   COALESCE(ct.avatar_url, deal_ct.avatar_url) as contact_avatar,
+                   COALESCE(NULLIF(TRIM(ct.full_name), ''), NULLIF(TRIM(ct2.full_name), ''), NULLIF(TRIM(deal_ct.full_name), '')) as contact_name,
+                   COALESCE(a.contact_id, ct.id, ct2.id, deal_ct.id) as contact_id,
+                   COALESCE(ct.avatar_url, ct2.avatar_url, deal_ct.avatar_url) as contact_avatar,
                    d.title as deal_name,
                    c.name as company_name,
                    p.name as project_name,
@@ -503,7 +516,8 @@ class ActivityController {
             FROM activities a 
             LEFT JOIN users u ON a.user_id=u.id
             LEFT JOIN users creator ON a.created_by=creator.id
-            LEFT JOIN contacts ct ON ((a.related_type='contact' AND a.related_id=ct.id) OR a.contact_id=ct.id) AND ct.deleted_at IS NULL
+            LEFT JOIN contacts ct ON a.related_type='contact' AND a.related_id=ct.id AND ct.deleted_at IS NULL
+            LEFT JOIN contacts ct2 ON a.contact_id=ct2.id AND ct2.deleted_at IS NULL
             LEFT JOIN deals d ON a.related_type='deal' AND a.related_id=d.id AND d.deleted_at IS NULL
             LEFT JOIN contacts deal_ct ON a.related_type='deal' AND d.contact_id=deal_ct.id AND deal_ct.deleted_at IS NULL
             LEFT JOIN companies c ON a.related_type='company' AND a.related_id=c.id AND c.deleted_at IS NULL

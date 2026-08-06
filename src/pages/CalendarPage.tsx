@@ -48,7 +48,8 @@ export const CalendarPage: React.FC = () => {
         params: {
           start_date: startDate,
           end_date: endDate,
-          limit: 200 // Ensure we get all for the month
+          limit: 200, // Ensure we get all for the month
+          type: 'task,meeting'
         }
       });
       let fetched = res.data.data?.items || res.data.data || [];
