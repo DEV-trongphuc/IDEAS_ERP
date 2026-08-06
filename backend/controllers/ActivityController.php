@@ -266,6 +266,17 @@ class ActivityController {
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
+        } else if ($auth['role'] === 'accountant') {
+            $where[] = '(
+                a.user_id = ? 
+                OR a.created_by = ?
+                OR a.approver_id = ?
+                OR FIND_IN_SET(?, a.participant_ids)
+            )';
+            $params[] = $auth['user_id'];
+            $params[] = $auth['user_id'];
+            $params[] = $auth['user_id'];
+            $params[] = (string)$auth['user_id'];
         }
         if ($type)     { 
             if (strpos($type, ',') !== false) {
