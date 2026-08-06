@@ -206,11 +206,11 @@ const resolveAttachmentUrl = (url: string | null | undefined): string => {
 
 const TABS = [
   { id: 'info', label: 'Thông tin chung', icon: <User size={16} /> },
+  { id: 'timeline', label: 'Tương tác', icon: <History size={16} /> },
   { id: 'learning', label: 'Học tập', icon: <BookOpen size={16} /> },
   { id: 'tags', label: 'Phân loại', icon: <TagIcon size={16} /> },
   { id: 'tasks', label: 'Công việc', icon: <CheckSquare size={16} /> },
   { id: 'docs', label: 'Hồ sơ & Tài liệu', icon: <Paperclip size={16} /> },
-  { id: 'timeline', label: 'Lịch sử tương tác', icon: <History size={16} /> },
   { id: 'scoring', label: 'Scoring', icon: <Target size={16} /> },
   { id: 'deals', label: 'Thanh toán', icon: <CreditCard size={16} /> },
   { id: 'expenses', label: 'Chi phí', icon: <DollarSign size={16} /> },
@@ -6223,7 +6223,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               const tabGroups = [
                                 {
                                   title: 'Thông tin & Nhật ký',
-                                  tabs: ['info', 'tags', 'tasks', 'timeline', 'scoring']
+                                  tabs: ['info', 'timeline', 'tags', 'tasks', 'scoring']
                                 },
                                 {
                                   title: 'Học tập',
@@ -6329,7 +6329,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                               const tabGroups = [
                                 {
                                   title: 'Thông tin & Nhật ký',
-                                  tabs: ['info', 'tags', 'tasks', 'timeline', 'scoring']
+                                  tabs: ['info', 'timeline', 'tags', 'tasks', 'scoring']
                                 },
                                 {
                                   title: 'Học tập',
@@ -6976,7 +6976,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             <label className="form-label">Liên kết Zalo</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                               <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-                                <Link2 size={16} />
+                                <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain', borderRadius: '4px' }} alt="Zalo" />
                               </div>
                               <input className="form-input form-input-icon-left" placeholder="https://zalo.me/..." value={formData.zalo_link || ''} onChange={e => {
                                 const val = e.target.value;
@@ -6988,7 +6988,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             <label className="form-label">Liên kết Facebook</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                               <div style={{ position: 'absolute', left: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-                                <Link2 size={16} />
+                                <img src="https://facebook.com/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain', borderRadius: '4px' }} alt="Facebook" />
                               </div>
                               <input className="form-input form-input-icon-left" placeholder="https://facebook.com/..." value={formData.fb_link || ''} onChange={e => {
                                 const val = e.target.value;
