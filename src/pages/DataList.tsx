@@ -1552,35 +1552,41 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
           {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && dayData.so_count > 0 && (
             <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '2px 4px',
-              borderRadius: '4px',
+              flexDirection: 'column',
+              padding: '4px 6px',
+              borderRadius: '6px',
               background: '#eff6ff',
               color: '#1d4ed8',
-              fontSize: '0.6875rem',
-              fontWeight: 600,
-              border: '1px solid #bfdbfe'
+              border: '1px solid #bfdbfe',
+              gap: '2px'
             }} title={`Sales Order: ${dayData.so_count} đơn`}>
-              <span>SO:</span>
-              <strong>{dayData.so_count}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', fontWeight: 700 }}>
+                <span>SO:</span>
+                <strong>{dayData.so_count}</strong>
+              </div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 800, textAlign: 'right', marginTop: '1px', borderTop: '1px dashed rgba(29, 78, 216, 0.2)', paddingTop: '2px' }}>
+                {new Intl.NumberFormat('vi-VN').format(dayData.so_total || 0)}đ
+              </div>
             </div>
           )}
           {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(String(user?.role).toLowerCase()) && dayData.po_count > 0 && (
             <div style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '2px 4px',
-              borderRadius: '4px',
+              flexDirection: 'column',
+              padding: '4px 6px',
+              borderRadius: '6px',
               background: '#fef3c7',
               color: '#d97706',
-              fontSize: '0.6875rem',
-              fontWeight: 600,
-              border: '1px solid #fde68a'
+              border: '1px solid #fde68a',
+              gap: '2px'
             }} title={`Purchase Order: ${dayData.po_count} đơn`}>
-              <span>PO:</span>
-              <strong>{dayData.po_count}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', fontWeight: 700 }}>
+                <span>PO:</span>
+                <strong>{dayData.po_count}</strong>
+              </div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 800, textAlign: 'right', marginTop: '1px', borderTop: '1px dashed rgba(217, 119, 6, 0.2)', paddingTop: '2px' }}>
+                {new Intl.NumberFormat('vi-VN').format(dayData.po_total || 0)}đ
+              </div>
             </div>
           )}
         </div>
