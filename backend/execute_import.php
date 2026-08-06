@@ -147,13 +147,16 @@ foreach ($students as $student) {
             ];
             
             // Get current values to avoid overwriting populated data
-            $stmtGet = $pdo->prepare("SELECT gender, birthday, phone2, job_title, company, industry, stage_id FROM contacts WHERE id = ?");
+            $stmtGet = $pdo->prepare("SELECT gender, birthday, phone2, job_title, company, industry, stage_id, pipeline_status FROM contacts WHERE id = ?");
             $stmtGet->execute([$existingId]);
             $curr = $stmtGet->fetch();
             
             if ($curr) {
                 if (empty($curr['stage_id']) || in_array((int)$curr['stage_id'], [1, 2, 3, 4])) {
                     $updateFields['stage_id'] = 6;
+                }
+                if (empty($curr['pipeline_status']) || in_array($curr['pipeline_status'], ['chua_xac_dinh', 'co_nhu_cau', 'dang_tu_van', 'nop_ho_so'])) {
+                    $updateFields['pipeline_status'] = 'hoc_vien';
                 }
                 if (empty($curr['gender']) && !empty($gender)) {
                     $updateFields['gender'] = $gender;
@@ -192,9 +195,9 @@ foreach ($students as $student) {
         } else {
             // Insert new contact
             $sql = "INSERT INTO contacts (
-                tenant_id, full_name, gender, birthday, phone, phone2, email, job_title, company, industry, status, stage_id, owner_id, tags, notes, created_by
+                tenant_id, full_name, gender, birthday, phone, phone2, email, job_title, company, industry, status, stage_id, pipeline_status, owner_id, tags, notes, created_by
             ) VALUES (
-                1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'customer', 6, ?, ?, ?, 1
+                1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'customer', 6, 'hoc_vien', ?, ?, ?, 1
             )";
             
             $stmtInsert = $pdo->prepare($sql);

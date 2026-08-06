@@ -236,13 +236,15 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   const [searchParams, setSearchParams] = useSearchParams();
   const [studentSubTab, setStudentSubTab] = useState<'le_phi' | 'chinh_thuc'>(() => {
     const tab = searchParams.get('tab');
-    return (tab === 'chinh_thuc' || tab === 'le_phi') ? tab : 'le_phi';
+    return (tab === 'chinh_thuc' || tab === 'le_phi') ? tab : 'chinh_thuc';
   });
 
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'chinh_thuc' || tab === 'le_phi') {
       setStudentSubTab(tab);
+    } else {
+      setStudentSubTab('chinh_thuc');
     }
   }, [searchParams]);
 
@@ -931,29 +933,6 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
         }}>
           <button 
             onClick={() => {
-              setStudentSubTab('le_phi');
-              setPage(1);
-              setSearchParams(prev => {
-                prev.set('tab', 'le_phi');
-                return prev;
-              });
-            }}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '10px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              background: studentSubTab === 'le_phi' ? 'var(--color-primary-light)' : 'transparent',
-              color: studentSubTab === 'le_phi' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              transition: 'all 0.2s'
-            }}
-          >
-            Đóng lệ phí hồ sơ
-          </button>
-          <button 
-            onClick={() => {
               setStudentSubTab('chinh_thuc');
               setPage(1);
               setSearchParams(prev => {
@@ -974,6 +953,29 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
             }}
           >
             Học viên chính thức
+          </button>
+          <button 
+            onClick={() => {
+              setStudentSubTab('le_phi');
+              setPage(1);
+              setSearchParams(prev => {
+                prev.set('tab', 'le_phi');
+                return prev;
+              });
+            }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              background: studentSubTab === 'le_phi' ? 'var(--color-primary-light)' : 'transparent',
+              color: studentSubTab === 'le_phi' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+              transition: 'all 0.2s'
+            }}
+          >
+            Đóng lệ phí hồ sơ
           </button>
         </div>
       )}
