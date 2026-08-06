@@ -7,7 +7,7 @@ export type ToastType = 'success' | 'error' | 'info' | 'warning';
 export interface Toast {
   id: string;
   type: ToastType;
-  message: string;
+  message: string | React.ReactElement;
   action?: {
     label: string;
     onClick: () => void;
@@ -34,7 +34,7 @@ export interface ConfirmModalState {
 
 interface UIStore {
   toasts: Toast[];
-  addToast: (message: string, type?: ToastType, action?: Toast['action']) => void;
+  addToast: (message: string | React.ReactElement, type?: ToastType, action?: Toast['action']) => void;
   removeToast: (id: string) => void;
   showPOS: boolean | { id: number; [key: string]: any }; // POS can be open for a specific contact
   setShowPOS: (show: boolean | { id: number; [key: string]: any }) => void;

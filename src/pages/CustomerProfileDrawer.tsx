@@ -6289,6 +6289,18 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                                 {tasks.filter(t => !t.done).length}
                                               </span>
                                             )}
+                                             {tab.id === 'timeline' && drawerActivities.length > 0 && (
+                                               <span style={{
+                                                 background: 'rgba(59, 130, 246, 0.1)',
+                                                 color: '#3b82f6',
+                                                 fontSize: '0.65rem',
+                                                 fontWeight: 700,
+                                                 padding: '1px 6px',
+                                                 borderRadius: '10px',
+                                               }}>
+                                                 {drawerActivities.length}
+                                               </span>
+                                             )}
                                             {tab.id === 'cooperation' && coopSlip && (coopSlip.status === 'pending_manager_approval' || coopSlip.shareholders?.some((sh: any) => !sh.signed)) && (
                                               <span style={{
                                                 background: '#f59e0b',
@@ -6383,6 +6395,24 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                             lineHeight: 1
                                           }}>
                                             {tasks.filter(t => !t.done).length}
+                                          </span>
+                                        )}
+                                        {tab.id === 'timeline' && drawerActivities.length > 0 && (
+                                          <span style={{
+                                            background: 'rgba(59, 130, 246, 0.1)',
+                                            color: '#3b82f6',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 700,
+                                            padding: '1px 6px',
+                                            borderRadius: '10px',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            minWidth: '18px',
+                                            height: '18px',
+                                            lineHeight: 1
+                                          }}>
+                                            {drawerActivities.length}
                                           </span>
                                         )}
                                         {tab.id === 'cooperation' && coopSlip && (coopSlip.status === 'pending_manager_approval' || coopSlip.shareholders?.some((sh: any) => !sh.signed)) && (
@@ -9887,7 +9917,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             className="btn primary sm" 
                             onClick={() => {
                               if (!isAtLeastDongLePhiHoSo) {
-                                addToast('Chặn thao tác: Chỉ được tạo phiếu thanh toán khi khách hàng ở bước Đóng lệ phí hồ sơ trở đi!', 'warning');
+                                addToast(<span>Chặn thao tác: Chỉ được tạo phiếu thanh toán khi khách hàng ở bước <strong>Đóng lệ phí hồ sơ</strong> trở đi!</span>, 'warning');
                                 return;
                               }
                               useUIStore.getState().setShowPOS(contact || formData);
