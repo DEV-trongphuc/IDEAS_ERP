@@ -1609,7 +1609,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                 <button
                   type="button"
                   className="btn primary sm"
-                  onClick={() => navigate('/calendar')}
+                  onClick={() => navigate('/personal-calendar')}
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center', 

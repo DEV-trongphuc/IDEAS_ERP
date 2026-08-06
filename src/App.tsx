@@ -89,7 +89,7 @@ const AppTabs = () => {
 
   // Route protection mapping
   const adminPaths = ['/consultants', '/rounds', '/tickets', '/rules', '/integrations', '/settings', '/accounts', '/gatekeeper', '/capi', '/ai-training', '/hrm'];
-  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/contacts', '/students', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/cash-flow', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard', '/schedules'];
+  const userPaths = ['/', '/workspace', '/feed', '/data', '/calendar', '/personal-calendar', '/contacts', '/students', '/companies', '/deals', '/quotes', '/activities', '/products', '/expenses', '/reports-crm', '/suppliers', '/files', '/inventory', '/projects', '/deposits', '/cash-flow', '/support-tickets', '/attendance', '/fair-share', '/account', '/my-payslips', '/approvals', '/financial-dashboard', '/schedules'];
   const allPaths = [...userPaths, ...adminPaths];
   const isAdminPath = adminPaths.includes(currentPath);
 
@@ -115,7 +115,7 @@ const AppTabs = () => {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/contacts' || currentPath === '/deals') {
-    if (['hr', 'accountant', 'sale_admin', 'saleadmin'].includes(user?.role || '')) {
+    if (['hr'].includes(user?.role || '')) {
       console.warn("[Router] Access denied for /contacts or /deals, role:", user?.role);
       return <Navigate to="/" replace />;
     }
@@ -199,6 +199,8 @@ const AppTabs = () => {
         return ((user?.role as any) === 'sale' || (user?.role as any) === 'sales')
           ? <SalePortal embedMode={true} activeTabProp="calendar" key="calendar" />
           : <DataList key="data" />;
+      case '/personal-calendar':
+        return <SalePortal embedMode={true} activeTabProp="calendar" key="personal-calendar" />;
       case '/contacts':
         return <ContactsPage key="contacts" defaultSegment="tiem_nang" />;
       case '/students':

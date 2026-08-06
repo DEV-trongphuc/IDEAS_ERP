@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, 
@@ -10,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AttendancePageInner } from './AttendancePage';
 
 export const CalendarPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -161,6 +163,25 @@ export const CalendarPage: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
             <h1 className="page-title" style={{ margin: 0 }}>Lịch biểu &amp; Chấm công</h1>
+            {['accountant', 'admin', 'superadmin', 'super_admin', 'director'].includes(user?.role || '') && (
+              <button
+                type="button"
+                className="btn secondary sm"
+                onClick={() => navigate('/data?view=calendar')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  fontWeight: 600, 
+                  padding: '4px 12px',
+                  fontSize: '0.78rem',
+                  borderRadius: '8px'
+                }}
+              >
+                <CalendarIcon size={13} />
+                Xem Lịch trình Tài chính
+              </button>
+            )}
             
             {/* Tabs for Calendar vs Attendance */}
             {user?.role !== 'accountant' && user?.role !== 'viewer' && (

@@ -27,6 +27,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { name: 'Dashboard', href: '/', icon: LayoutDashboard, end: true },
       { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
+      { name: 'Lịch trình', href: '/calendar', icon: Calendar, hideForRoles: ['hr'] },
       { name: 'Bảng tin nội bộ', href: '/feed', icon: Globe },
       { name: 'Báo cáo', href: '/reports-crm', icon: BarChart2, hideForRoles: ['hr', 'marketing', 'sale_admin', 'saleadmin'] }
     ]
@@ -76,7 +77,6 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
       { name: 'Phòng ban', href: '/consultants?tab=teams', icon: Users },
       { name: 'Nhân sự công ty', href: '/consultants', icon: Users },
       { name: 'Quản lý chấm công', href: '/attendance', icon: Clock, hideForRoles: ['assistant', 'sale', 'viewer', 'sales', 'marketing', 'accountant', 'sale_admin', 'saleadmin'] },
-      { name: 'Lịch trình', href: '/calendar', icon: Calendar, hideForRoles: ['hr'] },
       { name: 'Chấm công', href: '/attendance', icon: Clock, hideForRoles: ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr'] },
       { name: 'Nhân sự & Lương', href: '/hrm', icon: ShieldCheck, hideForRoles: ['manager', 'assistant', 'sale', 'viewer', 'sales', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
       { name: 'Phiếu lương', href: '/my-payslips', icon: FileText }
