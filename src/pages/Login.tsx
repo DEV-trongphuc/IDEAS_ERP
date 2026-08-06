@@ -522,6 +522,10 @@ export const Login = () => {
                 <><LogIn size={16} /> Director: Mai Thị Nữ</>
               )}
             </button>
+
+            <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+              Đang update các phân quyền khác.
+            </div>
           </div>
         </div>
 

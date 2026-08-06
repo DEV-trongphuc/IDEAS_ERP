@@ -551,7 +551,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
     ? Math.round((tempExpectedCommission || selectedDepForManage.expected_commission || 0) * (totalApprovedMilestones / selectedDepForManage.price))
     : 0;
 
-  const baseZIndex = zIndex || 2147483640;
+  const baseZIndex = zIndex || 2000000;
 
   return createPortal(
     <>
