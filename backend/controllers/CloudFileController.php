@@ -106,60 +106,83 @@ class CloudFileController {
             }
         }
 
-        if (empty($_FILES['file'])) respond(422, null, 'Vui lòng chọn tệp tin để tải lên', false);
-        
-        $file = $_FILES['file'];
-        if ($file['error'] !== UPLOAD_ERR_OK) respond(500, null, 'Lỗi trong quá trình tải tệp lên server', false);
-
-        // Security: Max file size 10MB
-        if ($file['size'] > 10 * 1024 * 1024) respond(422, null, 'Dung lượng tệp tối đa cho phép là 10MB', false);
-
-        // Security: Blocklist extensions
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $blockedExts = [
-            'php', 'php3', 'php4', 'php5', 'phtml', 
-            'js', 'ts', 'py', 'pl', 'sh', 'cgi', 'rb', 'go', 'c', 'cpp', 'java', 'h', 'cs', 'swift', 'kt', 'rs',
-            'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'wsf', 'ps1', 'jar', 'apk'
-        ];
-        if (in_array($ext, $blockedExts)) respond(422, null, "Định dạng tệp .$ext không được hỗ trợ hoặc không an toàn", false);
-
         $tid = $auth['tenant_id'];
         $uid = $auth['user_id'];
-        $name = $_POST['name'] ?? $file['name'];
-        $visibility = $_POST['visibility'] ?? 'shared';
-        $project_id = isset($_POST['project_id']) && $_POST['project_id'] !== '' ? (int)$_POST['project_id'] : null;
-        $contact_id = isset($_POST['contact_id']) && $_POST['contact_id'] !== '' ? (int)$_POST['contact_id'] : null;
-        $campaign_id = isset($_POST['campaign_id']) && $_POST['campaign_id'] !== '' ? (int)$_POST['campaign_id'] : null;
+        $name = $_POST['name'] ?? $b['name'] ?? null;
+        $visibility = $_POST['visibility'] ?? $b['visibility'] ?? 'shared';
+        $project_id = isset($_POST['project_id']) && $_POST['project_id'] !== '' ? (int)$_POST['project_id'] : (isset($b['project_id']) && $b['project_id'] !== '' ? (int)$b['project_id'] : null);
+        $contact_id = isset($_POST['contact_id']) && $_POST['contact_id'] !== '' ? (int)$_POST['contact_id'] : (isset($b['contact_id']) && $b['contact_id'] !== '' ? (int)$b['contact_id'] : null);
+        $campaign_id = isset($_POST['campaign_id']) && $_POST['campaign_id'] !== '' ? (int)$_POST['campaign_id'] : (isset($b['campaign_id']) && $b['campaign_id'] !== '' ? (int)$b['campaign_id'] : null);
 
-        // 1. Prepare directory
-        $targetDir = UPLOAD_DIR . "/cloud/$tid";
-        if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0755, true);
+        $isLink = (int)($_POST['is_link'] ?? $b['is_link'] ?? 0) === 1;
+        $linkUrl = $_POST['link_url'] ?? $b['link_url'] ?? '';
+
+        if ($isLink) {
+            if (empty($linkUrl)) respond(422, null, 'Vui lòng nhập đường dẫn liên kết', false);
+            if (empty($name)) respond(422, null, 'Vui lòng nhập tên liên kết', false);
+
+            // Save to DB
+            $stmt = $this->db->prepare("
+                INSERT INTO cloud_files (tenant_id, uploaded_by, name, file_path, mime_type, file_size, category, visibility, project_id, contact_id, campaign_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $tid, $uid, $name,
+                $linkUrl, 'link', 0,
+                $category, $visibility, $project_id, $contact_id, $campaign_id
+            ]);
+        } else {
+            if (empty($_FILES['file'])) respond(422, null, 'Vui lòng chọn tệp tin để tải lên', false);
+            
+            $file = $_FILES['file'];
+            if ($file['error'] !== UPLOAD_ERR_OK) respond(500, null, 'Lỗi trong quá trình tải tệp lên server', false);
+
+            // Security: Max file size 10MB
+            if ($file['size'] > 10 * 1024 * 1024) respond(422, null, 'Dung lượng tệp tối đa cho phép là 10MB', false);
+
+            // Security: Blocklist extensions
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $blockedExts = [
+                'php', 'php3', 'php4', 'php5', 'phtml', 
+                'js', 'ts', 'py', 'pl', 'sh', 'cgi', 'rb', 'go', 'c', 'cpp', 'java', 'h', 'cs', 'swift', 'kt', 'rs',
+                'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'wsf', 'ps1', 'jar', 'apk'
+            ];
+            if (in_array($ext, $blockedExts)) respond(422, null, "Định dạng tệp .$ext không được hỗ trợ hoặc không an toàn", false);
+
+            if (empty($name)) {
+                $name = $file['name'];
+            }
+
+            // 1. Prepare directory
+            $targetDir = UPLOAD_DIR . "/cloud/$tid";
+            if (!is_dir($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
+
+            // 2. Sanitize and prepare file path
+            $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($name, PATHINFO_FILENAME));
+            $fileName = time() . '_' . $safeName . '.' . $ext;
+            $targetPath = $targetDir . '/' . $fileName;
+            // 3. Move file with automatic WebP compression for images
+            require_once __DIR__ . '/../config/ImageHelper.php';
+            $res = ImageHelper::saveUploadedFile($file['tmp_name'], $targetPath, $file['name']);
+            if (!$res['success']) {
+                respond(500, null, 'Không thể lưu tệp tin vào thư mục đích', false);
+            }
+            $fileName = $res['filename'];
+            $dbPath = "uploads/cloud/$tid/$fileName";
+
+            // 4. Save to DB
+            $stmt = $this->db->prepare("
+                INSERT INTO cloud_files (tenant_id, uploaded_by, name, file_path, mime_type, file_size, category, visibility, project_id, contact_id, campaign_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $tid, $uid, $name,
+                $dbPath, $file['type'], $file['size'],
+                $category, $visibility, $project_id, $contact_id, $campaign_id
+            ]);
         }
-
-        // 2. Sanitize and prepare file path
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($name, PATHINFO_FILENAME));
-        $fileName = time() . '_' . $safeName . '.' . $ext;
-        $targetPath = $targetDir . '/' . $fileName;
-        // 3. Move file with automatic WebP compression for images
-        require_once __DIR__ . '/../config/ImageHelper.php';
-        $res = ImageHelper::saveUploadedFile($file['tmp_name'], $targetPath, $file['name']);
-        if (!$res['success']) {
-            respond(500, null, 'Không thể lưu tệp tin vào thư mục đích', false);
-        }
-        $fileName = $res['filename'];
-        $dbPath = "uploads/cloud/$tid/$fileName";
-
-        // 4. Save to DB
-        $stmt = $this->db->prepare("
-            INSERT INTO cloud_files (tenant_id, uploaded_by, name, file_path, mime_type, file_size, category, visibility, project_id, contact_id, campaign_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $tid, $uid, $name,
-            $dbPath, $file['type'], $file['size'],
-            $category, $visibility, $project_id, $contact_id, $campaign_id
-        ]);
 
         // Auto notification for contact document upload
         if ($contact_id) {

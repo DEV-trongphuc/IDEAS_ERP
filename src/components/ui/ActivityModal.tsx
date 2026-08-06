@@ -295,28 +295,78 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
               ))}
             </div>
 
+            {/* Ghi chú chi tiết */}
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <AlignLeft size={13} /> Ghi chú chi tiết
+              </label>
+              <MentionInput 
+                className="form-input" 
+                rows={isMobile ? 4 : 6} 
+                placeholder="Nhập nội dung chi tiết của hoạt động (Dán ảnh trực tiếp Ctrl+V)..."
+                value={formData.body}
+                onChange={e => setFormData({ ...formData, body: e.target.value })}
+                onImagePaste={(file: File) => {
+                  if (file.size > 5 * 1024 * 1024) {
+                    addToast('Dung lượng tệp đính kèm không được vượt quá 5MB', 'error');
+                    return;
+                  }
+                  const previewUrl = URL.createObjectURL(file);
+                  setProofImageFile(file);
+                  setProofImagePreview(previewUrl);
+                  addToast('Đã dán ảnh minh chứng từ clipboard!', 'success');
+                }}
+                onFilePaste={(file: File) => {
+                  if (file.size > 5 * 1024 * 1024) {
+                    addToast('Dung lượng tệp đính kèm không được vượt quá 5MB', 'error');
+                    return;
+                  }
+                  const previewUrl = URL.createObjectURL(file);
+                  setProofImageFile(file);
+                  setProofImagePreview(previewUrl);
+                  addToast('Đã dán tệp từ clipboard!', 'success');
+                }}
+                style={{ resize: 'none' }}
+              />
+            </div>
+
             {formData.type === 'call' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '10px' : '15px' }}>
-                {/* Loại cuộc gọi */}
-                <div>
-                  <label className="form-label">Loại cuộc gọi</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, call_direction: 'outbound' })}
-                      className={`btn sm ${formData.call_direction === 'outbound' ? 'primary' : 'outline'}`}
-                      style={{ flex: 1, height: isMobile ? 32 : 36, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                      <PhoneOutgoing size={13} /> Gọi đi
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, call_direction: 'inbound' })}
-                      className={`btn sm ${formData.call_direction === 'inbound' ? 'primary' : 'outline'}`}
-                      style={{ flex: 1, height: isMobile ? 32 : 36, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                    >
-                      <PhoneIncoming size={13} /> Gọi đến
-                    </button>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
+                  {/* Loại cuộc gọi */}
+                  <div>
+                    <label className="form-label">Loại cuộc gọi</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, call_direction: 'outbound' })}
+                        className={`btn sm ${formData.call_direction === 'outbound' ? 'primary' : 'outline'}`}
+                        style={{ flex: 1, height: isMobile ? 32 : 36, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      >
+                        <PhoneOutgoing size={13} /> Gọi đi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, call_direction: 'inbound' })}
+                        className={`btn sm ${formData.call_direction === 'inbound' ? 'primary' : 'outline'}`}
+                        style={{ flex: 1, height: isMobile ? 32 : 36, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      >
+                        <PhoneIncoming size={13} /> Gọi đến
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Thời gian thực hiện */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Calendar size={13} /> Thời gian thực hiện
+                    </label>
+                    <input 
+                      type="datetime-local" 
+                      className="form-input" 
+                      value={formData.due_date}
+                      onChange={e => setFormData({ ...formData, due_date: e.target.value })}
+                    />
                   </div>
                 </div>
 
@@ -387,19 +437,6 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
                     </div>
                   </div>
                 )}
-
-                {/* Thời gian thực hiện */}
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Calendar size={13} /> Thời gian thực hiện
-                  </label>
-                  <input 
-                    type="datetime-local" 
-                    className="form-input" 
-                    value={formData.due_date}
-                    onChange={e => setFormData({ ...formData, due_date: e.target.value })}
-                  />
-                </div>
               </div>
             ) : (
               <>
@@ -549,40 +586,6 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({ isOpen, onClose, e
                 </div>
               </div>
             )}
-
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <AlignLeft size={13} /> Ghi chú chi tiết
-              </label>
-              <MentionInput 
-                className="form-input" 
-                rows={isMobile ? 3 : 4} 
-                placeholder="Nhập nội dung chi tiết của hoạt động (Dán ảnh trực tiếp Ctrl+V)..."
-                value={formData.body}
-                onChange={e => setFormData({ ...formData, body: e.target.value })}
-                onImagePaste={(file: File) => {
-                  if (file.size > 5 * 1024 * 1024) {
-                    addToast('Dung lượng tệp đính kèm không được vượt quá 5MB', 'error');
-                    return;
-                  }
-                  const previewUrl = URL.createObjectURL(file);
-                  setProofImageFile(file);
-                  setProofImagePreview(previewUrl);
-                  addToast('Đã dán ảnh minh chứng từ clipboard!', 'success');
-                }}
-                onFilePaste={(file: File) => {
-                  if (file.size > 5 * 1024 * 1024) {
-                    addToast('Dung lượng tệp đính kèm không được vượt quá 5MB', 'error');
-                    return;
-                  }
-                  const previewUrl = URL.createObjectURL(file);
-                  setProofImageFile(file);
-                  setProofImagePreview(previewUrl);
-                  addToast('Đã dán tệp từ clipboard!', 'success');
-                }}
-                style={{ resize: 'none' }}
-              />
-            </div>
           </form>
 
           <div 

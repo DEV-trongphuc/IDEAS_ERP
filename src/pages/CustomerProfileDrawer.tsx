@@ -1026,7 +1026,7 @@ const TimelineItem = React.memo<TimelineItemProps>(({
           return (
             <div style={{ padding: '0.5rem 0.75rem', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', marginTop: '0.375rem', border: '1px solid var(--color-border-light)' }}>
               {displayNoteText && (
-                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-light)', lineHeight: 1.5, margin: 0 }}>{formatNote(displayNoteText)}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-light)', lineHeight: 1.5, margin: 0 }}>{formatNote(displayNoteText)}</div>
               )}
 
               {linkUrl && (
@@ -1040,7 +1040,7 @@ const TimelineItem = React.memo<TimelineItemProps>(({
                     href={resolveAttachmentUrl(linkUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline' }}
+                    style={{ fontSize: '0.875rem', color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'underline' }}
                   >
                     {linkUrl.split('/').pop()}
                   </a>
@@ -2869,6 +2869,52 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [currentFolder, setCurrentFolder] = useState<string>('');
   const [localFolders, setLocalFolders] = useState<string[]>([]);
   const [movingFile, setMovingFile] = useState<any>(null);
+  const [showDriveLinkModal, setShowDriveLinkModal] = useState(false);
+  const [driveLinkName, setDriveLinkName] = useState('');
+  const [driveLinkUrl, setDriveLinkUrl] = useState('');
+  const [savingDriveLink, setSavingDriveLink] = useState(false);
+
+  const handleAddDriveLink = async () => {
+    if (!driveLinkName.trim()) {
+      addToast('Vui lòng nhập tên thư mục/tài liệu liên kết', 'error');
+      return;
+    }
+    if (!driveLinkUrl.trim()) {
+      addToast('Vui lòng nhập đường dẫn Google Drive', 'error');
+      return;
+    }
+    if (!driveLinkUrl.startsWith('http://') && !driveLinkUrl.startsWith('https://')) {
+      addToast('Đường dẫn phải bắt đầu bằng http:// hoặc https://', 'error');
+      return;
+    }
+
+    setSavingDriveLink(true);
+    try {
+      const payload = {
+        name: driveLinkName.trim(),
+        link_url: driveLinkUrl.trim(),
+        is_link: 1,
+        contact_id: contact.id,
+        category: currentFolder || 'general',
+        visibility: 'shared'
+      };
+
+      const res = await api.post('/cloud-files', payload);
+      if (res.data.success || res.status === 200 || res.status === 201) {
+        addToast('Đã liên kết thư mục Google Drive thành công.', 'success');
+        setDriveLinkName('');
+        setDriveLinkUrl('');
+        setShowDriveLinkModal(false);
+        fetchData();
+      } else {
+        addToast(res.data.message || 'Lỗi khi liên kết thư mục', 'error');
+      }
+    } catch (err: any) {
+      addToast(err.response?.data?.message || 'Lỗi khi liên kết thư mục', 'error');
+    } finally {
+      setSavingDriveLink(false);
+    }
+  };
 
   useEffect(() => {
     if (contact?.id) {
@@ -10681,6 +10727,31 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             >
                               <FolderPlus size={16} /> Tạo thư mục
                             </button>
+                            <button
+                              onClick={() => {
+                                setDriveLinkName('');
+                                setDriveLinkUrl('');
+                                setShowDriveLinkModal(true);
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                color: '#ef4444',
+                                border: '1px solid rgba(239, 68, 68, 0.15)',
+                                fontSize: '0.825rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                height: '36px'
+                              }}
+                              className="hover-lift"
+                            >
+                              <Link2 size={16} style={{ color: '#ef4444' }} /> Liên kết Drive
+                            </button>
                             <label
                               style={{
                                 display: 'inline-flex',
@@ -10966,18 +11037,39 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                         <div className="card-panel" style={{ textAlign: 'center', padding: '4rem 2rem', border: '2px dashed var(--color-border-light)', borderRadius: '24px' }}>
                           <FileText size={48} style={{ color: 'var(--color-border)', margin: '0 auto 1.5rem', opacity: 0.4 }} />
                           <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Chưa có tài liệu nào</h4>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '320px', margin: '0 auto 1.5rem' }}>Upload hợp đồng, CMND/CCCD hoặc báo giá tại đây.</p>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '320px', margin: '0 auto 1.5rem' }}>Upload hồ sơ học viên, CV, passport, ảnh tại đây.</p>
                           {isOwnerOrAdmin && (
-                            <button 
-                              className="btn primary" 
-                              onClick={() => {
-                                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                                if (fileInput) fileInput.click();
-                              }}
-                            >
-                              Upload file
-                            </button>
-                          )}
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                              <button 
+                               className="btn primary" 
+                               onClick={() => {
+                                 const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                                 if (fileInput) fileInput.click();
+                               }}
+                             >
+                               Upload file
+                             </button>
+                             <button 
+                               className="btn outline"
+                               onClick={() => {
+                                 setDriveLinkName('');
+                                 setDriveLinkUrl('');
+                                 setShowDriveLinkModal(true);
+                               }}
+                               style={{
+                                 display: 'inline-flex',
+                                 alignItems: 'center',
+                                 gap: '6px',
+                                 fontWeight: 700,
+                                 background: 'rgba(239, 68, 68, 0.08)',
+                                 color: '#ef4444',
+                                 border: '1px solid rgba(239, 68, 68, 0.15)'
+                               }}
+                             >
+                               <Link2 size={14} style={{ color: '#ef4444' }} /> Liên kết Drive
+                             </button>
+                           </div>
+                         )}
                         </div>
                       ) : visibleDocs.length === 0 ? (
                         <div style={{ width: '100%' }}>
@@ -11040,15 +11132,36 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Thư mục trống</h4>
                             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '320px', margin: '0 auto 1.5rem' }}>Chưa có tài liệu nào trong thư mục này.</p>
                             {isOwnerOrAdmin && (
-                              <button 
-                                className="btn primary" 
-                                onClick={() => {
-                                  const input = document.getElementById('empty-folder-upload-input');
-                                  if (input) (input as HTMLInputElement).click();
-                                }}
-                              >
-                                Upload file
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button 
+                                  className="btn primary" 
+                                  onClick={() => {
+                                    const input = document.getElementById('empty-folder-upload-input');
+                                    if (input) (input as HTMLInputElement).click();
+                                  }}
+                                >
+                                  Upload file
+                                </button>
+                                <button 
+                                  className="btn outline"
+                                  onClick={() => {
+                                    setDriveLinkName('');
+                                    setDriveLinkUrl('');
+                                    setShowDriveLinkModal(true);
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontWeight: 700,
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    color: '#ef4444',
+                                    border: '1px solid rgba(239, 68, 68, 0.15)'
+                                  }}
+                                >
+                                  <Link2 size={14} style={{ color: '#ef4444' }} /> Liên kết Drive
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -11065,13 +11178,19 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                             return d.category === currentFolder || d.folder === currentFolder;
                           }).map(doc => {
                             const ext = doc.name.split('.').pop()?.toLowerCase();
-                            const isImg = ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
                             const fileUrl = resolveAttachmentUrl(doc.path);
+                            const isDrive = fileUrl && fileUrl.includes('drive.google.com');
+                            const isLink = doc.type === 'link' || isDrive || (fileUrl && fileUrl.startsWith('http') && !fileUrl.includes('/uploads/'));
+                            const isImg = !isLink && ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
                             return (
                               <div key={doc.id} className="card-panel" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--color-surface)' }}>
-                                <div style={{ width: 40, height: 40, background: 'var(--color-info-light)', color: 'var(--color-info)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                                <div style={{ width: 40, height: 40, background: isLink ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-info-light)', color: isLink ? '#3b82f6' : 'var(--color-info)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                                   {isImg ? (
                                     <img src={fileUrl} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : isDrive ? (
+                                    <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" style={{ width: '22px', height: '22px', objectFit: 'contain' }} alt="Drive" />
+                                  ) : isLink ? (
+                                    <Link2 size={20} />
                                   ) : (
                                     <FileText size={20} />
                                   )}
@@ -11085,7 +11204,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                   >
                                     {doc.name}
                                   </a>
-                                  <p className="text-xs text-light mt-1">Tải lên: {doc.date} • {doc.size}</p>
+                                  <p className="text-xs text-light mt-1">Tải lên: {doc.date} • {isLink ? 'Google Drive Link' : doc.size}</p>
                                 </div>
                                 {isOwnerOrAdmin && !doc.isCoopAttachment && (
                                   <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
@@ -13665,6 +13784,64 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
             </div>
           </motion.div>
         </div>
+      )}
+      {showDriveLinkModal && (
+        <CustomModal
+          isOpen={showDriveLinkModal}
+          onClose={() => setShowDriveLinkModal(false)}
+          title="Liên kết thư mục Google Drive"
+          width="480px"
+        >
+          <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Tên thư mục / Tài liệu <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+              <input 
+                className="form-input" 
+                placeholder="Ví dụ: Thư mục Hồ sơ Pháp lý, Hợp đồng Drive..." 
+                value={driveLinkName}
+                onChange={e => setDriveLinkName(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Đường dẫn Google Drive <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+              <input 
+                className="form-input" 
+                placeholder="https://drive.google.com/drive/folders/..." 
+                value={driveLinkUrl}
+                onChange={e => setDriveLinkUrl(e.target.value)}
+              />
+            </div>
+
+            {currentFolder && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                Thư mục liên kết sẽ được lưu vào: <strong>{currentFolder}</strong>
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
+              <button 
+                type="button" 
+                className="btn outline lg" 
+                style={{ flex: 1 }} 
+                onClick={() => setShowDriveLinkModal(false)}
+                disabled={savingDriveLink}
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                type="button" 
+                className="btn primary lg" 
+                style={{ flex: 1 }} 
+                onClick={handleAddDriveLink}
+                disabled={savingDriveLink}
+              >
+                {savingDriveLink ? 'Đang lưu...' : 'Liên kết'}
+              </button>
+            </div>
+          </div>
+        </CustomModal>
       )}
       {showManageModal && selectedDepForManage && (
         <Suspense fallback={null}>

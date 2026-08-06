@@ -10,7 +10,7 @@ import { CustomModal } from '../ui/CustomModal';
 import { SmartCheckInModal } from '../ui/SmartCheckInModal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { Avatar } from '../ui/Avatar';
-import { AIChatbot } from '../ui/AIChatbot';
+// import { AIChatbot } from '../ui/AIChatbot';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchAPI } from '../../utils/api';
 import { useUIStore } from '../../store/uiStore';
@@ -327,6 +327,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let eventSource: EventSource | null = null;
     let reconnectTimeout: any = null;
+    let lastNewLeads: number | null = null;
 
     if (token) {
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -340,14 +341,23 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         eventSource = new EventSource(url);
 
         eventSource.addEventListener('update', (e: any) => {
-          let detail = {};
+          let detail: any = {};
           try {
             if (e.data) detail = JSON.parse(e.data);
           } catch (err) {}
 
           // Dispatch custom window events to trigger instant updates across components
           window.dispatchEvent(new CustomEvent('realtime-update-received', { detail }));
-          window.dispatchEvent(new Event('contact-updated'));
+          
+          // Only dispatch contact-updated if the number of new leads actually changed,
+          // and it's not the initial connect update.
+          if (detail && typeof detail.new_leads === 'number') {
+            if (lastNewLeads !== null && lastNewLeads !== detail.new_leads) {
+              window.dispatchEvent(new Event('contact-updated'));
+            }
+            lastNewLeads = detail.new_leads;
+          }
+
           window.dispatchEvent(new CustomEvent('new-notification-received', { detail }));
         });
 
@@ -2268,7 +2278,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         </button>
       </div>
 
-      <AIChatbot />
+      {/* <AIChatbot /> */}
 
 
 

@@ -466,7 +466,7 @@ export const MentionInput: React.FC<MentionInputProps> = ({
   }
 
   // Force a healthy minHeight for the rich text editor content (e.g. 100px)
-  const defaultEditorMinHeight = 100;
+  const defaultEditorMinHeight = rows ? rows * 24 : 100;
   let finalEditorMinHeight = `${defaultEditorMinHeight}px`;
   
   if (editorStyleProps.minHeight) {
@@ -482,7 +482,7 @@ export const MentionInput: React.FC<MentionInputProps> = ({
   const editorStyle: React.CSSProperties = {
     padding: '10px 12px',
     outline: 'none',
-    fontSize: '0.85rem',
+    fontSize: '0.875rem',
     lineHeight: '1.5',
     overflowY: 'auto',
     color: 'var(--color-text)',
