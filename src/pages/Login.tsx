@@ -405,6 +405,33 @@ export const Login = () => {
                 <><LogIn size={18} /> Login Admin App</>
               )}
             </button>
+
+            <button
+              onClick={() => handleQuickLogin('accountant@Ideas.test', 'accountant123', 'Accountant')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '48px',
+                fontSize: '1rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 8px 16px rgba(2, 132, 199, 0.2)'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={18} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={18} /> Login Kế toán App</>
+              )}
+            </button>
           </div>
         </div>
 
