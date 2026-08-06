@@ -234,14 +234,14 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   }, []);
   const [contacts, setContacts] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [studentSubTab, setStudentSubTab] = useState<'le_phi' | 'chinh_thuc'>(() => {
+  const [studentSubTab, setStudentSubTab] = useState<'le_phi' | 'chinh_thuc' | 'nop_ho_so'>(() => {
     const tab = searchParams.get('tab');
-    return (tab === 'chinh_thuc' || tab === 'le_phi') ? tab : 'chinh_thuc';
+    return (tab === 'chinh_thuc' || tab === 'le_phi' || tab === 'nop_ho_so') ? tab : 'chinh_thuc';
   });
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'chinh_thuc' || tab === 'le_phi') {
+    if (tab === 'chinh_thuc' || tab === 'le_phi' || tab === 'nop_ho_so') {
       setStudentSubTab(tab);
     } else {
       setStudentSubTab('chinh_thuc');
@@ -833,7 +833,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
         <div style={{ width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h1 className="page-title" style={{ margin: 0 }}>{segment === 'customer' ? 'Học viên' : 'Tiềm năng'}</h1>
+              <h1 className="page-title" style={{ margin: 0 }}>{segment === 'customer' ? (studentSubTab === 'le_phi' ? 'Lệ phí hồ sơ' : studentSubTab === 'nop_ho_so' ? 'Nộp hồ sơ' : 'Học viên chính thức') : 'Tiềm năng'}</h1>
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', fontWeight: 600, marginTop: '2px' }}>
                 {loading ? '(...)' : `(${total} liên hệ)`}
               </span>

@@ -142,6 +142,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   accountant: [
+    { name: 'Nộp hồ sơ', href: '/students?tab=nop_ho_so', icon: GraduationCap },
     { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
     { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
@@ -167,6 +168,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   sale_admin: [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
+    { name: 'Nộp hồ sơ', href: '/students?tab=nop_ho_so', icon: GraduationCap },
     { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
     { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
@@ -177,6 +179,7 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   saleadmin: [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
+    { name: 'Nộp hồ sơ', href: '/students?tab=nop_ho_so', icon: GraduationCap },
     { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
     { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
@@ -366,6 +369,7 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
       const newItems: typeof items = [];
       items.forEach(item => {
         if (item.name === 'Học viên') {
+          newItems.push({ name: 'Nộp hồ sơ', href: '/students?tab=nop_ho_so', icon: GraduationCap });
           newItems.push({ name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap });
           newItems.push({ name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap });
         } else {
