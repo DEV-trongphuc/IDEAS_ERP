@@ -523,9 +523,99 @@ export const Login = () => {
               )}
             </button>
 
-            <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-              Đang update các phân quyền khác.
+            {/* Sales / TVV */}
+            <div style={{ borderTop: '1px solid var(--color-border-light)', margin: '0.5rem 0', paddingTop: '0.5rem' }} />
+            
+            <div style={{ textAlign: 'center', marginBottom: '0.25rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
+              TƯ VẤN VIÊN (SALE):
             </div>
+
+            {/* Nguyễn Thị Linh Đan */}
+            <button
+              onClick={() => handleQuickLogin('danntl@ideas.edu.vn', 'pass123', 'Sales')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '44px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #a31422 0%, #7f0f1b 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 8px rgba(163, 20, 34, 0.15)',
+                marginBottom: '0.5rem'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={16} /> Sale: Nguyễn Thị Linh Đan</>
+              )}
+            </button>
+
+            {/* Lê Đình Ý Nhi */}
+            <button
+              onClick={() => handleQuickLogin('nhildy@ideas.edu.vn', 'pass123', 'Sales')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '44px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 8px rgba(5, 150, 105, 0.15)',
+                marginBottom: '0.5rem'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={16} /> Sale: Lê Đình Ý Nhi</>
+              )}
+            </button>
+
+            {/* Lưu Phan Hoàng Phúc */}
+            <button
+              onClick={() => handleQuickLogin('phuclph@ideas.edu.vn', 'pass123', 'Sales')}
+              className="submit-btn-custom"
+              disabled={loading}
+              style={{
+                height: '44px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 8px rgba(234, 88, 12, 0.15)',
+                marginBottom: '0.5rem'
+              }}
+            >
+              {loading ? (
+                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
+              ) : (
+                <><LogIn size={16} /> Sale: Lưu Phan Hoàng Phúc</>
+              )}
+            </button>
           </div>
         </div>
 

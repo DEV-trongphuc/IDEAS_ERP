@@ -74,15 +74,25 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
 
   const [activeTab, setActiveTab] = useState(() => window.innerWidth <= 1024 ? '' : 'info');
   const [formData, setFormData] = useState(entity || {});
-  const isPartner = ['f1', 'f2', 'f3', 'ctv'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
-  const isLecturer = ['f1', 'f2', 'f3', 'giang_vien'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
+  const isPartner = ['f1', 'f2', 'f3', 'ctv', 'referrer'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
+  const isLecturer = ['f1', 'f2', 'giang_vien', 'chuyen_gia'].includes(String(formData?.tier || entity?.tier || '').toLowerCase());
   const [tags, setTags] = useState<string[]>(entity?.tags || []);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    if (!isLecturer && activeTab === 'teaching') {
+      setActiveTab('info');
+    }
+  }, [isLecturer, activeTab]);
+
   const visibleTabs = useMemo(() => {
-    return disableEdit ? TABS.filter(t => t.id !== 'settings') : TABS;
-  }, [disableEdit]);
+    let list = disableEdit ? TABS.filter(t => t.id !== 'settings') : TABS;
+    if (!isLecturer) {
+      list = list.filter(t => t.id !== 'teaching');
+    }
+    return list;
+  }, [disableEdit, isLecturer]);
 
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -147,12 +157,11 @@ export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, e
   const [baseTags, setBaseTags] = useState<string[]>(entity?.tags || []);
 
   const tierOptions = [
-    { value: 'f1', label: 'Giảng viên Cơ hữu' },
-    { value: 'f2', label: 'Giảng viên Thỉnh giảng' },
-    { value: 'f3', label: 'Giảng viên Đối tác' },
-    { value: 'ctv', label: 'Trợ giảng (TA)' },
-    { value: 'giang_vien', label: 'Giảng viên nước ngoài' },
-    { value: 'chuyen_gia', label: 'Chuyên gia / Cố vấn' }
+    { value: 'f1', label: 'Giảng viên' },
+    { value: 'f2', label: 'Chuyên gia' },
+    { value: 'f3', label: 'Cộng tác viên' },
+    { value: 'ctv', label: 'Đối tác B2B' },
+    { value: 'referrer', label: 'Người giới thiệu' }
   ];
 
   const parentOptions = useMemo(() => {

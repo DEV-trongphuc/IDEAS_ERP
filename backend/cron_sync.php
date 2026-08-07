@@ -2948,6 +2948,96 @@ function checkTaskDueSlaAlerts($conn) {
     }
 }
 
+function checkSubtaskDueAlerts($conn) {
+    logSync("Running checkSubtaskDueAlerts...");
+    
+    $sql = "SELECT id, tenant_id, user_id, created_by, subject, body 
+            FROM activities 
+            WHERE type = 'task' 
+              AND status = 'planned' 
+              AND deleted_at IS NULL 
+              AND body LIKE '%\"checklist\"%'
+              AND (body LIKE '%\"done\":false%' OR body LIKE '%\"done\":0%')
+              AND (body NOT LIKE '%\"subtask_sla_notified\":true%')
+            LIMIT 50";
+            
+    $res = $conn->query($sql);
+    if ($res && $res->num_rows > 0) {
+        $notifStmt = $conn->prepare("
+            INSERT INTO notifications (user_id, tenant_id, title, body, type, link)
+            VALUES (?, ?, ?, ?, 'task_overdue', ?)
+        ");
+        
+        while ($row = $res->fetch_assoc()) {
+            $taskId = (int)$row['id'];
+            $tenantId = (int)$row['tenant_id'];
+            $taskSubject = $row['subject'];
+            $bodyText = $row['body'];
+            
+            $bodyData = json_decode($bodyText, true);
+            if (!is_array($bodyData) || empty($bodyData['erp_task']['checklist'])) {
+                continue;
+            }
+            
+            $checklist = $bodyData['erp_task']['checklist'];
+            $updated = false;
+            
+            foreach ($checklist as &$item) {
+                if (empty($item['done']) && !empty($item['due_date'])) {
+                    $subtaskDueDate = $item['due_date'];
+                    $dueTime = strtotime($subtaskDueDate);
+                    if ($dueTime !== false && $dueTime <= time()) {
+                        if (empty($item['notified_sla'])) {
+                            $recipientId = !empty($item['assignee_id']) ? (int)$item['assignee_id'] : (!empty($row['user_id']) ? (int)$row['user_id'] : null);
+                            
+                            if ($recipientId) {
+                                $title = "CẢNH BÁO SLA: Công việc con quá hạn";
+                                $body = "Công việc con \"" . $item['title'] . "\" thuộc nhiệm vụ \"" . $taskSubject . "\" đã quá hạn xử lý (thời hạn: " . date('d/m/Y', $dueTime) . ")!";
+                                $link = "/activities";
+                                
+                                if ($notifStmt) {
+                                    $notifStmt->bind_param("iisss", $recipientId, $tenantId, $title, $body, $link);
+                                    $notifStmt->execute();
+                                }
+                                
+                                $item['notified_sla'] = true;
+                                $updated = true;
+                                logSync("Sent Subtask Overdue SLA Alert for Task #$taskId (Subtask: {$item['title']}) to User #$recipientId");
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if ($updated) {
+                $bodyData['erp_task']['checklist'] = $checklist;
+                $allNotified = true;
+                foreach ($checklist as $item) {
+                    if (empty($item['done']) && !empty($item['due_date']) && empty($item['notified_sla'])) {
+                        $allNotified = false;
+                        break;
+                    }
+                }
+                if ($allNotified) {
+                    $bodyData['subtask_sla_notified'] = true;
+                }
+                
+                $newBodyJson = json_encode($bodyData, JSON_UNESCAPED_UNICODE);
+                $upd = $conn->prepare("UPDATE activities SET body = ? WHERE id = ?");
+                if ($upd) {
+                    $upd->bind_param("si", $newBodyJson, $taskId);
+                    $upd->execute();
+                    $upd->close();
+                }
+            }
+        }
+        
+        if ($notifStmt) {
+            $notifStmt->close();
+        }
+    }
+}
+
 function checkCapiStuckAlert($conn) {
     logSync("Running checkCapiStuckAlert...");
     $thresholdHours = (int) get_system_setting($conn, 'capi_stuck_alert_threshold_hours') ?: 24;
@@ -3570,6 +3660,13 @@ if (!defined('DIAG_TOKEN')) {
         checkTaskDueSlaAlerts($conn);
     } catch (Exception $e) {
         logSync("Error running checkTaskDueSlaAlerts: " . $e->getMessage());
+    }
+
+    // --- Chạy kiểm tra cảnh báo SLA công việc con quá hạn ---
+    try {
+        checkSubtaskDueAlerts($conn);
+    } catch (Exception $e) {
+        logSync("Error running checkSubtaskDueAlerts: " . $e->getMessage());
     }
 
     // --- Chạy kiểm tra cảnh báo tắc nghẽn Meta CAPI ---

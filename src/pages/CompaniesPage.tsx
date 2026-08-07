@@ -152,12 +152,13 @@ export const CompaniesPage: React.FC = () => {
     const t = String(tier).toLowerCase();
     if (t === 'ca_nhan') return 'Đối tác cá nhân';
     if (t === 'doanh_nghiep') return 'Đối tác doanh nghiệp';
-    if (t === 'ctv') return 'Trợ giảng (TA)';
-    if (t === 'giang_vien') return 'Giảng viên nước ngoài';
-    if (t === 'chuyen_gia') return 'Chuyên gia / Cố vấn';
-    if (t === 'f1') return 'Giảng viên Cơ hữu';
-    if (t === 'f2') return 'Giảng viên Thỉnh giảng';
-    if (t === 'f3') return 'Giảng viên Đối tác';
+    if (t === 'ctv') return 'Đối tác B2B';
+    if (t === 'referrer') return 'Người giới thiệu';
+    if (t === 'giang_vien') return 'Giảng viên';
+    if (t === 'chuyen_gia') return 'Chuyên gia';
+    if (t === 'f1') return 'Giảng viên';
+    if (t === 'f2') return 'Chuyên gia';
+    if (t === 'f3') return 'Cộng tác viên';
     return t;
   };
 
@@ -514,7 +515,7 @@ export const CompaniesPage: React.FC = () => {
               <EmptyCard 
                 icon={<Building2 size={48} />}
                 title="Chưa có đối tác nào"
-                description="Thêm đối tác, đại lý F1/F2, CTV liên kết đầu tiên."
+                description="Thêm đối tác, giảng viên, chuyên gia, CTV, đối tác B2B liên kết đầu tiên."
                 actionText={isSale ? undefined : "Thêm Đối tác"}
                 onAction={isSale ? undefined : openCreate}
               />
@@ -614,7 +615,7 @@ export const CompaniesPage: React.FC = () => {
                       <EmptyCard 
                         icon={<Building2 size={48} />}
                         title="Chưa có đối tác nào"
-                        description="Thêm đối tác, đại lý F1/F2, CTV liên kết đầu tiên."
+                        description="Thêm đối tác, giảng viên, chuyên gia, CTV, đối tác B2B liên kết đầu tiên."
                         actionText={isSale ? undefined : "Thêm Đối tác"}
                         onAction={isSale ? undefined : openCreate}
                       />

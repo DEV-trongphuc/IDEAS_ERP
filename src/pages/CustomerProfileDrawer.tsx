@@ -1649,6 +1649,7 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const [editingDealId, setEditingDealId] = useState<number | null>(null);
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [companiesList, setCompaniesList] = useState<any[]>([]);
+  const [contactsList, setContactsList] = useState<any[]>([]);
   const [isPartnerSource, setIsPartnerSource] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -2096,6 +2097,96 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
   const isStudent = useMemo(() => {
     return String(formData.pipeline_status || contact?.pipeline_status || 'chua_xac_dinh') === 'hoc_vien';
   }, [formData.pipeline_status, contact?.pipeline_status]);
+
+  const referrerOptions = useMemo(() => {
+    const list = companiesList.map(c => ({
+      value: String(c.id),
+      label: c.name,
+      avatar: c.logo_url || null,
+      sublabel: [c.phone, c.email, c.tier ? `Cấp: ${c.tier.toUpperCase()}` : ''].filter(Boolean).join(' - ')
+    }));
+
+    contactsList.forEach(ct => {
+      if (Number(ct.id) === Number(contact?.id)) return;
+      
+      const exists = companiesList.some(comp => 
+        (comp.phone && ct.phone && comp.phone === ct.phone) || 
+        (comp.notes && comp.notes.includes(`Contact ID: ${ct.id}`))
+      );
+      if (exists) return;
+
+      list.push({
+        value: `contact_${ct.id}`,
+        label: ct.full_name || ct.name || 'N/A',
+        avatar: ct.avatar_url || null,
+        sublabel: [ct.phone, ct.email, 'Khách giới thiệu (Chưa đăng ký đối tác)'].filter(Boolean).join(' - ')
+      });
+    });
+
+    return list;
+  }, [companiesList, contactsList, contact?.id]);
+
+  const handleSearchContacts = useCallback(async (searchQuery: string) => {
+    try {
+      const res = await api.get(`/contacts`, {
+        params: {
+          search: searchQuery.trim(),
+          limit: 30
+        }
+      });
+      setContactsList(res.data.data?.items || res.data.data || []);
+    } catch (err) {}
+  }, []);
+
+  const handleSelectReferrer = async (val: string) => {
+    if (!val) {
+      setFormData((prev: any) => ({ ...prev, company_id: null, company_name: '' }));
+      return;
+    }
+
+    if (val.startsWith('contact_')) {
+      const contactIdStr = val.replace('contact_', '');
+      const contactObj = contactsList.find(x => String(x.id) === String(contactIdStr));
+      if (contactObj) {
+        try {
+          addToast(t('Đang tạo đối tác "Người giới thiệu" cho khách hàng này...'), 'success');
+          const payload = {
+            name: contactObj.full_name || contactObj.name || 'N/A',
+            phone: contactObj.phone || '',
+            email: contactObj.email || '',
+            tier: 'referrer',
+            status: 'active',
+            notes: `Tự động tạo từ đối tác giới thiệu (Contact ID: ${contactObj.id})`
+          };
+          const res = await api.post('/companies', payload);
+          
+          let newCompany = null;
+          if (res.data?.success && res.data?.data) {
+            newCompany = res.data.data;
+          } else if (res.data && res.data.id) {
+            newCompany = res.data;
+          }
+
+          if (newCompany && newCompany.id) {
+            setCompaniesList(prev => [...prev, newCompany]);
+            setFormData((prev: any) => ({
+              ...prev,
+              company_id: newCompany.id,
+              company_name: newCompany.name
+            }));
+            addToast(t('Đã tự động tạo đối tác "Người giới thiệu" thành công!'), 'success');
+          } else {
+            addToast(t('Không thể tạo đối tác giới thiệu'), 'error');
+          }
+        } catch (err: any) {
+          addToast(t('Lỗi tạo đối tác giới thiệu: ') + (err.response?.data?.message || err.message), 'error');
+        }
+      }
+    } else {
+      const comp = companiesList.find(x => Number(x.id) === Number(val));
+      setFormData((prev: any) => ({ ...prev, company_id: val, company_name: comp?.name || '' }));
+    }
+  };
 
   const isAtLeastDongLePhiHoSo = useMemo(() => {
     const currentStatus = String(formData.pipeline_status || contact?.pipeline_status || 'chua_xac_dinh').trim().toLowerCase();
@@ -3160,6 +3251,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           if (companiesList.length === 0) {
             const companiesRes = await api.get('/companies?limit=2000');
             setCompaniesList(companiesRes.data.data?.items || companiesRes.data.data || []);
+          }
+        } catch (err) {}
+
+        try {
+          if (contactsList.length === 0) {
+            const contactsRes = await api.get('/contacts?limit=30');
+            setContactsList(contactsRes.data.data?.items || contactsRes.data.data || []);
           }
         } catch (err) {}
       }
@@ -5064,6 +5162,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       return;
     }
 
+    if (formData.pipeline_status === 'hoc_vien' && isBackward) {
+      addToast("Không thể chuyển lùi giai đoạn khi học viên đã nhập học chính thức.", "error");
+      return;
+    }
+
     const isForwardSkip = (targetIdx !== -1 && targetIdx > safeIndex + 1);
     if (isForwardSkip && !allowPipelineSkip) {
       addToast("Không được phép nhảy cóc giai đoạn. Tiến trình chuyển giai đoạn phải đi tuần tự từng bước.", "error");
@@ -5093,37 +5196,40 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
           const currentStage = getStageFromVal(formData.pipeline_status || 'chua_xac_dinh');
           const currentIdx = currentStage ? pipelineStages.indexOf(currentStage) : -1;
           const safeIndex = currentIdx === -1 ? 0 : currentIdx;
+          const isHocVien = formData.pipeline_status === 'hoc_vien';
 
           return pipelineStages.map((st, i) => {
-            const isActive = i <= safeIndex;
             const isCurrent = i === safeIndex;
             const isBackward = i < safeIndex;
+            const isPrecedingOfHocVien = isHocVien && isBackward;
             const stColor = overridePurpleColor(st.color);
             return (
               <div
                 key={st.id}
                 onClick={() => {
-                  if (isCurrent) return;
+                  if (isCurrent || isPrecedingOfHocVien) return;
                   handleStageTransition(String(st.id), st.name);
                 }}
                 style={{
-                  flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', cursor: isCurrent ? 'default' : 'pointer',
+                  flex: '1 0 auto', minWidth: '135px', position: 'relative', height: '32px', 
+                  cursor: (isCurrent || isPrecedingOfHocVien) ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', transition: 'all 0.3s',
-                  opacity: isBackward ? 0.75 : 1
+                  opacity: isPrecedingOfHocVien ? 0.6 : (isBackward ? 0.75 : 1)
                 }}
               >
 
 
                 <div style={{
                   position: 'relative', zIndex: 2, flex: 1,
-                  background: isCurrent ? 'var(--color-primary)' : (isBackward ? 'rgba(163, 20, 34, 0.03)' : 'var(--color-surface)'),
-                  color: isCurrent ? '#fff' : (isBackward ? 'rgba(163, 20, 34, 0.65)' : 'var(--color-text-muted)'),
-                  border: isCurrent ? '2px solid var(--color-primary)' : (isBackward ? '1px solid rgba(163, 20, 34, 0.25)' : '1px solid var(--color-border-light)'),
+                  background: isCurrent ? 'var(--color-primary)' : (isPrecedingOfHocVien ? '#f1f5f9' : (isBackward ? 'rgba(163, 20, 34, 0.03)' : 'var(--color-surface)')),
+                  color: isCurrent ? '#fff' : (isPrecedingOfHocVien ? '#94a3b8' : (isBackward ? 'rgba(163, 20, 34, 0.65)' : 'var(--color-text-muted)')),
+                  border: isCurrent ? '2px solid var(--color-primary)' : (isPrecedingOfHocVien ? '1px solid #cbd5e1' : (isBackward ? '1px solid rgba(163, 20, 34, 0.25)' : '1px solid var(--color-border-light)')),
                   padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   whiteSpace: 'nowrap',
                   boxShadow: isCurrent ? '0 4px 12px rgba(189, 29, 45, 0.2)' : 'none',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  pointerEvents: isPrecedingOfHocVien ? 'none' : 'auto'
                 }}>
                   {isCurrent && <UserCheck size={12} />}
                   {st.name}
@@ -7974,18 +8080,13 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                                 </div>
                               ) : (
                                 <CustomSelect
-                                  options={companiesList.map(c => ({
-                                    value: c.id,
-                                    label: c.name,
-                                    sublabel: [c.phone, c.email, c.tier ? `Cấp: ${c.tier.toUpperCase()}` : ''].filter(Boolean).join(' - ')
-                                  }))}
+                                  options={referrerOptions}
                                   value={formData.company_id || ''}
-                                  onChange={val => {
-                                    const comp = companiesList.find(x => Number(x.id) === Number(val));
-                                    setFormData({ ...formData, company_id: val, company_name: comp?.name || '' });
-                                  }}
+                                  onChange={handleSelectReferrer}
                                   placeholder={t('Chọn đối tác / CTV phụ trách...')}
                                   searchable
+                                  showAvatars={true}
+                                  onSearchChange={handleSearchContacts}
                                 />
                               )
                             ) : (

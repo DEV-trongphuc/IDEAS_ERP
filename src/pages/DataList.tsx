@@ -5337,7 +5337,16 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                                   <td>
                                     <strong style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.invoice_number || `#${item.id}`}</strong>
                                   </td>
-                                  <td>{item.customer_name || 'N/A'}</td>
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <Avatar 
+                                        src={item.customer_avatar} 
+                                        name={item.customer_name || 'Customer'} 
+                                        size={24} 
+                                      />
+                                      <span style={{ fontWeight: 550, color: 'var(--color-text)' }}>{item.customer_name || 'N/A'}</span>
+                                    </div>
+                                  </td>
                                   <td>
                                     <strong style={{ color: 'var(--color-text)' }}>
                                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.total)}

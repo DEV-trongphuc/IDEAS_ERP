@@ -4060,6 +4060,39 @@ switch ($action) {
                 }
             }
 
+            // Fetch pending deposit milestones
+            $dmRes = $conn->query("
+                SELECT 
+                    DATE(dm.expected_pay_date) as date_str,
+                    COUNT(*) as dm_count,
+                    SUM(dm.expected_amount) as dm_total
+                FROM deposit_milestones dm
+                JOIN deposits d ON dm.deposit_id = d.id
+                WHERE dm.expected_pay_date >= '$startDate' 
+                  AND dm.expected_pay_date <= '$endDate' 
+                  AND dm.status = 'pending' 
+                  AND d.status != 'cancelled'
+                GROUP BY DATE(dm.expected_pay_date)
+            ");
+            if ($dmRes) {
+                while ($row = $dmRes->fetch_assoc()) {
+                    $d = $row['date_str'];
+                    if (!isset($stats[$d])) {
+                        $stats[$d] = [
+                            'distributed' => 0,
+                            'blacklist' => 0,
+                            'reminder' => 0,
+                            'error' => 0,
+                            'total' => 0,
+                            'ticket_total' => 0,
+                            'ticket_approved' => 0
+                        ];
+                    }
+                    $stats[$d]['so_count'] = ($stats[$d]['so_count'] ?? 0) + (int)$row['dm_count'];
+                    $stats[$d]['so_total'] = ($stats[$d]['so_total'] ?? 0) + (float)$row['dm_total'];
+                }
+            }
+
             // 4. Get PO (expenses) stats per day (grouped by payment date/refunded_at if paid, otherwise evidence date)
             $poRes = $conn->query("
                 SELECT 
@@ -4110,9 +4143,20 @@ switch ($action) {
             ");
             $poSums = $poSumRes ? $poSumRes->fetch_assoc() : ['po_approved' => 0, 'po_pending' => 0];
 
+            $dmSumRes = $conn->query("
+                SELECT SUM(dm.expected_amount) as dm_pending
+                FROM deposit_milestones dm
+                JOIN deposits d ON dm.deposit_id = d.id
+                WHERE dm.expected_pay_date >= '$startDate' 
+                  AND dm.expected_pay_date <= '$endDate' 
+                  AND dm.status = 'pending' 
+                  AND d.status != 'cancelled'
+            ");
+            $dmSum = $dmSumRes ? $dmSumRes->fetch_assoc() : ['dm_pending' => 0];
+
             $financeSummary = [
                 'so_paid' => (float)($soSums['so_paid'] ?? 0),
-                'so_pending' => (float)($soSums['so_pending'] ?? 0),
+                'so_pending' => (float)($soSums['so_pending'] ?? 0) + (float)($dmSum['dm_pending'] ?? 0),
                 'po_approved' => (float)($poSums['po_approved'] ?? 0),
                 'po_pending' => (float)($poSums['po_pending'] ?? 0),
             ];
@@ -4348,7 +4392,7 @@ switch ($action) {
         if (in_array($decodedUser['role'], ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
             // Fetch invoices (SO) for the date
             $invRes = $conn->query("
-                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.full_name, i.deal_id
+                SELECT i.id, i.invoice_number, i.total, i.status, i.issue_date, ct.full_name, i.deal_id, ct.avatar_url
                 FROM invoices i
                 LEFT JOIN contacts ct ON i.contact_id = ct.id
                 WHERE DATE(i.issue_date) = '$escapedDate' AND i.deleted_at IS NULL $pendingFilterSO
@@ -4363,7 +4407,41 @@ switch ($action) {
                         'status' => $row['status'],
                         'issue_date' => $row['issue_date'],
                         'customer_name' => ($row['full_name'] ?? '') ? trim($row['full_name']) : 'N/A',
+                        'customer_avatar' => $row['avatar_url'] ?: null,
                         'deal_id' => $row['deal_id'] ? (int)$row['deal_id'] : null
+                    ];
+                }
+            }
+
+            // Fetch pending deposit milestones for this day
+            $dmRes = $conn->query("
+                SELECT 
+                    dm.id, 
+                    dm.milestone_name, 
+                    dm.expected_amount, 
+                    dm.expected_pay_date, 
+                    ct.full_name, 
+                    d.id as deposit_id,
+                    ct.avatar_url
+                FROM deposit_milestones dm
+                JOIN deposits d ON dm.deposit_id = d.id
+                LEFT JOIN contacts ct ON d.contact_id = ct.id
+                WHERE DATE(dm.expected_pay_date) = '$escapedDate' 
+                  AND dm.status = 'pending' 
+                  AND d.status != 'cancelled'
+                ORDER BY dm.id DESC
+            ");
+            if ($dmRes) {
+                while ($row = $dmRes->fetch_assoc()) {
+                    $invoices[] = [
+                        'id' => (int)$row['id'],
+                        'invoice_number' => $row['milestone_name'],
+                        'total' => (float)$row['expected_amount'],
+                        'status' => 'pending',
+                        'issue_date' => $row['expected_pay_date'],
+                        'customer_name' => ($row['full_name'] ?? '') ? trim($row['full_name']) : 'N/A',
+                        'customer_avatar' => $row['avatar_url'] ?: null,
+                        'deal_id' => (int)$row['deposit_id']
                     ];
                 }
             }
@@ -13641,7 +13719,7 @@ switch ($action) {
             exit;
         }
 
-        $stmtP = $conn->prepare("SELECT u.id, u.full_name AS name, u.email, a.role, u.job_title, u.status, u.leave_start, u.leave_end, u.work_start_time, u.work_end_time, u.work_schedule, u.avatar_url AS avatar, u.signature_url, u.vacation_mode, u.dob, u.gender, u.citizen_id, u.address, u.bank_name, u.bank_account, u.zalo_chat_id, u.telegram_chat_id, u.overtime_mode, u.permissions_json, u.extra_fields_json, u.manager_behavior_mode, u.use_custom_work_hours, u.bio FROM users u LEFT JOIN accounts a ON u.id = a.id WHERE u.id = ?");
+        $stmtP = $conn->prepare("SELECT u.id, u.full_name AS name, u.email, a.role, u.job_title, u.team_id, t.name AS team_name, u.status, u.leave_start, u.leave_end, u.work_start_time, u.work_end_time, u.work_schedule, u.avatar_url AS avatar, u.signature_url, u.vacation_mode, u.dob, u.gender, u.citizen_id, u.address, u.bank_name, u.bank_account, u.zalo_chat_id, u.telegram_chat_id, u.overtime_mode, u.permissions_json, u.extra_fields_json, u.manager_behavior_mode, u.use_custom_work_hours, u.bio FROM users u LEFT JOIN accounts a ON u.id = a.id LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ?");
         $stmtP->bind_param("i", $targetUserId);
         $stmtP->execute();
         $consultantProfile = $stmtP->get_result()->fetch_assoc();

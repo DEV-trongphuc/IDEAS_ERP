@@ -1669,7 +1669,7 @@ export const Header = ({
             'Đối soát công bằng': 'Đối soát phân chia dữ liệu khách hàng công bằng',
             'AI Pre-screener': 'Thiết lập AI Gatekeeper đánh giá khách hàng',
             'Ticket data lỗi': 'Báo cáo lỗi dữ liệu khách hàng',
-            'Ticket hỗ trợ': 'Gửi ticket yêu cầu IT hỗ trợ',
+            'Helpdesk': 'Gửi ticket yêu cầu IT hỗ trợ',
             'Sản phẩm & Dịch vụ': 'Danh mục sản phẩm, dịch vụ và chính sách giá',
             'Kho hàng hóa': 'Quản lý tồn kho hàng hóa, nhập xuất kho',
             'Chiến dịch': 'Chiến dịch marketing và nguồn phân bổ',
@@ -1715,14 +1715,14 @@ export const Header = ({
             return { ...group, items: filteredItems };
           }).filter(group => group.items.length > 0);
 
-          // If accountant, move 'Ticket hỗ trợ' to the 'NHÂN SỰ' group and remove 'KHÁCH HÀNG' group
+          // If accountant, move 'Helpdesk' to the 'NHÂN SỰ' group and remove 'KHÁCH HÀNG' group
           if (role === 'accountant') {
             let supportTicketItem: any = null;
             
-            // Find and remove 'Ticket hỗ trợ' from its original group
+            // Find and remove 'Helpdesk' from its original group
             visibleGroups = visibleGroups.map(group => {
               if (group.title === 'KHÁCH HÀNG') {
-                const itemIdx = group.items.findIndex(item => item.name === 'Ticket hỗ trợ');
+                const itemIdx = group.items.findIndex(item => item.name === 'Helpdesk');
                 if (itemIdx !== -1) {
                   supportTicketItem = group.items[itemIdx];
                   const newItems = [...group.items];
@@ -1733,7 +1733,7 @@ export const Header = ({
               return group;
             }).filter(group => group.items.length > 0); // remove KHÁCH HÀNG group if empty
             
-            // Add 'Ticket hỗ trợ' to the end of the 'NHÂN SỰ' group
+            // Add 'Helpdesk' to the end of the 'NHÂN SỰ' group
             if (supportTicketItem) {
               visibleGroups = visibleGroups.map(group => {
                 if (group.title === 'NHÂN SỰ') {
@@ -1783,8 +1783,8 @@ export const Header = ({
             superadmin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
             super_admin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
             director: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            sale: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Ticket hỗ trợ', 'Lịch trình'],
-            sales: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Ticket hỗ trợ', 'Lịch trình'],
+            sale: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Helpdesk', 'Lịch trình'],
+            sales: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Helpdesk', 'Lịch trình'],
             accountant: ['Quy trình', 'Sales Order', 'Purchase Order', 'Phiếu lương', 'Nhà cung cấp', 'Đối tác', 'Bàn làm việc', 'Tài liệu', 'Lịch trình'],
             hr: ['Quy trình', 'Nhân sự & Lương', 'Quản lý chấm công', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu', 'Phiếu lương', 'Tài khoản cá nhân'],
             marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Tài liệu', 'Bàn làm việc']

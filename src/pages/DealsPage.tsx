@@ -168,6 +168,7 @@ export const DealsPage: React.FC = () => {
     return Number(localStorage.getItem('Ideas_deals_page_size')) || 50;
   });
   const [total, setTotal] = useState(0);
+  const [stageTotals, setStageTotals] = useState<Record<number, number>>({});
   const [allowPipelineBackward, setAllowPipelineBackward] = useState<boolean>(false);
   const [allowPipelineSkip, setAllowPipelineSkip] = useState<boolean>(false);
 
@@ -393,6 +394,7 @@ export const DealsPage: React.FC = () => {
           };
           const res = await api.get(endpoint, { params: stageParams });
           let stageItems = res.data.data?.items || res.data.data || [];
+          const stageTotal = res.data.data?.total !== undefined ? Number(res.data.data.total) : stageItems.length;
           
           if (currentUser?.role === 'sale') {
             stageItems = stageItems.filter((c: any) => Number(c.owner_id) === Number(currentUser.id));
@@ -406,18 +408,21 @@ export const DealsPage: React.FC = () => {
               stageItems = stageItems.filter((c: any) => teamMemberIds.includes(Number(c.owner_id)));
             }
           }
-          return { stageId: stage.id, items: stageItems };
+          return { stageId: stage.id, items: stageItems, total: stageTotal };
         });
 
         const results = await Promise.all(promises);
         const grouped: Record<number, any[]> = {};
+        const totals: Record<number, number> = {};
         let totalCount = 0;
         results.forEach(res => {
           grouped[res.stageId] = res.items;
-          totalCount += res.items.length;
+          totals[res.stageId] = res.total;
+          totalCount += res.total;
         });
 
         setItems(grouped);
+        setStageTotals(totals);
         setTotal(totalCount);
       } else {
         // Table list view mode - single global request
@@ -581,6 +586,11 @@ export const DealsPage: React.FC = () => {
 
     if (isBackward && !isCancellation && !allowPipelineBackward) {
       addToast("Không thể di chuyển ngược giai đoạn trên Pipeline.", "error");
+      return;
+    }
+
+    if (fromStageObj?.system_slug === 'hoc_vien' && isBackward) {
+      addToast("Không thể chuyển lùi giai đoạn khi khách hàng đã là Học viên chính thức.", "error");
       return;
     }
 
@@ -1103,14 +1113,14 @@ export const DealsPage: React.FC = () => {
               boxShadow: activeStageFilter === 'all' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
             }}
           >
-            Tất cả ({Object.values(filteredItems).flat().length})
+            Tất cả ({total})
           </button>
 
           <div style={{ width: '1px', height: '22px', background: 'var(--color-border)', margin: '0 0.5rem', flexShrink: 0 }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap' }}>
             {stages.map((stage, idx) => {
-              const count = (filteredItems[stage.id] || []).length;
+              const count = stageTotals[stage.id] !== undefined ? stageTotals[stage.id] : (filteredItems[stage.id] || []).length;
               const isActive = activeStageFilter === stage.id;
               return (
                 <React.Fragment key={stage.id}>
@@ -1390,7 +1400,9 @@ export const DealsPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)' }}>{stage.name}</h3>
-                        <span style={{ background: 'var(--color-bg)', color: 'var(--color-text-muted)', padding: '2px 8px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 700 }}>{stageItems.length}</span>
+                        <span style={{ background: 'var(--color-bg)', color: 'var(--color-text-muted)', padding: '2px 8px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 700 }}>
+                          {stageTotals[stage.id] !== undefined ? stageTotals[stage.id] : stageItems.length}
+                        </span>
                       </div>
                     </div>
                     <div style={{ fontSize: '0.875rem', color: 'var(--color-text-light)', fontWeight: 600 }}>

@@ -314,11 +314,6 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
       return;
     }
 
-    if (!depositUncFile && !depositProofImgUrl) {
-      addToast('Vui lòng tải lên minh chứng chuyển khoản (UNC) Đợt 1 để tạo đơn hàng.', 'error');
-      return;
-    }
-
     const rate = parseFloat(exchangeRate) || 1;
     const totalVnd = milestonesInput.reduce((acc, m) => acc + (parseFloat(m.amount) || 0) * (currency === 'VND' ? 1 : rate), 0);
 

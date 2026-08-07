@@ -416,22 +416,44 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
   const [filterDateField, setFilterDateField] = useState<'created_at' | 'updated_at'>('created_at');
   const [dateFilterActive, setDateFilterActive] = useState(false);
   
-  const [columns, setColumns] = useState<ColumnDef[]>([
-    { id: 'name', label: 'Tên liên hệ', visible: true },
-    { id: 'email', label: 'Email', visible: true },
-    { id: 'phone', label: 'SĐT', visible: true },
-    { id: 'company', label: 'Công ty', visible: false },
-    { id: 'tags', label: 'Phân loại (Tags)', visible: true },
-    { id: 'status', label: 'Trạng thái', visible: true },
-    { id: 'contact', label: 'Liên lạc cuối', visible: true },
-    { id: 'deal', label: 'Deal hiện tại', visible: false },
-    { id: 'owner', label: 'Sale phụ trách', visible: true },
-    { id: 'distribution', label: 'Nguồn phân bổ', visible: false },
-    { id: 'ticket_action', label: 'Helpdesk (Ticket)', visible: false },
-    { id: 'updated_at', label: 'Ngày cập nhật', visible: true },
-    { id: 'created_at', label: 'Ngày tạo', visible: true },
-    { id: 'score', label: 'Lead Score', visible: false },
-  ]);
+  const [columns, setColumns] = useState<ColumnDef[]>(() => {
+    const saved = localStorage.getItem('contacts_page_columns');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse saved columns', e);
+      }
+    }
+    return [
+      { id: 'name', label: 'Tên liên hệ', visible: true },
+      { id: 'email', label: 'Email', visible: true },
+      { id: 'phone', label: 'SĐT', visible: true },
+      { id: 'company', label: 'Công ty', visible: false },
+      { id: 'tags', label: 'Phân loại (Tags)', visible: true },
+      { id: 'status', label: 'Trạng thái', visible: true },
+      { id: 'contact', label: 'Liên lạc cuối', visible: true },
+      { id: 'deal', label: 'Deal hiện tại', visible: false },
+      { id: 'owner', label: 'Sale phụ trách', visible: true },
+      { id: 'distribution', label: 'Nguồn phân bổ', visible: false },
+      { id: 'ticket_action', label: 'Helpdesk (Ticket)', visible: false },
+      { id: 'updated_at', label: 'Ngày cập nhật', visible: true },
+      { id: 'created_at', label: 'Ngày tạo', visible: true },
+      { id: 'score', label: 'Lead Score', visible: false },
+      { id: 'source', label: 'Nguồn khách hàng', visible: false },
+      { id: 'job_title', label: 'Chức danh', visible: false },
+      { id: 'birthday', label: 'Ngày sinh', visible: false },
+      { id: 'temperature', label: 'Nhiệt độ', visible: false },
+      { id: 'total_spent', label: 'Doanh thu / Đóng phí', visible: false },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('contacts_page_columns', JSON.stringify(columns));
+  }, [columns]);
   const [showColumns, setShowColumns] = useState(false);
   const [dbTags, setDbTags] = useState<any[]>([]);
 
@@ -837,30 +859,6 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', fontWeight: 600, marginTop: '2px' }}>
                 {loading ? '(...)' : `(${total} liên hệ)`}
               </span>
-              {user?.role === 'sale' && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: uncontactedCount >= 5 
-                    ? 'rgba(239, 68, 68, 0.1)' 
-                    : 'var(--color-bg-light)',
-                  border: uncontactedCount >= 5 
-                    ? '1px solid rgba(239, 68, 68, 0.25)' 
-                    : '1px solid var(--color-border)',
-                  color: uncontactedCount >= 5 
-                    ? 'var(--color-danger)' 
-                    : 'var(--color-text)',
-                  borderRadius: '20px',
-                  padding: '4px 12px',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.03)'
-                }}>
-                  <AlertTriangle size={12} style={{ color: uncontactedCount >= 5 ? 'var(--color-danger)' : 'var(--color-warning)' }} />
-                  <span>Chưa tương tác: <strong>{uncontactedCount}/5</strong></span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1779,7 +1777,11 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                       <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Liên lạc cuối</th>
                     )}
                     {columns.find(c => c.id === 'deal')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Deal đang mở</th>}
-                    {columns.find(c => c.id === 'owner')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Sale phụ trách</th>}
+                    {columns.find(c => c.id === 'owner')?.visible && (
+                      <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>
+                        {isSale ? 'Tương tác gần nhất' : 'Sale phụ trách'}
+                      </th>
+                    )}
                     {columns.find(c => c.id === 'distribution')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Phân bổ</th>}
                     {columns.find(c => c.id === 'ticket_action')?.visible && <th style={{ padding: '1rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Helpdesk</th>}
                     {columns.find(c => c.id === 'updated_at')?.visible && !columns.find(c => c.id === 'owner')?.visible && (
@@ -1798,6 +1800,11 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                       </th>
                     )}
                     {columns.find(c => c.id === 'score')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Score</th>}
+                    {columns.find(c => c.id === 'source')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Nguồn khách</th>}
+                    {columns.find(c => c.id === 'job_title')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Chức danh</th>}
+                    {columns.find(c => c.id === 'birthday')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Ngày sinh</th>}
+                    {columns.find(c => c.id === 'temperature')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Nhiệt độ</th>}
+                    {columns.find(c => c.id === 'total_spent')?.visible && <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid var(--color-border)' }}>Doanh thu</th>}
                     {/* Hiding actions column header */}
                   </tr>
                 </thead>
@@ -2002,7 +2009,23 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                         )}
                         {columns.find(col => col.id === 'owner')?.visible && (
                           <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
-                            {c.owner_name ? (() => {
+                            {isSale ? (
+                              <div 
+                                style={{ 
+                                  fontSize: '0.725rem', 
+                                  color: c.last_interaction ? 'var(--color-text)' : 'var(--color-text-muted)',
+                                  fontWeight: c.last_interaction ? 500 : 400,
+                                  minWidth: '200px',
+                                  maxWidth: '350px',
+                                  whiteSpace: 'normal',
+                                  wordBreak: 'break-word',
+                                  lineHeight: '1.4'
+                                }}
+                                title={c.last_interaction || undefined}
+                              >
+                                {c.last_interaction || 'Chưa có tương tác'}
+                              </div>
+                            ) : c.owner_name ? (() => {
                               const collabs = (c.collaborator_ids || '')
                                 .split(',')
                                 .map((s: string) => s.trim())
@@ -2144,6 +2167,45 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
                             <span style={{ fontWeight: 700, fontSize: '0.875rem', color: c.score >= 80 ? 'var(--color-success)' : c.score >= 60 ? 'var(--color-warning)' : 'var(--color-text-muted)' }}>
                               {c.score}
                             </span>
+                          </td>
+                        )}
+                        {columns.find(col => col.id === 'source')?.visible && (
+                          <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', fontSize: '0.8125rem', color: 'var(--color-text)' }}>
+                            {c.source || '—'}
+                          </td>
+                        )}
+                        {columns.find(col => col.id === 'job_title')?.visible && (
+                          <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', fontSize: '0.8125rem', color: 'var(--color-text)' }}>
+                            {c.job_title || '—'}
+                          </td>
+                        )}
+                        {columns.find(col => col.id === 'birthday')?.visible && (
+                          <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', fontSize: '0.8125rem', color: 'var(--color-text)' }}>
+                            {c.birthday ? new Date(c.birthday).toLocaleDateString('vi-VN') : '—'}
+                          </td>
+                        )}
+                        {columns.find(col => col.id === 'temperature')?.visible && (
+                          <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>
+                            {(() => {
+                              const temp = String(c.temperature).toLowerCase();
+                              let label = 'Neutral';
+                              let color = '#6b7280';
+                              let bg = 'rgba(107, 114, 128, 0.1)';
+                              if (temp === 'hot') { label = 'Hot'; color = '#ef4444'; bg = 'rgba(239, 68, 68, 0.1)'; }
+                              else if (temp === 'warm') { label = 'Warm'; color = '#f97316'; bg = 'rgba(249, 115, 22, 0.1)'; }
+                              else if (temp === 'cool') { label = 'Cool'; color = '#3b82f6'; bg = 'rgba(59, 130, 246, 0.1)'; }
+                              else if (temp === 'cold') { label = 'Cold'; color = '#6b7280'; bg = 'rgba(107, 114, 128, 0.1)'; }
+                              return (
+                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 650, color, background: bg }}>
+                                  {label}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                        )}
+                        {columns.find(col => col.id === 'total_spent')?.visible && (
+                          <td style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                            {FMT_VND(c.total_spent || 0)}
                           </td>
                         )}
                         {/* Hiding row actions cell */}

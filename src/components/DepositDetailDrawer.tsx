@@ -97,6 +97,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   const isAdmin = user && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director', 'accountant'].includes(user.role);
+  const canEditExpectedCommission = user && ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'accountant'].includes(user.role);
   const canEditMilestones = isAdmin || (selectedDepForManage && (
     String(selectedDepForManage.created_by) === String(user?.id) ||
     String(selectedDepForManage.contact_owner_id) === String(user?.id)
@@ -415,13 +416,6 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
       return;
     }
 
-    for (let m of tempMilestones) {
-      if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {
-        addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái chờ ghi nhận hoặc đã ghi nhận bắt buộc phải có file minh chứng đính kèm.`, 'error');
-        return;
-      }
-    }
-
     if (isAdmin && tempSharesData && tempSharesData.length > 0) {
       const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
       if (totalPct !== 100) {
@@ -522,7 +516,23 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
   const formatNumberWithCommas = (num: any) => {
     if (num === null || num === undefined) return '';
-    return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    let strVal = String(num);
+    if (strVal.includes('.')) {
+      const parts = strVal.split('.');
+      if (parts[1] === '00' || parts[1] === '0') {
+        strVal = parts[0];
+      } else {
+        const parsed = parseFloat(strVal);
+        if (!isNaN(parsed)) {
+          if (parsed % 1 === 0) {
+            strVal = String(parsed);
+          } else {
+            return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ',' + parts[1];
+          }
+        }
+      }
+    }
+    return strVal.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   if (!isOpen || !selectedDepForManage) return null;
@@ -839,8 +849,8 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                           </div>
                         ) : (
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                            <Avatar src={selectedDepForManage.creator_avatar} name={selectedDepForManage.creator_name || 'Chưa xác định'} size="md" style={{ width: '28px', height: '28px' }} />
-                            <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text)' }}>{selectedDepForManage.creator_name || 'Chưa xác định'}</span>
+                            <Avatar src={selectedDepForManage.owner_avatar || selectedDepForManage.creator_avatar} name={selectedDepForManage.owner_name || selectedDepForManage.creator_name || 'Chưa xác định'} size="md" style={{ width: '28px', height: '28px' }} />
+                            <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text)' }}>{selectedDepForManage.owner_name || selectedDepForManage.creator_name || 'Chưa xác định'}</span>
                           </div>
                         )}
                       </div>
@@ -917,7 +927,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                               Hoa hồng dự kiến
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              {isAdmin && !isEditingCommission && (
+                              {canEditExpectedCommission && !isEditingCommission && (
                                 <button
                                   onClick={() => setIsEditingCommission(true)}
                                   style={{
@@ -947,45 +957,76 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                             </div>
                           </div>
                           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-                            {isAdmin && isEditingCommission ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <CurrencyInput
-                                  value={tempExpectedCommission}
-                                  onChange={(val) => setTempExpectedCommission(val || 0)}
-                                  className="form-input"
-                                  style={{
-                                    height: '28px',
-                                    fontSize: '0.95rem',
-                                    fontWeight: 800,
-                                    color: '#059669',
-                                    flex: 1,
-                                    margin: 0,
-                                    padding: '0 6px',
-                                    borderRadius: '6px',
-                                    background: 'var(--color-surface)',
-                                    border: '1px solid rgba(16, 185, 129, 0.3)'
-                                  }}
-                                />
-                                <button
-                                  onClick={() => setIsEditingCommission(false)}
-                                  style={{
-                                    border: 'none',
-                                    background: '#10b981',
-                                    color: 'white',
-                                    padding: '4px',
-                                    cursor: 'pointer',
-                                    borderRadius: '6px',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '28px',
-                                    height: '28px',
-                                    boxShadow: 'var(--shadow-sm)'
-                                  }}
-                                  title="Xong"
-                                >
-                                  <Check size={14} />
-                                </button>
+                            {canEditExpectedCommission && isEditingCommission ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Số tiền (VND)</span>
+                                  <CurrencyInput
+                                    value={tempExpectedCommission}
+                                    onChange={(val) => setTempExpectedCommission(val || 0)}
+                                    className="form-input"
+                                    style={{
+                                      height: '28px',
+                                      fontSize: '0.85rem',
+                                      fontWeight: 800,
+                                      color: '#059669',
+                                      width: '100%',
+                                      margin: 0,
+                                      padding: '0 6px',
+                                      borderRadius: '6px',
+                                      background: 'var(--color-surface)',
+                                      border: '1px solid rgba(16, 185, 129, 0.3)'
+                                    }}
+                                  />
+                                </div>
+                                <div style={{ width: '70px', flexShrink: 0 }}>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Tỷ lệ %</span>
+                                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={selectedDepForManage?.price > 0 ? parseFloat(((tempExpectedCommission / selectedDepForManage.price) * 100).toFixed(4)) : 0}
+                                      onChange={(e) => {
+                                        const pct = parseFloat(e.target.value) || 0;
+                                        setTempExpectedCommission(Math.round((pct / 100) * (selectedDepForManage?.price || 0)));
+                                      }}
+                                      style={{
+                                        height: '28px',
+                                        width: '100%',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 800,
+                                        color: '#059669',
+                                        padding: '0 16px 0 6px',
+                                        borderRadius: '6px',
+                                        background: 'var(--color-surface)',
+                                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                                      }}
+                                    />
+                                    <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>%</span>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100%', paddingTop: '14px' }}>
+                                  <button
+                                    onClick={() => setIsEditingCommission(false)}
+                                    style={{
+                                      border: 'none',
+                                      background: '#10b981',
+                                      color: 'white',
+                                      padding: '4px',
+                                      cursor: 'pointer',
+                                      borderRadius: '6px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '28px',
+                                      height: '28px',
+                                      boxShadow: 'var(--shadow-sm)'
+                                    }}
+                                    title="Xong"
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                </div>
                               </div>
                             ) : (
                               <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
@@ -1386,60 +1427,34 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                     )}
                                   </button>
                                 )}
-                                {isAdmin && m.status === 'paid' && m.unc_file_path && m.unc_file_path.trim() !== '' && (
-                                  <>
-    <button
-                                      onClick={() => handleApproveFromModal(idx)}
-                                      disabled={actioningMilestoneId !== null}
-                                      style={{
-                                        padding: '0 8px',
-                                        height: '30px',
-                                        background: '#10b981',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: actioningMilestoneId !== null ? 'not-allowed' : 'pointer',
-                                        fontSize: '0.7rem',
-                                        fontWeight: 700,
-                                        opacity: actioningMilestoneId !== null ? 0.6 : 1
-                                      }}
-                                      title="Ghi nhận đợt tiền này"
-                                    >
-                                      {actioningMilestoneId === m.id && actioningType === 'approve' && (
-                                        <Loader2 size={13} className="animate-spin" style={{ marginRight: 4 }} />
-                                      )}
-                                      Ghi nhận
-                                    </button>
-                                    <button
-                                      onClick={() => handleRejectFromModal(idx)}
-                                      disabled={actioningMilestoneId !== null}
-                                      style={{
-                                        padding: '0 8px',
-                                        height: '30px',
-                                        background: '#ef4444',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: actioningMilestoneId !== null ? 'not-allowed' : 'pointer',
-                                        fontSize: '0.7rem',
-                                        fontWeight: 700,
-                                        opacity: actioningMilestoneId !== null ? 0.6 : 1
-                                      }}
-                                      title="Từ chối minh chứng"
-                                    >
-                                      {actioningMilestoneId === m.id && actioningType === 'reject' && (
-                                        <Loader2 size={13} className="animate-spin" style={{ marginRight: 4 }} />
-                                      )}
-                                      Từ chối
-                                    </button>
-                                  </>
+                                {isAdmin && m.status !== 'approved' && (
+                                  <button
+                                    onClick={() => handleApproveFromModal(idx)}
+                                    disabled={actioningMilestoneId !== null}
+                                    style={{
+                                      padding: '0 8px',
+                                      height: '30px',
+                                      background: '#10b981',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: actioningMilestoneId !== null ? 'not-allowed' : 'pointer',
+                                      fontSize: '0.7rem',
+                                      fontWeight: 700,
+                                      opacity: actioningMilestoneId !== null ? 0.6 : 1
+                                    }}
+                                    title="Ghi nhận đợt tiền này"
+                                  >
+                                    {actioningMilestoneId === m.id && actioningType === 'approve' && (
+                                      <Loader2 size={13} className="animate-spin" style={{ marginRight: 4 }} />
+                                    )}
+                                    Ghi nhận
+                                  </button>
                                 )}
+
 
                                 {!isLocked && canEditMilestones && (
                                   <button

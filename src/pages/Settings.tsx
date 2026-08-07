@@ -421,7 +421,7 @@ const SettingsInner = () => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // States
-  const [provider, setProvider] = useState('appscript');
+  const [provider, setProvider] = useState('ses');
   const [appscriptUrl, setAppscriptUrl] = useState('');
   const [frontendUrl, setFrontendUrl] = useState('');
 

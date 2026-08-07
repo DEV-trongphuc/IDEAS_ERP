@@ -685,6 +685,17 @@ class PostController {
             if (!$id) {
                 respond(400, null, 'Thiếu ID vinh danh cần xóa', false);
             }
+
+            // Fetch the user_id of this honor before deleting it
+            $stmtGet = $this->db->prepare("SELECT user_id FROM enterprise_honors WHERE id = ? AND tenant_id = ?");
+            $stmtGet->execute([$id, $tenantId]);
+            $honorRow = $stmtGet->fetch(PDO::FETCH_ASSOC);
+            if ($honorRow) {
+                $userId = (int)$honorRow['user_id'];
+                // Remove from user HR records
+                $this->removeHonorFromHrRecords($userId, $id);
+            }
+
             $stmt = $this->db->prepare("DELETE FROM enterprise_honors WHERE id = ? AND tenant_id = ?");
             $stmt->execute([$id, $tenantId]);
             respond(200, null, 'Xóa vinh danh thành công!');
@@ -706,6 +717,10 @@ class PostController {
                 WHERE id = ? AND tenant_id = ?
             ");
             $stmt->execute([$userId, $title, $badge, $reason, $id, $tenantId]);
+
+            // Sync to user HR records
+            $this->syncHonorToHrRecords($userId, $id, $badge, $title, $reason);
+
             respond(200, null, 'Cập nhật vinh danh thành công!');
         } else {
             $stmt = $this->db->prepare("
@@ -713,7 +728,98 @@ class PostController {
                 VALUES (?, ?, ?, ?, ?, 0)
             ");
             $stmt->execute([$tenantId, $userId, $title, $badge, $reason]);
+            $honorId = (int)$this->db->lastInsertId();
+
+            // Sync to user HR records
+            $this->syncHonorToHrRecords($userId, $honorId, $badge, $title, $reason);
+
             respond(200, null, 'Thêm vinh danh mới thành công!');
+        }
+    }
+
+    private function syncHonorToHrRecords($userId, $honorId, $badge, $title, $reason) {
+        try {
+            $stmtUser = $this->db->prepare("SELECT address FROM users WHERE id = ?");
+            $stmtUser->execute([$userId]);
+            $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if ($userRow) {
+                $addressJson = $userRow['address'] ?? '';
+                $addressData = [];
+                if (!empty($addressJson)) {
+                    $decoded = json_decode($addressJson, true);
+                    if (is_array($decoded)) {
+                        $addressData = $decoded;
+                    }
+                }
+                
+                if (!isset($addressData['erp_profile']) || !is_array($addressData['erp_profile'])) {
+                    $addressData['erp_profile'] = [];
+                }
+                if (!isset($addressData['erp_profile']['hr_records']) || !is_array($addressData['erp_profile']['hr_records'])) {
+                    $addressData['erp_profile']['hr_records'] = [];
+                }
+                
+                $newRecordId = 'honor_' . $honorId;
+                $existingRecords = $addressData['erp_profile']['hr_records'];
+                $filteredRecords = [];
+                foreach ($existingRecords as $rec) {
+                    if (isset($rec['id']) && $rec['id'] === $newRecordId) {
+                        continue;
+                    }
+                    $filteredRecords[] = $rec;
+                }
+                
+                $filteredRecords[] = [
+                    'id' => $newRecordId,
+                    'type' => 'award',
+                    'title' => '[Vinh danh] ' . $badge . ' - ' . $title,
+                    'date' => date('Y-m-d'),
+                    'amount' => '0',
+                    'reason' => $reason,
+                    'decisionNumber' => 'VD-' . date('Ymd') . '-' . $userId,
+                    'documentLink' => ''
+                ];
+                
+                $addressData['erp_profile']['hr_records'] = $filteredRecords;
+                $updatedAddressJson = json_encode($addressData, JSON_UNESCAPED_UNICODE);
+                
+                $stmtUpdateUser = $this->db->prepare("UPDATE users SET address = ? WHERE id = ?");
+                $stmtUpdateUser->execute([$updatedAddressJson, $userId]);
+            }
+        } catch (Exception $e) {
+            error_log("Failed to sync honor to user HR records: " . $e->getMessage());
+        }
+    }
+
+    private function removeHonorFromHrRecords($userId, $honorId) {
+        try {
+            $stmtUser = $this->db->prepare("SELECT address FROM users WHERE id = ?");
+            $stmtUser->execute([$userId]);
+            $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if ($userRow) {
+                $addressJson = $userRow['address'] ?? '';
+                if (!empty($addressJson)) {
+                    $addressData = json_decode($addressJson, true);
+                    if (is_array($addressData) && isset($addressData['erp_profile']['hr_records']) && is_array($addressData['erp_profile']['hr_records'])) {
+                        $targetRecordId = 'honor_' . $honorId;
+                        $existingRecords = $addressData['erp_profile']['hr_records'];
+                        $filteredRecords = [];
+                        foreach ($existingRecords as $rec) {
+                            if (isset($rec['id']) && $rec['id'] === $targetRecordId) {
+                                continue;
+                            }
+                            $filteredRecords[] = $rec;
+                        }
+                        $addressData['erp_profile']['hr_records'] = $filteredRecords;
+                        $updatedAddressJson = json_encode($addressData, JSON_UNESCAPED_UNICODE);
+                        
+                        $stmtUpdateUser = $this->db->prepare("UPDATE users SET address = ? WHERE id = ?");
+                        $stmtUpdateUser->execute([$updatedAddressJson, $userId]);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Failed to remove honor from user HR records: " . $e->getMessage());
         }
     }
 

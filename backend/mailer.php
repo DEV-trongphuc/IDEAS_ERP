@@ -99,7 +99,7 @@ function sendEmailNotification($to, $subject, $title, $content, $ccEmailString =
     // --- SYNCHRONOUS SEND (For test_email ONLY) ---
     // Fetch settings globally using cached function to prevent N+1 queries
     $settings = get_system_setting($conn);
-    $provider = $settings['email_provider'] ?? 'appscript';
+    $provider = $settings['email_provider'] ?? 'ses';
     $sentResult = false;
     $errorMessage = null;
 

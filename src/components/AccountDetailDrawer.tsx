@@ -485,9 +485,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                 const erp = addressObj.erp_profile;
                 setAddress(erp.address_text || '');
                 setAddressTemporary(erp.address_temporary || '');
-                setEmployeeId(erp.employee_id || '');
-                setDepartment(erp.department || '');
-                setJobTitle(erp.job_title || '');
+                setEmployeeId(erp.employee_id || (d.id ? 'RL-' + d.id : ''));
+                setDepartment(erp.department || d.team_name || '');
+                setJobTitle(erp.job_title || d.job_title || '');
                 setContractType(erp.contract_type || 'official');
                 setDateJoined(erp.date_joined || '');
                 setDirectManager(erp.direct_manager || '');
@@ -526,6 +526,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                 setCertificates([]);
                 setHrRecords([]);
                 setAssignedAssets([]);
+                setEmployeeId(d.id ? 'RL-' + d.id : '');
+                setDepartment(d.team_name || '');
+                setJobTitle(d.job_title || '');
               }
             } catch (e) {
               setAddress(addressPayload);
@@ -533,6 +536,9 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
               setCertificates([]);
               setHrRecords([]);
               setAssignedAssets([]);
+              setEmployeeId(d.id ? 'RL-' + d.id : '');
+              setDepartment(d.team_name || '');
+              setJobTitle(d.job_title || '');
             }
 
             if (d.work_schedule && typeof d.work_schedule === 'object') {

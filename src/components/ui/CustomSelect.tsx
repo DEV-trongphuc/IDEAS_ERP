@@ -37,6 +37,7 @@ interface CustomSelectProps {
   align?: 'left' | 'right';
   size?: 'sm' | 'md';
   disabled?: boolean;
+  onSearchChange?: (search: string) => void;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -53,7 +54,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   multiple = false,
   align = 'left',
   size = 'sm',
-  disabled = false
+  disabled = false,
+  onSearchChange
 }) => {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -70,6 +72,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
+
+  useEffect(() => {
+    if (onSearchChange) {
+      const handler = setTimeout(() => {
+        onSearchChange(search);
+      }, 300);
+      return () => clearTimeout(handler);
+    }
+  }, [search, onSearchChange]);
 
   useEffect(() => {
     if (isOpen && containerRef.current) {

@@ -13,11 +13,13 @@ class DepositController {
 
         $sql = "
             SELECT d.*, c.full_name, c.phone, c.avatar_url, c.email, p.name as project_name, u.full_name as creator_name, u.avatar_url as creator_avatar,
+                   owner.full_name as owner_name, owner.avatar_url as owner_avatar,
                    c.owner_id as contact_owner_id, c.pipeline_status
             FROM deposits d
             JOIN contacts c ON d.contact_id = c.id
             JOIN projects p ON d.project_id = p.id
             JOIN users u ON d.created_by = u.id
+            LEFT JOIN users owner ON c.owner_id = owner.id
             WHERE c.tenant_id = ?
         ";
         $params = [$tid];
@@ -244,6 +246,9 @@ class DepositController {
                         ");
                         $stmtNote->execute([$auth['tenant_id'], $contactId, $auth['user_id'], $bodyText]);
                         $noteId = $this->db->lastInsertId();
+
+                        // Log interaction for contact's timeline
+                        logInteraction($this->db, $auth['tenant_id'], $auth['user_id'], 'note', 'Tạo Phiếu Thu', $bodyText, 'contact', $contactId);
 
                         // Add note mention
                         $stmtMention = $this->db->prepare("
@@ -652,6 +657,9 @@ class DepositController {
 
             $this->db->commit();
             logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE_DEPOSIT_MILESTONE', 'deposit_milestone', $milestoneId, "Duyệt đóng tiền đợt ID: $milestoneId, thực nhận: " . number_format($total, 0, ',', '.') . " VND");
+             
+             // Log interaction for contact's timeline
+             logInteraction($this->db, $auth['tenant_id'], $auth['user_id'], 'note', 'Duyệt Đợt Thanh Toán', "UNC/Đợt thanh toán ID: $milestoneId đã được phê duyệt. Số tiền thực nhận: " . number_format($total, 0, ',', '.') . " VND", 'contact', $depositData['contact_id']);
 
             // Notify all related users (owner, creator, co-op sales)
             $uIdsToNotify = [];

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Sparkles, Database, FileText, Globe, Upload, Trash2, Edit2, Play, 
@@ -1030,7 +1030,7 @@ export const AITrainingPanel: React.FC = () => {
                     </tr>
                   ) : groupedDocs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ padding: '2.5rem 1rem' }}>
+                      <td colSpan={7} className="wrap-cell" style={{ padding: '2.5rem 1rem' }}>
                         <EmptyCard
                           icon={<Database size={36} color="#BD1D2D" />}
                           title="Không tìm thấy tài liệu tri thức nào"

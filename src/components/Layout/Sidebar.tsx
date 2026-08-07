@@ -36,13 +36,13 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     title: 'KHÁCH HÀNG',
     items: [
       { name: 'Tiềm năng', href: '/contacts', icon: Users, hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
-      { name: 'Học viên', href: '/students', icon: GraduationCap, hideForRoles: ['hr'] },
       { name: 'Pipeline', href: '/deals', icon: TrendingUp, hideForRoles: ['hr', 'accountant', 'sale_admin', 'saleadmin'] },
+      { name: 'Học viên', href: '/students', icon: GraduationCap, hideForRoles: ['hr'] },
       { name: 'Nhật ký Data', href: '/data', icon: Database, hideForRoles: ['sale', 'hr', 'accountant', 'sale_admin', 'saleadmin'] },
       { name: 'Đối soát công bằng', href: '/fair-share', icon: Scale, hideForRoles: ['sale', 'sales', 'viewer', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
       { name: 'AI Pre-screener', href: '/gatekeeper', icon: Filter, adminOnly: true, badgeKey: 'gatekeeper', hideForRoles: ['manager', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'marketing', 'sale_admin', 'saleadmin'] },
       { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets', hideForRoles: ['hr', 'accountant'] },
-      { name: 'Ticket hỗ trợ', href: '/support-tickets', icon: LifeBuoy, badgeKey: 'supportTickets' }
+      { name: 'Helpdesk', href: '/support-tickets', icon: LifeBuoy, badgeKey: 'supportTickets' }
     ]
   },
   {
@@ -60,7 +60,7 @@ export const SIDEBAR_GROUPS: SidebarGroup[] = [
     title: 'TÀI CHÍNH',
     items: [
       { name: 'Purchase Order', href: '/expenses', icon: CreditCard, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingExpenses' },
-      { name: 'Sales Order', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'marketing'], badgeKey: 'pendingDeposits' },
+      { name: 'Sales Order', href: '/deposits', icon: Receipt, hideForRoles: ['viewer', 'marketing', 'sale_admin', 'saleadmin'], badgeKey: 'pendingDeposits' },
       { name: 'Dự báo dòng tiền', href: '/cash-flow', icon: TrendingUp, hideForRoles: ['viewer', 'marketing', 'sale_admin', 'saleadmin'] }
     ]
   },
@@ -129,15 +129,15 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
   ],
   sale: [
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-    { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
     { name: 'Tiềm năng', href: '/contacts', icon: Users },
+    { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
     { name: 'Học viên', href: '/students', icon: GraduationCap },
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
   sales: [
     { name: 'Bàn làm việc', href: '/workspace', icon: CheckSquare, badgeKey: 'workspaceTasks' },
-    { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
     { name: 'Tiềm năng', href: '/contacts', icon: Users },
+    { name: 'Giao dịch', href: '/deals', icon: TrendingUp },
     { name: 'Học viên', href: '/students', icon: GraduationCap },
     { name: 'Chấm công', href: '/attendance', icon: Clock }
   ],
@@ -172,7 +172,6 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
     { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
-    { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
     { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' }
   ],
@@ -183,7 +182,6 @@ const QUICK_NAV_BY_ROLE: Record<string, QuickNavItem[]> = {
     { name: 'Lệ phí hồ sơ', href: '/students?tab=le_phi', icon: GraduationCap },
     { name: 'Học viên chính thức', href: '/students?tab=chinh_thuc', icon: GraduationCap },
     { name: 'Ticket data lỗi', href: '/tickets', icon: Ticket, badgeKey: 'tickets' },
-    { name: 'Sales Order', href: '/deposits', icon: Receipt, badgeKey: 'pendingDeposits' },
     { name: 'Purchase Order', href: '/expenses', icon: CreditCard, badgeKey: 'pendingExpenses' },
     { name: 'Quy trình', href: '/approvals', icon: Clipboard, badgeKey: 'pendingApprovals' }
   ]
@@ -433,14 +431,14 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
     return { ...group, items: filteredItems };
   }).filter(group => group.items.length > 0);
 
-  // If accountant, move 'Ticket hỗ trợ' to the 'NHÂN SỰ' group and remove 'KHÁCH HÀNG' group
+  // If accountant, move 'Helpdesk' to the 'NHÂN SỰ' group and remove 'KHÁCH HÀNG' group
   if (user?.role === 'accountant') {
     let supportTicketItem: any = null;
     
-    // Find and remove 'Ticket hỗ trợ' from its original group
+    // Find and remove 'Helpdesk' from its original group
     visibleGroups = visibleGroups.map(group => {
       if (group.title === 'KHÁCH HÀNG') {
-        const itemIdx = group.items.findIndex(item => item.name === 'Ticket hỗ trợ');
+        const itemIdx = group.items.findIndex(item => item.name === 'Helpdesk');
         if (itemIdx !== -1) {
           supportTicketItem = group.items[itemIdx];
           const newItems = [...group.items];

@@ -251,6 +251,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   // Checklist inline edit & assignee picker state
   const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null);
   const [editingChecklistTitle, setEditingChecklistTitle] = useState<string>('');
+  const [editingChecklistDeadline, setEditingChecklistDeadline] = useState<string>('');
   const [activeAssigneeDropdownId, setActiveAssigneeDropdownId] = useState<string | null>(null);
   const [deleteSubtaskTarget, setDeleteSubtaskTarget] = useState<{ id: string; title: string } | null>(null);
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
@@ -1322,6 +1323,23 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     const updatedMeta = { ...erpMeta, checklist: updatedChecklist };
     handleSaveMeta(updatedMeta);
     toast.success(t('Đã cập nhật tiêu đề việc con'));
+  };
+
+  const handleUpdateChecklistItem = (itemId: string, newTitle: string, newDeadline: string) => {
+    if (!newTitle.trim()) return;
+    const updatedChecklist = erpMeta.checklist.map((item: any) => {
+      if (item.id === itemId) {
+        return { 
+          ...item, 
+          title: newTitle.trim(),
+          due_date: newDeadline || null
+        };
+      }
+      return item;
+    });
+    const updatedMeta = { ...erpMeta, checklist: updatedChecklist };
+    handleSaveMeta(updatedMeta);
+    toast.success(t('Đã cập nhật công việc con'));
   };
 
   const handleUpdateChecklistItemAssignee = (itemId: string, newAssigneeId: string) => {
@@ -2684,48 +2702,58 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                               {isEditingThis ? (
                                 <div 
                                   onClick={(e) => e.stopPropagation()}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                                  style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}
                                 >
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    value={editingChecklistTitle}
-                                    onChange={(e) => setEditingChecklistTitle(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                                    <input
+                                      type="text"
+                                      className="form-input"
+                                      value={editingChecklistTitle}
+                                      onChange={(e) => setEditingChecklistTitle(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleUpdateChecklistItem(item.id, editingChecklistTitle, editingChecklistDeadline);
+                                          setEditingChecklistId(null);
+                                        } else if (e.key === 'Escape') {
+                                          setEditingChecklistId(null);
+                                        }
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      autoFocus
+                                      style={{ fontSize: '0.82rem', padding: '4px 8px', height: '32px', borderRadius: '6px', flex: 1 }}
+                                    />
+                                    <input
+                                      type="date"
+                                      className="form-input"
+                                      value={editingChecklistDeadline}
+                                      onChange={(e) => setEditingChecklistDeadline(e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ fontSize: '0.8rem', padding: '4px 6px', height: '32px', borderRadius: '6px', width: '130px', flexShrink: 0 }}
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn primary sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUpdateChecklistItem(item.id, editingChecklistTitle, editingChecklistDeadline);
                                         setEditingChecklistId(null);
-                                      } else if (e.key === 'Escape') {
+                                      }}
+                                      style={{ padding: '4px 10px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
+                                    >
+                                      {t('Lưu')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn outline sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setEditingChecklistId(null);
-                                      }
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    autoFocus
-                                    style={{ fontSize: '0.82rem', padding: '4px 8px', height: '32px', borderRadius: '6px', width: '100%' }}
-                                  />
-                                  <button
-                                    type="button"
-                                    className="btn primary sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleUpdateChecklistItemTitle(item.id, editingChecklistTitle);
-                                      setEditingChecklistId(null);
-                                    }}
-                                    style={{ padding: '4px 10px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
-                                  >
-                                    {t('Lưu')}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn outline sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingChecklistId(null);
-                                    }}
-                                    style={{ padding: '4px 8px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
-                                  >
-                                    ✕
-                                  </button>
+                                      }}
+                                      style={{ padding: '4px 8px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
                                 </div>
                               ) : (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2745,6 +2773,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                         e.stopPropagation();
                                         setEditingChecklistId(item.id);
                                         setEditingChecklistTitle(item.title);
+                                        setEditingChecklistDeadline(item.due_date ? new Date(item.due_date).toISOString().split('T')[0] : '');
                                       }}
                                       style={{
                                         border: 'none',

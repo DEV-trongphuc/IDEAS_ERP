@@ -12,6 +12,7 @@
   box-shadow: none;
   transition: all 0.3s ease;
   width: 100%;
+  white-space: normal !important;
 }
 
 .iconWrapper {
@@ -35,19 +36,20 @@
   color: var(--color-text, #1e293b);
   margin-bottom: 8px;
   letter-spacing: -0.01em;
+  white-space: normal !important;
 }
 
 .description {
   color: var(--color-text-muted, #64748b);
   font-size: 0.875rem;
-  max-width: 480px;
+  max-width: 340px;
   line-height: 1.6;
   margin: 0 auto;
   white-space: normal !important;
-  word-wrap: break-word !important;
-  word-break: break-word !important;
+  word-break: break-word;
 }
 
 .actionWrapper {
   margin-top: 1.5rem;
 }
+

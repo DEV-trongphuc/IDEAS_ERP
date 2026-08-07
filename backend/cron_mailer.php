@@ -37,7 +37,7 @@ function runMailerCron($conn) {
         }
     }
 
-    $provider = $settings['email_provider'] ?? 'appscript';
+    $provider = $settings['email_provider'] ?? 'ses';
 
     // 2. Tự động khôi phục các mail bị kẹt ở trạng thái 'processing' từ phiên chạy trước bị lỗi (quá 10 phút)
     $conn->query("UPDATE mail_queue SET status = 'pending' WHERE status = 'processing' AND (updated_at IS NULL OR updated_at <= DATE_SUB(NOW(), INTERVAL 10 MINUTE))");

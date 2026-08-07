@@ -1279,7 +1279,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                 src={user?.avatar || user?.avatar_url}
                 size={isMobile ? 50 : 65}
                 style={{
-                  borderRadius: '18px',
+                  borderRadius: '50%',
                   border: '2px solid rgba(189, 29, 45, 0.6)',
                   boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
                   fontWeight: 800

@@ -250,10 +250,17 @@ class ContactController {
                    r.round_name,
                    dl.id as log_id,
                    l.id as lead_id,
-                   dr.status as report_status,
-                   dr.id as report_id,
-                   dr.reason as report_reason
-            FROM contacts c
+                    dr.status as report_status,
+                    dr.id as report_id,
+                    dr.reason as report_reason,
+                    (
+                        SELECT body FROM (
+                            SELECT body, created_at, entity_id as cid FROM notes WHERE entity_type = 'contact'
+                            UNION ALL
+                            SELECT COALESCE(body, subject) as body, created_at, related_id as cid FROM activities WHERE related_type = 'contact'
+                        ) t WHERE t.cid = c.id ORDER BY t.created_at DESC LIMIT 1
+                    ) as last_interaction
+             FROM contacts c
             LEFT JOIN companies comp ON c.company_id = comp.id
             LEFT JOIN users u ON c.owner_id = u.id
             LEFT JOIN pipeline_stages ps ON c.stage_id = ps.id

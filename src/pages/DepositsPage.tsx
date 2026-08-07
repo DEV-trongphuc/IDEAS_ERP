@@ -944,12 +944,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       return;
     }
 
-    for (let m of tempMilestones) {
-      if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {
-        addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái đã đóng/đã duyệt bắt buộc phải có file minh chứng đính kèm.`, 'error');
-        return;
-      }
-    }
+
 
     if (isAdmin && tempSharesData && tempSharesData.length > 0) {
       const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
