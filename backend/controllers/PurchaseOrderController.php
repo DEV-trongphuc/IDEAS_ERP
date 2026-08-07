@@ -6,39 +6,89 @@ class PurchaseOrderController {
     public function index(array $auth): void {
         $tid = $auth['tenant_id'];
         $supplierId = (int)($_GET['supplier_id'] ?? 0);
+        $paymentStatus = trim($_GET['payment_status'] ?? '');
+
+        $where = ["po.tenant_id = ?"];
+        $params = [$tid];
+
         if ($supplierId > 0) {
-            $stmt = $this->db->prepare("
-                SELECT po.*, s.name as supplier_name, u.full_name as creator_name,
-                       app1.full_name as approver_name_1, app1.email as approver_email_1,
-                       app2.full_name as approver_name_2, app2.email as approver_email_2,
-                       app3.full_name as approver_name_3, app3.email as approver_email_3
-                FROM purchase_orders po
-                LEFT JOIN suppliers s ON po.supplier_id = s.id
-                LEFT JOIN users u ON po.created_by = u.id
-                LEFT JOIN users app1 ON po.approver_id = app1.id
-                LEFT JOIN users app2 ON po.approver_id_2 = app2.id
-                LEFT JOIN users app3 ON po.approver_id_3 = app3.id
-                WHERE po.tenant_id = ? AND po.supplier_id = ?
-                ORDER BY po.created_at DESC
-            ");
-            $stmt->execute([$tid, $supplierId]);
-        } else {
-            $stmt = $this->db->prepare("
-                SELECT po.*, s.name as supplier_name, u.full_name as creator_name,
-                       app1.full_name as approver_name_1, app1.email as approver_email_1,
-                       app2.full_name as approver_name_2, app2.email as approver_email_2,
-                       app3.full_name as approver_name_3, app3.email as approver_email_3
-                FROM purchase_orders po
-                LEFT JOIN suppliers s ON po.supplier_id = s.id
-                LEFT JOIN users u ON po.created_by = u.id
-                LEFT JOIN users app1 ON po.approver_id = app1.id
-                LEFT JOIN users app2 ON po.approver_id_2 = app2.id
-                LEFT JOIN users app3 ON po.approver_id_3 = app3.id
-                WHERE po.tenant_id = ?
-                ORDER BY po.created_at DESC
-            ");
-            $stmt->execute([$tid]);
+            $where[] = "po.supplier_id = ?";
+            $params[] = $supplierId;
         }
+
+        if ($paymentStatus === 'unpaid') {
+            $where[] = "po.payment_status != 'paid'";
+        } elseif (!empty($paymentStatus)) {
+            $where[] = "po.payment_status = ?";
+            $params[] = $paymentStatus;
+        }
+
+        $role = $auth['role'] ?? '';
+        $uid = (int)($auth['user_id'] ?? 0);
+        $isManager = $role === 'manager';
+
+        // Load team members if manager
+        $userIds = [$uid];
+        if ($isManager) {
+            $stmtTeam = $this->db->prepare("SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)");
+            $stmtTeam->execute([$uid]);
+            $teamMemberIds = $stmtTeam->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $userIds = array_merge($userIds, array_map('intval', $teamMemberIds));
+        }
+
+        $isAdminOrDirectorOrAccountant = in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'accountant'], true);
+
+        if (!$isAdminOrDirectorOrAccountant) {
+            if ($isManager) {
+                $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+                $where[] = "(po.created_by IN ($placeholders) OR po.approver_id = ? OR po.approver_id_2 = ? OR po.approver_id_3 = ?)";
+                $params = array_merge($params, $userIds);
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+            } else {
+                $where[] = "(po.created_by = ? OR po.approver_id = ? OR po.approver_id_2 = ? OR po.approver_id_3 = ?)";
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+            }
+        }
+
+        $whereClause = implode(' AND ', $where);
+
+        $simple = ($_GET['simple'] ?? '') === '1';
+        if ($simple) {
+            $stmt = $this->db->prepare("
+                SELECT po.id, po.po_number, po.total, po.paid_amount, po.order_date, po.payment_status,
+                       s.name as supplier_name
+                FROM purchase_orders po
+                LEFT JOIN suppliers s ON po.supplier_id = s.id
+                WHERE $whereClause
+                ORDER BY po.created_at DESC
+            ");
+            $stmt->execute($params);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            respond(200, $orders);
+            return;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT po.*, s.name as supplier_name, u.full_name as creator_name,
+                   app1.full_name as approver_name_1, app1.email as approver_email_1,
+                   app2.full_name as approver_name_2, app2.email as approver_email_2,
+                   app3.full_name as approver_name_3, app3.email as approver_email_3
+            FROM purchase_orders po
+            LEFT JOIN suppliers s ON po.supplier_id = s.id
+            LEFT JOIN users u ON po.created_by = u.id
+            LEFT JOIN users app1 ON po.approver_id = app1.id
+            LEFT JOIN users app2 ON po.approver_id_2 = app2.id
+            LEFT JOIN users app3 ON po.approver_id_3 = app3.id
+            WHERE $whereClause
+            ORDER BY po.created_at DESC
+        ");
+        $stmt->execute($params);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (!empty($orders)) {

@@ -415,12 +415,6 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
       return;
     }
 
-    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');
-    if (!hasProof) {
-      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');
-      return;
-    }
-
     for (let m of tempMilestones) {
       if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {
         addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái chờ ghi nhận hoặc đã ghi nhận bắt buộc phải có file minh chứng đính kèm.`, 'error');
@@ -535,7 +529,10 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
   const totalApprovedMilestones = tempMilestones
     .filter(m => m.status === 'approved')
-    .reduce((sum, m) => sum + (parseFloat(m.expected_amount) || 0), 0);
+    .reduce((sum, m) => {
+      const amt = m.actual_amount !== null && m.actual_amount !== undefined ? m.actual_amount : m.expected_amount;
+      return sum + (parseFloat(amt) || 0);
+    }, 0);
 
   const totalApprovedMilestonesOriginal = tempMilestones
     .filter(m => m.status === 'approved')

@@ -409,6 +409,12 @@ class DashboardController {
             $placeholders = implode(',', array_fill(0, count($userIds), '?'));
             $sql .= " AND a.user_id IN ($placeholders)";
             $p = array_merge($p, $userIds);
+        } else if (!in_array($auth['role'], ['super_admin', 'superadmin', 'director'], true)) {
+            $sql .= " AND (a.user_id = ? OR a.created_by = ? OR a.approver_id = ? OR FIND_IN_SET(?, a.participant_ids))";
+            $p[] = $uid;
+            $p[] = $uid;
+            $p[] = $uid;
+            $p[] = (string)$uid;
         }
         $sql .= " ORDER BY a.created_at DESC LIMIT 10";
         $stmt = $this->db->prepare($sql);

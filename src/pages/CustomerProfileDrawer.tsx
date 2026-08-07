@@ -4852,12 +4852,6 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       return;
     }
 
-    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');
-    if (!hasProof) {
-      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');
-      return;
-    }
-
     const isAdmin = currentUser && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director'].includes(currentUser.role);
     if (isAdmin && tempSharesData && tempSharesData.length > 0) {
       const totalPct = tempSharesData.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);

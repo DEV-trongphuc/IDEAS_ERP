@@ -612,7 +612,7 @@ class FinanceController
     {
         $tid = $auth['tenant_id'];
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $limit = min(100, max(10, (int) ($_GET['limit'] ?? 20)));
+        $limit = min(5000, max(1, (int) ($_GET['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
         $status = $_GET['status'] ?? '';
         $category = $_GET['category'] ?? '';
@@ -636,25 +636,33 @@ class FinanceController
             $userIds = array_merge($userIds, array_map('intval', $teamMemberIds));
         }
 
-        if ($isSale) {
-            $where[] = 'e.created_by = ?';
-            $params[] = $uid;
-        } else if ($isSaleAdmin) {
-            $where[] = "(
-                e.created_by = ? 
-                OR e.approver_id = ?
-                OR EXISTS (
-                    SELECT 1 FROM expense_entities ee 
-                    JOIN contacts c ON ee.entity_type = 'contact' AND ee.entity_id = c.id
-                    WHERE ee.expense_id = e.id AND c.status = 'customer'
-                )
-            )";
-            $params[] = $uid;
-            $params[] = $uid;
-        } else if ($isManager) {
-            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-            $where[] = "e.created_by IN ($placeholders)";
-            $params = array_merge($params, $userIds);
+        $isAdminOrDirectorOrAccountant = in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'accountant'], true);
+
+        if (!$isAdminOrDirectorOrAccountant) {
+            if ($isManager) {
+                $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+                $where[] = "(e.created_by IN ($placeholders) OR e.approver_id = ? OR e.refunder_id = ?)";
+                $params = array_merge($params, $userIds);
+                $params[] = $uid;
+                $params[] = $uid;
+            } else if ($isSaleAdmin) {
+                $where[] = "(
+                    e.created_by = ? 
+                    OR e.approver_id = ?
+                    OR EXISTS (
+                        SELECT 1 FROM expense_entities ee 
+                        JOIN contacts c ON ee.entity_type = 'contact' AND ee.entity_id = c.id
+                        WHERE ee.expense_id = e.id AND c.status = 'customer'
+                    )
+                )";
+                $params[] = $uid;
+                $params[] = $uid;
+            } else {
+                $where[] = "(e.created_by = ? OR e.approver_id = ? OR e.refunder_id = ?)";
+                $params[] = $uid;
+                $params[] = $uid;
+                $params[] = $uid;
+            }
         }
         if ($status) {
             $where[] = 'e.status=?';
@@ -685,6 +693,23 @@ class FinanceController
             $params[] = (int)$companyId;
         }
         $w = implode(' AND ', $where);
+
+        $simple = ($_GET['simple'] ?? '') === '1';
+        if ($simple) {
+            $stmt = $this->db->prepare("
+                SELECT e.id, e.amount, e.date, e.title, e.category, e.vendor_name, e.status
+                FROM expenses e 
+                WHERE $w ORDER BY e.date DESC LIMIT $limit OFFSET $offset
+            ");
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+
+            respond(200, [
+                'items' => $rows,
+                'total' => count($rows)
+            ]);
+            return;
+        }
 
         $cnt = $this->db->prepare("SELECT COUNT(*) FROM expenses e WHERE $w");
         $cnt->execute($params);

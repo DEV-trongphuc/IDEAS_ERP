@@ -22,32 +22,36 @@ class DepositController {
         ";
         $params = [$tid];
 
-        if ($auth['role'] === 'sales' || $auth['role'] === 'sale') {
-            $sql .= " AND (
-                d.created_by = ? 
-                OR c.owner_id = ? 
-                OR FIND_IN_SET(?, c.collaborator_ids) 
-                OR d.contact_id IN (SELECT contact_id FROM quyen_truy_cap WHERE user_id = ?)
-                OR FIND_IN_SET(?, d.participant_ids)
-            )";
-            $params[] = $auth['user_id'];
-            $params[] = $auth['user_id'];
-            $params[] = (string)$auth['user_id'];
-            $params[] = $auth['user_id'];
-            $params[] = (string)$auth['user_id'];
-        } else if ($auth['role'] === 'manager') {
-            $sql .= " AND (
-                d.created_by = ? 
-                OR c.owner_id = ? 
-                OR d.created_by IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)) 
-                OR c.owner_id IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?))
-                OR FIND_IN_SET(?, d.participant_ids)
-            )";
-            $params[] = $auth['user_id'];
-            $params[] = $auth['user_id'];
-            $params[] = $auth['user_id'];
-            $params[] = $auth['user_id'];
-            $params[] = (string)$auth['user_id'];
+        $isAdminOrDirectorOrAccountant = in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'director', 'accountant'], true);
+
+        if (!$isAdminOrDirectorOrAccountant) {
+            if ($auth['role'] === 'manager') {
+                $sql .= " AND (
+                    d.created_by = ? 
+                    OR c.owner_id = ? 
+                    OR d.created_by IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)) 
+                    OR c.owner_id IN (SELECT id FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?))
+                    OR FIND_IN_SET(?, d.participant_ids)
+                )";
+                $params[] = $auth['user_id'];
+                $params[] = $auth['user_id'];
+                $params[] = $auth['user_id'];
+                $params[] = $auth['user_id'];
+                $params[] = (string)$auth['user_id'];
+            } else {
+                $sql .= " AND (
+                    d.created_by = ? 
+                    OR c.owner_id = ? 
+                    OR FIND_IN_SET(?, c.collaborator_ids) 
+                    OR d.contact_id IN (SELECT contact_id FROM quyen_truy_cap WHERE user_id = ?)
+                    OR FIND_IN_SET(?, d.participant_ids)
+                )";
+                $params[] = $auth['user_id'];
+                $params[] = $auth['user_id'];
+                $params[] = (string)$auth['user_id'];
+                $params[] = $auth['user_id'];
+                $params[] = (string)$auth['user_id'];
+            }
         }
 
         if (isset($_GET['contact_id'])) {
@@ -1103,9 +1107,8 @@ class DepositController {
                 if (empty($mName)) continue;
 
                 if ($currency !== 'VND') {
-                    if ($origAmount === null) {
-                        $origAmount = $mAmount;
-                        $mAmount = round($origAmount * $rate);
+                    if ($origAmount === null || $origAmount <= 0) {
+                        $origAmount = round($mAmount / $rate, 2);
                     } else {
                         $mAmount = round($origAmount * $rate);
                     }

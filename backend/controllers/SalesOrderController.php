@@ -15,13 +15,15 @@ class SalesOrderController {
     public function index(array $auth): void {
         $tenantId = (int)$auth['tenant_id'];
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = max(1, min(100, (int)($_GET['limit'] ?? 20)));
+        $limit = max(1, min(5000, (int)($_GET['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
 
         $status = trim($_GET['status'] ?? '');
         $search = trim($_GET['search'] ?? '');
         $startDate = trim($_GET['start_date'] ?? '');
         $endDate = trim($_GET['end_date'] ?? '');
+        $paymentStatus = trim($_GET['payment_status'] ?? '');
+        $excludeStatus = trim($_GET['exclude_status'] ?? '');
 
         $where = ["so.tenant_id = :tenant_id"];
         $params = [':tenant_id' => $tenantId];
@@ -43,6 +45,20 @@ class SalesOrderController {
             $params[':status'] = $status;
         }
 
+        if (!empty($paymentStatus)) {
+            if ($paymentStatus === 'unpaid') {
+                $where[] = "so.payment_status != 'paid'";
+            } else {
+                $where[] = "so.payment_status = :payment_status";
+                $params[':payment_status'] = $paymentStatus;
+            }
+        }
+
+        if (!empty($excludeStatus)) {
+            $where[] = "so.status != :exclude_status";
+            $params[':exclude_status'] = $excludeStatus;
+        }
+
         if (!empty($startDate)) {
             $where[] = "so.order_date >= :start_date";
             $params[':start_date'] = $startDate;
@@ -59,6 +75,37 @@ class SalesOrderController {
         }
 
         $whereClause = implode(' AND ', $where);
+
+        $simple = ($_GET['simple'] ?? '') === '1';
+        if ($simple) {
+            $sql = "
+                SELECT 
+                    so.id, so.so_number, so.total, so.paid_amount, so.order_date, so.status, so.payment_status,
+                    c.full_name as contact_name,
+                    c.phone as contact_phone,
+                    comp.name as company_name
+                FROM sales_orders so
+                LEFT JOIN contacts c ON so.contact_id = c.id
+                LEFT JOIN companies comp ON so.company_id = comp.id
+                WHERE {$whereClause}
+                ORDER BY so.id DESC
+                LIMIT {$limit} OFFSET {$offset}
+            ";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            respond(200, [
+                'orders' => $orders,
+                'pagination' => [
+                    'total' => count($orders),
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total_pages' => 1
+                ]
+            ], 'Lấy danh sách đơn bán hàng thành công');
+            return;
+        }
 
         // 1. Đếm tổng số bản ghi
         $countStmt = $this->db->prepare("

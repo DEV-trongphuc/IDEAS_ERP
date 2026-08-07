@@ -1214,7 +1214,7 @@ class HRMController {
                 if ($e['approver_id'] == $userId) {
                     $shouldShow = true;
                     $levelText = ' - Cấp 1';
-                } elseif (empty($e['approver_id']) && in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr', 'accountant'])) {
+                } elseif (empty($e['approver_id']) && in_array($role, ['admin', 'superadmin', 'super_admin', 'director'])) {
                     $shouldShow = true;
                     $levelText = '';
                 }
@@ -1264,9 +1264,16 @@ class HRMController {
             }
         }
 
+        $ledTeamIds = [];
+        if ($role === 'manager') {
+            $stmtL = $this->db->prepare("SELECT id FROM teams WHERE leader_id = ?");
+            $stmtL->execute([$userId]);
+            $ledTeamIds = array_map('intval', $stmtL->fetchAll(PDO::FETCH_COLUMN) ?: []);
+        }
+
         // 5. Pending Bulk Attendance Requests
         $stmtBulks = $this->db->prepare("
-            SELECT r.id, u.full_name as employee_name, r.month_period, r.status, r.created_at
+            SELECT r.id, u.full_name as employee_name, r.month_period, r.status, r.created_at, u.team_id
             FROM attendance_bulk_requests r
             JOIN users u ON r.user_id = u.id
             WHERE u.tenant_id = ? AND r.status IN ('pending_manager', 'pending_hr')
@@ -1275,9 +1282,12 @@ class HRMController {
         $bulks = $stmtBulks->fetchAll(PDO::FETCH_ASSOC);
         foreach ($bulks as $b) {
             $shouldShow = false;
-            if ($b['status'] === 'pending_hr' && in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr'])) {
+            $isAdmin = in_array($role, ['admin', 'superadmin', 'super_admin', 'director'], true);
+            if ($isAdmin) {
                 $shouldShow = true;
-            } else if ($b['status'] === 'pending_manager') {
+            } else if ($b['status'] === 'pending_hr' && $role === 'hr') {
+                $shouldShow = true;
+            } else if ($b['status'] === 'pending_manager' && $role === 'manager' && in_array((int)$b['team_id'], $ledTeamIds, true)) {
                 $shouldShow = true;
             }
 

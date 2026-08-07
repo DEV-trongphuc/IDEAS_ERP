@@ -718,12 +718,20 @@ export const Header = ({
 
   const getRoleLabel = (role?: string) => {
     switch (role) {
-      case 'superadmin': return t('Super Admin');
+      case 'superadmin':
+      case 'super_admin': return t('Super Admin');
       case 'admin': return t('Quản trị viên');
       case 'assistant': return t('Trợ lý');
       case 'viewer': return t('Người xem');
-      case 'sale': return t('Tư vấn viên');
+      case 'sale':
+      case 'sales': return t('Tư vấn viên');
       case 'director': return t('Giám đốc kinh doanh');
+      case 'manager': return t('Quản lý');
+      case 'hr': return t('Nhân sự');
+      case 'accountant': return t('Kế toán');
+      case 'marketing': return t('Marketing');
+      case 'sale_admin':
+      case 'saleadmin': return t('Sale Admin');
       default: return t('Người dùng');
     }
   };

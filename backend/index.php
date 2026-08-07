@@ -902,7 +902,7 @@ switch ($resource) {
 
     case 'expenses':
         $auth = requireAuth();
-        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'sales', 'sale', 'director', 'accountant', 'hr']);
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'sales', 'sale', 'director', 'accountant', 'hr', 'sale_admin', 'saleadmin']);
         $ctrl = new FinanceController($db);
         if ($resourceId === 'entity' && $subResource && $method === 'GET') {
             $ctrl->listEntityExpenses($auth, $subResource, (int)($segments[3] ?? 0));
@@ -1032,6 +1032,12 @@ switch ($resource) {
                 require_once __DIR__ . '/test_so_po_finance_audit.php';
             } elseif ($testFile === 'partner_so_po_hr') {
                 require_once __DIR__ . '/test_partner_so_po_hr.php';
+            } elseif ($testFile === 'cashflow_optimizations') {
+                require_once __DIR__ . '/test_cashflow_optimizations.php';
+            } elseif ($testFile === 'task_visibility') {
+                require_once __DIR__ . '/test_task_visibility.php';
+            } elseif ($testFile === 'expenses_error') {
+                require_once __DIR__ . '/test_expenses_error.php';
             } else {
                 require_once __DIR__ . '/test_coop_slips_performance.php';
             }

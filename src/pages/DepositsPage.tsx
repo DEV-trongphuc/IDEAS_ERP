@@ -348,11 +348,11 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
         fetchAPI('projects?bypass_roster=1'),
         isStats ? Promise.resolve({ success: true, data: [] }) : fetchAPI('cooperation-slips').catch(() => ({ success: false, data: [] })),
         isStats ? Promise.resolve({ success: true, data: [] }) : fetchAPI('users?all=1').catch(() => ({ success: false, data: [] })),
-        fetchAPI('purchase-orders').catch(() => ({ success: false, data: [] })),
-        fetchAPI('expenses?limit=5000').catch(() => ({ success: false, data: [] })),
+        isStats ? fetchAPI('purchase-orders?payment_status=unpaid&simple=1').catch(() => ({ success: false, data: [] })) : Promise.resolve({ success: true, data: [] }),
+        isStats ? fetchAPI('expenses?status=pending&limit=5000&simple=1').catch(() => ({ success: false, data: [] })) : Promise.resolve({ success: true, data: [] }),
         isStats ? Promise.resolve({ success: true, data: [] }) : fetchAPI('companies?limit=1000').catch(() => ({ success: false, data: [] })),
         isStats ? Promise.resolve({ success: true, data: [] }) : fetchAPI('suppliers').catch(() => ({ success: false, data: [] })),
-        fetchAPI('sales-orders?limit=5000').catch(() => ({ success: false, data: [] }))
+        isStats ? fetchAPI('sales-orders?exclude_status=cancelled&payment_status=unpaid&limit=5000&simple=1').catch(() => ({ success: false, data: [] })) : Promise.resolve({ success: true, data: [] })
       ]);
 
       if (resDep.success) setDeposits(resDep.data || []);
@@ -944,12 +944,6 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       return;
     }
 
-    const hasProof = tempMilestones.some(m => m.unc_file_path && m.unc_file_path.trim() !== '');
-    if (!hasProof) {
-      addToast('Lịch trình thanh toán bắt buộc phải có ít nhất 1 minh chứng.', 'error');
-      return;
-    }
-
     for (let m of tempMilestones) {
       if ((m.status === 'paid' || m.status === 'approved') && (!m.unc_file_path || !m.unc_file_path.trim())) {
         addToast(`Đợt thanh toán "${m.milestone_name}" ở trạng thái đã đóng/đã duyệt bắt buộc phải có file minh chứng đính kèm.`, 'error');
@@ -1287,11 +1281,13 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
     let totalSOAmount = 0;
     let approvedMilestoneAmount = 0;
     let pendingMilestoneAmount = 0;
+    let pendingStudentMilestoneAmount = 0;
     let maxSOAmount = 0;
     let maxSOTitle = '';
     
     let approvedCount = 0;
     let pendingCount = 0;
+    let pendingStudentCount = 0;
 
     filteredDepositsList.forEach(d => {
       const priceVal = Number(d.price) || 0;
@@ -1309,7 +1305,11 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
             approvedCount++;
           } else {
             // Exclude from projected receivables if student is pending (bảo lưu)
-            if (d.pipeline_status === 'pending') return;
+            if (d.pipeline_status === 'pending') {
+              pendingStudentMilestoneAmount += amt;
+              pendingStudentCount++;
+              return;
+            }
             pendingMilestoneAmount += amt;
             pendingCount++;
           }
@@ -1321,10 +1321,12 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
       totalSOAmount,
       approvedMilestoneAmount,
       pendingMilestoneAmount,
+      pendingStudentMilestoneAmount,
       maxSOAmount,
       maxSOTitle,
       approvedCount,
-      pendingCount
+      pendingCount,
+      pendingStudentCount
     };
   }, [filteredDepositsList]);
 
@@ -1442,6 +1444,12 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                 color: '#f59e0b',
                 bg: 'rgba(245, 158, 11, 0.08)',
                 sub: `${listStats.pendingCount} đợt đang chờ`,
+                pendingSub: listStats.pendingStudentMilestoneAmount > 0 ? (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--color-warning)', fontWeight: 700, padding: '2px 6px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '6px', marginBottom: '4px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-warning)', display: 'inline-block' }}></span>
+                    <span>+{listStats.pendingStudentMilestoneAmount.toLocaleString('vi-VN')}đ pending</span>
+                  </div>
+                ) : null,
                 decor: (
                   <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
                     <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
@@ -1502,8 +1510,11 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                     </div>
                   </div>
 
-                  <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)', margin: '4px 0', position: 'relative', zIndex: 2 }}>
-                    {k.value}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', position: 'relative', zIndex: 2 }}>
+                    <div className="stat-value" style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-text)', margin: '4px 0' }}>
+                      {k.value}
+                    </div>
+                    {k.pendingSub}
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 'auto', zIndex: 2, fontWeight: 600 }}>

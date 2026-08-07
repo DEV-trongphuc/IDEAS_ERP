@@ -97,7 +97,7 @@ class ActivityController {
     }
 
     private function hasAccess(array $auth, array $activity): bool {
-        if (in_array($auth['role'], ['super_admin', 'admin', 'superadmin'], true)) {
+        if (in_array($auth['role'], ['super_admin', 'superadmin', 'director'], true)) {
             return true;
         }
 
@@ -119,6 +119,21 @@ class ActivityController {
             $pIds = array_filter(array_map('intval', explode(',', $activity['participant_ids'])));
             if (in_array((int)$auth['user_id'], $pIds, true)) {
                 return true;
+            }
+        }
+
+        // 4. Check Team Manager access to team member tasks
+        if ($auth['role'] === 'manager') {
+            if (!empty($activity['user_id'])) {
+                $stmt = $this->db->prepare("
+                    SELECT 1 FROM users u 
+                    JOIN teams t ON u.team_id = t.id 
+                    WHERE u.id = ? AND FIND_IN_SET(?, CONCAT(t.leader_id, CHAR(44), COALESCE(t.co_leader_ids, t.leader_id)))
+                ");
+                $stmt->execute([(int)$activity['user_id'], $auth['user_id']]);
+                if ($stmt->fetch()) {
+                    return true;
+                }
             }
         }
 
@@ -266,7 +281,7 @@ class ActivityController {
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
-        } else if ($auth['role'] === 'accountant') {
+        } else if (!in_array($auth['role'], ['super_admin', 'superadmin', 'director'], true)) {
             $where[] = '(
                 a.user_id = ? 
                 OR a.created_by = ?
