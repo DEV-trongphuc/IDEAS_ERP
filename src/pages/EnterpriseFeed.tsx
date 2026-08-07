@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { 
   ThumbsUp, Heart, Laugh, Angry, MessageCircle, Share2, 
   Send, Trash2, Globe, Lock, Users, Link as LinkIcon, Paperclip, X, Camera, 
@@ -588,7 +589,7 @@ export const EnterpriseFeed: React.FC = () => {
       return (
         <div 
           className="rich-text-content"
-          dangerouslySetInnerHTML={{ __html: content }} 
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} 
           style={{ fontSize: '0.9rem', color: 'var(--color-text)', wordBreak: 'break-word' }}
           onClick={(e) => {
             const target = e.target as HTMLElement;
@@ -620,7 +621,7 @@ export const EnterpriseFeed: React.FC = () => {
       return (
         <div 
           className="rich-text-content" 
-          dangerouslySetInnerHTML={{ __html: content }} 
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} 
           style={{ fontSize: '0.8rem', color: 'var(--color-text)', lineHeight: 1.4, wordBreak: 'break-word' }}
         />
       );

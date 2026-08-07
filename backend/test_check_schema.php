@@ -41,6 +41,13 @@ printIndexes($conn, 'activity_comments');
 printIndexes($conn, 'users');
 printIndexes($conn, 'teams');
 printIndexes($conn, 'cloud_files');
+printIndexes($conn, 'ai_training_docs');
+printIndexes($conn, 'ai_training_chunks');
+printIndexes($conn, 'enterprise_posts');
+printIndexes($conn, 'enterprise_comments');
+printIndexes($conn, 'enterprise_reactions');
+
+
 
 
 
