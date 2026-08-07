@@ -731,132 +731,163 @@ export const InternalSchedulePage: React.FC = () => {
 
             {/* Calendar Grid Container */}
             <div style={{ overflowX: 'auto', width: '100%' }}>
-              <div style={{ minWidth: '700px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-                {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => (
-                  <div 
-                    key={idx} 
-                    style={{ 
-                      textAlign: 'center', 
-                      padding: '8px', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 800, 
-                      color: day === 'CN' ? '#ef4444' : 'var(--color-text-muted)', 
-                      background: 'var(--color-bg-light)', 
-                      borderRadius: '6px',
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    {day}
-                  </div>
-                ))}
-
-                {dayCells.map((date, idx) => {
-                  if (!date) {
-                    return (
-                      <div key={idx} style={{ background: '#f8fafc', opacity: 0.35, borderRadius: '12px', minHeight: '100px', border: '1px solid var(--color-border-light)' }}></div>
-                    );
+              <div 
+                className="card calendar-card" 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  padding: 0, 
+                  minWidth: '700px', 
+                  overflow: 'hidden',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '12px',
+                  background: 'var(--color-surface)',
+                  boxShadow: 'var(--shadow-sm)'
+                }}
+              >
+                <style>{`
+                  .class-calendar-day-cell {
+                    transition: all 0.15s ease-in-out;
                   }
-
-                  const dStr = getLocalDateString(date);
-                  const dayEvts = eventsByDate[dStr] || [];
-                  const dayMs = milestonesByDate[dStr] || [];
-                  const isToday = getLocalDateString(new Date()) === dStr;
-
-                  return (
+                  .class-calendar-day-cell:hover {
+                    box-shadow: inset 0 0 0 1px var(--color-primary) !important;
+                    background-color: var(--color-bg-light) !important;
+                  }
+                `}</style>
+                {/* Calendar Grid Header */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                  background: 'var(--color-bg-light)',
+                  borderBottom: '1px solid var(--color-border-light)',
+                  padding: '10px 0',
+                  flexShrink: 0
+                }}>
+                  {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => (
                     <div 
                       key={idx} 
-                      onClick={() => handleDayClick(date)}
                       style={{ 
-                        background: isToday ? 'rgba(59, 130, 246, 0.03)' : '#ffffff', 
-                        borderRadius: '12px', 
-                        minHeight: '100px', 
-                        padding: '8px', 
-                        border: isToday ? '2px solid #3b82f6' : '1px solid var(--color-border-light)',
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        gap: '6px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: 'var(--shadow-sm)'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                        textAlign: 'center', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 800, 
+                        color: day === 'CN' ? '#ef4444' : 'var(--color-text-muted)', 
+                        textTransform: 'uppercase'
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ 
-                          fontSize: '0.85rem', 
-                          fontWeight: 800, 
-                          color: isToday ? '#3b82f6' : 'var(--color-text)',
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: isToday ? '#eff6ff' : 'none'
-                        }}>
-                          {date.getDate()}
-                        </span>
-                      </div>
-
-                      {/* Day Events Indicators */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
-                        {dayEvts.slice(0, 3).map((evt, eidx) => (
-                          <div 
-                            key={eidx} 
-                            style={{ 
-                              fontSize: '0.65rem', 
-                              fontWeight: 700, 
-                              color: '#ffffff', 
-                              background: evt.type === 'school' ? '#3b82f6' : '#ef4444', 
-                              padding: '2px 6px', 
-                              borderRadius: '4px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
-                            }}
-                            title={`${evt.lecturer} - ${evt.subjectCode}: ${evt.title} (${evt.time})`}
-                          >
-                            {selectedLecturerId === 'all' 
-                              ? `${evt.lecturer}: ${evt.subjectCode}`
-                              : `${evt.subjectCode}: ${evt.title}`}
-                          </div>
-                        ))}
-
-                        {dayMs.slice(0, 2).map((ms, eidx) => (
-                          <div 
-                            key={eidx} 
-                            style={{ 
-                              fontSize: '0.65rem', 
-                              fontWeight: 700, 
-                              color: '#ffffff', 
-                              background: '#ea580c', 
-                              padding: '2px 6px', 
-                              borderRadius: '4px',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
-                            }}
-                          >
-                            Mốc QL: {ms.title}
-                          </div>
-                        ))}
-
-                        {(dayEvts.length + dayMs.length > 5) && (
-                          <div style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)', fontWeight: 700, textAlign: 'right', marginTop: '2px' }}>
-                            + {dayEvts.length + dayMs.length - 5} sự kiện
-                          </div>
-                        )}
-                      </div>
+                      {day}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* Calendar Days */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                  gridAutoRows: 'minmax(110px, 1fr)',
+                  background: 'var(--color-border-light)',
+                  gap: '1px'
+                }}>
+                  {dayCells.map((date, idx) => {
+                    if (!date) {
+                      return (
+                        <div key={idx} style={{ background: '#f8fafc', opacity: 0.35, minHeight: '100px' }}></div>
+                      );
+                    }
+
+                    const dStr = getLocalDateString(date);
+                    const dayEvts = eventsByDate[dStr] || [];
+                    const dayMs = milestonesByDate[dStr] || [];
+                    const isToday = getLocalDateString(new Date()) === dStr;
+                    const dayOfWeek = date.getDay(); // 0 is Sunday, 6 is Saturday
+                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        onClick={() => handleDayClick(date)}
+                        style={{ 
+                          background: isToday ? 'rgba(59, 130, 246, 0.05)' : isWeekend ? '#f8fafc' : '#ffffff', 
+                          minHeight: '100px', 
+                          padding: '8px', 
+                          border: isToday ? '1.5px solid #3b82f6' : 'none',
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '6px',
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                        className="class-calendar-day-cell"
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ 
+                            fontSize: '0.85rem', 
+                            fontWeight: 800, 
+                            color: isToday ? '#3b82f6' : 'var(--color-text)',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: isToday ? '#eff6ff' : 'none'
+                          }}>
+                            {date.getDate()}
+                          </span>
+                        </div>
+
+                        {/* Day Events Indicators */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
+                          {dayEvts.slice(0, 3).map((evt, eidx) => (
+                            <div 
+                              key={eidx} 
+                              style={{ 
+                                fontSize: '0.65rem', 
+                                fontWeight: 700, 
+                                color: '#ffffff', 
+                                background: evt.type === 'school' ? '#3b82f6' : '#ef4444', 
+                                padding: '2px 6px', 
+                                borderRadius: '4px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                              title={`${evt.lecturer} - ${evt.subjectCode}: ${evt.title} (${evt.time})`}
+                            >
+                              {selectedLecturerId === 'all' 
+                                ? `${evt.lecturer}: ${evt.subjectCode}`
+                                : `${evt.subjectCode}: ${evt.title}`}
+                            </div>
+                          ))}
+
+                          {dayMs.slice(0, 2).map((ms, eidx) => (
+                            <div 
+                              key={eidx} 
+                              style={{ 
+                                fontSize: '0.65rem', 
+                                fontWeight: 700, 
+                                color: '#ffffff', 
+                                background: '#ea580c', 
+                                padding: '2px 6px', 
+                                borderRadius: '4px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              Mốc QL: {ms.title}
+                            </div>
+                          ))}
+
+                          {(dayEvts.length + dayMs.length > 5) && (
+                            <div style={{ fontSize: '0.625rem', color: 'var(--color-text-muted)', fontWeight: 700, textAlign: 'right', marginTop: '2px' }}>
+                              + {dayEvts.length + dayMs.length - 5} sự kiện
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
