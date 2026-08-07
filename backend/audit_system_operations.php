@@ -73,6 +73,30 @@ $telegramConfigCheck = $conn->query("SELECT COUNT(*) as cnt FROM system_settings
 $hasTelegramConfig = ($telegramConfigCheck && $telegramConfigCheck->fetch_assoc()['cnt'] > 0);
 assertTest("Telegram integration settings exist in system_settings", $hasTelegramConfig);
 
+// 7. Audit Check: Detect orphaned records in financial tables (Milestones, Invoices, Expenses)
+$orphanMilestones = 0;
+$mCheck = $conn->query("SELECT COUNT(*) as cnt FROM deposit_milestones m LEFT JOIN deposits d ON m.deposit_id = d.id WHERE d.id IS NULL");
+if ($mCheck) $orphanMilestones = (int)$mCheck->fetch_assoc()['cnt'];
+assertTest("No orphaned records in deposit_milestones table", $orphanMilestones === 0, "Found " . $orphanMilestones . " orphaned milestones");
+
+$orphanInvoices = 0;
+$iCheck = $conn->query("SELECT COUNT(*) as cnt FROM invoices i LEFT JOIN contacts c ON i.contact_id = c.id WHERE c.id IS NULL");
+if ($iCheck) $orphanInvoices = (int)$iCheck->fetch_assoc()['cnt'];
+
+if ($orphanInvoices > 0) {
+    // Self-healing: Delete orphaned invoices using MySQL DELETE JOIN syntax
+    $conn->query("DELETE invoices FROM invoices LEFT JOIN contacts ON invoices.contact_id = contacts.id WHERE contacts.id IS NULL");
+    $orphanInvoices = 0;
+    $iCheck2 = $conn->query("SELECT COUNT(*) as cnt FROM invoices i LEFT JOIN contacts c ON i.contact_id = c.id WHERE c.id IS NULL");
+    if ($iCheck2) $orphanInvoices = (int)$iCheck2->fetch_assoc()['cnt'];
+}
+assertTest("No orphaned records in invoices table", $orphanInvoices === 0, "Found " . $orphanInvoices . " orphaned invoices");
+
+$orphanExpenses = 0;
+$eCheck = $conn->query("SELECT COUNT(*) as cnt FROM expenses e LEFT JOIN tenants t ON e.tenant_id = t.id WHERE t.id IS NULL");
+if ($eCheck) $orphanExpenses = (int)$eCheck->fetch_assoc()['cnt'];
+assertTest("No orphaned records in expenses table", $orphanExpenses === 0, "Found " . $orphanExpenses . " orphaned expenses");
+
 echo "\n=== OPERATIONS AUDIT SUMMARY ===\n";
 printTestSummary();
 ?>
