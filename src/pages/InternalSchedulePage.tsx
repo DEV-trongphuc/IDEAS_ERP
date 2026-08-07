@@ -806,10 +806,10 @@ export const InternalSchedulePage: React.FC = () => {
                         key={idx} 
                         onClick={() => handleDayClick(date)}
                         style={{ 
-                          background: isToday ? 'rgba(59, 130, 246, 0.05)' : isWeekend ? '#f8fafc' : '#ffffff', 
+                          background: isToday ? 'rgba(189, 29, 45, 0.05)' : isWeekend ? '#f8fafc' : '#ffffff', 
                           minHeight: '100px', 
                           padding: '8px', 
-                          border: isToday ? '1.5px solid #3b82f6' : 'none',
+                          border: isToday ? '1.5px solid var(--color-primary)' : 'none',
                           display: 'flex', 
                           flexDirection: 'column', 
                           gap: '6px',
@@ -822,14 +822,14 @@ export const InternalSchedulePage: React.FC = () => {
                           <span style={{ 
                             fontSize: '0.85rem', 
                             fontWeight: 800, 
-                            color: isToday ? '#3b82f6' : 'var(--color-text)',
+                            color: isToday ? 'white' : 'var(--color-text)',
                             width: '24px',
                             height: '24px',
                             borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: isToday ? '#eff6ff' : 'none'
+                            background: isToday ? 'var(--color-primary)' : 'none'
                           }}>
                             {date.getDate()}
                           </span>
