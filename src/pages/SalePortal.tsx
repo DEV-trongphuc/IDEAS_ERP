@@ -254,6 +254,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   const loc = location || routerLocation;
   const { user, token, login, logout, updateUser } = useAuth();
   const currentUser = user;
+  const isSaleUser = currentUser && ['sale', 'sales'].includes(String(currentUser.role).toLowerCase());
   const { language, setLanguage, t } = useLanguage();
   const { showConfirm, closeConfirm } = useUIStore();
   const [showWorkspaceHelpModal, setShowWorkspaceHelpModal] = useState(false);
@@ -4803,31 +4804,33 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               </h1>
               
               {/* Completed Calls Count Pill */}
-              <div 
-                onClick={handleOpenCallsModal}
-                className="hover-lift"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.15)',
-                  padding: '4px 10px',
-                  borderRadius: '20px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#10b981',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  whiteSpace: 'nowrap',
-                  height: '24px'
-                }}
-              >
-                <Phone size={11} style={{ flexShrink: 0 }} />
-                <span>
-                  {t('Đã gọi:')} <strong>{completedCallsCount}</strong>
-                </span>
-              </div>
+              {isSaleUser && (
+                <div 
+                  onClick={handleOpenCallsModal}
+                  className="hover-lift"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.15)',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#10b981',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    whiteSpace: 'nowrap',
+                    height: '24px'
+                  }}
+                >
+                  <Phone size={11} style={{ flexShrink: 0 }} />
+                  <span>
+                    {t('Đã gọi:')} <strong>{completedCallsCount}</strong>
+                  </span>
+                </div>
+              )}
             </div>
             <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
               {t("Quản lý toàn bộ công việc cần thực hiện, lọc chi tiết theo tiến độ và độ ưu tiên.")}
@@ -5106,7 +5109,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
         {/* Unified Alert & Suggestion Center */}
         {(() => {
-          const hasUncontacted = uncontactedCount > 0;
+          const hasUncontacted = uncontactedCount > 0 && isSaleUser;
           const hasCoops = pendingCoopsCount > 0;
           
           const todayStr = new Date().toISOString().slice(0, 10);
@@ -5198,13 +5201,13 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             <div style={{
               background: 'var(--color-surface)',
               border: '1px solid var(--color-border-light)',
-              borderRadius: '16px',
-              padding: isMobile ? '12px 14px' : '1rem 1.5rem',
-              marginBottom: '1rem',
+              borderRadius: '12px',
+              padding: isMobile ? '10px 12px' : '10px 16px',
+              marginBottom: '0.75rem',
               boxShadow: 'var(--shadow-sm)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '8px',
               position: 'relative',
               overflow: 'hidden'
             }}>
