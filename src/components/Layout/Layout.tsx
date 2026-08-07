@@ -10,7 +10,7 @@ import { CustomModal } from '../ui/CustomModal';
 import { SmartCheckInModal } from '../ui/SmartCheckInModal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { Avatar } from '../ui/Avatar';
-// import { AIChatbot } from '../ui/AIChatbot';
+import { AIChatbot } from '../ui/AIChatbot';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchAPI } from '../../utils/api';
 import { useUIStore } from '../../store/uiStore';
@@ -2278,7 +2278,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         </button>
       </div>
 
-      {/* <AIChatbot /> */}
+      <AIChatbot />
 
 
 

@@ -40,9 +40,12 @@
 .description {
   color: var(--color-text-muted, #64748b);
   font-size: 0.875rem;
-  max-width: 340px;
+  max-width: 480px;
   line-height: 1.6;
   margin: 0 auto;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
 }
 
 .actionWrapper {
