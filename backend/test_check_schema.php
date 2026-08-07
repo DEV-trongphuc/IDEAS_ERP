@@ -36,6 +36,14 @@ printIndexes($conn, 'batches');
 printIndexes($conn, 'inventory_logs');
 printIndexes($conn, 'ticket_comments');
 printIndexes($conn, 'purchase_orders');
+printIndexes($conn, 'activities');
+printIndexes($conn, 'activity_comments');
+printIndexes($conn, 'users');
+printIndexes($conn, 'teams');
+printIndexes($conn, 'cloud_files');
+
+
+
 
 
 
