@@ -97,24 +97,25 @@ $tasks = [
 
 require_once __DIR__ . '/db_connect.php';
 
+function runBackgroundProcess($phpBin, $taskPath) {
+    if (stristr(PHP_OS, 'WIN')) {
+        // Windows background execute command
+        @pclose(@popen('start /B "" "' . $phpBin . '" "' . $taskPath . '"', 'r'));
+    } else {
+        // Linux background execute command
+        @exec('"' . $phpBin . '" "' . $taskPath . '" > /dev/null 2>&1 &');
+    }
+}
+
 foreach ($tasks as $task) {
     $taskPath = __DIR__ . '/' . $task;
     if (file_exists($taskPath)) {
-        echo "[" . date('Y-m-d H:i:s') . "] >>> Executing: $task...\n";
-        $output = [];
-        $returnVar = 0;
-        
-        // Thực thi lệnh php chạy độc lập để tránh tràn bộ nhớ hoặc xung đột tài nguyên
-        exec('"' . $phpBin . '" "' . $taskPath . '" 2>&1', $output, $returnVar);
-        
-        foreach ($output as $line) {
-                echo "    $line\n";
-            }
-            echo "[" . date('Y-m-d H:i:s') . "] <<< Finished $task with exit code $returnVar\n";
-        } else {
-            echo "[" . date('Y-m-d H:i:s') . "] WARNING: Task file not found: $taskPath\n";
-        }
+        echo "[" . date('Y-m-d H:i:s') . "] >>> Spawning background task: $task...\n";
+        runBackgroundProcess($phpBin, $taskPath);
+    } else {
+        echo "[" . date('Y-m-d H:i:s') . "] WARNING: Task file not found: $taskPath\n";
     }
+}
 
 if (isset($conn) && method_exists($conn, 'close')) {
     $conn->close();

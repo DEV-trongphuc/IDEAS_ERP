@@ -29,6 +29,10 @@ printIndexes($conn, 'round_consultants');
 printIndexes($conn, 'routing_rules');
 printIndexes($conn, 'leads');
 printIndexes($conn, 'projects');
+printIndexes($conn, 'mail_queue');
+printIndexes($conn, 'zalo_queue');
+printIndexes($conn, 'telegram_queue');
+
 
 
 
