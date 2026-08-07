@@ -3154,6 +3154,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     }
   }, [cameraStream, isCameraActive]);
 
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
   const capturePhoto = () => {
     if (videoRef.current) {
       const video = videoRef.current;

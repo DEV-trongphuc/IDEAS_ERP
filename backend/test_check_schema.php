@@ -22,4 +22,13 @@ printIndexes($conn, 'cooperation_slips');
 printIndexes($conn, 'deposit_milestones');
 printIndexes($conn, 'deposits');
 printIndexes($conn, 'expenses');
+printIndexes($conn, 'monthly_payslips');
+printIndexes($conn, 'hrm_profiles');
+printIndexes($conn, 'check_ins');
+printIndexes($conn, 'round_consultants');
+printIndexes($conn, 'routing_rules');
+printIndexes($conn, 'leads');
+
+
+
 

@@ -280,8 +280,17 @@ class CheckInController {
         if ($todaySchedule) {
             $morningStart = substr($todaySchedule['start'] ?? $workStartTime, 0, 5);
             $morningEnd = substr($todaySchedule['end'] ?? '12:00', 0, 5);
-            $afternoonStart = substr($todaySchedule['start_afternoon'] ?? '13:00', 0, 5);
-            $afternoonEnd = substr($todaySchedule['end_afternoon'] ?? $workEndTime, 0, 5);
+            if (!empty($todaySchedule['start_afternoon'])) {
+                $afternoonStart = substr($todaySchedule['start_afternoon'], 0, 5);
+                $afternoonEnd = substr($todaySchedule['end_afternoon'] ?? $workEndTime, 0, 5);
+            } else if (!empty($todaySchedule['end_afternoon'])) {
+                $afternoonStart = '13:00';
+                $afternoonEnd = substr($todaySchedule['end_afternoon'], 0, 5);
+            } else {
+                // If no afternoon session is configured, set afternoonEnd to morningEnd to prevent incorrect early checkout calculations
+                $afternoonStart = '';
+                $afternoonEnd = $morningEnd;
+            }
         }
 
         // ==================== FLOW A: CHECK-OUT (RA CA) ====================
