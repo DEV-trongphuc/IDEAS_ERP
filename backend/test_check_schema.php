@@ -25,11 +25,10 @@ while ($row = $resP->fetch_assoc()) {
 }
 
 // In ra dữ liệu thực tế trong projects
-$pData = $conn->query("SELECT id, name, status, subjects_json FROM projects");
+$pData = $conn->query("SELECT id, name FROM projects");
 if ($pData) {
     while ($row = $pData->fetch_assoc()) {
-        echo "\nProject ID: {$row['id']} | Name: {$row['name']} | Status: {$row['status']}\n";
-        echo "Subjects JSON: " . substr($row['subjects_json'] ?? 'N/A', 0, 500) . "...\n";
+        echo "\nProject ID: {$row['id']} | Name: {$row['name']}\n";
     }
 } else {
     echo "Error querying projects table: " . $conn->error . "\n";
