@@ -13990,13 +13990,26 @@ switch ($action) {
 
     case 'get_my_activity_logs':
         $userId = $decodedUser['id'];
+        
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+        $pageSize = isset($_GET['pageSize']) ? min(100, max(5, (int)$_GET['pageSize'])) : 20;
+        $offset = ($page - 1) * $pageSize;
+
+        // Get total logs count
+        $cntStmt = $conn->prepare("SELECT COUNT(*) FROM admin_logs WHERE account_id = ?");
+        $cntStmt->bind_param("i", $userId);
+        $cntStmt->execute();
+        $total = (int)($cntStmt->get_result()->fetch_row()[0] ?? 0);
+        $cntStmt->close();
+
+        // Query logs with LIMIT and OFFSET
         $stmt = $conn->prepare("SELECT al.*, a.name as account_name, a.email as account_email 
                                 FROM admin_logs al 
                                 LEFT JOIN accounts a ON al.account_id = a.id 
                                 WHERE al.account_id = ? 
                                 ORDER BY al.created_at DESC 
-                                LIMIT 200");
-        $stmt->bind_param("i", $userId);
+                                LIMIT ? OFFSET ?");
+        $stmt->bind_param("iii", $userId, $pageSize, $offset);
         $stmt->execute();
         $res = $stmt->get_result();
         $data = [];
@@ -14006,7 +14019,14 @@ switch ($action) {
             }
         }
         $stmt->close();
-        echo json_encode(['success' => true, 'data' => $data]);
+        echo json_encode([
+            'success' => true, 
+            'data' => $data,
+            'total' => $total,
+            'page' => $page,
+            'pageSize' => $pageSize,
+            'total_pages' => ceil($total / $pageSize)
+        ]);
         break;
 
     case 'change_password':
