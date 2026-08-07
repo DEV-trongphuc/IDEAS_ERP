@@ -32,6 +32,11 @@ printIndexes($conn, 'projects');
 printIndexes($conn, 'mail_queue');
 printIndexes($conn, 'zalo_queue');
 printIndexes($conn, 'telegram_queue');
+printIndexes($conn, 'batches');
+printIndexes($conn, 'inventory_logs');
+printIndexes($conn, 'ticket_comments');
+
+
 
 
 

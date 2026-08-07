@@ -90,27 +90,10 @@ if (!empty($token)) {
         exit();
     }
     $stmt->close();
-} else if (!empty($spreadsheet_id)) {
-    $stmt = $conn->prepare("SELECT id, sheet_name, require_both_contact, connection_type, is_silent, sync_saleperson, webhook_token, notify_admin FROM sheet_connections WHERE spreadsheet_id = ? AND is_active = 1 LIMIT 1");
-    $stmt->bind_param("s", $spreadsheet_id);
-    $stmt->execute();
-    $connRes = $stmt->get_result();
-    if ($connRes->num_rows > 0) {
-        $connData = $connRes->fetch_assoc();
-        if (!empty($connData['webhook_token'])) {
-            http_response_code(403);
-            echo json_encode(["success" => false, "message" => "Token is required for this connection"]);
-            exit();
-        }
-    } else {
-        http_response_code(401);
-        echo json_encode(["success" => false, "message" => "Invalid or inactive connection ID"]);
-        exit();
-    }
-    $stmt->close();
 } else {
+    // Chặn hoàn toàn truy cập webhook không có token để tránh bypass qua spreadsheet_id
     http_response_code(401);
-    echo json_encode(["success" => false, "message" => "Missing token or spreadsheet_id"]);
+    echo json_encode(["success" => false, "message" => "Security token is required for all webhook connections"]);
     exit();
 }
 $connectionId = $connData['id'];
