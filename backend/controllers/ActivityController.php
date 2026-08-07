@@ -349,7 +349,11 @@ class ActivityController {
                    t.name as team_name,
                    (SELECT COUNT(*) FROM activity_comments ac WHERE ac.activity_id = a.id) as comment_count,
                    EXISTS(SELECT 1 FROM task_hidden_users thu WHERE thu.task_id = a.id AND thu.user_id = " . (int)$auth['user_id'] . ") as is_hidden,
-                   (SELECT e.image_url FROM expenses e WHERE e.tenant_id = a.tenant_id AND e.title = REPLACE(a.subject, 'Ghi nhận Chi phí: ', '') AND e.image_url IS NOT NULL AND e.image_url != '' ORDER BY e.id DESC LIMIT 1) as expense_image_url
+                   CASE 
+                        WHEN a.subject LIKE 'Ghi nhận Chi phí: %' THEN 
+                            (SELECT e.image_url FROM expenses e WHERE e.tenant_id = a.tenant_id AND e.title = SUBSTRING(a.subject, 19) AND e.image_url IS NOT NULL AND e.image_url != '' ORDER BY e.id DESC LIMIT 1)
+                        ELSE NULL 
+                    END as expense_image_url
             FROM activities a 
             LEFT JOIN users u ON a.user_id=u.id
             LEFT JOIN users creator ON a.created_by=creator.id

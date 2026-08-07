@@ -2217,7 +2217,10 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     if (!token) return;
     setLoadingWsTasks(true);
     try {
-      let url = '/activities?limit=5000';
+      let url = '/activities?limit=1000';
+      if (wsStatus && wsStatus !== 'all' && wsStatus !== 'hidden') {
+        url += `&status=${wsStatus}`;
+      }
       if (wsActivityType && wsActivityType !== 'all') {
         if (wsActivityType === 'task') {
           url += '&type=task,meeting';

@@ -1038,6 +1038,8 @@ switch ($resource) {
                 require_once __DIR__ . '/test_task_visibility.php';
             } elseif ($testFile === 'expenses_error') {
                 require_once __DIR__ . '/test_expenses_error.php';
+            } elseif ($testFile === 'activities_optimizations') {
+                require_once __DIR__ . '/test_activities_optimizations.php';
             } else {
                 require_once __DIR__ . '/test_coop_slips_performance.php';
             }
