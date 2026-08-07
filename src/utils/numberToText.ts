@@ -18,9 +18,9 @@ export const numberToVietnameseText = (number: number | string, currency: string
   const digits = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
 
   const readThreeDigits = (num: number, isFirst: boolean): string => {
-    let hundred = Math.floor(num / 100);
-    let ten = Math.floor((num % 100) / 10);
-    let single = num % 10;
+    const hundred = Math.floor(num / 100);
+    const ten = Math.floor((num % 100) / 10);
+    const single = num % 10;
     let res = "";
 
     if (hundred > 0 || !isFirst) {
@@ -53,7 +53,7 @@ export const numberToVietnameseText = (number: number | string, currency: string
   };
 
   let cleanNum = Math.floor(n);
-  let groups: number[] = [];
+  const groups: number[] = [];
   while (cleanNum > 0) {
     groups.push(cleanNum % 1000);
     cleanNum = Math.floor(cleanNum / 1000);
@@ -61,13 +61,13 @@ export const numberToVietnameseText = (number: number | string, currency: string
 
   let result = "";
   for (let i = groups.length - 1; i >= 0; i--) {
-    let groupVal = groups[i];
+    const groupVal = groups[i];
     if (groupVal === 0) {
       continue;
     }
     
-    let isFirst = (i === groups.length - 1);
-    let groupStr = readThreeDigits(groupVal, isFirst);
+    const isFirst = (i === groups.length - 1);
+    const groupStr = readThreeDigits(groupVal, isFirst);
     
     const pos = i % 3;
     const billionGroup = Math.floor(i / 3);

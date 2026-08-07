@@ -3,6 +3,20 @@
 // Cron job to automatically send payment reminders to students/clients before due date.
 // Scheduled via cron_master.php
 
+// --- PREVENT CONCURRENT EXECUTION (CHỐNG XUNG ĐỘT) ---
+$lockFile = sys_get_temp_dir() . '/cron_deposit_reminders_' . md5(__DIR__) . '.lock';
+$lockFp = @fopen($lockFile, 'w');
+if (!$lockFp) {
+    echo "[" . date('Y-m-d H:i:s') . "] LOCK ERROR: Lock file is not writable at: $lockFile. Please check folder permissions. Exiting.\n";
+    exit(1);
+}
+if (!flock($lockFp, LOCK_EX | LOCK_NB)) {
+    echo "[" . date('Y-m-d H:i:s') . "] Another instance of cron_deposit_reminders.php is already running. Exiting.\n";
+    fclose($lockFp);
+    exit(0);
+}
+// --- END PREVENT CONCURRENT EXECUTION ---
+
 require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/mailer.php';
 
@@ -106,3 +120,8 @@ try {
 } catch (Throwable $e) {
     echo "[" . date('Y-m-d H:i:s') . "] ERROR in automated reminders: " . $e->getMessage() . "\n";
 }
+
+// Release lock
+flock($lockFp, LOCK_UN);
+fclose($lockFp);
+
