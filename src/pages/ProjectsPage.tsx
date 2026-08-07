@@ -7445,7 +7445,7 @@ export default function ProjectsPage() {
                   }}>
                     <div style={{ flexShrink: 0 }}>
                       <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                        Thêm nhanh theo Nhóm (Team):
+                        Thêm nhanh theo Phòng ban:
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -7453,7 +7453,7 @@ export default function ProjectsPage() {
                         <CustomSelect
                           multiple={true}
                           searchable={true}
-                          placeholder="Chọn Nhóm (Team)..."
+                          placeholder="Chọn Phòng ban..."
                           options={teams
                             .map(team => {
                               const teamMembers = rosterMembers.filter(m => Number(m.team_id) === Number(team.id) || Number(m.id) === Number(team.leader_id));

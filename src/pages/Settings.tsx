@@ -8534,13 +8534,13 @@ function doPost(e) {
               </div>
 
               <div>
-                <label className="form-label" style={{ fontWeight: 600 }}>{t('Áp dụng cho Nhóm (Team)')}</label>
+                <label className="form-label" style={{ fontWeight: 600 }}>{t('Áp dụng cho Phòng ban')}</label>
                 <select
                   className="form-input"
                   value={workflowForm.team_id}
                   onChange={e => setWorkflowForm({ ...workflowForm, team_id: e.target.value })}
                 >
-                  <option value="">{t('Tất cả các nhóm')}</option>
+                  <option value="">{t('Tất cả phòng ban')}</option>
                   {teams.map(tm => (
                     <option key={tm.id} value={tm.id}>{tm.name}</option>
                   ))}

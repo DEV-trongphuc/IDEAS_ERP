@@ -1032,7 +1032,7 @@ const ConsultantsInner = () => {
       <div className={isMobile ? "" : "page-header"} style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '16px', marginBottom: '1.5rem', position: 'relative', zIndex: 50 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: isMobile ? '1.25rem' : '1.75rem', flexWrap: 'wrap' }}>
-            {activeTab === 'teams' ? t('Quản lý Nhóm (Team)') : activeTab === 'branches' ? t('Chi nhánh Kinh doanh') : t('Quản lý Tư vấn viên')}
+            {activeTab === 'teams' ? t('Quản lý Phòng ban') : t('Quản lý Tư vấn viên')}
             <button
               onClick={() => setShowInfoModal(true)}
               style={{
@@ -1066,9 +1066,7 @@ const ConsultantsInner = () => {
           </h1>
           <p className="page-subtitle" style={{ fontSize: '0.8rem' }}>
             {activeTab === 'teams'
-              ? t('Danh sách nhóm phân chia công việc và chỉ tiêu dự án')
-              : activeTab === 'branches'
-              ? t('Cơ cấu chi nhánh văn phòng của công ty')
+              ? t('Danh sách phòng ban phân chia công việc và chỉ tiêu dự án')
               : t('Danh sách nhân sự tiếp nhận và xử lý data từ hệ thống')}
           </p>
         </div>
@@ -1121,16 +1119,14 @@ const ConsultantsInner = () => {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                     transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                     transform: `translateX(${
-                      activeTab === 'consultants' ? '0px' : 
-                      activeTab === 'teams' ? '122px' : '244px'
+                      activeTab === 'consultants' ? '0px' : '122px'
                     })`,
                     zIndex: 1
                   }} />
 
                   {[
                     { id: 'consultants', label: t('Tài khoản & Nhân sự'), icon: <User size={14} /> },
-                    { id: 'teams', label: t('Nhóm (Team)'), icon: <Users size={14} /> },
-                    { id: 'branches', label: t('Chi nhánh'), icon: <Building2 size={14} /> }
+                    { id: 'teams', label: t('Phòng ban'), icon: <Users size={14} /> }
                   ].map(tab => {
                     const isSelected = activeTab === tab.id;
                     return (
@@ -1175,9 +1171,9 @@ const ConsultantsInner = () => {
                 style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', height: '36px', flexShrink: 0 }}
               >
                 <Plus size={16} />
-                <span>{t('Thêm Nhóm')}</span>
+                <span>{t('Thêm Phòng ban')}</span>
               </button>
-            ) : activeTab === 'branches' ? null : isWriteAuthorized ? (
+            ) : isWriteAuthorized ? (
               <button 
                 onClick={openAddModal} 
                 className="btn primary"
@@ -1396,8 +1392,7 @@ const ConsultantsInner = () => {
                         </div>
                         {[
                           { id: 'consultants', label: t('Tư vấn viên') },
-                          { id: 'teams', label: t('Nhóm (Team)') },
-                          { id: 'branches', label: t('Chi nhánh') }
+                          { id: 'teams', label: t('Phòng ban') }
                         ].map(tab => (
                           <button
                             key={tab.id}
@@ -1804,8 +1799,8 @@ const ConsultantsInner = () => {
             ) : teams.length === 0 ? (
               <div className="card" style={{ gridColumn: '1 / -1', padding: '4rem 2rem', textAlign: 'center' }}>
                 <Users size={48} color="var(--color-text-muted)" style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>{t('Chưa có Nhóm')}</h3>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{t('Nhấp thêm nhóm để bắt đầu quản lý phân cấp thành viên.')}</p>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)' }}>{t('Chưa có Phòng ban')}</h3>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>{t('Nhấp thêm phòng ban để bắt đầu quản lý phân cấp thành viên.')}</p>
               </div>
             ) : paginatedTeams.map((team) => {
                 const leader = allSystemUsers.find(u => Number(u.id) === Number(team.leader_id));
@@ -2707,7 +2702,7 @@ const ConsultantsInner = () => {
                       )}
                     </div>
                     <div>
-                      <h2 className={styles.title}>{teamFormData.name || t('Tên Nhóm')}</h2>
+                      <h2 className={styles.title}>{teamFormData.name || t('Tên Phòng ban')}</h2>
                       <p className={styles.subtitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Users size={14} /> {t('Quy mô')}: {teamFormData.member_ids.length} sales · KPI: {teamFormData.kpi_target ? Number(teamFormData.kpi_target).toLocaleString('vi-VN') : '0'} VND
                       </p>
@@ -3379,7 +3374,7 @@ const ConsultantsInner = () => {
                                                 </div>
                                                 {belongsToOtherTeam && (
                                                   <div style={{ fontSize: '0.65rem', color: 'var(--color-danger)', fontWeight: 600 }}>
-                                                    {t('Nhóm hiện tại')}: {otherTeam ? otherTeam.name : 'Khác'}
+                                                    {t('Phòng ban hiện tại')}: {otherTeam ? otherTeam.name : 'Khác'}
                                                   </div>
                                                 )}
                                               </div>
@@ -3413,7 +3408,7 @@ const ConsultantsInner = () => {
                               if (currentMembers.length === 0) {
                                 return (
                                   <div style={{ gridColumn: '1 / -1', padding: '2rem 1rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
-                                    {t('Nhóm hiện chưa có thành viên nào. Hãy nhấn nút "+ Thêm nhân sự" phía trên.')}
+                                    {t('Phòng ban hiện chưa có thành viên nào. Hãy nhấn nút "+ Thêm nhân sự" phía trên.')}
                                   </div>
                                 );
                               }
@@ -3753,7 +3748,7 @@ const ConsultantsInner = () => {
                                 </div>
                               ) : teamComments.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                                  {t('Chưa có bình luận nào. Nhóm hãy bình luận trao đổi thông tin tại đây!')}
+                                  {t('Chưa có bình luận nào. Phòng ban hãy bình luận trao đổi thông tin tại đây!')}
                                 </div>
                               ) : (
                                 rootComments.map((rootComment: any) => {
@@ -3790,9 +3785,9 @@ const ConsultantsInner = () => {
         isOpen={confirmDeleteTeamOpen}
         onClose={() => setConfirmDeleteTeamOpen(false)}
         onConfirm={handleDeleteTeam}
-        title={t("Xóa Nhóm")}
-        message={t("Bạn có chắc chắn muốn xóa nhóm này không? Các thành viên trong nhóm sẽ được đưa về trạng thái tự do (không thuộc nhóm nào).")}
-        confirmText={t("Xóa nhóm")}
+        title={t("Xóa Phòng ban")}
+        message={t("Bạn có chắc chắn muốn xóa phòng ban này không? Các thành viên trong phòng ban sẽ được đưa về trạng thái tự do (không thuộc phòng ban nào).")}
+        confirmText={t("Xóa phòng ban")}
       />
 
       <ConfirmModal
@@ -3808,7 +3803,7 @@ const ConsultantsInner = () => {
       <CustomModal
         isOpen={showInfoModal}
         onClose={() => setShowInfoModal(false)}
-        title={t("Hướng dẫn thiết lập Cơ cấu Nhân sự & Nhóm (Team)")}
+        title={t("Hướng dẫn thiết lập Cơ cấu Nhân sự & Phòng ban")}
         width="760px"
       >
         <div style={{ padding: '0.25rem 0', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -3828,7 +3823,7 @@ const ConsultantsInner = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {/* Chi nhánh & Nhóm */}
+            {/* Phòng ban */}
             <div style={{ 
               display: 'flex', 
               gap: 12, 
@@ -3840,15 +3835,14 @@ const ConsultantsInner = () => {
               borderBottom: '1px solid var(--color-border-light)',
               borderRadius: '0 8px 8px 0'
             }}>
-              <Building2 size={20} color="#3b82f6" style={{ flexShrink: 0, marginTop: 2 }} />
+              <Users size={20} color="#3b82f6" style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
                 <h5 style={{ fontSize: '0.875rem', fontWeight: 800, margin: '0 0 4px 0', color: 'var(--color-text)' }}>
-                  {t("1. Chi nhánh & Nhóm (Branches & Teams)")}
+                  {t("1. Phòng ban (Departments)")}
                 </h5>
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-                  • <strong>Chi nhánh (Branch)</strong>: Phân chia văn phòng làm việc vật lý (vd: Chi nhánh miền Nam, miền Bắc).<br />
-                  • <strong>Nhóm (Team)</strong>: Các tổ chức bán hàng độc lập có Trưởng nhóm (Leader) phụ trách. Mỗi nhóm có thể cài đặt <strong>Dự án trọng điểm</strong> để phối hợp nhận lead tự động từ hệ thống khi có rule định tuyến khớp dự án đó.<br />
-                  • <strong>Cơ chế tự động phân loại chi nhánh</strong>: Chi nhánh được liên kết tự động dựa trên Tỉnh/Thành phố được định cấu hình trong trường <strong>Địa chỉ chi nhánh</strong> của từng Nhóm. Để điều chỉnh chi nhánh hoặc cập nhật Trưởng nhóm, quản trị viên chỉ cần nhấp trực tiếp vào thẻ Nhóm tương ứng ở tab Nhóm (Team) hoặc tab Chi nhánh để mở form cấu hình.
+                  • <strong>Phòng ban</strong>: Các tổ chức bán hàng độc lập có Trưởng phòng (Leader) phụ trách. Mỗi phòng ban có thể cài đặt <strong>Dự án trọng điểm</strong> để phối hợp nhận lead tự động từ hệ thống khi có rule định tuyến khớp dự án đó.<br />
+                  • <strong>Quản lý phòng ban</strong>: Để điều chỉnh phòng ban hoặc cập nhật Trưởng phòng, quản trị viên chỉ cần nhấp trực tiếp vào thẻ tương ứng ở tab Phòng ban để mở form cấu hình.
                 </p>
               </div>
             </div>
