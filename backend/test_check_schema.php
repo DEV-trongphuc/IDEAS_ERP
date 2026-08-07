@@ -28,6 +28,8 @@ printIndexes($conn, 'check_ins');
 printIndexes($conn, 'round_consultants');
 printIndexes($conn, 'routing_rules');
 printIndexes($conn, 'leads');
+printIndexes($conn, 'projects');
+
 
 
 

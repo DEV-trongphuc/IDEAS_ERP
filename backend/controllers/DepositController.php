@@ -163,11 +163,13 @@ class DepositController {
             $stmtC->execute([$contactId, $auth['tenant_id']]);
             $contact = $stmtC->fetch();
             if (!$contact) {
+                $this->db->rollBack();
                 respond(404, null, 'Khách hàng không tồn tại', false);
             }
 
             if ($auth['role'] === 'sales' || $auth['role'] === 'sale') {
                 if ($contact['owner_id'] != $auth['user_id']) {
+                    $this->db->rollBack();
                     respond(403, null, 'Bạn không thể tạo đơn hàng cho khách hàng của người khác', false);
                 }
             } else if ($auth['role'] === 'manager') {
@@ -180,7 +182,26 @@ class DepositController {
                 $isTeamMember = $stmtLead->fetch();
 
                 if ($contact['owner_id'] != $auth['user_id'] && !$isTeamMember) {
+                    $this->db->rollBack();
                     respond(403, null, 'Bạn không thể tạo đơn hàng cho khách hàng thuộc quản lý của nhóm khác', false);
+                }
+            }
+
+            // Check if unit is already deposit-locked (not rejected/cancelled)
+            if ($unitCode !== '—') {
+                $stmtCheckUnit = $this->db->prepare("
+                    SELECT id 
+                    FROM deposits 
+                    WHERE project_id = ? 
+                      AND unit_code = ? 
+                      AND status NOT IN ('rejected', 'cancelled')
+                    LIMIT 1
+                ");
+                $stmtCheckUnit->execute([$projectId, $unitCode]);
+                $existingDeposit = $stmtCheckUnit->fetch();
+                if ($existingDeposit) {
+                    $this->db->rollBack();
+                    respond(409, null, "Sản phẩm/căn hộ {$unitCode} đã được giữ chỗ hoặc đặt cọc bởi phiếu cọc khác. Vui lòng chọn sản phẩm khác.", false);
                 }
             }
 
