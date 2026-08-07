@@ -1125,7 +1125,7 @@ const ConsultantsInner = () => {
                   }} />
 
                   {[
-                    { id: 'consultants', label: t('Tài khoản & Nhân sự'), icon: <User size={14} /> },
+                    { id: 'consultants', label: t('Nhân sự'), icon: <User size={14} /> },
                     { id: 'teams', label: t('Phòng ban'), icon: <Users size={14} /> }
                   ].map(tab => {
                     const isSelected = activeTab === tab.id;
