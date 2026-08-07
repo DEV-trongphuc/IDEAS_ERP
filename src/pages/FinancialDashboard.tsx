@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   TrendingUp, CreditCard, DollarSign, AlertTriangle, 
   ArrowUpRight, ArrowDownRight, Filter, Calendar, FileText, CheckCircle2, RefreshCw
@@ -137,60 +137,63 @@ export const FinancialDashboard: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const kpis = stats ? [
-    {
-      id: 'revenue',
-      label: t('TỔNG DOANH THU'),
-      value: FMT_VND(stats.revenue),
-      icon: TrendingUp,
-      color: '#10b981',
-      bg: 'rgba(16, 185, 129, 0.08)',
-      change: stats.revenueChange,
-      up: true,
-      bullets: [
-        { text: t('Đã thu: 85%'), color: '#10b981' },
-        { text: t('Chờ đối soát: 15%'), color: '#3b82f6' }
-      ]
-    },
-    {
-      id: 'expenses',
-      label: t('TỔNG CHI PHÍ'),
-      value: FMT_VND(stats.expenses),
-      icon: CreditCard,
-      color: 'var(--color-primary)',
-      bg: 'var(--color-primary-light)',
-      change: stats.expensesChange,
-      up: false,
-      bullets: [
-        { text: t('Lương & Hoa hồng: 60%'), color: 'var(--color-primary)' },
-        { text: t('Vận hành & MKT: 40%'), color: '#f59e0b' }
-      ]
-    },
-    {
-      id: 'netProfit',
-      label: t('DÒNG TIỀN THUẦN'),
-      value: FMT_VND(stats.netProfit),
-      icon: DollarSign,
-      color: '#3b82f6',
-      bg: 'rgba(59, 130, 246, 0.08)',
-      change: stats.netChange,
-      up: true,
-      bullets: [
-        { text: t('Lợi nhuận ròng: ') + Math.round((stats.netProfit / stats.revenue) * 100) + '%', color: '#3b82f6' }
-      ]
-    },
-    {
-      id: 'cancellations',
-      label: t('THẤT THOÁT CỌC'),
-      value: FMT_VND(stats.cancellations),
-      icon: AlertTriangle,
-      color: '#f59e0b',
-      bg: 'rgba(245, 158, 11, 0.08)',
-      change: stats.cancellationsChange,
-      up: true,
-      bullets: stats.cancellationBullets
-    }
-  ] : [];
+  const kpis = useMemo(() => {
+    if (!stats) return [];
+    return [
+      {
+        id: 'revenue',
+        label: t('TỔNG DOANH THU'),
+        value: FMT_VND(stats.revenue),
+        icon: TrendingUp,
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.08)',
+        change: stats.revenueChange,
+        up: true,
+        bullets: [
+          { text: t('Đã thu: 85%'), color: '#10b981' },
+          { text: t('Chờ đối soát: 15%'), color: '#3b82f6' }
+        ]
+      },
+      {
+        id: 'expenses',
+        label: t('TỔNG CHI PHÍ'),
+        value: FMT_VND(stats.expenses),
+        icon: CreditCard,
+        color: 'var(--color-primary)',
+        bg: 'var(--color-primary-light)',
+        change: stats.expensesChange,
+        up: false,
+        bullets: [
+          { text: t('Lương & Hoa hồng: 60%'), color: 'var(--color-primary)' },
+          { text: t('Vận hành & MKT: 40%'), color: '#f59e0b' }
+        ]
+      },
+      {
+        id: 'netProfit',
+        label: t('DÒNG TIỀN THUẦN'),
+        value: FMT_VND(stats.netProfit),
+        icon: DollarSign,
+        color: '#3b82f6',
+        bg: 'rgba(59, 130, 246, 0.08)',
+        change: stats.netChange,
+        up: true,
+        bullets: [
+          { text: t('Lợi nhuận ròng: ') + Math.round((stats.netProfit / stats.revenue) * 100) + '%', color: '#3b82f6' }
+        ]
+      },
+      {
+        id: 'cancellations',
+        label: t('THẤT THOÁT CỌC'),
+        value: FMT_VND(stats.cancellations),
+        icon: AlertTriangle,
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.08)',
+        change: stats.cancellationsChange,
+        up: true,
+        bullets: stats.cancellationBullets
+      }
+    ];
+  }, [stats, t]);
 
   return (
     <div className="page-container" style={{ animation: 'slideUp 0.4s ease-out both', animationDelay: '50ms' }}>

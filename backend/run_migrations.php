@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 212;
+$targetVersion = 213;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1203,9 +1203,26 @@ try {
         $logMsg("Nâng cấp lên phiên bản 212 hoàn tất.", "success");
     }
 
-    // 19. Update DB version in system_settings
-    $targetVersion = 212;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '212') ON DUPLICATE KEY UPDATE setting_value = '212'");
+    // 19. Upgrade to 213: Add composite index for admin_logs account pagination
+    if ($currentVersion < 213) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 213...", "info");
+        try {
+            $chkIdx = $conn->query("SHOW INDEX FROM `admin_logs` WHERE Key_name = 'idx_admin_logs_account_created'");
+            if (!$chkIdx || $chkIdx->num_rows === 0) {
+                $conn->query("ALTER TABLE `admin_logs` ADD INDEX `idx_admin_logs_account_created` (`account_id`, `created_at` DESC)");
+                $logMsg("Đã bổ sung chỉ mục idx_admin_logs_account_created vào bảng admin_logs.", "success");
+            } else {
+                $logMsg("Chỉ mục idx_admin_logs_account_created đã tồn tại.", "info");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi tạo chỉ mục idx_admin_logs_account_created: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 213 hoàn tất.", "success");
+    }
+
+    // 20. Update DB version in system_settings
+    $targetVersion = 213;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '213') ON DUPLICATE KEY UPDATE setting_value = '213'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
