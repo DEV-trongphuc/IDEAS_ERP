@@ -572,7 +572,9 @@ class DepositController {
     public function approveMilestone(array $auth, int $id, int $milestoneId): void {
         requireRole($auth, ['admin', 'superadmin', 'super_admin', 'assistant', 'director', 'accountant']);
         
-        // Fetch deposit details to link the invoice and notify owner
+        $this->db->beginTransaction();
+
+        // Fetch deposit details to link the invoice and notify owner WITH row-level lock (FOR UPDATE)
         $stmtDep = $this->db->prepare("
             SELECT d.*, c.company_id, c.full_name, p.name as project_name,
                    u.email as owner_email, u.full_name as owner_name, u.zalo_chat_id as owner_zalo_chat_id,
@@ -581,22 +583,30 @@ class DepositController {
             JOIN contacts c ON d.contact_id = c.id
             LEFT JOIN projects p ON d.project_id = p.id
             LEFT JOIN users u ON c.owner_id = u.id
-            WHERE d.id = ?
+            WHERE d.id = ? FOR UPDATE
         ");
         $stmtDep->execute([$id]);
         $depositData = $stmtDep->fetch();
 
         if (!$depositData) {
+            $this->db->rollBack();
             respond(404, null, 'Không tìm thấy phiếu đặt cọc', false);
             return;
         }
 
-        $stmtMile = $this->db->prepare("SELECT milestone_name, expected_amount, original_amount FROM deposit_milestones WHERE id = ? AND deposit_id = ?");
+        $stmtMile = $this->db->prepare("SELECT milestone_name, expected_amount, original_amount, status FROM deposit_milestones WHERE id = ? AND deposit_id = ? FOR UPDATE");
         $stmtMile->execute([$milestoneId, $id]);
         $mileData = $stmtMile->fetch();
 
         if (!$mileData) {
+            $this->db->rollBack();
             respond(404, null, 'Không tìm thấy đợt thanh toán', false);
+            return;
+        }
+
+        if ($mileData['status'] === 'approved') {
+            $this->db->rollBack();
+            respond(422, null, 'Đợt thanh toán này đã được duyệt từ trước', false);
             return;
         }
 
@@ -606,6 +616,7 @@ class DepositController {
 
         if (!empty($depositData['currency']) && $depositData['currency'] !== 'VND') {
             if ($actualAmount === null || $actualAmount <= 0) {
+                $this->db->rollBack();
                 respond(400, null, 'Vui lòng cung cấp số tiền thực tế nhận được bằng VND', false);
                 return;
             }
@@ -614,8 +625,6 @@ class DepositController {
                 $actualAmount = (float)$mileData['expected_amount'];
             }
         }
-
-        $this->db->beginTransaction();
         try {
             // Update milestone status and actual_amount
             $stmt = $this->db->prepare("

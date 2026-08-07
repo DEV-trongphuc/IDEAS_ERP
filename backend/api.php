@@ -9226,10 +9226,11 @@ switch ($action) {
 
             // 4. Cooperation slips count
             $sqlCoop = "
-                SELECT cs.status, cs.adjustment_request_user_id, cs.shares_json, cs.created_by
+                SELECT COUNT(*)
                 FROM cooperation_slips cs
                 JOIN contacts c ON cs.contact_id = c.id
                 WHERE c.tenant_id = ?
+                  AND (cs.status = 'pending_manager_approval' OR (cs.status = 'approved' AND cs.adjustment_request_user_id > 0))
             ";
             $scope = getModulePermissionScope($conn, $decodedUser, 'cooperation', 'read');
             if ($scope === 'team') {
@@ -9263,14 +9264,7 @@ switch ($action) {
                 $stmtCoop->bind_param("i", $tenantId);
             }
             $stmtCoop->execute();
-            $resCoop = $stmtCoop->get_result();
-            while ($rowCoop = $resCoop->fetch_assoc()) {
-                $csStatus = $rowCoop['status'] ?? '';
-                $csAdjUid = isset($rowCoop['adjustment_request_user_id']) ? (int)$rowCoop['adjustment_request_user_id'] : 0;
-                if ($csStatus === 'pending_manager_approval' || ($csStatus === 'approved' && $csAdjUid > 0)) {
-                    $coopsCount++;
-                }
-            }
+            $coopsCount = (int)($stmtCoop->get_result()->fetch_row()[0] ?? 0);
             $stmtCoop->close();
 
             // 5. Support tickets count

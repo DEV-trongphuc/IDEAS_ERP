@@ -1262,29 +1262,6 @@ class FinanceController
         if (!in_array($auth['role'], ['admin', 'manager', 'super_admin', 'superadmin', 'director', 'accountant', 'hr', 'sale_admin', 'saleadmin'], true)) respond(403, null, 'Bạn không có quyền duyệt chi phí', false);
         requireRole($auth, ['admin', 'manager', 'super_admin', 'superadmin', 'director', 'accountant', 'hr', 'sale_admin', 'saleadmin']);
 
-        // Find creator of the expense
-        $stmtExp = $this->db->prepare("SELECT * FROM expenses WHERE id=? AND tenant_id=?");
-        $stmtExp->execute([$id, $auth['tenant_id']]);
-        $expenseRow = $stmtExp->fetch();
-        if (!$expenseRow) respond(404, null, 'Không tìm thấy chi phí', false);
-
-        if ($auth['role'] === 'manager') {
-            $creatorId = (int)$expenseRow['created_by'];
-            
-            // Check if creator belongs to the manager's team
-            $stmtUserTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
-            $stmtUserTeam->execute([$creatorId]);
-            $targetUserTeamId = $stmtUserTeam->fetchColumn();
-
-            $stmtLead = $this->db->prepare("SELECT 1 FROM teams WHERE id = ? AND leader_id = ?");
-            $stmtLead->execute([$targetUserTeamId, $auth['user_id']]);
-            $isTeamMember = $stmtLead->fetch();
-
-            if ($creatorId !== (int)$auth['user_id'] && !$isTeamMember) {
-                respond(403, null, 'Bạn chỉ có quyền phê duyệt chi phí cho nhân viên thuộc nhóm của mình', false);
-            }
-        }
-
         $data = getBody();
         $statusInput = $data['status'] ?? 'approved'; // 'approved' or 'rejected'
         if (!in_array($statusInput, ['approved', 'rejected'], true)) {
@@ -1295,6 +1272,34 @@ class FinanceController
 
         $this->db->beginTransaction();
         try {
+            // Find creator of the expense WITH row-level lock (FOR UPDATE)
+            $stmtExp = $this->db->prepare("SELECT * FROM expenses WHERE id=? AND tenant_id=? FOR UPDATE");
+            $stmtExp->execute([$id, $auth['tenant_id']]);
+            $expenseRow = $stmtExp->fetch();
+            
+            if (!$expenseRow) {
+                $this->db->rollBack();
+                respond(404, null, 'Không tìm thấy chi phí', false);
+            }
+
+            if ($auth['role'] === 'manager') {
+                $creatorId = (int)$expenseRow['created_by'];
+                
+                // Check if creator belongs to the manager's team
+                $stmtUserTeam = $this->db->prepare("SELECT team_id FROM users WHERE id = ?");
+                $stmtUserTeam->execute([$creatorId]);
+                $targetUserTeamId = $stmtUserTeam->fetchColumn();
+
+                $stmtLead = $this->db->prepare("SELECT 1 FROM teams WHERE id = ? AND leader_id = ?");
+                $stmtLead->execute([$targetUserTeamId, $auth['user_id']]);
+                $isTeamMember = $stmtLead->fetch();
+
+                if ($creatorId !== (int)$auth['user_id'] && !$isTeamMember) {
+                    $this->db->rollBack();
+                    respond(403, null, 'Bạn chỉ có quyền phê duyệt chi phí cho nhân viên thuộc nhóm của mình', false);
+                }
+            }
+
             // Determine which level needs to be approved next
             $currentLevel = 0;
             if ($expenseRow['status_level_1'] === 'pending') {
@@ -1311,6 +1316,7 @@ class FinanceController
             }
 
             if ($currentLevel === 0) {
+                $this->db->rollBack();
                 respond(422, null, 'Khoản chi đã được duyệt hoặc từ chối đầy đủ rồi', false);
             }
 
@@ -1325,6 +1331,7 @@ class FinanceController
             }
 
             if ($expectedApproverId > 0 && $expectedApproverId !== (int)$userId && !in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'director'], true)) {
+                $this->db->rollBack();
                 respond(403, null, 'Bạn không có quyền phê duyệt cấp này', false);
             }
 
