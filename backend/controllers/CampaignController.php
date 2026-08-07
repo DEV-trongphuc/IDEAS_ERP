@@ -628,34 +628,74 @@ class CampaignController {
         
         $campaignIdStr = (string)$campaignId;
         
-        // Count total leads in leads table + manually linked contacts
-        $stmtLeads = $this->db->prepare("
-            SELECT (
-                SELECT COUNT(*) 
-                FROM leads 
-                WHERE (campaign_id = ? OR campaign_name = ?)
-            ) + (
-                SELECT COUNT(*) 
-                FROM contacts 
-                WHERE campaign_id = ? 
-                  AND (person_id IS NULL OR person_id NOT IN (
-                      SELECT person_id FROM leads WHERE (campaign_id = ? OR campaign_name = ?) AND person_id IS NOT NULL
-                  ))
-            )
+        // Count total leads in leads table (optimized index range scan)
+        $stmtL1 = $this->db->prepare("SELECT COUNT(*) FROM leads WHERE campaign_id = ?");
+        $stmtL1->execute([$campaignIdStr]);
+        $c1 = (int)$stmtL1->fetchColumn();
+
+        $stmtL2 = $this->db->prepare("SELECT COUNT(*) FROM leads WHERE campaign_name = ?");
+        $stmtL2->execute([$campName]);
+        $c2 = (int)$stmtL2->fetchColumn();
+
+        $stmtL3 = $this->db->prepare("SELECT COUNT(*) FROM leads WHERE campaign_id = ? AND campaign_name = ?");
+        $stmtL3->execute([$campaignIdStr, $campName]);
+        $c3 = (int)$stmtL3->fetchColumn();
+
+        $totalLeadsFromLeadsTable = $c1 + $c2 - $c3;
+
+        // Count manual contacts without leads linked
+        $stmtL4 = $this->db->prepare("
+            SELECT COUNT(*) 
+            FROM contacts 
+            WHERE campaign_id = ? 
+              AND (person_id IS NULL OR person_id NOT IN (
+                  SELECT person_id FROM leads WHERE campaign_id = ? AND person_id IS NOT NULL
+                  UNION
+                  SELECT person_id FROM leads WHERE campaign_name = ? AND person_id IS NOT NULL
+              ))
         ");
-        $stmtLeads->execute([$campaignIdStr, $campName, $campaignId, $campaignIdStr, $campName]);
-        $totalLeads = (int)$stmtLeads->fetchColumn();
+        $stmtL4->execute([$campaignId, $campaignIdStr, $campName]);
+        $totalContactsWithoutLeads = (int)$stmtL4->fetchColumn();
+
+        $totalLeads = $totalLeadsFromLeadsTable + $totalContactsWithoutLeads;
         
         // Converted leads (leads that have a contact record)
-        $stmtConverted = $this->db->prepare("
+        $stmtConv1 = $this->db->prepare("
             SELECT COUNT(DISTINCT c.id) 
             FROM contacts c
-            LEFT JOIN leads l ON c.person_id = l.person_id
-            WHERE (l.campaign_id = ? OR l.campaign_name = ? OR c.campaign_id = ?)
-              AND c.deleted_at IS NULL
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_id = ? AND c.deleted_at IS NULL
         ");
-        $stmtConverted->execute([$campaignIdStr, $campName, $campaignId]);
-        $convertedLeads = (int)$stmtConverted->fetchColumn();
+        $stmtConv1->execute([$campaignIdStr]);
+        $conv1 = (int)$stmtConv1->fetchColumn();
+
+        $stmtConv2 = $this->db->prepare("
+            SELECT COUNT(DISTINCT c.id) 
+            FROM contacts c
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_name = ? AND c.deleted_at IS NULL
+        ");
+        $stmtConv2->execute([$campName]);
+        $conv2 = (int)$stmtConv2->fetchColumn();
+
+        $stmtConv3 = $this->db->prepare("
+            SELECT COUNT(DISTINCT c.id) 
+            FROM contacts c
+            WHERE c.campaign_id = ? AND c.deleted_at IS NULL
+        ");
+        $stmtConv3->execute([$campaignId]);
+        $conv3 = (int)$stmtConv3->fetchColumn();
+
+        $stmtConvOverlap = $this->db->prepare("
+            SELECT COUNT(DISTINCT c.id) 
+            FROM contacts c
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_id = ? AND l.campaign_name = ? AND c.deleted_at IS NULL
+        ");
+        $stmtConvOverlap->execute([$campaignIdStr, $campName]);
+        $convOverlap = (int)$stmtConvOverlap->fetchColumn();
+
+        $convertedLeads = $conv1 + $conv2 + $conv3 - $convOverlap;
         
         // Conversion rate
         $conversionRate = $totalLeads > 0 ? round(($convertedLeads / $totalLeads) * 100, 1) : 0.0;
@@ -667,30 +707,84 @@ class CampaignController {
             $wonStatus = 'dong_deal';
         }
 
-        $stmtWon = $this->db->prepare("
+        $stmtWon1 = $this->db->prepare("
             SELECT COUNT(DISTINCT c.id) 
             FROM contacts c
-            LEFT JOIN leads l ON c.person_id = l.person_id
-            WHERE (l.campaign_id = ? OR l.campaign_name = ? OR c.campaign_id = ?)
-              AND c.pipeline_status = ?
-              AND c.deleted_at IS NULL
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_id = ? AND c.pipeline_status = ? AND c.deleted_at IS NULL
         ");
-        $stmtWon->execute([$campaignIdStr, $campName, $campaignId, $wonStatus]);
-        $wonDeals = (int)$stmtWon->fetchColumn();
+        $stmtWon1->execute([$campaignIdStr, $wonStatus]);
+        $won1 = (int)$stmtWon1->fetchColumn();
+
+        $stmtWon2 = $this->db->prepare("
+            SELECT COUNT(DISTINCT c.id) 
+            FROM contacts c
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_name = ? AND c.pipeline_status = ? AND c.deleted_at IS NULL
+        ");
+        $stmtWon2->execute([$campName, $wonStatus]);
+        $won2 = (int)$stmtWon2->fetchColumn();
+
+        $stmtWon3 = $this->db->prepare("
+            SELECT COUNT(DISTINCT c.id) 
+            FROM contacts c
+            WHERE c.campaign_id = ? AND c.pipeline_status = ? AND c.deleted_at IS NULL
+        ");
+        $stmtWon3->execute([$campaignId, $wonStatus]);
+        $won3 = (int)$stmtWon3->fetchColumn();
+
+        $stmtWonOverlap = $this->db->prepare("
+            SELECT COUNT(DISTINCT c.id) 
+            FROM contacts c
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_id = ? AND l.campaign_name = ? AND c.pipeline_status = ? AND c.deleted_at IS NULL
+        ");
+        $stmtWonOverlap->execute([$campaignIdStr, $campName, $wonStatus]);
+        $wonOverlap = (int)$stmtWonOverlap->fetchColumn();
+
+        $wonDeals = $won1 + $won2 + $won3 - $wonOverlap;
         
         // Actual revenue from paid invoices of contacts from this campaign
-        $stmtRev = $this->db->prepare("
+        $stmtRev1 = $this->db->prepare("
             SELECT COALESCE(SUM(inv.total), 0)
             FROM invoices inv
             JOIN contacts c ON inv.contact_id = c.id
-            LEFT JOIN leads l ON c.person_id = l.person_id
-            WHERE (l.campaign_id = ? OR l.campaign_name = ? OR c.campaign_id = ?)
-              AND inv.status = 'paid'
-              AND inv.deleted_at IS NULL
-              AND c.deleted_at IS NULL
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_id = ? AND inv.status = 'paid' AND inv.deleted_at IS NULL AND c.deleted_at IS NULL
         ");
-        $stmtRev->execute([$campaignIdStr, $campName, $campaignId]);
-        $actualRevenue = (float)$stmtRev->fetchColumn();
+        $stmtRev1->execute([$campaignIdStr]);
+        $rev1 = (float)$stmtRev1->fetchColumn();
+
+        $stmtRev2 = $this->db->prepare("
+            SELECT COALESCE(SUM(inv.total), 0)
+            FROM invoices inv
+            JOIN contacts c ON inv.contact_id = c.id
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_name = ? AND inv.status = 'paid' AND inv.deleted_at IS NULL AND c.deleted_at IS NULL
+        ");
+        $stmtRev2->execute([$campName]);
+        $rev2 = (float)$stmtRev2->fetchColumn();
+
+        $stmtRev3 = $this->db->prepare("
+            SELECT COALESCE(SUM(inv.total), 0)
+            FROM invoices inv
+            JOIN contacts c ON inv.contact_id = c.id
+            WHERE c.campaign_id = ? AND inv.status = 'paid' AND inv.deleted_at IS NULL AND c.deleted_at IS NULL
+        ");
+        $stmtRev3->execute([$campaignId]);
+        $rev3 = (float)$stmtRev3->fetchColumn();
+
+        $stmtRevOverlap = $this->db->prepare("
+            SELECT COALESCE(SUM(inv.total), 0)
+            FROM invoices inv
+            JOIN contacts c ON inv.contact_id = c.id
+            JOIN leads l ON c.person_id = l.person_id
+            WHERE l.campaign_id = ? AND l.campaign_name = ? AND inv.status = 'paid' AND inv.deleted_at IS NULL AND c.deleted_at IS NULL
+        ");
+        $stmtRevOverlap->execute([$campaignIdStr, $campName]);
+        $revOverlap = (float)$stmtRevOverlap->fetchColumn();
+
+        $actualRevenue = $rev1 + $rev2 + $rev3 - $revOverlap;
         
         // Audit changelog trail: last 100 actions
         $stmtLogs = $this->db->prepare("

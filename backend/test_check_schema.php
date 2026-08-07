@@ -35,6 +35,8 @@ printIndexes($conn, 'telegram_queue');
 printIndexes($conn, 'batches');
 printIndexes($conn, 'inventory_logs');
 printIndexes($conn, 'ticket_comments');
+printIndexes($conn, 'purchase_orders');
+
 
 
 

@@ -273,10 +273,20 @@ class PurchaseOrderController {
             $stmt = $this->db->prepare("SELECT status, approval_status FROM purchase_orders WHERE id = ? AND tenant_id = ? FOR UPDATE");
             $stmt->execute([$id, $auth['tenant_id']]);
             $po = $stmt->fetch();
-            if (!$po) respond(404, null, 'Không tìm thấy đơn hàng', false);
-            if ($po['status'] === 'received') respond(422, null, 'Đơn hàng này đã được nhập kho rồi', false);
-            if ($po['status'] === 'cancelled') respond(422, null, 'Đơn hàng này đã bị hủy, không thể nhập kho', false);
+            if (!$po) {
+                $this->db->rollBack();
+                respond(404, null, 'Không tìm thấy đơn hàng', false);
+            }
+            if ($po['status'] === 'received') {
+                $this->db->rollBack();
+                respond(422, null, 'Đơn hàng này đã được nhập kho rồi', false);
+            }
+            if ($po['status'] === 'cancelled') {
+                $this->db->rollBack();
+                respond(422, null, 'Đơn hàng này đã bị hủy, không thể nhập kho', false);
+            }
             if ($po['approval_status'] !== 'approved') {
+                $this->db->rollBack();
                 respond(422, null, 'Đơn hàng chưa được phê duyệt đầy đủ, không thể nhập kho', false);
             }
 
@@ -362,6 +372,7 @@ class PurchaseOrderController {
             $stmt->execute([$id, $tid]);
             $po = $stmt->fetch();
             if (!$po) {
+                $this->db->rollBack();
                 respond(404, null, 'Không tìm thấy đơn hàng đang chờ duyệt hoặc đơn hàng đã xử lý', false);
             }
 
@@ -376,12 +387,14 @@ class PurchaseOrderController {
             }
 
             if ($currentLevel === 0) {
+                $this->db->rollBack();
                 respond(422, null, 'Đơn hàng đã được duyệt hoặc từ chối đầy đủ rồi', false);
             }
 
             // Check if current user is the authorized approver for this level
             $expectedApproverId = (int)$po["approver_id" . ($currentLevel > 1 ? "_" . $currentLevel : "")];
             if ($expectedApproverId !== (int)$userId && !in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'director'], true)) {
+                $this->db->rollBack();
                 respond(403, null, 'Bạn không có quyền phê duyệt cấp này', false);
             }
 
