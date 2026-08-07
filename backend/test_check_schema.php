@@ -46,6 +46,15 @@ printIndexes($conn, 'ai_training_chunks');
 printIndexes($conn, 'enterprise_posts');
 printIndexes($conn, 'enterprise_comments');
 printIndexes($conn, 'enterprise_reactions');
+printIndexes($conn, 'quotes');
+printIndexes($conn, 'invoices');
+printIndexes($conn, 'system_settings');
+printIndexes($conn, 'custom_fields');
+printIndexes($conn, 'cooperation_slips');
+printIndexes($conn, 'deposits');
+
+
+
 
 
 
