@@ -1787,7 +1787,33 @@ const ConsultantsInner = () => {
       </div>
       ) : activeTab === 'teams' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: isMobile ? '1rem' : '1.5rem', padding: '0.25rem' }}>
+          <style>{`
+            .dept-card {
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+              border: 1px solid var(--color-border-light) !important;
+              border-radius: 16px !important;
+              background: var(--color-surface) !important;
+              box-shadow: var(--shadow-sm) !important;
+              display: flex;
+              flex-direction: column;
+              gap: 1rem;
+              padding: 1.5rem !important;
+              cursor: pointer;
+            }
+            .dept-card:hover {
+              transform: translateY(-4px) !important;
+              box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.06), 0 4px 12px -5px rgba(189, 29, 45, 0.08) !important;
+              border-color: rgba(189, 29, 45, 0.25) !important;
+            }
+            .dept-inner-panel {
+              border-top: 1px dashed var(--color-border) !important;
+              padding-top: 1rem !important;
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+          `}</style>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? '1rem' : '1.5rem', padding: '0.25rem' }}>
             {teamsLoading ? (
               [...Array(3)].map((_, i) => (
                 <div key={i} className="card animate-pulse" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '200px' }}>
@@ -1807,20 +1833,8 @@ const ConsultantsInner = () => {
                 return (
                   <div 
                     key={team.id} 
-                    className="card card-hover" 
+                    className="dept-card" 
                     onClick={() => openEditTeamModal(team)}
-                    style={{ 
-                      cursor: 'pointer', 
-                      padding: '1.25rem', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '1rem',
-                      border: '1px solid var(--color-border-light)',
-                      borderRadius: '16px',
-                      background: 'var(--color-surface)',
-                      boxShadow: 'var(--shadow-sm)',
-                      transition: 'transform 0.25s, box-shadow 0.25s, border-color 0.25s'
-                    }}
                   >
                     {/* Header Row */}
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -1830,7 +1844,8 @@ const ConsultantsInner = () => {
                         borderRadius: '50%', 
                         overflow: 'hidden',
                         border: '1.5px solid var(--color-border-light)',
-                        background: (team.avatar_url || team.avatar) ? 'transparent' : 'linear-gradient(135deg, #BD1D2D 0%, #a31422 100%)', 
+                        background: (team.avatar_url || team.avatar) ? 'transparent' : 'linear-gradient(135deg, #ff4d61 0%, #BD1D2D 100%)', 
+                        boxShadow: '0 4px 10px rgba(189, 29, 45, 0.15)',
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center',
@@ -1846,7 +1861,7 @@ const ConsultantsInner = () => {
                         )}
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {team.name}
                         </h3>
                         <div style={{ display: 'flex', gap: '6px', marginTop: '2px', alignItems: 'center' }}>
@@ -1858,20 +1873,12 @@ const ConsultantsInner = () => {
                     </div>
 
                     {/* Details Panel */}
-                    <div style={{ 
-                      background: 'rgba(0, 0, 0, 0.01)', 
-                      border: '1px solid var(--color-border-light)', 
-                      borderRadius: '12px', 
-                      padding: '12px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '10px' 
-                    }}>
-                      {/* Trưởng nhóm */}
+                    <div className="dept-inner-panel">
+                      {/* Trưởng phòng */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
                           <User size={14} />
-                          <span>{t('Trưởng nhóm')}:</span>
+                          <span>{t('Trưởng phòng')}:</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {team.leader_name ? (
@@ -1965,13 +1972,13 @@ const ConsultantsInner = () => {
                         <button 
                           className="btn sm outline" 
                           onClick={() => openEditTeamModal(team)}
-                          style={{ borderRadius: '8px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 600 }}
+                          style={{ borderRadius: '20px', padding: '5px 14px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-muted)' }}
                         >
                           {t('Sửa')}
                         </button>
                         <button
                           className="btn sm"
-                          style={{ background: 'var(--color-danger-light)', color: 'var(--color-danger)', border: 'none', borderRadius: '8px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 600 }}
+                          style={{ background: 'rgba(239, 68, 68, 0.05)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '20px', padding: '5px 14px', fontSize: '0.75rem', fontWeight: 600 }}
                           onClick={() => {
                             setDeleteTeamId(team.id);
                             setConfirmDeleteTeamOpen(true);
