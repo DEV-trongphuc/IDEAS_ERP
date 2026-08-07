@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   ThumbsUp, Heart, Laugh, Angry, MessageCircle, Share2, 
   Send, Trash2, Globe, Lock, Users, Link as LinkIcon, Paperclip, X, Camera, 
@@ -74,6 +74,27 @@ export const EnterpriseFeed: React.FC = () => {
 
   // Filters
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const trendingTags = useMemo(() => {
+    const counts: Record<string, number> = {};
+    (posts || []).forEach(post => {
+      if (Array.isArray(post.tags)) {
+        post.tags.forEach(tag => {
+          const t = tag.trim().toLowerCase();
+          if (t) {
+            counts[t] = (counts[t] || 0) + 1;
+          }
+        });
+      }
+    });
+    return Object.entries(counts)
+      .map(([tag, count]) => ({
+        tag,
+        label: `#${tag}`,
+        count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [posts]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisibility, setSelectedVisibility] = useState<string>('all');
 
@@ -1702,36 +1723,36 @@ export const EnterpriseFeed: React.FC = () => {
         </h4>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { tag: 'ideas', label: '#ideas', count: 12 },
-            { tag: 'productivity', label: '#productivity', count: 8 },
-            { tag: 'teamwork', label: '#teamwork', count: 6 },
-            { tag: 'welcome', label: '#welcome', count: 4 },
-            { tag: 'celebration', label: '#celebration', count: 3 }
-          ].map(tObj => (
-            <div 
-              key={tObj.tag}
-              onClick={() => setActiveTag(tObj.tag)}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '8px 10px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                background: activeTag === tObj.tag ? 'var(--color-success-light)' : 'var(--color-bg)',
-                transition: 'all 0.2s'
-              }}
-              className="hover-bg"
-            >
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: activeTag === tObj.tag ? 'var(--color-success)' : 'var(--color-text)' }}>
-                {tObj.label}
-              </span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', background: 'var(--color-surface)', padding: '2px 6px', borderRadius: '10px' }}>
-                {tObj.count}
-              </span>
+          {trendingTags.length === 0 ? (
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px 0', fontStyle: 'italic' }}>
+              {t('Chưa có xu hướng nào')}
             </div>
-          ))}
+          ) : (
+            trendingTags.map(tObj => (
+              <div 
+                key={tObj.tag}
+                onClick={() => setActiveTag(tObj.tag)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  background: activeTag === tObj.tag ? 'var(--color-success-light)' : 'var(--color-bg)',
+                  transition: 'all 0.2s'
+                }}
+                className="hover-bg"
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: activeTag === tObj.tag ? 'var(--color-success)' : 'var(--color-text)' }}>
+                  {tObj.label}
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', background: 'var(--color-surface)', padding: '2px 6px', borderRadius: '10px' }}>
+                  {tObj.count}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
