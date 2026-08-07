@@ -2268,20 +2268,6 @@ switch ($action) {
             $project = $stmtP->get_result()->fetch_assoc();
         }
 
-        // 4. Fetch Lecturers lookup dictionary
-        $lecturers = [];
-        $resComp = $conn->query("SELECT id, name FROM companies");
-        if ($resComp) {
-            while ($row = $resComp->fetch_assoc()) {
-                $lecturers[$row['id']] = $row['name'];
-            }
-        }
-        $resUsers = $conn->query("SELECT id, username, full_name FROM users");
-        if ($resUsers) {
-            while ($row = $resUsers->fetch_assoc()) {
-                $lecturers[$row['id']] = $row['full_name'] ?: $row['username'];
-            }
-        }
 
         echo json_encode([
             'success' => true,
