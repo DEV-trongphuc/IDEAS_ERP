@@ -1044,6 +1044,8 @@ switch ($resource) {
                 require_once __DIR__ . '/test_public_schedule.php';
             } elseif ($testFile === 'check_schema') {
                 require_once __DIR__ . '/test_check_schema.php';
+            } elseif ($testFile === 'insert_departments') {
+                require_once __DIR__ . '/test_insert_departments.php';
             } else {
                 require_once __DIR__ . '/test_coop_slips_performance.php';
             }
