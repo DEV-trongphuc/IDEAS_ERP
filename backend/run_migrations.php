@@ -1234,6 +1234,11 @@ try {
                 $conn->query("ALTER TABLE `monthly_payslips` ADD COLUMN `lateness_annual_deducted` DECIMAL(5,2) DEFAULT 0.00 AFTER lateness_compensatory_deducted");
                 $logMsg("Đã bổ sung cột lateness_annual_deducted vào bảng monthly_payslips.", "success");
             }
+            $chk3 = $conn->query("SHOW COLUMNS FROM `monthly_payslips` LIKE 'note'");
+            if (!$chk3 || $chk3->num_rows === 0) {
+                $conn->query("ALTER TABLE `monthly_payslips` ADD COLUMN `note` TEXT NULL AFTER diligence_bonus");
+                $logMsg("Đã bổ sung cột note vào bảng monthly_payslips.", "success");
+            }
         } catch (Throwable $e) {
             $logMsg("Lỗi nâng cấp CSDL phiên bản 214: " . $e->getMessage(), "error");
         }
