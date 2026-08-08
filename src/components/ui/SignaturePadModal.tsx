@@ -436,7 +436,16 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
                   onTouchStart={startDrawing}
                   onTouchMove={draw}
                   onTouchEnd={stopDrawing}
-                  style={{ width: '100%', height: '220px', cursor: 'crosshair', display: 'block', borderRadius: '10px' }}
+                  style={{ 
+                    width: '100%', 
+                    height: '220px', 
+                    cursor: 'crosshair', 
+                    display: 'block', 
+                    borderRadius: '10px',
+                    backgroundColor: 'white',
+                    backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)',
+                    backgroundSize: '16px 16px'
+                  }}
                 />
                 {!hasDrawn && (
                   <div style={{
@@ -502,7 +511,16 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
                     onTouchStart={startDrawing}
                     onTouchMove={draw}
                     onTouchEnd={stopDrawing}
-                    style={{ width: '100%', height: '220px', cursor: 'crosshair', display: 'block', borderRadius: '10px' }}
+                    style={{ 
+                      width: '100%', 
+                      height: '220px', 
+                      cursor: 'crosshair', 
+                      display: 'block', 
+                      borderRadius: '10px',
+                      backgroundColor: 'white',
+                      backgroundImage: 'radial-gradient(#cbd5e1 1.5px, transparent 1.5px)',
+                      backgroundSize: '16px 16px'
+                    }}
                   />
                   {!hasDrawn && (
                     <div style={{
