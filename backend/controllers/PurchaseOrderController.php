@@ -510,8 +510,25 @@ class PurchaseOrderController {
     }
 
     public function update(array $auth, int $id): void {
-        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director'], true)) respond(403, null, 'Bạn không có quyền cập nhật đơn nhập hàng', false);
+        if (!in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'manager', 'director'], true)) {
+            respond(403, null, 'Bạn không có quyền cập nhật đơn nhập hàng', false);
+        }
+
+        $stmtStatus = $this->db->prepare("SELECT status FROM purchase_orders WHERE id = ? AND tenant_id = ?");
+        $stmtStatus->execute([$id, $auth['tenant_id']]);
+        $currentStatus = $stmtStatus->fetchColumn();
+
+        if ($currentStatus === false) {
+            respond(404, null, 'Không tìm thấy đơn hàng', false);
+        }
+
         $b = getBody();
+        
+        // Nếu đơn hàng đã hoàn tất nhập kho (received) hoặc đã bị hủy (cancelled), cấm đổi trạng thái
+        if (in_array($currentStatus, ['received', 'cancelled'], true) && isset($b['status']) && $b['status'] !== $currentStatus) {
+            respond(422, null, 'Không thể thay đổi trạng thái của đơn hàng đã nhập kho hoặc đã hủy bỏ', false);
+        }
+
         $fields = ['status', 'payment_status', 'paid_amount', 'notes'];
         $sets = []; $params = [];
         foreach ($fields as $f) {

@@ -53,6 +53,10 @@ printIndexes($conn, 'custom_fields');
 printIndexes($conn, 'cooperation_slips');
 printIndexes($conn, 'deposits');
 printIndexes($conn, 'capi_logs');
+printIndexes($conn, 'project_roster');
+printIndexes($conn, 'marketing_campaigns');
+printIndexes($conn, 'purchase_orders');
+printIndexes($conn, 'purchase_order_items');
 
 
 

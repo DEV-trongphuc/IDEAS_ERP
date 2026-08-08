@@ -1577,6 +1577,24 @@ export default function ProjectsPage() {
       teams.some(t => Number(t.leader_id) === Number(user.id));
   }, [user, teams]);
 
+  const canEditCurrentProject = React.useMemo(() => {
+    if (!user) return false;
+    if (['admin', 'superadmin', 'super_admin', 'director', 'marketing'].includes(user.role)) return true;
+    if (!editingProject) return false;
+
+    if (editingProject.created_by && Number(editingProject.created_by) === Number(user.id)) return true;
+    if (editingProject.manager_ids) {
+      const mIds = editingProject.manager_ids.split(',').map(s => Number(s.trim())).filter(Boolean);
+      if (mIds.includes(Number(user.id))) return true;
+    }
+
+    const isManagerOrLeader = user.role === 'manager' || teams.some(t => Number(t.leader_id) === Number(user.id));
+    if (isManagerOrLeader) {
+      return projectRoster.some((m: any) => Number(m.id) === Number(user.id));
+    }
+    return false;
+  }, [user, editingProject, projectRoster, teams]);
+
   const formatLastUpdated = (updatedAtStr: string | undefined, createdAtStr: string | undefined) => {
     const targetStr = updatedAtStr || createdAtStr;
     if (!targetStr) return '';
@@ -7369,7 +7387,7 @@ export default function ProjectsPage() {
           </>,
           '960px',
           projectModalMode === 'view' ? (
-            (user && ['admin', 'superadmin', 'super_admin', 'manager', 'director', 'academic'].includes(user.role)) && (
+            canEditCurrentProject && (
               <button
                 onClick={() => setProjectModalMode('edit')}
                 className="btn primary sm"
