@@ -26,6 +26,8 @@ export const CalendarPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | number>('');
 
   const formatVND = (n: any) => {
     const num = Math.round(Number(n || 0));
@@ -46,14 +48,18 @@ export const CalendarPage: React.FC = () => {
       const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01 00:00:00`;
       const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()} 23:59:59`;
       
-      const res = await api.get('/activities', {
-        params: {
-          start_date: startDate,
-          end_date: endDate,
-          limit: 200, // Ensure we get all for the month
-          type: 'task,meeting'
-        }
-      });
+      const params: any = {
+        start_date: startDate,
+        end_date: endDate,
+        limit: 200, // Ensure we get all for the month
+        type: 'task,meeting'
+      };
+
+      if (selectedUserId) {
+        params.user_id = selectedUserId;
+      }
+
+      const res = await api.get('/activities', { params });
       let fetched = res.data.data?.items || res.data.data || [];
 
       // Load PO & SO if user is accountant or admin/director
@@ -104,7 +110,25 @@ export const CalendarPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchActivities(); }, [currentDate]);
+  useEffect(() => {
+    if (user?.id && !selectedUserId) {
+      setSelectedUserId(user.id);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const isPrivileged = user && ['admin', 'superadmin', 'super_admin', 'director'].includes(user.role);
+    if (isPrivileged) {
+      api.get('/users?all=1')
+        .then(res => {
+          const d = res.data.data || res.data;
+          setUsers(Array.isArray(d) ? d : []);
+        })
+        .catch(err => console.error('Error fetching users for calendar filter', err));
+    }
+  }, [user]);
+
+  useEffect(() => { fetchActivities(); }, [currentDate, selectedUserId]);
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -230,7 +254,32 @@ export const CalendarPage: React.FC = () => {
           </p>
         </div>
         {activeTab === 'calendar' && (
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            {['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role || '') && (
+              <select
+                value={selectedUserId}
+                onChange={e => setSelectedUserId(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value={user?.id || ''}>Lịch trình cá nhân</option>
+                <option value="">Tất cả thành viên</option>
+                {users.filter(u => u.id !== user?.id).map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name} ({u.role})
+                  </option>
+                ))}
+              </select>
+            )}
             <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1 shadow-sm">
                <button className="btn-icon sm" onClick={prevMonth}><ChevronLeft size={18} /></button>
                <span className="px-4 font-black capitalize" style={{ minWidth: '140px', textAlign: 'center', color: 'var(--color-text)' }}>
