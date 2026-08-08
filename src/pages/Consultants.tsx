@@ -1845,7 +1845,6 @@ const ConsultantsInner = () => {
                         overflow: 'hidden',
                         border: '1.5px solid var(--color-border-light)',
                         background: (team.avatar_url || team.avatar) ? 'transparent' : '#ffffff', 
-                        boxShadow: '0 4px 10px rgba(189, 29, 45, 0.15)',
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center',
