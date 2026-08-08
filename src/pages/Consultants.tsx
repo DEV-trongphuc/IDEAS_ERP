@@ -1844,7 +1844,7 @@ const ConsultantsInner = () => {
                         borderRadius: '50%', 
                         overflow: 'hidden',
                         border: '1.5px solid var(--color-border-light)',
-                        background: (team.avatar_url || team.avatar) ? 'transparent' : 'linear-gradient(135deg, #ff4d61 0%, #BD1D2D 100%)', 
+                        background: (team.avatar_url || team.avatar) ? 'transparent' : '#ffffff', 
                         boxShadow: '0 4px 10px rgba(189, 29, 45, 0.15)',
                         display: 'flex', 
                         alignItems: 'center', 
@@ -1857,7 +1857,7 @@ const ConsultantsInner = () => {
                         {(team.avatar_url || team.avatar) ? (
                           <img src={team.avatar_url || team.avatar} alt={team.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          team.name?.[0] || 'T'
+                          <img src="/LOGO.webp" alt="IDEAS Logo" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
                         )}
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
@@ -1978,13 +1978,23 @@ const ConsultantsInner = () => {
                         </button>
                         <button
                           className="btn sm"
-                          style={{ background: 'rgba(239, 68, 68, 0.05)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '20px', padding: '5px 14px', fontSize: '0.75rem', fontWeight: 600 }}
+                          style={{ 
+                            background: 'rgba(239, 68, 68, 0.05)', 
+                            color: 'var(--color-danger)', 
+                            border: '1px solid rgba(239, 68, 68, 0.15)', 
+                            borderRadius: '20px', 
+                            padding: '6px 12px', 
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
                           onClick={() => {
                             setDeleteTeamId(team.id);
                             setConfirmDeleteTeamOpen(true);
                           }}
+                          title={t('Xóa')}
                         >
-                          {t('Xóa')}
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     )}
