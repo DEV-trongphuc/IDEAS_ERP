@@ -97,7 +97,7 @@ class ActivityController {
     }
 
     private function hasAccess(array $auth, array $activity): bool {
-        if (in_array($auth['role'], ['super_admin', 'superadmin', 'director'], true)) {
+        if (in_array($auth['role'], ['super_admin', 'superadmin', 'director', 'admin'], true)) {
             return true;
         }
 
@@ -281,7 +281,7 @@ class ActivityController {
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
             $params[] = $auth['user_id'];
-        } else if (!in_array($auth['role'], ['super_admin', 'superadmin', 'director'], true)) {
+        } else if (!in_array($auth['role'], ['super_admin', 'superadmin', 'director', 'admin'], true)) {
             $where[] = '(
                 a.user_id = ? 
                 OR a.created_by = ?

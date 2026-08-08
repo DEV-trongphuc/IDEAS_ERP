@@ -7106,8 +7106,88 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         <span>
                           {task.due_date ? getDueDateLabel(task.due_date, task.status === 'done', t) : ''}
                         </span>
-                        <span style={{ fontWeight: 600 }}>{task.progress || 0}%</span>
                       </div>
+                      
+                      {(() => {
+                        const assigneeId = task.user_id;
+                        const assignee = users.find(u => String(u.id) === String(assigneeId));
+                        const participantIds = task.participant_ids ? task.participant_ids.split(',').map((id: string) => id.trim()).filter(Boolean) : [];
+                        const collaborators = users.filter(u => participantIds.includes(String(u.id)));
+                        const progressVal = task.progress || 0;
+                        const progressColor = progressVal < 33 
+                          ? 'var(--color-danger)' 
+                          : (progressVal < 66 
+                              ? 'var(--color-warning)' 
+                              : 'var(--color-success)'
+                            );
+
+                        return (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                            {/* Left section: Assignee & Collaborators */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {/* Assignee Avatar */}
+                              {assignee ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} title={`${t('Người thực hiện')}: ${assignee.full_name}`}>
+                                  <Avatar src={assignee.avatar_url || assignee.avatar} name={assignee.full_name} size={18} />
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{t('Chưa gán')}</span>
+                              )}
+                              
+                              {/* Collaborator Stack */}
+                              {collaborators.length > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px' }}>
+                                  {collaborators.slice(0, 3).map((collab, index) => (
+                                    <div
+                                      key={collab.id}
+                                      style={{
+                                        marginLeft: index > 0 ? '-6px' : '0',
+                                        zIndex: 10 - index,
+                                        position: 'relative'
+                                      }}
+                                      title={`${t('Người liên quan')}: ${collab.full_name}`}
+                                    >
+                                      <Avatar
+                                        src={collab.avatar_url || collab.avatar}
+                                        name={collab.full_name}
+                                        size={16}
+                                        style={{ border: '1px solid var(--color-surface)' }}
+                                      />
+                                    </div>
+                                  ))}
+                                  {collaborators.length > 3 && (
+                                    <div
+                                      style={{
+                                        width: 16,
+                                        height: 16,
+                                        borderRadius: '50%',
+                                        background: 'var(--color-bg-light)',
+                                        border: '1px solid var(--color-surface)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.55rem',
+                                        fontWeight: 700,
+                                        color: 'var(--color-text-muted)',
+                                        marginLeft: '-6px',
+                                        zIndex: 4,
+                                        position: 'relative'
+                                      }}
+                                    >
+                                      +{collaborators.length - 3}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Right section: Progress with color badge */}
+                            <span style={{ fontWeight: 800, color: progressColor, background: `${progressColor}10`, padding: '2px 6px', borderRadius: '6px', fontSize: '0.68rem' }}>
+                              {progressVal}%
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}

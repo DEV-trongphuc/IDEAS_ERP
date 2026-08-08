@@ -2503,7 +2503,12 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                       <div style={{
                         width: `${percent}%`,
                         height: '100%',
-                        background: percent === 100 ? 'var(--color-success)' : 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-success) 100%)',
+                        background: percent < 33 
+                          ? 'var(--color-danger)' 
+                          : (percent < 66 
+                              ? 'var(--color-warning)' 
+                              : 'var(--color-success)'
+                            ),
                         borderRadius: '3px',
                         transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                       }} />
@@ -2643,11 +2648,11 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                           }}
                           className={task?.id !== 'new' ? "hover-bg-alt" : ""}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: 0 }}>
                             {/* Round & Large Custom Checkbox */}
                             <div 
                               onClick={(e) => e.stopPropagation()}
-                              style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}
+                              style={{ position: 'relative', width: 22, height: 22, flexShrink: 0, marginTop: '2px' }}
                             >
                               <input
                                 type="checkbox"
@@ -2689,6 +2694,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                       animate={{ scale: 1, opacity: 1 }}
                                       exit={{ scale: 0, opacity: 0 }}
                                       transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+                                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     >
                                       <Check size={14} color="white" strokeWidth={4} />
                                     </motion.div>
