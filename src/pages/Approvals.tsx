@@ -2547,6 +2547,18 @@ export default function Approvals() {
                                 image_url: attachments[0]?.url || null
                               });
                             } else {
+                              const totalAmt = expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0);
+                              if (!appVal1 && !finalApproverId) {
+                                toast.error(t('Chi phí yêu cầu duyệt bắt buộc phải chọn người duyệt Cấp 1.'));
+                                setSubmitting(false);
+                                return;
+                              }
+                              if (totalAmt >= 5000000 && !appVal2) {
+                                toast.error(t('Chi phí từ 5.000.000 đ trở lên bắt buộc phải phê duyệt 2 cấp, vui lòng chọn người duyệt Cấp 2.'));
+                                setSubmitting(false);
+                                return;
+                              }
+
                               let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
                               if (isPhasedPayment) {
                                 const instStr = installments.map(i => `${i.title}: ${formatApprovalCurrency(i.amount, currencyType)} (Hạn: ${i.dueDate || 'Chưa chọn'})`).join('; ');
