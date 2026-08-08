@@ -161,7 +161,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
   const progressPercent = ((totalDuration - timeLeft) / totalDuration) * 100;
 
   return (
-    <div ref={widgetRef} style={{ position: 'fixed', bottom: '80px', right: '24px', zIndex: 9999 }}>
+    <div ref={widgetRef} style={{ position: 'fixed', bottom: '130px', right: '24px', zIndex: 9999 }}>
       {/* Popover Control Menu (Mở lên phía trên nút tròn) */}
       {isOpen && (
         <div style={{
@@ -220,7 +220,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                 border: 'none',
                 cursor: 'pointer',
                 background: mode === 'work' ? 'var(--color-surface)' : 'transparent',
-                color: mode === 'work' ? '#f97316' : 'var(--color-text-muted)',
+                color: mode === 'work' ? '#ef4444' : 'var(--color-text-muted)',
                 boxShadow: mode === 'work' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none'
               }}
             >
@@ -306,7 +306,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                 height: '40px',
                 borderRadius: '50%',
                 border: 'none',
-                background: mode === 'work' ? 'linear-gradient(135deg, #f97316, #ea580c)' : 'linear-gradient(135deg, #10b981, #059669)',
+                background: mode === 'work' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
                 color: 'white',
                 cursor: 'pointer',
                 display: 'flex',
@@ -363,7 +363,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
           backdropFilter: 'blur(8px)',
           borderWidth: '1px',
           borderStyle: 'solid',
-          borderColor: isRunning ? (mode === 'work' ? '#f97316' : '#10b981') : 'var(--color-border-light)'
+          borderColor: isRunning ? (mode === 'work' ? '#ef4444' : '#10b981') : 'var(--color-border-light)'
         }}
         className="hover-lift"
         title={t('Pomodoro Focus')}
@@ -382,7 +382,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             cx="32"
             cy="32"
             r="28"
-            stroke={mode === 'work' ? '#f97316' : '#10b981'}
+            stroke={mode === 'work' ? '#ef4444' : '#10b981'}
             strokeWidth="3.5"
             fill="transparent"
             strokeDasharray={2 * Math.PI * 28}
@@ -397,7 +397,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
           <Flame
             size={18}
             style={{
-              color: mode === 'work' ? '#f97316' : '#10b981',
+              color: mode === 'work' ? '#ef4444' : '#10b981',
               animation: isRunning ? 'pulse 1.5s infinite' : 'none',
               marginBottom: '2px'
             }}
@@ -429,7 +429,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
           {/* Header */}
           <div style={{ position: 'absolute', top: '2rem', display: 'flex', justifyContent: 'space-between', width: '80%', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Flame size={20} style={{ color: '#f97316' }} />
+              <Flame size={20} style={{ color: '#ef4444' }} />
               <span style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.1em' }}>IDEAS FOCUS ENGINE</span>
             </div>
             <button
@@ -456,7 +456,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             </span>
 
             {selectedTaskId && mode === 'work' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', color: '#f97316', fontWeight: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', color: '#ef4444', fontWeight: 700 }}>
                 <CheckCircle size={14} />
                 {myTasks.find(t => t.id === selectedTaskId)?.subject}
               </div>
@@ -476,7 +476,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                   cx="60"
                   cy="60"
                   r="50"
-                  stroke={mode === 'work' ? '#f97316' : '#10b981'}
+                  stroke={mode === 'work' ? '#ef4444' : '#10b981'}
                   strokeWidth="3"
                   fill="transparent"
                   strokeDasharray={2 * Math.PI * 50}
@@ -520,13 +520,13 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                   height: '60px',
                   borderRadius: '50%',
                   border: 'none',
-                  background: mode === 'work' ? '#f97316' : '#10b981',
+                  background: mode === 'work' ? '#ef4444' : '#10b981',
                   color: 'white',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: mode === 'work' ? '0 8px 24px rgba(249, 115, 22, 0.3)' : '0 8px 24px rgba(16, 185, 129, 0.3)'
+                  boxShadow: mode === 'work' ? '0 8px 24px rgba(239, 68, 68, 0.3)' : '0 8px 24px rgba(16, 185, 129, 0.3)'
                 }}
               >
                 {isRunning ? <Pause size={24} fill="white" /> : <Play size={24} fill="white" style={{ marginLeft: '3px' }} />}
