@@ -426,6 +426,7 @@ class ActivityController {
         $targetUserId = $b['user_id'] ?? $auth['user_id'];
         
         $due_date = empty($b['due_date']) ? null : $b['due_date'];
+        $start_date = empty($b['start_date']) ? null : $b['start_date'];
         $status = $b['status'] ?? 'planned';
         $done_at = null;
         if ($status === 'done') {
@@ -434,12 +435,12 @@ class ActivityController {
         $contactId = empty($b['contact_id']) ? null : (int)$b['contact_id'];
 
         $this->db->prepare("
-            INSERT INTO activities (tenant_id,user_id,created_by,type,subject,body,status,priority,due_date,done_at,related_type,related_id,contact_id,tags,participant_ids,progress,require_approval,approver_id,approval_status,link)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO activities (tenant_id,user_id,created_by,type,subject,body,status,priority,start_date,due_date,done_at,related_type,related_id,contact_id,tags,participant_ids,progress,require_approval,approver_id,approval_status,link)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ")->execute([
             $auth['tenant_id'], $targetUserId, $auth['user_id'], $b['type'],
             $b['subject'], $b['body']??null, $status, $b['priority']??'medium',
-            $due_date, $done_at, $b['related_type']??null, $b['related_id']??null,
+            $start_date, $due_date, $done_at, $b['related_type']??null, $b['related_id']??null,
             $contactId,
             $b['tags']??null, $b['participant_ids']??null,
             (int)($b['progress']??0), (int)($b['require_approval']??0),
@@ -698,7 +699,7 @@ class ActivityController {
             }
         }
 
-        $fields=['user_id','type','subject','body','status','priority','due_date','done_at','related_type','related_id','contact_id','tags','participant_ids','progress','require_approval','approver_id','approval_status','link'];
+        $fields=['user_id','type','subject','body','status','priority','start_date','due_date','done_at','related_type','related_id','contact_id','tags','participant_ids','progress','require_approval','approver_id','approval_status','link'];
         $sets=[];$params=[];
         foreach($fields as $f){
             if(array_key_exists($f,$b)){
@@ -734,6 +735,12 @@ class ActivityController {
         $params[]=$id;$params[]=$auth['tenant_id'];
         $stmt = $this->db->prepare("UPDATE activities SET ".implode(',',$sets)." WHERE id=? AND tenant_id=?");
         $stmt->execute($params);
+
+        // Cascading reschedule if due_date is updated
+        if (isset($b['due_date']) && $b['due_date'] !== $activity['due_date']) {
+            $visited = [$id => true];
+            $this->cascadeReschedule($id, $b['due_date'], $visited);
+        }
 
         // Auto unhide triggers:
         // 1. Main assignee (user_id)
@@ -1523,5 +1530,150 @@ class ActivityController {
         $logs = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
 
         respond(200, $logs);
+    }
+
+    private function cascadeReschedule(int $taskId, string $newDueDate, array &$visited): void {
+        $stmt = $this->db->prepare("
+            SELECT d.activity_id, d.lag_days, a.start_date, a.due_date, a.user_id, a.subject
+            FROM activity_dependencies d
+            JOIN activities a ON d.activity_id = a.id
+            WHERE d.predecessor_id = ? AND a.deleted_at IS NULL
+        ");
+        $stmt->execute([$taskId]);
+        $deps = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($deps as $dep) {
+            $depId = (int)$dep['activity_id'];
+            if (isset($visited[$depId])) {
+                continue;
+            }
+
+            $visited[$depId] = true;
+            $lagDays = (int)$dep['lag_days'];
+
+            // Bảo toàn giờ làm việc gốc của task sau
+            $startTimePart = !empty($dep['start_date']) ? date('H:i:s', strtotime($dep['start_date'])) : '08:00:00';
+            $dueTimePart = !empty($dep['due_date']) ? date('H:i:s', strtotime($dep['due_date'])) : '17:00:00';
+
+            // Tính số ngày duration
+            $durationDays = 0;
+            if (!empty($dep['start_date']) && !empty($dep['due_date'])) {
+                $durationDays = (int)round((strtotime(date('Y-m-d', strtotime($dep['due_date']))) - strtotime(date('Y-m-d', strtotime($dep['start_date'])))) / 86400);
+            }
+            if ($durationDays < 0) $durationDays = 0;
+
+            // Tính ngày bắt đầu mới (chỉ lấy Y-m-d) = ngày kết thúc của task trước + lag_days
+            $newStartDateOnly = date('Y-m-d', strtotime($newDueDate) + ($lagDays * 86400));
+            $newStartDate = $newStartDateOnly . ' ' . $startTimePart;
+
+            // Tính ngày kết thúc mới (chỉ lấy Y-m-d) = newStartDateOnly + durationDays
+            $newDueDateOnly = date('Y-m-d', strtotime($newStartDateOnly) + ($durationDays * 86400));
+            $newDueDateVal = $newDueDateOnly . ' ' . $dueTimePart;
+
+            $upStmt = $this->db->prepare("
+                UPDATE activities 
+                SET start_date = ?, due_date = ? 
+                WHERE id = ?
+            ");
+            $upStmt->execute([$newStartDate, $newDueDateVal, $depId]);
+
+            if (!empty($dep['user_id'])) {
+                $this->notifyUser(
+                    (int)$dep['user_id'],
+                    'Thay đổi lịch trình công việc',
+                    "Công việc \"{$dep['subject']}\" đã được dời lịch (Ngày bắt đầu mới: " . date('d/m/Y H:i', $newStartTimestamp) . ") do ảnh hưởng trễ tiến độ từ công việc tiền nhiệm.",
+                    'task_reschedule',
+                    "/activities/{$depId}"
+                );
+            }
+
+            $this->cascadeReschedule($depId, $newDueDateVal, $visited);
+        }
+    }
+
+    public function getDependencies(array $auth, int $id): void {
+        $stmt = $this->db->prepare("
+            SELECT d.predecessor_id, a.subject, a.start_date, a.due_date, d.dependency_type, d.lag_days
+            FROM activity_dependencies d
+            JOIN activities a ON d.predecessor_id = a.id
+            JOIN activities cur ON d.activity_id = cur.id
+            WHERE d.activity_id = ? AND cur.tenant_id = ?
+        ");
+        $stmt->execute([$id, $auth['tenant_id']]);
+        respond(200, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    public function updateDependencies(array $auth, int $id): void {
+        if ($auth['role'] === 'viewer') respond(403, null, 'Bạn không có quyền cập nhật phụ thuộc', false);
+        $b = getBody();
+        $predecessors = $b['predecessors'] ?? [];
+
+        $check = $this->db->prepare("SELECT id FROM activities WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
+        $check->execute([$id, $auth['tenant_id']]);
+        if (!$check->fetch()) {
+            respond(404, null, 'Không tìm thấy công việc', false);
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $delStmt = $this->db->prepare("DELETE FROM activity_dependencies WHERE activity_id = ?");
+            $delStmt->execute([$id]);
+
+            $insStmt = $this->db->prepare("
+                INSERT INTO activity_dependencies (activity_id, predecessor_id, dependency_type, lag_days)
+                VALUES (?, ?, ?, ?)
+            ");
+
+            foreach ($predecessors as $pred) {
+                $predId = (int)($pred['predecessor_id'] ?? 0);
+                $type = $pred['dependency_type'] ?? 'FS';
+                $lag = (int)($pred['lag_days'] ?? 0);
+
+                if ($predId > 0 && $predId !== $id) {
+                    $checkPred = $this->db->prepare("SELECT id FROM activities WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
+                    $checkPred->execute([$predId, $auth['tenant_id']]);
+                    if ($checkPred->fetch()) {
+                        if ($this->hasCircularDependency($id, $predId)) {
+                            respond(422, null, "Không thể thiết lập quan hệ phụ thuộc tuần hoàn với công việc ID: {$predId}", false);
+                            $this->db->rollBack();
+                            return;
+                        }
+                        $insStmt->execute([$id, $predId, $type, $lag]);
+                    }
+                }
+            }
+
+            $this->db->commit();
+            respond(200, ['success' => true]);
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            respond(500, null, 'Lỗi hệ thống khi cập nhật phụ thuộc: ' . $e->getMessage(), false);
+        }
+    }
+
+    private function hasCircularDependency(int $taskId, int $predecessorId): bool {
+        $visited = [];
+        return $this->detectCycle($predecessorId, $taskId, $visited);
+    }
+
+    private function detectCycle(int $currentId, int $targetId, array &$visited): bool {
+        if ($currentId === $targetId) {
+            return true;
+        }
+        if (isset($visited[$currentId])) {
+            return false;
+        }
+        $visited[$currentId] = true;
+
+        $stmt = $this->db->prepare("SELECT predecessor_id FROM activity_dependencies WHERE activity_id = ?");
+        $stmt->execute([$currentId]);
+        $preds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($preds as $predId) {
+            if ($this->detectCycle((int)$predId, $targetId, $visited)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

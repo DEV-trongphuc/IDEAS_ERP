@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 214;
+$targetVersion = 215;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1245,9 +1245,51 @@ try {
         $logMsg("Nâng cấp lên phiên bản 214 hoàn tất.", "success");
     }
 
-    // 21. Update DB version in system_settings
-    $targetVersion = 214;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '214') ON DUPLICATE KEY UPDATE setting_value = '214'");
+    // 21. Upgrade to 215: Add start_date to activities and create activity_dependencies table for Gantt Dependency
+    if ($currentVersion < 215) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 215...", "info");
+        try {
+            // Thêm start_date vào bảng activities
+            $chkCol = $conn->query("SHOW COLUMNS FROM `activities` LIKE 'start_date'");
+            if (!$chkCol || $chkCol->num_rows === 0) {
+                $conn->query("ALTER TABLE `activities` ADD COLUMN `start_date` DATETIME NULL AFTER `priority`");
+                $logMsg("Đã bổ sung cột start_date vào bảng activities.", "success");
+            } else {
+                $logMsg("Cột start_date đã tồn tại trong bảng activities.", "info");
+            }
+
+            // Tạo bảng activity_dependencies
+            $chkTable = $conn->query("SHOW TABLES LIKE 'activity_dependencies'");
+            if (!$chkTable || $chkTable->num_rows === 0) {
+                $conn->query("
+                    CREATE TABLE `activity_dependencies` (
+                      `id` INT(11) NOT NULL AUTO_INCREMENT,
+                      `activity_id` INT(11) NOT NULL,
+                      `predecessor_id` INT(11) NOT NULL,
+                      `dependency_type` VARCHAR(10) NOT NULL DEFAULT 'FS',
+                      `lag_days` INT(11) NOT NULL DEFAULT 0,
+                      `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                      PRIMARY KEY (`id`),
+                      KEY `idx_act_dep_activity` (`activity_id`),
+                      KEY `idx_act_dep_predecessor` (`predecessor_id`),
+                      UNIQUE KEY `uq_activity_predecessor` (`activity_id`, `predecessor_id`),
+                      CONSTRAINT `fk_act_dep_activity` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE,
+                      CONSTRAINT `fk_act_dep_predecessor` FOREIGN KEY (`predecessor_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                ");
+                $logMsg("Đã tạo bảng activity_dependencies thành công.", "success");
+            } else {
+                $logMsg("Bảng activity_dependencies đã tồn tại.", "info");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 215: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 215 hoàn tất.", "success");
+    }
+
+    // 22. Update DB version in system_settings
+    $targetVersion = 215;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '215') ON DUPLICATE KEY UPDATE setting_value = '215'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

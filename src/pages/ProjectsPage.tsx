@@ -24,6 +24,7 @@ const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(
 import { CompanyDrawer } from './CompanyDrawer';
 import { FilesPage } from './FilesPage';
 import { useUploadProgress } from '../contexts/UploadProgressContext';
+import { ProjectGanttTab } from '../components/ProjectGanttTab';
 
 const parseSeminarTimeSlot = (timeSlot: string) => {
   const result = {
@@ -641,7 +642,7 @@ export default function ProjectsPage() {
 
   const [projectRoster, setProjectRoster] = useState<any[]>([]);
   const [projectRosterLoading, setProjectRosterLoading] = useState(false);
-  const [projectDrawerTab, setProjectDrawerTab] = useState<'details' | 'hierarchy' | 'changelog'>('details');
+  const [projectDrawerTab, setProjectDrawerTab] = useState<'details' | 'gantt' | 'hierarchy' | 'changelog'>('details');
   const [campaignDrawerTab, setCampaignDrawerTab] = useState<'details' | 'subjects' | 'lecturers' | 'thesis' | 'reminders' | 'changelog'>('details');
   const [subjects, setSubjects] = useState<any[]>([]);
   const [remindersConfig, setRemindersConfig] = useState<{
@@ -2304,6 +2305,7 @@ export default function ProjectsPage() {
         }}>
           {[
             { id: 'details', label: 'Thông tin chung', icon: <Info size={14} /> },
+            { id: 'gantt', label: 'Sơ đồ Gantt', icon: <Calendar size={14} /> },
             { id: 'hierarchy', label: 'Sơ đồ phân cấp', icon: <Layers size={14} /> },
             { id: 'changelog', label: 'Lịch sử hoạt động', icon: <History size={14} /> }
           ].map(tab => (
@@ -3027,6 +3029,10 @@ export default function ProjectsPage() {
         )}
 
         {projectDrawerTab === 'hierarchy' && renderProjectHierarchy()}
+
+        {projectDrawerTab === 'gantt' && editingProject?.id && (
+          <ProjectGanttTab projectId={editingProject.id} />
+        )}
 
         {projectDrawerTab === 'changelog' && (
           /* Changelog Tab View */
