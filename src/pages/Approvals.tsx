@@ -2288,6 +2288,15 @@ export default function Approvals() {
                               finalApproverId = Number(pssExecutorId) || finalApproverId;
                             }
 
+                            // Define 3 level approver IDs for multi-level expense approvals
+                            const defaultApp1 = users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()));
+                            const defaultAccountant = users.find(u => String(u.role).toLowerCase() === 'accountant');
+                            const defaultDirector = users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
+
+                            const appVal1 = showStepManager ? (customApprover1?.id || defaultApp1?.id || null) : null;
+                            const appVal2 = showStepAccountant ? (customApprover2?.id || defaultAccountant?.id || null) : null;
+                            const appVal3 = showStepDirector ? (customApprover3?.id || defaultDirector?.id || null) : null;
+
                             if (selectedWorkflowDef?.id === 'print_stamp_send') {
                               if (!pssReqEmployeeId) {
                                 toast.error(t('Vui lòng chọn nhân viên yêu cầu.'));
@@ -2531,7 +2540,9 @@ export default function Approvals() {
                                 notes: generalDesc,
                                 amount: 0,
                                 status: 'pending',
-                                approver_id: finalApproverId,
+                                approver_id: appVal1 || finalApproverId,
+                                approver_id_2: appVal2,
+                                approver_id_3: appVal3,
                                 currency: currencyType,
                                 image_url: attachments[0]?.url || null
                               });
@@ -2550,7 +2561,9 @@ export default function Approvals() {
                                 notes: finalDesc,
                                 amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
                                 status: 'pending',
-                                approver_id: finalApproverId,
+                                approver_id: appVal1 || finalApproverId,
+                                approver_id_2: appVal2,
+                                approver_id_3: appVal3,
                                 currency: currencyType
                               });
                             }
