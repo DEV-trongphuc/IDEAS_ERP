@@ -608,7 +608,8 @@ class HRMController {
         $empStmt = $this->db->prepare("
             SELECT u.id, u.full_name, u.gender, p.base_salary, p.deal_salary, p.has_insurance,
                    p.allowance_meal, p.allowance_travel, p.allowance_phone, p.kpi_target, p.joined_date, p.custom_fields_json,
-                   p.insurance_rate_bhxh, p.insurance_rate_bhyt, p.insurance_rate_bhtn
+                   p.insurance_rate_bhxh, p.insurance_rate_bhyt, p.insurance_rate_bhtn,
+                   p.annual_leave_total, p.annual_leave_used, p.compensatory_leave_total, p.compensatory_leave_used
             FROM users u
             LEFT JOIN hrm_profiles p ON u.id = p.user_id
             WHERE u.tenant_id = ? AND u.is_active = 1
@@ -644,6 +645,27 @@ class HRMController {
         foreach ($employees as $emp) {
             $userId = (int)$emp['id'];
 
+            // Hoàn trả số ngày nghỉ bù & phép năm đã trừ do đi trễ ở bảng lương cũ của tháng này (nếu có)
+            $oldComp = 0.0;
+            $oldAnn = 0.0;
+            if (!$isSpecialPeriod) {
+                $oldStmt = $this->db->prepare("SELECT /* refresh_cache_select */ lateness_compensatory_deducted, lateness_annual_deducted FROM monthly_payslips WHERE user_id = ? AND month_year = ? LIMIT 1");
+                $oldStmt->execute([$userId, $monthYear]);
+                $oldPayslip = $oldStmt->fetch(PDO::FETCH_ASSOC);
+                if ($oldPayslip) {
+                    $oldComp = (float)($oldPayslip['lateness_compensatory_deducted'] ?? 0.0);
+                    $oldAnn = (float)($oldPayslip['lateness_annual_deducted'] ?? 0.0);
+                    if ($oldComp > 0 || $oldAnn > 0) {
+                        $restoreStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = GREATEST(0.0, compensatory_leave_used - ?), annual_leave_used = GREATEST(0.0, annual_leave_used - ?) WHERE user_id = ?");
+                        $restoreStmt->execute([$oldComp, $oldAnn, $userId]);
+                        
+                        // Cập nhật lại trong PHP memory để tránh bất đồng bộ thông tin phép
+                        $emp['compensatory_leave_used'] = max(0.0, (float)($emp['compensatory_leave_used'] ?? 0.0) - $oldComp);
+                        $emp['annual_leave_used'] = max(0.0, (float)($emp['annual_leave_used'] ?? 0.0) - $oldAnn);
+                    }
+                }
+            }
+
             if ($isSpecialPeriod) {
                 $actualWorkedDays = $isThang13 ? $workDaysRequired : 0;
                 $paidLeaveDays = 0;
@@ -673,10 +695,25 @@ class HRMController {
                 $attStmt->execute([$userId, $startDateOfMonth, $endDateOfMonth]);
                 $checkinsList = $attStmt->fetchAll(PDO::FETCH_ASSOC);
 
-                $actualWorkedDays = count($checkinsList);
+                // Query all approved leave requests per day to deduct overlapping days from actual check-in workdays
+                $lvListStmt = $this->db->prepare("
+                    SELECT DATE(start_date) as leave_date, SUM(total_days) as leave_days
+                    FROM hrm_leave_requests
+                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid', 'remote_work')
+                      AND start_date BETWEEN ? AND ?
+                    GROUP BY DATE(start_date)
+                ");
+                $lvListStmt->execute([$userId, $startDateOfMonth . ' 00:00:00', $endDateOfMonth . ' 23:59:59']);
+                $leaveDaysMap = $lvListStmt->fetchAll(PDO::FETCH_KEY_PAIR) ?: [];
+
+                $actualWorkedDays = 0.0;
                 $totalLateMinutes = 0;
                 foreach ($checkinsList as $ci) {
-                    if (!in_array($ci['check_in_date'], $waivedDates)) {
+                    $cDate = $ci['check_in_date'];
+                    $leaveDaysOnDate = (float)($leaveDaysMap[$cDate] ?? 0.0);
+                    $actualWorkedDays += max(0.0, 1.0 - $leaveDaysOnDate);
+
+                    if (!in_array($cDate, $waivedDates)) {
                         $totalLateMinutes += (int)$ci['late_minutes'];
                     }
                 }
@@ -700,6 +737,34 @@ class HRMController {
             $totalWorkDays = $actualWorkedDays + $paidLeaveDays;
             if ($totalWorkDays > $workDaysRequired) $totalWorkDays = $workDaysRequired;
 
+            // Tự động khấu trừ số phút đi trễ vào nghỉ bù -> phép năm -> ngày công
+            $deductComp = 0.0;
+            $deductAnn = 0.0;
+            if (!$isSpecialPeriod && $totalLateMinutes > 0) {
+                $remainComp = max(0.0, (float)($emp['compensatory_leave_total'] ?? 0.0) - (float)($emp['compensatory_leave_used'] ?? 0.0));
+                $remainAnn = max(0.0, (float)($emp['annual_leave_total'] ?? 0.0) - (float)($emp['annual_leave_used'] ?? 0.0));
+                
+                $lateDays = $totalLateMinutes / 480.0;
+                
+                // Trừ vào nghỉ bù
+                $deductComp = min($lateDays, $remainComp);
+                $lateDaysRemaining = $lateDays - $deductComp;
+                
+                // Trừ vào phép năm
+                $deductAnn = min($lateDaysRemaining, $remainAnn);
+                $lateDaysRemaining = $lateDaysRemaining - $deductAnn;
+                
+                // Trừ vào ngày công thực tế
+                $deductWorkDays = $lateDaysRemaining;
+                $totalWorkDays = max(0.0, $totalWorkDays - $deductWorkDays);
+                
+                // Cập nhật lại số ngày phép đã sử dụng trong CSDL
+                if ($deductComp > 0 || $deductAnn > 0) {
+                    $updateProfileStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ?, annual_leave_used = annual_leave_used + ? WHERE user_id = ?");
+                    $updateProfileStmt->execute([$deductComp, $deductAnn, $userId]);
+                }
+            }
+
             // 3. Prorate Salary
             $baseSalary = (float)($emp['deal_salary'] ?? 0.0);
             $basicSalaryCalculated = 0.0;
@@ -709,21 +774,8 @@ class HRMController {
                 $basicSalaryCalculated = ($workDaysRequired > 0) ? ($baseSalary / $workDaysRequired) * $totalWorkDays : 0;
             }
 
-            // 4. Lateness Deduction Penalty with Gender Grace Threshold
+            // 4. Lateness Deduction Penalty with Gender Grace Threshold (Disabled as per user request)
             $latenessPenalty = 0.0;
-            if (!$isSpecialPeriod) {
-                $gender = trim(mb_strtolower($emp['gender'] ?? ''));
-                $graceMinutes = 0;
-                if ($gender === 'male' || $gender === 'nam') {
-                    $graceMinutes = $graceMale;
-                } elseif ($gender === 'female' || $gender === 'nữ' || $gender === 'nu') {
-                    $graceMinutes = $graceFemale;
-                }
-                
-                $penalizedLateMinutes = max(0, $totalLateMinutes - $graceMinutes);
-                $enableLatenessPenalty = (int) get_system_setting($this->db, 'hrm_lateness_penalty_enabled') === 1;
-                $latenessPenalty = $enableLatenessPenalty ? ($penalizedLateMinutes * 5000) : 0.0;
-            }
 
             // 5. Allowances
             $allowanceTotal = 0.0;
@@ -860,11 +912,8 @@ class HRMController {
                 $overtimeSalary = ($workDaysRequired > 0) ? (($baseSalary / $workDaysRequired) * $overtimeDays * 1.5) : 0;
             }
 
-            // 6c. Diligence calculation
+            // 6c. Diligence calculation (Disabled as per user request)
             $diligenceBonus = 0.0;
-            if (!$isSpecialPeriod && $totalWorkDays >= $workDaysRequired && $totalLateMinutes == 0) {
-                $diligenceBonus = 500000.00; // 500k VND
-            }
 
             // 10. Net Pay calculation
             $netSalary = $basicSalaryCalculated + $allowanceTotal + $kpiBonus + $overtimeSalary + $diligenceBonus - $insuranceDeductions - $latenessPenalty - $pit - $advanceDeduction;
@@ -872,13 +921,15 @@ class HRMController {
 
             // Save or Update into monthly_payslips
             $saveStmt = $this->db->prepare("
-                INSERT INTO monthly_payslips (user_id, month_year, work_days_required, work_days_actual, lateness_minutes, lateness_penalty, salary_basic_calculated, allowance_total, kpi_bonus, insurance_bhxh, insurance_bhyt, insurance_bhtn, tax_pit, advance_deduction, net_salary, status, overtime_days, overtime_salary, diligence_bonus)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)
+                INSERT /* refresh_cache_v3 */ INTO monthly_payslips (user_id, month_year, work_days_required, work_days_actual, lateness_minutes, lateness_penalty, lateness_compensatory_deducted, lateness_annual_deducted, salary_basic_calculated, allowance_total, kpi_bonus, insurance_bhxh, insurance_bhyt, insurance_bhtn, tax_pit, advance_deduction, net_salary, status, overtime_days, overtime_salary, diligence_bonus)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     work_days_required = VALUES(work_days_required),
                     work_days_actual = VALUES(work_days_actual),
                     lateness_minutes = VALUES(lateness_minutes),
                     lateness_penalty = VALUES(lateness_penalty),
+                    lateness_compensatory_deducted = VALUES(lateness_compensatory_deducted),
+                    lateness_annual_deducted = VALUES(lateness_annual_deducted),
                     salary_basic_calculated = VALUES(salary_basic_calculated),
                     allowance_total = VALUES(allowance_total),
                     kpi_bonus = VALUES(kpi_bonus),
@@ -899,6 +950,8 @@ class HRMController {
                 $totalWorkDays,
                 $totalLateMinutes,
                 $latenessPenalty,
+                $deductComp,
+                $deductAnn,
                 $basicSalaryCalculated,
                 $allowanceTotal,
                 $kpiBonus,

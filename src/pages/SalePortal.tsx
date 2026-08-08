@@ -9,7 +9,7 @@ import {
   Sun, Moon, ChevronDown, ChevronUp, AlertTriangle, ChevronLeft, ChevronRight,
   LayoutDashboard, Database, Ticket, Calendar, RefreshCw, Menu, Tag, Server, Scale, Settings, Info, Cpu,
   Camera, Video, Layers, Plus, Receipt, CreditCard, Building2, Users, User, UserCheck, UserPlus, Trash2, CheckSquare, Square, X, Paperclip, LifeBuoy, Fingerprint, LayoutGrid, Monitor, Tv, Phone, Save, Award, Ban, RotateCcw, MoreHorizontal, Check, KeyRound, Loader2, Shield, Mail, ShieldCheck, Lock as LockIcon, Bell,
-  Play, Sparkles, ArrowRight, Eye, EyeOff, MapPin
+  Play, Sparkles, ArrowRight, Eye, EyeOff, MapPin, Pin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
@@ -535,10 +535,55 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
   // Filter states for workspace tasks
   const [wsSearch, setWsSearch] = useState('');
+  const [debouncedWsSearch, setDebouncedWsSearch] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedWsSearch(wsSearch);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [wsSearch]);
   const [wsPriority, setWsPriority] = useState('');
   const [wsStatus, setWsStatus] = useState('planned'); // Default: hide completed
   const [wsViewMode, setWsViewMode] = useState<'grid' | 'kanban' | 'focus'>('grid');
+  const [hideWorkspaceAlerts, setHideWorkspaceAlerts] = useState(false);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [pinnedTaskIds, setPinnedTaskIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      try {
+        const stored = localStorage.getItem(`pinned_tasks_${currentUser.id}`);
+        if (stored) {
+          setPinnedTaskIds(JSON.parse(stored).map(Number).filter(Boolean));
+        } else {
+          setPinnedTaskIds([]);
+        }
+      } catch (e) {
+        setPinnedTaskIds([]);
+      }
+    }
+  }, [currentUser]);
+
+  const togglePinTask = (taskId: number) => {
+    const numericId = Number(taskId);
+    let updated = [...pinnedTaskIds];
+    if (updated.includes(numericId)) {
+      updated = updated.filter(id => id !== numericId);
+      toast.success(t('Đã bỏ ghim công việc'));
+    } else {
+      if (updated.length >= 8) {
+        toast.error(t('Bạn chỉ được ghim tối đa 8 công việc lên đầu ưu tiên.'));
+        return;
+      }
+      updated.push(numericId);
+      toast.success(t('Đã ghim công việc thành công!'));
+    }
+    setPinnedTaskIds(updated);
+    if (currentUser?.id) {
+      localStorage.setItem(`pinned_tasks_${currentUser.id}`, JSON.stringify(updated));
+    }
+  };
   const [activeOverCol, setActiveOverCol] = useState<'todo' | 'in_progress' | 'done' | null>(null);
   const [wsDatePreset, setWsDatePreset] = useState('all');
   const [completedCallsCount, setCompletedCallsCount] = useState<number>(0);
@@ -560,7 +605,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   const [teamsList, setTeamsList] = useState<any[]>([]);
   const [checklist, setChecklist] = useState<Array<{ text: string; checked: boolean }>>([]);
   const [wsTasksPage, setWsTasksPage] = useState(1);
-  const [wsTasksPageSize, setWsTasksPageSize] = useState(12);
+  const [wsTasksPageSize, setWsTasksPageSize] = useState(20);
 
 
 
@@ -856,6 +901,10 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     const isFocus = wsViewMode === 'focus';
     const event = new CustomEvent('focus-mode-toggle', { detail: { isFocusMode: isFocus } });
     window.dispatchEvent(event);
+    
+    if (wsViewMode === 'kanban') {
+      setWsStatus('all');
+    }
   }, [wsViewMode]);
 
   useEffect(() => {
@@ -1030,116 +1079,102 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   };
 
   const filteredWsTasks = useMemo(() => {
-    let list = wsTasks;
     const targetUserId = wsUserId ? Number(wsUserId) : Number(currentUser?.id);
+    const searchVal = debouncedWsSearch ? debouncedWsSearch.toLowerCase() : '';
+    const datePreset = wsDatePreset && wsDatePreset !== 'all' ? getPresetDates(wsDatePreset) : null;
 
-    // Filter out hidden tasks or filter by hidden status only
-    if (wsStatus === 'hidden') {
-      list = list.filter(task => task.is_hidden && Number(task.is_hidden) === 1);
-    } else {
-      list = list.filter(task => !task.is_hidden || Number(task.is_hidden) === 0);
-      // Filter by Status
-      if (wsStatus && wsStatus !== 'all') {
-        list = list.filter(task => task.status === wsStatus);
-      }
-    }
-
-    // Filter by Priority
-    if (wsPriority && wsPriority !== 'all') {
-      list = list.filter(task => task.priority === wsPriority);
-    }
-
-    // Filter by Date Preset
-    if (wsDatePreset && wsDatePreset !== 'all') {
-      const { start, end } = getPresetDates(wsDatePreset);
-      if (wsDatePreset === 'overdue') {
-        list = list.filter(task => {
-          if (task.status === 'done') return false;
-          if (!task.due_date) return false;
-          return task.due_date.slice(0, 10) <= end;
-        });
+    const filtered = wsTasks.filter(task => {
+      // 1. Filter out hidden tasks or filter by hidden status only
+      if (wsStatus === 'hidden') {
+        if (!task.is_hidden || Number(task.is_hidden) !== 1) return false;
       } else {
-        list = list.filter(task => {
+        if (task.is_hidden && Number(task.is_hidden) === 1) return false;
+        // Filter by Status
+        if (wsStatus && wsStatus !== 'all' && task.status !== wsStatus) return false;
+      }
+
+      // 2. Filter by Priority
+      if (wsPriority && wsPriority !== 'all' && task.priority !== wsPriority) return false;
+
+      // 3. Filter by Date Preset
+      if (datePreset) {
+        if (wsDatePreset === 'overdue') {
+          if (task.status === 'done' || !task.due_date || task.due_date.slice(0, 10) > datePreset.end) {
+            return false;
+          }
+        } else {
           if (!task.due_date) return false;
           const dt = task.due_date.slice(0, 10);
-          if (start && dt < start) return false;
-          if (end && dt > end) return false;
-          return true;
-        });
+          if (datePreset.start && dt < datePreset.start) return false;
+          if (datePreset.end && dt > datePreset.end) return false;
+        }
       }
-    }
 
-    // Filter by main subtabs
-    if (wsSubTab === 'customer') {
-      list = list.filter(task => task.related_type && ['contact', 'deal', 'company'].includes(task.related_type));
-    } else if (wsSubTab === 'personal') {
-      list = list.filter(task => task.tags?.split(',').map((t: string) => t.trim()).includes('personal_task'));
-    } else if (wsSubTab === 'team') {
-      list = list.filter(task => {
+      // 4. Filter by main subtabs
+      if (wsSubTab === 'customer') {
+        if (!task.related_type || !['contact', 'deal', 'company'].includes(task.related_type)) return false;
+      } else if (wsSubTab === 'personal') {
+        if (!task.tags || !task.tags.includes('personal_task')) return false;
+      } else if (wsSubTab === 'team') {
         const isClientRelated = task.related_type && ['contact', 'deal', 'company'].includes(task.related_type);
-        const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-        const isPersonal = tagsList.includes('personal_task');
-        return !isClientRelated && !isPersonal;
-      });
+        const isPersonal = task.tags && task.tags.includes('personal_task');
+        if (isClientRelated || isPersonal) return false;
 
-      // Filter by team sub-filters (announcements, campaigns, policies, internal tasks)
-      if (wsTeamSubFilter !== 'all') {
-        const targetTag = `internal_${wsTeamSubFilter}`;
-        list = list.filter(task => {
-          const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-          return tagsList.includes(targetTag);
-        });
-      }
-    }
-
-    // Apply quick filters (assignee, approver, collaborator)
-    if (wsTaskFilter === 'assigned_to_me') {
-      list = list.filter(task => Number(task.user_id) === targetUserId);
-    } else if (wsTaskFilter === 'approve_by_me') {
-      list = list.filter(task => Number(task.require_approval) === 1 && Number(task.approver_id) === targetUserId);
-    } else if (wsTaskFilter === 'collaborator') {
-      list = list.filter(task => {
-        const pIds = task.participant_ids ? task.participant_ids.split(',').map(Number).filter(Boolean) : [];
-        return pIds.includes(targetUserId);
-      });
-    }
-
-    if (!wsSearch) return list;
-    const searchVal = wsSearch.toLowerCase();
-    return list.filter(task => {
-      const subject = task.subject ? String(task.subject).toLowerCase() : '';
-      const body = task.body ? String(task.body).toLowerCase() : '';
-      const contactName = task.contact_name ? String(task.contact_name).toLowerCase() : '';
-      const companyName = task.company_name ? String(task.company_name).toLowerCase() : '';
-      const dealName = task.deal_name ? String(task.deal_name).toLowerCase() : '';
-      const userName = task.user_name ? String(task.user_name).toLowerCase() : '';
-      const teamName = task.team_name ? String(task.team_name).toLowerCase() : '';
-      const projectName = task.project_name ? String(task.project_name).toLowerCase() : '';
-      const campaignName = task.campaign_name ? String(task.campaign_name).toLowerCase() : '';
-      
-      // Parse description from JSON body if present
-      let description = '';
-      if (task.body && task.body.trim().startsWith('{"erp_task":')) {
-        try {
-          const parsed = JSON.parse(task.body);
-          description = (parsed.erp_task?.description || '').toLowerCase();
-        } catch (e) {}
+        // Filter by team sub-filters
+        if (wsTeamSubFilter !== 'all') {
+          const targetTag = `internal_${wsTeamSubFilter}`;
+          if (!task.tags || !task.tags.includes(targetTag)) return false;
+        }
       }
 
-      return (
-        subject.includes(searchVal) ||
-        body.includes(searchVal) ||
-        description.includes(searchVal) ||
-        contactName.includes(searchVal) ||
-        companyName.includes(searchVal) ||
-        dealName.includes(searchVal) ||
-        userName.includes(searchVal) ||
-        teamName.includes(searchVal) ||
-        projectName.includes(searchVal) ||
-        campaignName.includes(searchVal)
-      );
+      // 5. Apply quick filters (assignee, approver, collaborator)
+      if (wsTaskFilter === 'assigned_to_me') {
+        if (Number(task.user_id) !== targetUserId) return false;
+      } else if (wsTaskFilter === 'approve_by_me') {
+        if (Number(task.require_approval) !== 1 || Number(task.approver_id) !== targetUserId) return false;
+      } else if (wsTaskFilter === 'collaborator') {
+        if (!task.participant_ids) return false;
+        const pIds = task.participant_ids.split(',');
+        if (!pIds.includes(String(targetUserId))) return false;
+      }
+
+      // 6. Search filtering (Debounced)
+      if (searchVal) {
+        const subject = task.subject ? String(task.subject).toLowerCase() : '';
+        const body = task.body ? String(task.body).toLowerCase() : '';
+        const contactName = task.contact_name ? String(task.contact_name).toLowerCase() : '';
+        const companyName = task.company_name ? String(task.company_name).toLowerCase() : '';
+        const dealName = task.deal_name ? String(task.deal_name).toLowerCase() : '';
+        const userName = task.user_name ? String(task.user_name).toLowerCase() : '';
+        const teamName = task.team_name ? String(task.team_name).toLowerCase() : '';
+        const projectName = task.project_name ? String(task.project_name).toLowerCase() : '';
+        const campaignName = task.campaign_name ? String(task.campaign_name).toLowerCase() : '';
+
+        return (
+          subject.includes(searchVal) ||
+          body.includes(searchVal) ||
+          contactName.includes(searchVal) ||
+          companyName.includes(searchVal) ||
+          dealName.includes(searchVal) ||
+          userName.includes(searchVal) ||
+          teamName.includes(searchVal) ||
+          projectName.includes(searchVal) ||
+          campaignName.includes(searchVal)
+        );
+      }
+
+      return true;
     });
-  }, [wsTasks, wsSearch, wsTaskFilter, wsSubTab, wsTeamSubFilter, currentUser, wsUserId, wsPriority, wsStatus, wsDatePreset]);
+
+    // Sắp xếp đưa pinned tasks lên đầu danh sách đã lọc
+    return [...filtered].sort((a, b) => {
+      const aPinned = pinnedTaskIds.includes(Number(a.id));
+      const bPinned = pinnedTaskIds.includes(Number(b.id));
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [wsTasks, debouncedWsSearch, wsTaskFilter, wsSubTab, wsTeamSubFilter, currentUser, wsUserId, wsPriority, wsStatus, wsDatePreset, pinnedTaskIds]);
 
   const workspaceStats = useMemo(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -1147,20 +1182,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     now.setHours(0, 0, 0, 0);
     const todayTime = now.getTime();
     
-    let tabTasks = wsTasks;
-    if (wsSubTab === 'customer') {
-      tabTasks = tabTasks.filter(task => task.related_type && ['contact', 'deal', 'company'].includes(task.related_type));
-    } else if (wsSubTab === 'personal') {
-      tabTasks = tabTasks.filter(task => task.tags?.split(',').map((t: string) => t.trim()).includes('personal_task'));
-    } else if (wsSubTab === 'team') {
-      tabTasks = tabTasks.filter(task => {
-        const isClientRelated = task.related_type && ['contact', 'deal', 'company'].includes(task.related_type);
-        const tagsList = task.tags ? task.tags.split(',').map((t: string) => t.trim()) : [];
-        const isPersonal = tagsList.includes('personal_task');
-        return !isClientRelated && !isPersonal;
-      });
-    }
-
     let overdue = 0;
     let dueToday = 0;
     let upcoming = 0;
@@ -1168,9 +1189,22 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     let assignedToMe = 0;
     let collaborator = 0;
 
-    tabTasks.forEach(task => {
+    const currentUserIdStr = String(currentUser?.id);
+
+    wsTasks.forEach(task => {
       // Skip hidden tasks in statistics
       if (task.is_hidden || Number(task.is_hidden) === 1) return;
+
+      // Filter tasks based on current wsSubTab
+      if (wsSubTab === 'customer') {
+        if (!task.related_type || !['contact', 'deal', 'company'].includes(task.related_type)) return;
+      } else if (wsSubTab === 'personal') {
+        if (!task.tags || !task.tags.includes('personal_task')) return;
+      } else if (wsSubTab === 'team') {
+        const isClientRelated = task.related_type && ['contact', 'deal', 'company'].includes(task.related_type);
+        const isPersonal = task.tags && task.tags.includes('personal_task');
+        if (isClientRelated || isPersonal) return;
+      }
 
       // Pending approval
       if (Number(task.require_approval) === 1 && task.approval_status === 'pending' && Number(task.approver_id) === Number(currentUser?.id)) {
@@ -1185,9 +1219,11 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       }
 
       // Related / Collaborator
-      const pIds = task.participant_ids ? task.participant_ids.split(',').map(Number).filter(Boolean) : [];
-      if (pIds.includes(Number(currentUser?.id))) {
-        collaborator++;
+      if (task.participant_ids) {
+        const pIds = task.participant_ids.split(',');
+        if (pIds.includes(currentUserIdStr)) {
+          collaborator++;
+        }
       }
 
       if (task.due_date) {
@@ -1411,6 +1447,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
   // Scheduler activities & note states
   const [calendarActivities, setCalendarActivities] = useState<any[]>([]);
+  const [calendarUserId, setCalendarUserId] = useState<string | number>('');
   const [schedulerModalOpen, setSchedulerModalOpen] = useState(false);
   const [selectedSchedulerDate, setSelectedSchedulerDate] = useState<string | null>(null);
   const [schedulerModalTab, setSchedulerModalTab] = useState<'diary' | 'tasks'>('diary');
@@ -4255,6 +4292,12 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     return () => window.removeEventListener('lead-added', handleLeadAdded);
   }, [token, user, roundId, dateMode, saleIdFilter, startDate, endDate]);
 
+  useEffect(() => {
+    if (currentUser?.id && !calendarUserId) {
+      setCalendarUserId(currentUser.id);
+    }
+  }, [currentUser]);
+
   // Calendar stats fetch
   const fetchCalendarStats = async () => {
     if (!token) return;
@@ -4262,10 +4305,21 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
+      
+      // Xác định consultant tương ứng với calendarUserId để lấy thống kê chuẩn xác
       let consultantParam = '';
-      if (['sale', 'manager'].includes(String(displayUser?.role).toLowerCase())) {
-        consultantParam = displayUser.name;
+      const activeUserId = calendarUserId || currentUser?.id;
+      if (activeUserId && activeUserId !== 'all') {
+        if (Number(activeUserId) === Number(currentUser?.id)) {
+          consultantParam = currentUser?.name || currentUser?.username || '';
+        } else {
+          const selectedUserObj = users.find(u => Number(u.id) === Number(activeUserId));
+          if (selectedUserObj) {
+            consultantParam = selectedUserObj.username || selectedUserObj.name || selectedUserObj.full_name || '';
+          }
+        }
       }
+
       const json = await fetchAPI(`get_calendar_stats&year=${year}&month=${month}&consultant=${encodeURIComponent(consultantParam)}`);
       if (json.success) {
         setCalendarData(json.data || {});
@@ -4274,13 +4328,18 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       // Concurrently fetch the monthly activities (tasks, meetings, calls, notes)
       const startDateStr = `${year}-${String(month).padStart(2, '0')}-01 00:00:00`;
       const endDateStr = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()} 23:59:59`;
-      const actRes = await api.get('/activities', {
-        params: {
-          start_date: startDateStr,
-          end_date: endDateStr,
-          limit: 300
-        }
-      });
+      
+      const params: any = {
+        start_date: startDateStr,
+        end_date: endDateStr,
+        limit: 300
+      };
+
+      if (activeUserId && activeUserId !== 'all') {
+        params.user_id = activeUserId;
+      }
+
+      const actRes = await api.get('/activities', { params });
       const actData = actRes.data?.data;
       const actItems = Array.isArray(actData?.items) ? actData.items : (Array.isArray(actData) ? actData : []);
       setCalendarActivities(actItems);
@@ -4303,7 +4362,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     if (activeTab === 'calendar') {
       fetchCalendarStats();
     }
-  }, [activeTab, currentDate, saleIdFilter, token]);
+  }, [activeTab, currentDate, calendarUserId, token]);
 
   const handleDateClick = async (dateStr: string) => {
     setSelectedCalendarDate(dateStr);
@@ -4842,10 +4901,102 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   </span>
                 </div>
               )}
+
+              {/* Show alerts toggler when hidden */}
+              {hideWorkspaceAlerts && (
+                (() => {
+                  const hasUncontacted = uncontactedCount > 0 && isSaleUser;
+                  const hasCoops = pendingCoopsCount > 0;
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const uid = user?.id ? Number(user.id) : 0;
+                  const isMyTask = (t: any) => {
+                    if (!uid) return false;
+                    const assignee = Number(t.assignee_id || t.user_id || 0);
+                    return assignee === uid;
+                  };
+                  const myOverdueCount = (wsTasks || []).filter((t: any) => t.status !== 'done' && isMyTask(t) && t.due_date && t.due_date.slice(0, 10) < todayStr).length;
+                  const myDueTodayCount = (wsTasks || []).filter((t: any) => t.status !== 'done' && isMyTask(t) && t.due_date && t.due_date.slice(0, 10) === todayStr).length;
+                  const myHighPriorityTask = (wsTasks || []).find((t: any) => t.status !== 'done' && isMyTask(t) && (t.priority === 'high' || t.priority === 'urgent'));
+                  const totalOverdueCount = workspaceStats.overdue || 0;
+                  const totalDueTodayCount = workspaceStats.dueToday || 0;
+                  const teamHighPriorityTask = (wsTasks || []).find((t: any) => t.status !== 'done' && (t.priority === 'high' || t.priority === 'urgent'));
+
+                  let aiCount = 0;
+                  if (myOverdueCount > 0) aiCount = myOverdueCount;
+                  else if (myHighPriorityTask) aiCount = 1;
+                  else if (myDueTodayCount > 0) aiCount = myDueTodayCount;
+                  else if (totalOverdueCount > 0) aiCount = totalOverdueCount;
+                  else if (teamHighPriorityTask) aiCount = 1;
+                  else if (totalDueTodayCount > 0) aiCount = totalDueTodayCount;
+
+                  const meetingCount = upcomingMeetingsList.length;
+                  const hasAnyAlert = hasUncontacted || hasCoops || aiCount > 0 || meetingCount > 0;
+
+                  if (!hasAnyAlert) return null;
+                  return (
+                    <button
+                      onClick={() => setHideWorkspaceAlerts(false)}
+                      style={{
+                        background: 'rgba(189, 29, 45, 0.06)',
+                        border: '1px solid rgba(189, 29, 45, 0.2)',
+                        padding: '2px 10px',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        cursor: 'pointer',
+                        color: 'var(--color-primary)',
+                        fontSize: '0.725rem',
+                        fontWeight: 700,
+                        height: '24px',
+                        transition: 'all 0.15s'
+                      }}
+                      className="hover-lift"
+                      title={t('Hiện lại gợi ý xử lý')}
+                    >
+                      <Sparkles size={11} style={{ color: 'var(--color-primary)' }} />
+                      <span>{t('Gợi ý')}</span>
+                    </button>
+                  );
+                })()
+              )}
             </div>
-            <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-              {t("Quản lý toàn bộ công việc cần thực hiện, lọc chi tiết theo tiến độ và độ ưu tiên.")}
-            </p>
+            
+            {/* Subtitle or Group Breadcrumb */}
+            {((isAdminOrManager && wsTeamId && wsSubTab !== 'personal')) ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                <button
+                  onClick={() => setWsTeamId('')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    border: '1px solid var(--color-border)',
+                    background: 'var(--color-surface)',
+                    color: 'var(--color-text-light)',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    transition: 'all 0.15s'
+                  }}
+                  className="hover-lift"
+                >
+                  <ArrowLeft size={11} /> {t('Quay lại')}
+                </button>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>{t('Đang xem nhóm:')}</span>
+                  <strong style={{ color: 'var(--color-primary)' }}>
+                    {wsTeamId === 'all_teams_bypass' ? t('Tất cả các Nhóm') : (teamsList.find(t => String(t.id) === wsTeamId)?.name || wsTeamId)}
+                  </strong>
+                </span>
+              </div>
+            ) : (
+              <p className="page-subtitle" style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+                {t("Quản lý toàn bộ công việc cần thực hiện, lọc chi tiết theo tiến độ và độ ưu tiên.")}
+              </p>
+            )}
           </div>
           {!isMobile && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -5190,7 +5341,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
           // Check if there is anything to show
           const hasAnyAlert = hasUncontacted || hasCoops || aiCount > 0 || meetingCount > 0;
-          if (!hasAnyAlert) return null;
+          if (!hasAnyAlert || hideWorkspaceAlerts) return null;
 
           const actionBtnStyle = {
             height: '30px',
@@ -5223,11 +5374,31 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               overflow: 'hidden'
             }}>
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '10px' }}>
-                <Sparkles size={16} style={{ color: 'var(--color-primary)' }} />
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--color-text)' }}>
-                  {t('Cảnh báo & Gợi ý xử lý')}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={16} style={{ color: 'var(--color-primary)' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--color-text)' }}>
+                    {t('Cảnh báo & Gợi ý xử lý')}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setHideWorkspaceAlerts(true)}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.15s'
+                  }}
+                  className="hover-color-primary"
+                  title={t('Tạm ẩn gợi ý')}
+                >
+                  <X size={14} />
+                </button>
               </div>
 
               {/* Alert Items Stack */}
@@ -5350,22 +5521,33 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
           borderRadius: isMobile ? '12px' : '16px',
-          padding: isMobile ? '8px 10px' : '0.625rem 0.875rem',
+          padding: isMobile ? '8px 10px' : '6px 10px',
           boxShadow: '0 4px 20px -8px rgba(0,0,0,0.05)',
           display: 'flex',
           flexDirection: 'column',
-          gap: isMobile ? '8px' : '0.625rem',
-          marginBottom: '1rem'
+          gap: '8px',
+          marginBottom: '1rem',
+          overflow: 'hidden'
         }}>
-          {/* Top Group: Horizontal Scrollable Status Pills & Team Dropdown */}
+          {/* Main Toolbar Row (Pills + Controls side-by-side) */}
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            width: '100%'
+          }}>
+            {/* Top Group: Horizontal Scrollable Status Pills & Team Dropdown */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.4rem',
             overflowX: 'auto',
             whiteSpace: 'nowrap',
-            width: '100%',
-            paddingBottom: isMobile ? '2px' : '0'
+            flex: isMobile ? 'none' : '1 1 auto',
+            paddingBottom: isMobile ? '2px' : '0',
+            maxWidth: isMobile ? '100%' : '55%'
           }} className="custom-scrollbar-hidden">
             {/* Tất cả Pill */}
             <div 
@@ -5577,132 +5759,87 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            width: '100%'
+            flexWrap: 'nowrap',
+            flex: isMobile ? 'none' : '1 1 auto',
+            justifyContent: 'flex-end',
+            width: isMobile ? '100%' : 'auto',
+            minWidth: 0
           }}>
-            {/* Search Input & Filter Button */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: isMobile ? '100%' : '260px' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Tìm theo tên, mô tả..."
-                  value={wsSearch}
-                  onChange={e => setWsSearch(e.target.value)}
-                  style={{ height: isMobile ? '34px' : '38px', fontSize: isMobile ? '0.78rem' : '0.85rem', padding: '6px 10px', borderRadius: '8px', width: '100%' }}
-                />
-              </div>
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                style={{
-                  height: isMobile ? '34px' : '38px',
-                  padding: isMobile ? '0 10px' : '0 12px',
-                  borderRadius: '8px',
-                  border: showAdvancedFilters ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
-                  background: showAdvancedFilters ? 'var(--color-primary-light)' : 'transparent',
-                  color: showAdvancedFilters ? 'var(--color-primary)' : 'var(--color-text)',
-                  fontSize: isMobile ? '0.75rem' : '0.8rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap'
+            {/* Search Input (Dài hơn và nằm bên trái cụm điều khiển) */}
+            <div style={{ 
+              position: 'relative', 
+              flex: isMobile ? '1 1 auto' : '0 1 320px', 
+              minWidth: isMobile ? '120px' : '260px' 
+            }}>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Tìm theo tên, mô tả..."
+                value={wsSearch}
+                onChange={e => setWsSearch(e.target.value)}
+                style={{ 
+                  height: '32px', 
+                  fontSize: '0.8rem', 
+                  padding: '4px 8px', 
+                  borderRadius: '6px', 
+                  width: '100%',
+                  border: '1px solid var(--color-border)'
                 }}
-              >
-                <Filter size={isMobile ? 13 : 14} />
-                <span>{t('Bộ lọc')}</span>
-                {(() => {
-                  let count = 0;
-                  if (wsPriority) count++;
-                  if (wsStatus && wsStatus !== 'planned') count++;
-                  if (wsDatePreset && wsDatePreset !== 'all') count++;
-                  if (wsTeamId) count++;
-                  if (wsUserId) count++;
-                  return count > 0 ? (
-                    <span style={{
-                      background: 'var(--color-primary)',
-                      color: 'white',
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      borderRadius: '50%',
-                      width: '16px',
-                      height: '16px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginLeft: '2px'
-                    }}>
-                      {count}
-                    </span>
-                  ) : null;
-                })()}
-              </button>
+              />
             </div>
 
+            {/* Filter Trigger Button */}
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              style={{
+                height: '32px',
+                padding: '0 10px',
+                borderRadius: '6px',
+                border: showAdvancedFilters ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border)',
+                background: showAdvancedFilters ? 'var(--color-primary-light)' : 'transparent',
+                color: showAdvancedFilters ? 'var(--color-primary)' : 'var(--color-text)',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}
+            >
+              <Filter size={12} />
+              <span>{t('Bộ lọc')}</span>
+              {(() => {
+                let count = 0;
+                if (wsPriority) count++;
+                if (wsStatus && wsStatus !== 'planned') count++;
+                if (wsDatePreset && wsDatePreset !== 'all') count++;
+                if (wsTeamId) count++;
+                if (wsUserId) count++;
+                return count > 0 ? (
+                  <span style={{
+                    background: 'var(--color-primary)',
+                    color: 'white',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    borderRadius: '50%',
+                    width: '16px',
+                    height: '16px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: '2px'
+                  }}>
+                    {count}
+                  </span>
+                ) : null;
+              })()}
+            </button>
+
             {/* View Mode Switcher */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', width: isMobile ? '100%' : 'auto', justifyContent: 'flex-end' }}>
-              
-              {/* Quick toggle to show/hide completed tasks */}
-              <button
-                onClick={() => setWsStatus(wsStatus === 'all' ? 'planned' : 'all')}
-                style={{
-                  height: isMobile ? '34px' : '38px',
-                  padding: isMobile ? '0 8px' : '0 12px',
-                  borderRadius: '8px',
-                  border: wsStatus === 'all' ? '1.5px solid var(--color-success)' : '1px solid var(--color-border)',
-                  background: wsStatus === 'all' ? 'rgba(16, 185, 129, 0.08)' : 'var(--color-surface)',
-                  color: wsStatus === 'all' ? 'var(--color-success)' : 'var(--color-text)',
-                  fontSize: isMobile ? '0.725rem' : '0.78rem',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                }}
-              >
-                {wsStatus === 'all' ? (
-                  <CheckSquare size={isMobile ? 13 : 14} style={{ color: 'var(--color-success)' }} />
-                ) : (
-                  <Square size={isMobile ? 13 : 14} style={{ color: 'var(--color-text-muted)' }} />
-                )}
-                <span>{t('Hiện việc đã xong')}</span>
-              </button>
-
-              {/* Quick toggle to show/hide hidden tasks */}
-              <button
-                onClick={() => setWsStatus(wsStatus === 'hidden' ? 'planned' : 'hidden')}
-                style={{
-                  height: isMobile ? '34px' : '38px',
-                  padding: isMobile ? '0 8px' : '0 12px',
-                  borderRadius: '8px',
-                  border: wsStatus === 'hidden' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)',
-                  background: wsStatus === 'hidden' ? 'rgba(239, 68, 68, 0.08)' : 'var(--color-surface)',
-                  color: wsStatus === 'hidden' ? 'var(--color-danger)' : 'var(--color-text)',
-                  fontSize: isMobile ? '0.725rem' : '0.78rem',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                }}
-              >
-                {wsStatus === 'hidden' ? (
-                  <EyeOff size={isMobile ? 13 : 14} style={{ color: 'var(--color-danger)' }} />
-                ) : (
-                  <Eye size={isMobile ? 13 : 14} style={{ color: 'var(--color-text-muted)' }} />
-                )}
-                <span>{t('Hiện việc đã ẩn')}</span>
-              </button>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', flexShrink: 0 }}>
               {!isMobile && (
                 <div style={{
                   display: 'flex',
@@ -5762,6 +5899,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               )}
             </div>
           </div>
+        </div>
 
           {/* Advanced Dropdown Filters (Collapsible) */}
           <AnimatePresence>
@@ -5924,15 +6062,40 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   </div>
                 )}
 
-                {/* Clear Filter Toolbar */}
+                 {/* Clear Filter Toolbar */}
                 <div style={{
                   display: 'flex',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   marginTop: '12px',
                   paddingTop: '12px',
                   borderTop: '1px dashed var(--color-border-light)',
-                  gap: '8px'
+                  gap: '8px',
+                  flexWrap: 'wrap'
                 }}>
+                  {/* Quick toggle checkboxes inside dropdown */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text)', cursor: 'pointer', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={wsStatus === 'all'}
+                        onChange={() => setWsStatus(wsStatus === 'all' ? 'planned' : 'all')}
+                        style={{ cursor: 'pointer', width: '14px', height: '14px' }}
+                      />
+                      <span>{t('Hiện việc đã xong')}</span>
+                    </label>
+
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text)', cursor: 'pointer', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={wsStatus === 'hidden'}
+                        onChange={() => setWsStatus(wsStatus === 'hidden' ? 'planned' : 'hidden')}
+                        style={{ cursor: 'pointer', width: '14px', height: '14px' }}
+                      />
+                      <span>{t('Hiện việc đã ẩn')}</span>
+                    </label>
+                  </div>
+
                   <button
                     type="button"
                     className="btn outline sm"
@@ -6120,87 +6283,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           </div>
         ) : (
           <>
-            {/* Back button when inside a team view */}
-            {((isAdminOrManager && wsTeamId && wsSubTab !== 'personal') && wsViewMode !== 'focus') && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem', background: 'var(--color-surface)', padding: '1rem 1.25rem', borderRadius: '16px', border: '1px solid var(--color-border-light)', boxShadow: 'var(--shadow-sm)' }}>
-                <button
-                  onClick={() => {
-                    setWsTeamId('');
-                  }}
-                  style={{
-                    height: 38,
-                    borderRadius: '10px',
-                    border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)',
-                    color: 'var(--color-text-light)',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: isMobile ? '0' : '8px',
-                    padding: isMobile ? '0 12px' : '0 16px',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    boxShadow: 'var(--shadow-xs)',
-                    transition: 'all 0.2s',
-                    flexShrink: 0
-                  }}
-                  className="hover-lift"
-                >
-                  <ArrowLeft size={15} /> {!isMobile && t('Quay lại')}
-                </button>
-
-                {wsTeamId && (
-                  <>
-                    <div style={{ width: '1px', height: '24px', background: 'var(--color-border)', flexShrink: 0 }} />
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {(() => {
-                        const targetTeam = teamsList.find(t => String(t.id) === wsTeamId);
-                        const teamName = wsTeamId === 'all_teams_bypass' ? t('Tất cả các Nhóm') : (targetTeam?.name || wsTeamId);
-                        const teamAvatar = targetTeam?.avatar_url || targetTeam?.avatar;
-                        return (
-                          <>
-                            {wsTeamId !== 'all_teams_bypass' && (
-                              <div style={{ 
-                                width: isMobile ? '30px' : '36px', 
-                                height: isMobile ? '30px' : '36px', 
-                                borderRadius: '10px', 
-                                overflow: 'hidden', 
-                                border: '1.5px solid var(--color-border-light)',
-                                boxShadow: 'var(--shadow-xs)',
-                                flexShrink: 0,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: teamAvatar ? 'transparent' : 'var(--color-primary-light, rgba(189, 29, 45, 0.1))',
-                                color: 'var(--color-primary)'
-                              }}>
-                                {teamAvatar ? (
-                                  <img src={teamAvatar} alt={teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                  <Avatar name={teamName} size={isMobile ? 30 : 36} />
-                                )}
-                              </div>
-                            )}
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('ĐANG XEM NHÓM')}</span>
-                                <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--color-primary)' }} />
-                                <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 700, color: 'var(--color-primary)' }}>{t('Nội bộ')}</span>
-                              </div>
-                              <h4 style={{ fontSize: isMobile ? '0.85rem' : '0.95rem', fontWeight: 800, color: 'var(--color-text)', margin: '1px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? '160px' : 'none' }}>
-                                {teamName}
-                              </h4>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
             {wsViewMode !== 'focus' && loadingWsTasks ? (
               wsViewMode === 'kanban' ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
@@ -6260,18 +6342,31 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               
               const progressVal = task.progress || 0;
 
+              const isPinned = pinnedTaskIds.includes(Number(task.id));
+              let cardBorder = '1px solid var(--color-border-light)';
+              let cardBg = 'var(--color-surface)';
+              let cardShadow = 'var(--shadow-sm)';
+              if (isPinned) {
+                cardBorder = '2px solid var(--color-danger)';
+                cardBg = 'rgba(239, 68, 68, 0.03)';
+                cardShadow = 'var(--shadow-md), 0 0 12px rgba(239, 68, 68, 0.1)';
+              } else if (isOverdue && task.status !== 'done') {
+                cardBorder = '1.5px solid var(--color-danger)';
+                cardShadow = 'var(--shadow-md), 0 0 12px rgba(239, 68, 68, 0.08)';
+              }
+
               return (
                 <div 
                   key={task.id} 
                   style={{
                     padding: isMobile ? '0.75rem 1rem' : '1rem 1.25rem',
-                    background: 'var(--color-surface)',
-                    border: isOverdue && task.status !== 'done' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border-light)',
+                    background: cardBg,
+                    border: cardBorder,
                     borderRadius: 'var(--radius-lg)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: isMobile ? '0.5rem' : '0.75rem',
-                    boxShadow: isOverdue && task.status !== 'done' ? 'var(--shadow-md), 0 0 12px rgba(239, 68, 68, 0.08)' : 'var(--shadow-sm)',
+                    boxShadow: cardShadow,
                     transition: 'all var(--transition-fluid)',
                     cursor: 'pointer',
                     position: 'relative'
@@ -6311,7 +6406,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 >
                   {/* Top Tags & Priority */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', flex: 1 }}>
                       {task.tags && task.tags.split(',').filter(Boolean).map((tag: string) => {
                         return (
                           <span 
@@ -6330,11 +6425,34 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         );
                       })}
                     </div>
-                    {task.priority === 'high' && (
-                      <span style={{ fontSize: '0.625rem', fontWeight: 800, padding: '1px 6px', borderRadius: '20px', background: 'var(--color-danger-light)', color: 'var(--color-danger)', flexShrink: 0 }}>
-                        {t('Khẩn cấp')}
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      {task.priority === 'high' && (
+                        <span style={{ fontSize: '0.625rem', fontWeight: 800, padding: '1px 6px', borderRadius: '20px', background: 'var(--color-danger-light)', color: 'var(--color-danger)' }}>
+                          {t('Khẩn cấp')}
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePinTask(task.id);
+                        }}
+                        style={{
+                          border: 'none',
+                          background: isPinned ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                          color: isPinned ? 'var(--color-danger)' : 'var(--color-text-light)',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                        title={isPinned ? t('Bỏ ghim công việc') : t('Ghim công việc')}
+                      >
+                        <Pin size={14} style={{ transform: isPinned ? 'rotate(0deg)' : 'rotate(45deg)', transition: 'transform 0.2s' }} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Task Image Preview */}
@@ -6569,7 +6687,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       gap: '0.75rem',
                       transition: 'all 0.2s',
                       boxShadow: isOver ? '0 4px 12px rgba(189, 29, 45, 0.08)' : 'none',
-                      width: '100%'
+                      width: '100%',
+                      minWidth: 0
                     }}
                   >
                     {/* Column Header */}
@@ -6585,7 +6704,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
                     {/* Tasks List */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', flex: 1, overflowY: 'auto', maxHeight: '600px' }}>
-                      {columnTasks.slice(0, 30).map(task => {
+                      {columnTasks.slice(0, 20).map(task => {
                         const isOverdue = task.due_date && new Date(task.due_date) < new Date(new Date().setHours(0,0,0,0));
                         const isToday = task.due_date && new Date(task.due_date).toDateString() === new Date().toDateString();
                         
@@ -6618,6 +6737,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         }
                         
                         const progressVal = task.progress || 0;
+                        const isPinned = pinnedTaskIds.includes(Number(task.id));
 
                         return (
                           <div
@@ -6657,23 +6777,36 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                               setSelectedTaskForDetails(parsedTask);
                             }}
                             style={{
-                              background: 'var(--color-surface)',
-                              border: isOverdue && task.status !== 'done' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border-light)',
+                              background: isPinned ? 'rgba(239, 68, 68, 0.03)' : 'var(--color-surface)',
+                              border: isPinned 
+                                ? '2px solid var(--color-danger)' 
+                                : (isOverdue && task.status !== 'done' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border-light)'),
                               borderRadius: '12px',
                               padding: '0.875rem',
                               cursor: 'grab',
                               opacity: task.status === 'done' ? 0.7 : 1,
-                              boxShadow: 'var(--shadow-sm)',
+                              boxShadow: isPinned 
+                                ? 'var(--shadow-md), 0 0 12px rgba(239, 68, 68, 0.1)' 
+                                : 'var(--shadow-sm)',
                               transition: 'all 0.2s',
-                              position: 'relative'
+                              position: 'relative',
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              flexShrink: 0
                             }}
                             onMouseEnter={e => {
-                              e.currentTarget.style.borderColor = isOverdue && task.status !== 'done' ? 'var(--color-danger)' : 'var(--color-primary)';
+                              e.currentTarget.style.borderColor = isPinned 
+                                ? 'var(--color-danger)' 
+                                : (isOverdue && task.status !== 'done' ? 'var(--color-danger)' : 'var(--color-primary)');
                               e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                             }}
                             onMouseLeave={e => {
-                              e.currentTarget.style.borderColor = isOverdue && task.status !== 'done' ? 'var(--color-danger)' : 'var(--color-border-light)';
-                              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                              e.currentTarget.style.borderColor = isPinned 
+                                ? 'var(--color-danger)' 
+                                : (isOverdue && task.status !== 'done' ? 'var(--color-danger)' : 'var(--color-border-light)');
+                              e.currentTarget.style.boxShadow = isPinned 
+                                ? 'var(--shadow-md), 0 0 12px rgba(239, 68, 68, 0.1)' 
+                                : 'var(--shadow-sm)';
                             }}
                           >
                             {/* Drag handle & header info */}
@@ -6681,6 +6814,27 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                               <span className={`badge ${task.priority === 'high' ? 'danger' : 'warning'}`} style={{ fontSize: '0.625rem', padding: '1px 5px' }}>
                                 {task.priority === 'high' ? 'Cao' : 'Trung bình'}
                               </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePinTask(task.id);
+                                }}
+                                style={{
+                                  border: 'none',
+                                  background: isPinned ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                                  color: isPinned ? 'var(--color-danger)' : 'var(--color-text-light)',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s'
+                                }}
+                                title={isPinned ? t('Bỏ ghim công việc') : t('Ghim công việc')}
+                              >
+                                <Pin size={12} style={{ transform: isPinned ? 'rotate(0deg)' : 'rotate(45deg)', transition: 'transform 0.2s' }} />
+                              </button>
                             </div>
 
                             {/* Task Image Preview */}
@@ -6907,9 +7061,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                           </div>
                         );
                       })}
-                      {columnTasks.length > 30 && (
+                      {columnTasks.length > 20 && (
                         <div style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)', background: 'var(--color-bg)', borderRadius: '8px', border: '1px dashed var(--color-border-light)', margin: '0.5rem' }}>
-                          {t('Hiển thị 30 / {total} công việc. Hãy dùng tìm kiếm/bộ lọc để tìm các công việc khác.').replace('{total}', String(columnTasks.length))}
+                          {t('Hiển thị 20 / {total} công việc. Hãy dùng tìm kiếm/bộ lọc để tìm các công việc khác.').replace('{total}', String(columnTasks.length))}
                         </div>
                       )}
                     </div>
@@ -6918,7 +7072,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               };
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem', alignItems: 'start', width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '1rem', alignItems: 'start', width: '100%' }}>
                   {renderKanbanColumn('todo', t('Cần làm'), todoTasks, 'var(--color-text-muted)', '#e2e8f0')}
                   {renderKanbanColumn('in_progress', t('Đang làm'), inProgressTasks, 'var(--color-warning)', 'rgba(245, 158, 11, 0.12)')}
                   {renderKanbanColumn('done', t('Đã xong'), doneTasks, 'var(--color-success)', 'rgba(16, 185, 129, 0.12)')}
@@ -7065,8 +7219,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', padding: '0.5rem', gap: '0.5rem' }}>
-                {filteredWsTasks.slice(0, 50).map(task => {
+                {filteredWsTasks.slice(0, 20).map(task => {
                   const isSelected = selectedTaskForDetails?.id === task.id;
+                  const isPinned = pinnedTaskIds.includes(Number(task.id));
                   return (
                     <div
                       key={task.id}
@@ -7074,17 +7229,22 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       style={{
                         padding: '0.75rem 1rem',
                         borderRadius: '10px',
-                        border: isSelected ? '1.5px solid var(--color-primary)' : '1px solid var(--color-border-light)',
-                        background: isSelected ? 'var(--color-primary-light)' : 'var(--color-surface)',
+                        border: isSelected 
+                          ? '1.5px solid var(--color-primary)' 
+                          : (isPinned ? '2px solid var(--color-danger)' : '1px solid var(--color-border-light)'),
+                        background: isSelected 
+                          ? 'var(--color-primary-light)' 
+                          : (isPinned ? 'rgba(239, 68, 68, 0.03)' : 'var(--color-surface)'),
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '4px'
+                        gap: '4px',
+                        boxShadow: isPinned && !isSelected ? '0 2px 8px rgba(239, 68, 68, 0.1)' : 'none'
                       }}
                       className="hover-bg-alt"
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                         <span style={{
                           fontWeight: 700,
                           fontSize: '0.85rem',
@@ -7092,15 +7252,39 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          maxWidth: '220px'
+                          maxWidth: '180px',
+                          flex: 1
                         }}>
                           {task.subject}
                         </span>
-                        {task.priority === 'high' && (
-                          <span style={{ fontSize: '0.6rem', fontWeight: 700, padding: '1px 4px', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: 'var(--color-danger)' }}>
-                            {t('Gấp')}
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                          {task.priority === 'high' && (
+                            <span style={{ fontSize: '0.6rem', fontWeight: 700, padding: '1px 4px', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: 'var(--color-danger)' }}>
+                              {t('Gấp')}
+                            </span>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePinTask(task.id);
+                            }}
+                            style={{
+                              border: 'none',
+                              background: isPinned ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                              color: isPinned ? 'var(--color-danger)' : 'var(--color-text-light)',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s'
+                            }}
+                            title={isPinned ? t('Bỏ ghim công việc') : t('Ghim công việc')}
+                          >
+                            <Pin size={11} style={{ transform: isPinned ? 'rotate(0deg)' : 'rotate(45deg)', transition: 'transform 0.2s' }} />
+                          </button>
+                        </div>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
                         <span>
@@ -7191,9 +7375,9 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                     </div>
                   );
                 })}
-                {filteredWsTasks.length > 50 && (
+                {filteredWsTasks.length > 20 && (
                   <div style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-muted)', background: 'var(--color-bg)', borderRadius: '8px', border: '1px dashed var(--color-border-light)', margin: '0.5rem' }}>
-                    {t('Hiển thị 50 / {total} công việc. Hãy dùng tìm kiếm/bộ lọc để tìm các công việc khác.').replace('{total}', String(filteredWsTasks.length))}
+                    {t('Hiển thị 20 / {total} công việc. Hãy dùng tìm kiếm/bộ lọc để tìm các công việc khác.').replace('{total}', String(filteredWsTasks.length))}
                   </div>
                 )}
               </div>
@@ -10578,6 +10762,53 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             >
               {t('Hôm nay')}
             </button>
+
+            {/* Bộ lọc user dành cho Admin/Director/Manager */}
+            {['admin', 'superadmin', 'super_admin', 'director', 'manager'].includes(String(currentUser?.role || user?.role).toLowerCase()) && (() => {
+              const userRole = String(currentUser?.role || user?.role).toLowerCase();
+              
+              // Lọc danh sách nhân viên hiển thị trong dropdown
+              let filteredUsers = users;
+              if (userRole === 'manager') {
+                const managedTeams = (allowedTeams || teamsList || []).filter(
+                  (t: any) => Number(t.leader_id) === Number(currentUser?.id || user?.id)
+                );
+                const managedTeamIds = managedTeams.map((t: any) => Number(t.id));
+                
+                if (managedTeamIds.length > 0) {
+                  filteredUsers = users.filter((u: any) => {
+                    return Number(u.id) === Number(currentUser?.id || user?.id) || 
+                           (u.team_id && managedTeamIds.includes(Number(u.team_id)));
+                  });
+                } else {
+                  const managerTeamId = (currentUser as any)?.team_id || (user as any)?.team_id;
+                  filteredUsers = users.filter((u: any) => {
+                    return Number(u.id) === Number(currentUser?.id || user?.id) ||
+                           (managerTeamId && String(u.team_id) === String(managerTeamId));
+                  });
+                }
+              }
+              
+              return (
+                <div style={{ minWidth: '200px' }}>
+                  <CustomSelect
+                    options={[
+                      { value: 'all', label: t('Tất cả nhân viên') },
+                      ...filteredUsers.map(u => ({
+                        value: String(u.id),
+                        label: u.full_name || u.name || '',
+                        avatar: resolveAttachmentUrl(u.avatar_url || u.avatar)
+                      }))
+                    ]}
+                    value={String(calendarUserId || currentUser?.id || '')}
+                    onChange={(val) => setCalendarUserId(String(val))}
+                    width="100%"
+                    searchable={true}
+                    showAvatars={true}
+                  />
+                </div>
+              );
+            })()}
           </div>
 
           {/* Calendar Legend */}

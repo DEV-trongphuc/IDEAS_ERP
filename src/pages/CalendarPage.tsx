@@ -41,6 +41,8 @@ export const CalendarPage: React.FC = () => {
   };
 
   const fetchActivities = async () => {
+    if (!user?.id) return;
+
     setLoading(true);
     try {
       const year = currentDate.getFullYear();
@@ -55,8 +57,10 @@ export const CalendarPage: React.FC = () => {
         type: 'task,meeting'
       };
 
-      if (selectedUserId) {
-        params.user_id = selectedUserId;
+      // Chỉ lấy lịch trình cá nhân (user.id) làm mặc định ban đầu. Chỉ lấy tất cả khi selectedUserId === 'all'
+      const activeUserId = selectedUserId || user.id;
+      if (activeUserId && activeUserId !== 'all') {
+        params.user_id = activeUserId;
       }
 
       const res = await api.get('/activities', { params });
@@ -128,7 +132,11 @@ export const CalendarPage: React.FC = () => {
     }
   }, [user]);
 
-  useEffect(() => { fetchActivities(); }, [currentDate, selectedUserId]);
+  useEffect(() => {
+    if (user?.id) {
+      fetchActivities();
+    }
+  }, [currentDate, selectedUserId, user?.id]);
 
   const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -256,29 +264,32 @@ export const CalendarPage: React.FC = () => {
         {activeTab === 'calendar' && (
           <div className="flex gap-3 items-center">
             {['admin', 'superadmin', 'super_admin', 'director'].includes(user?.role || '') && (
-              <select
-                value={selectedUserId}
-                onChange={e => setSelectedUserId(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '12px',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-text)',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value={user?.id || ''}>Lịch trình cá nhân</option>
-                <option value="">Tất cả thành viên</option>
-                {users.filter(u => u.id !== user?.id).map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.full_name} ({u.role})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '2px 8px 2px 12px', boxShadow: 'var(--shadow-sm)' }}>
+                <Users size={15} style={{ color: 'var(--color-primary)' }} />
+                <select
+                  value={selectedUserId}
+                  onChange={e => setSelectedUserId(e.target.value)}
+                  style={{
+                    padding: '6px 24px 6px 4px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--color-text)',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value={user?.id || ''}>Lịch trình cá nhân</option>
+                  <option value="all">Tất cả thành viên</option>
+                  {users.filter(u => u.id !== user?.id).map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.full_name} ({u.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
             <div className="flex items-center bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1 shadow-sm">
                <button className="btn-icon sm" onClick={prevMonth}><ChevronLeft size={18} /></button>

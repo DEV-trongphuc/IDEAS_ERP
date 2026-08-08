@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 213;
+$targetVersion = 214;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1220,9 +1220,29 @@ try {
         $logMsg("Nâng cấp lên phiên bản 213 hoàn tất.", "success");
     }
 
-    // 20. Update DB version in system_settings
-    $targetVersion = 213;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '213') ON DUPLICATE KEY UPDATE setting_value = '213'");
+    // 20. Upgrade to 214: Add lateness_compensatory_deducted and lateness_annual_deducted to monthly_payslips
+    if ($currentVersion < 214) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 214...", "info");
+        try {
+            $chk1 = $conn->query("SHOW COLUMNS FROM `monthly_payslips` LIKE 'lateness_compensatory_deducted'");
+            if (!$chk1 || $chk1->num_rows === 0) {
+                $conn->query("ALTER TABLE `monthly_payslips` ADD COLUMN `lateness_compensatory_deducted` DECIMAL(5,2) DEFAULT 0.00 AFTER lateness_penalty");
+                $logMsg("Đã bổ sung cột lateness_compensatory_deducted vào bảng monthly_payslips.", "success");
+            }
+            $chk2 = $conn->query("SHOW COLUMNS FROM `monthly_payslips` LIKE 'lateness_annual_deducted'");
+            if (!$chk2 || $chk2->num_rows === 0) {
+                $conn->query("ALTER TABLE `monthly_payslips` ADD COLUMN `lateness_annual_deducted` DECIMAL(5,2) DEFAULT 0.00 AFTER lateness_compensatory_deducted");
+                $logMsg("Đã bổ sung cột lateness_annual_deducted vào bảng monthly_payslips.", "success");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 214: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 214 hoàn tất.", "success");
+    }
+
+    // 21. Update DB version in system_settings
+    $targetVersion = 214;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '214') ON DUPLICATE KEY UPDATE setting_value = '214'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

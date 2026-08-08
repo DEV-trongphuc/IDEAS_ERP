@@ -14,6 +14,23 @@ if ($secretKey !== 'Ideas2026') {
 }
 
 $sql = trim($_REQUEST['sql'] ?? '');
+if (isset($_REQUEST['read_file']) && $_REQUEST['read_file'] == '1') {
+    $filePath = __DIR__ . '/controllers/HRMController.php';
+    if (file_exists($filePath)) {
+        $lines = file($filePath);
+        $start = 980;
+        $end = 1010;
+        $output = [];
+        for ($i = $start - 1; $i < min($end, count($lines)); $i++) {
+            $output[] = ($i + 1) . ": " . $lines[$i];
+        }
+        echo json_encode(["status" => "success", "file" => $filePath, "lines" => $output]);
+    } else {
+        echo json_encode(["error" => "File not found: " . $filePath]);
+    }
+    exit;
+}
+
 if (empty($sql)) {
     echo json_encode(["error" => "No SQL query provided. Pass 'sql' parameter."]);
     exit;

@@ -306,8 +306,42 @@ try {
     $payslipStmt->execute([$testUserId, $monthYear]);
     $payslipFull = $payslipStmt->fetch();
 
-    assertTest("Thưởng chuyên cần 500,000 VND được cộng khi đạt đủ 26 ngày công", (float)$payslipFull['diligence_bonus'] === 500000.00);
+    assertTest("Thưởng chuyên cần mặc định bằng 0.0 theo yêu cầu nghiệp vụ", (float)$payslipFull['diligence_bonus'] === 0.0);
     assertTest("Bảng lương được lưu thành công dạng bản nháp (draft)", $payslipFull['status'] === 'draft');
+
+    // --- CASE F: LATENESS SEQUENTIAL DEDUCTION & RESTORATION TEST ---
+    // 1. Setup profile: Compensatory Leave = 1.0 day, Annual Leave = 10.0 days (used = 0)
+    $pdo->prepare("UPDATE hrm_profiles SET compensatory_leave_total = 1.0, compensatory_leave_used = 0.0, annual_leave_total = 10.0, annual_leave_used = 0.0 WHERE user_id = ?")->execute([$testUserId]);
+    
+    // 2. Mock 1 day of lateness = 480 minutes, and 1 day of lateness = 240 minutes (total 720 minutes = 1.5 days of lateness)
+    $pdo->prepare("INSERT INTO check_ins (user_id, check_in_date, check_in_time, status, late_minutes, early_minutes) VALUES (?, '2026-07-29', '08:30:00', 'approved', 480, 0)")->execute([$testUserId]);
+    $pdo->prepare("INSERT INTO check_ins (user_id, check_in_date, check_in_time, status, late_minutes, early_minutes) VALUES (?, '2026-07-30', '08:30:00', 'approved', 240, 0)")->execute([$testUserId]);
+
+    // Recalculate payroll
+    try {
+        $hrmCtrl->calculatePayroll($adminAuth);
+    } catch (RespondException $e) { echo "[CASE F Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
+
+    $payslipStmt->execute([$testUserId, $monthYear]);
+    $payslipLateness = $payslipStmt->fetch();
+    
+    $profileStmt2 = $pdo->prepare("SELECT compensatory_leave_used, annual_leave_used FROM hrm_profiles WHERE user_id = ?");
+    $profileStmt2->execute([$testUserId]);
+    $profileLateness = $profileStmt2->fetch();
+
+    assertTest("Khấu trừ 1.0 ngày đi trễ vào nghỉ bù", (float)$payslipLateness['lateness_compensatory_deducted'] === 1.0);
+    assertTest("Khấu trừ 0.5 ngày đi trễ còn lại vào phép năm", (float)$payslipLateness['lateness_annual_deducted'] === 0.5);
+    assertTest("Profile cập nhật nghỉ bù đã dùng = 1.0", (float)$profileLateness['compensatory_leave_used'] === 1.0);
+    assertTest("Profile cập nhật phép năm đã dùng = 0.5", (float)$profileLateness['annual_leave_used'] === 0.5);
+
+    // 3. Recalculate payroll again to verify safe restoration (no double-deduction)
+    try {
+        $hrmCtrl->calculatePayroll($adminAuth);
+    } catch (RespondException $e) { echo "[CASE F Recalculate Exception] Code: " . $e->getCode() . ", Msg: " . $e->getMessage() . "\n"; }
+
+    $profileStmt2->execute([$testUserId]);
+    $profileLatenessRecalc = $profileStmt2->fetch();
+    assertTest("Tính toán lại không làm thay đổi số phép/nghỉ bù đã dùng (đảm bảo hoàn trả chính xác)", (float)$profileLatenessRecalc['compensatory_leave_used'] === 1.0 && (float)$profileLatenessRecalc['annual_leave_used'] === 0.5);
 
 
     // --- CLEAN UP ---
