@@ -443,8 +443,8 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
                     display: 'block', 
                     borderRadius: '10px',
                     backgroundColor: 'white',
-                    backgroundImage: 'radial-gradient(#cbd5e1 2px, transparent 2px)',
-                    backgroundSize: '16px 16px'
+                    backgroundImage: 'radial-gradient(#e2e8f0 1.2px, transparent 1.2px)',
+                    backgroundSize: '20px 20px'
                   }}
                 />
                 {!hasDrawn && (
@@ -518,8 +518,8 @@ export const SignaturePadModal: React.FC<SignaturePadModalProps> = ({
                       display: 'block', 
                       borderRadius: '10px',
                       backgroundColor: 'white',
-                      backgroundImage: 'radial-gradient(#cbd5e1 2px, transparent 2px)',
-                      backgroundSize: '16px 16px'
+                      backgroundImage: 'radial-gradient(#e2e8f0 1.2px, transparent 1.2px)',
+                      backgroundSize: '20px 20px'
                     }}
                   />
                   {!hasDrawn && (
