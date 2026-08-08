@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 215;
+$targetVersion = 216;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1287,9 +1287,41 @@ try {
         $logMsg("Nâng cấp lên phiên bản 215 hoàn tất.", "success");
     }
 
-    // 22. Update DB version in system_settings
-    $targetVersion = 215;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '215') ON DUPLICATE KEY UPDATE setting_value = '215'");
+    // 22. Upgrade to 216: Create task_focus_logs table for Pomodoro Focus Tracker
+    if ($currentVersion < 216) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 216...", "info");
+        try {
+            $chkTable = $conn->query("SHOW TABLES LIKE 'task_focus_logs'");
+            if (!$chkTable || $chkTable->num_rows === 0) {
+                $conn->query("
+                    CREATE TABLE `task_focus_logs` (
+                      `id` INT(11) NOT NULL AUTO_INCREMENT,
+                      `tenant_id` INT(11) NOT NULL,
+                      `task_id` INT(11) NOT NULL,
+                      `user_id` INT(11) NOT NULL,
+                      `duration_minutes` INT(11) NOT NULL DEFAULT 25,
+                      `completed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                      PRIMARY KEY (`id`),
+                      KEY `idx_focus_logs_tenant` (`tenant_id`),
+                      KEY `idx_focus_logs_task` (`task_id`),
+                      KEY `idx_focus_logs_user` (`user_id`),
+                      CONSTRAINT `fk_focus_logs_task` FOREIGN KEY (`task_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE,
+                      CONSTRAINT `fk_focus_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                ");
+                $logMsg("Đã tạo bảng task_focus_logs thành công.", "success");
+            } else {
+                $logMsg("Bảng task_focus_logs đã tồn tại.", "info");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 216: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 216 hoàn tất.", "success");
+    }
+
+    // 23. Update DB version in system_settings
+    $targetVersion = 216;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '216') ON DUPLICATE KEY UPDATE setting_value = '216'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

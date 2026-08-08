@@ -23,6 +23,7 @@ import { useUIStore } from '../store/uiStore';
 import { useUploadProgress } from '../contexts/UploadProgressContext';
 import { PasteDropzoneArea } from '../components/ui/PasteDropzoneArea';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { PomodoroTracker } from '../components/PomodoroTracker';
 
 interface WorkspaceTaskDrawerProps {
   isOpen: boolean;
@@ -4993,6 +4994,11 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 }}
               />
             </div>
+
+            {/* Pomodoro Focus Tracker */}
+            {task && task.id && (
+              <PomodoroTracker taskId={task.id} />
+            )}
 
             {/* Lặp lại định kỳ */}
             <div className="card" style={cardStyle}>

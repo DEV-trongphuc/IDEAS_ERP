@@ -1676,4 +1676,69 @@ class ActivityController {
         }
         return false;
     }
+
+    public function getFocusSummary(array $auth, int $id): void {
+        $check = $this->db->prepare("SELECT id FROM activities WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
+        $check->execute([$id, $auth['tenant_id']]);
+        if (!$check->fetch()) {
+            respond(404, null, 'Không tìm thấy công việc', false);
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT COUNT(*) as total_sessions, SUM(duration_minutes) as total_minutes
+            FROM task_focus_logs
+            WHERE task_id = ? AND tenant_id = ?
+        ");
+        $stmt->execute([$id, $auth['tenant_id']]);
+        $summary = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $logsStmt = $this->db->prepare("
+            SELECT f.id, f.duration_minutes, f.completed_at, u.full_name as user_name
+            FROM task_focus_logs f
+            LEFT JOIN users u ON f.user_id = u.id
+            WHERE f.task_id = ? AND f.tenant_id = ?
+            ORDER BY f.id DESC
+            LIMIT 10
+        ");
+        $logsStmt->execute([$id, $auth['tenant_id']]);
+        $logs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        respond(200, [
+            'total_sessions' => (int)($summary['total_sessions'] ?? 0),
+            'total_minutes' => (int)($summary['total_minutes'] ?? 0),
+            'recent_logs' => $logs
+        ]);
+    }
+
+    public function addFocusLog(array $auth, int $id): void {
+        if ($auth['role'] === 'viewer') respond(403, null, 'Bạn không có quyền lưu lượt tập trung', false);
+        $b = getBody();
+        $duration = (int)($b['duration_minutes'] ?? 25);
+
+        if ($duration <= 0) {
+            respond(422, null, 'Thời lượng tập trung không hợp lệ', false);
+        }
+
+        $check = $this->db->prepare("SELECT id, subject FROM activities WHERE id = ? AND tenant_id = ? AND deleted_at IS NULL");
+        $check->execute([$id, $auth['tenant_id']]);
+        $task = $check->fetch();
+        if (!$task) {
+            respond(404, null, 'Không tìm thấy công việc', false);
+        }
+
+        $stmt = $this->db->prepare("
+            INSERT INTO task_focus_logs (tenant_id, task_id, user_id, duration_minutes, completed_at)
+            VALUES (?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([
+            $auth['tenant_id'],
+            $id,
+            $auth['user_id'],
+            $duration
+        ]);
+
+        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'FOCUS', 'activity', $id, "Hoàn thành {$duration} phút tập trung cho: " . $task['subject']);
+
+        respond(200, ['success' => true, 'message' => 'Lưu lượt tập trung thành công']);
+    }
 }

@@ -688,6 +688,8 @@ switch ($resource) {
         elseif ($resourceId && $subResource === 'timeline' && $method === 'GET')  $ctrl->getTimeline($auth, (int)$resourceId);
         elseif ($resourceId && $subResource === 'dependencies' && $method === 'GET')  $ctrl->getDependencies($auth, (int)$resourceId);
         elseif ($resourceId && $subResource === 'dependencies' && $method === 'POST') $ctrl->updateDependencies($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'focus-summary' && $method === 'GET') $ctrl->getFocusSummary($auth, (int)$resourceId);
+        elseif ($resourceId && $subResource === 'focus-log' && $method === 'POST')    $ctrl->addFocusLog($auth, (int)$resourceId);
         elseif ($resourceId && $subResource === 'subtasks-comment-counts' && $method === 'GET') $ctrl->getSubtasksCommentCounts($auth, (int)$resourceId);
         elseif ($resourceId && $subResource === 'comments' && $method === 'POST') $ctrl->addComment($auth, (int)$resourceId);
         elseif ($resourceId === 'comments' && $subResource && $method === 'DELETE') $ctrl->deleteComment($auth, (int)$subResource);
