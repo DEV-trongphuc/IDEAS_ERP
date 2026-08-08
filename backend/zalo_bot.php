@@ -617,9 +617,8 @@ function sendCompensationAddedZaloMessageToSale($consultantId, $consultantName, 
         }
     }
 
-    $stmtToken = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'zalo_bot_token' LIMIT 1");
-    $botToken = $stmtToken->fetch_assoc()['setting_value'] ?? '';
-    if (!$botToken)
+    $botToken = get_system_setting($conn, 'zalo_bot_token');
+    if (empty($botToken))
         return false;
 
     $stmtC = $conn->prepare("SELECT zalo_chat_id FROM consultants WHERE id = ?");
@@ -668,9 +667,8 @@ function sendCompensationAddedZaloMessageToAdmin($adminChatId, $adminName, $cons
         }
     }
 
-    $stmtToken = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'zalo_bot_token' LIMIT 1");
-    $botToken = $stmtToken->fetch_assoc()['setting_value'] ?? '';
-    if (!$botToken || empty($adminChatId) || strtolower($adminChatId) === 'chưa liên kết')
+    $botToken = get_system_setting($conn, 'zalo_bot_token');
+    if (empty($botToken) || empty($adminChatId) || strtolower($adminChatId) === 'chưa liên kết')
         return false;
 
     $reasonStr = !empty($reason) ? "  • Lý do: $reason\n" : "";
@@ -1095,10 +1093,7 @@ function generateWeeklyReportMessage($conn, $sale, $startTimestamp, $endTimestam
 
     // Fetch frontend URL for portal link
     $frontendUrl = '';
-    $urlRes = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key='frontend_url' LIMIT 1");
-    if ($urlRes && $urlRes->num_rows > 0) {
-        $frontendUrl = rtrim($urlRes->fetch_assoc()['setting_value'], '/');
-    }
+    $frontendUrl = rtrim(get_system_setting($conn, 'frontend_url'), '/');
     if (empty($frontendUrl)) {
         $frontendUrl = 'http://localhost:5173'; // Fallback
     }
@@ -1240,10 +1235,7 @@ function generateMonthlyReportMessage($conn, $sale, $startTimestamp, $endTimesta
 
     // Fetch frontend URL for portal link
     $frontendUrl = '';
-    $urlRes = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key='frontend_url' LIMIT 1");
-    if ($urlRes && $urlRes->num_rows > 0) {
-        $frontendUrl = rtrim($urlRes->fetch_assoc()['setting_value'], '/');
-    }
+    $frontendUrl = rtrim(get_system_setting($conn, 'frontend_url'), '/');
     if (empty($frontendUrl)) {
         $frontendUrl = 'http://localhost:5173'; // Fallback
     }

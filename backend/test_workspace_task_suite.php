@@ -33,6 +33,27 @@ if (!function_exists('logActivity')) {
 
 echo "=== STARTING WORKSPACE TASK DRAWER INTEGRATION TESTS ===\n\n";
 
+// Auto create test users if they don't exist to satisfy foreign key constraints
+$testUsers = [
+    100009 => ['email' => 'dev_admin@test.com', 'username' => 'dev_admin', 'full_name' => 'Dev Admin', 'role' => 'admin'],
+    100010 => ['email' => 'dev_director@test.com', 'username' => 'dev_director', 'full_name' => 'Dev Director', 'role' => 'director'],
+    100011 => ['email' => 'dev_manager@test.com', 'username' => 'dev_manager', 'full_name' => 'Dev Manager', 'role' => 'manager'],
+    100012 => ['email' => 'dev_sale@test.com', 'username' => 'dev_sale', 'full_name' => 'Dev Sale', 'role' => 'sales']
+];
+
+$GLOBALS['task_inserted_uids'] = [];
+
+foreach ($testUsers as $uid => $u) {
+    $stmtCheck = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+    $stmtCheck->execute([$uid]);
+    if (!$stmtCheck->fetch()) {
+        $stmtIns = $pdo->prepare("INSERT INTO users (id, email, username, full_name, role, tenant_id) VALUES (?, ?, ?, ?, ?, 1)");
+        if ($stmtIns->execute([$uid, $u['email'], $u['username'], $u['full_name'], $u['role']])) {
+            $GLOBALS['task_inserted_uids'][] = $uid;
+        }
+    }
+}
+
 $ctrl = new ActivityController($pdo);
 
 // Prepare temporary contact and task for testing
@@ -41,15 +62,17 @@ $tenantId = 1;
 // Clean old test items to keep database pristine
 $pdo->exec("DELETE FROM activities WHERE subject LIKE '[TEST_SUITE]%'");
 $pdo->exec("DELETE FROM notifications WHERE link LIKE '%highlight_activity_id%'");
+$pdo->exec("DELETE FROM notifications WHERE user_id IN (100010, 100011, 100012)");
 
 // 1. Create a base task activity
 $stmt = $pdo->prepare("
-    INSERT INTO activities (tenant_id, user_id, subject, type, related_type, related_id, progress, require_approval, approver_id, approval_status, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO activities (tenant_id, user_id, created_by, subject, type, related_type, related_id, progress, require_approval, approver_id, approval_status, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ");
 $stmt->execute([
     $tenantId,
     100009, // Dev Admin
+    100009, // created_by: Dev Admin
     '[TEST_SUITE] Implement Workspace Task Drawer Tests',
     'task',
     'contact',
@@ -296,6 +319,10 @@ assertTest("Trigger 3: Task automatically unhides when tagged in a comment", $is
 echo "\n--- CLEANING UP TEST DATA ---\n";
 $pdo->exec("DELETE FROM activities WHERE subject LIKE '[TEST_SUITE]%'");
 $pdo->exec("DELETE FROM notifications WHERE user_id IN (100010, 100011, 100012) AND (link LIKE '%highlight_activity_id%' OR link LIKE '%highlight_comment_id%')");
+if (!empty($GLOBALS['task_inserted_uids'])) {
+    $inClause = implode(',', array_map('intval', $GLOBALS['task_inserted_uids']));
+    $pdo->exec("DELETE FROM users WHERE id IN ($inClause)");
+}
 echo "Cleaned up all temporary testing records successfully.\n";
 
 printTestSummary();

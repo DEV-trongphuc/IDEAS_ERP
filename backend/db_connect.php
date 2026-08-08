@@ -29,6 +29,17 @@ if (!function_exists('log_communication')) {
 
         $leadIdVal = !empty($leadId) ? (int)$leadId : null;
 
+        // Auto cleanup old communication logs (older than 180 days) with 1% probability to avoid overhead
+        if (mt_rand(1, 100) === 1) {
+            try {
+                if ($conn instanceof mysqli) {
+                    $conn->query("DELETE FROM communication_logs WHERE sent_at < DATE_SUB(NOW(), INTERVAL 180 DAY)");
+                } elseif ($conn instanceof PDO) {
+                    $conn->exec("DELETE FROM communication_logs WHERE sent_at < DATE_SUB(NOW(), INTERVAL 180 DAY)");
+                }
+            } catch (\Throwable $e) {}
+        }
+
         try {
             if ($conn instanceof mysqli) {
                 $stmt = $conn->prepare("INSERT INTO communication_logs (lead_id, type, recipient, status, error_message) VALUES (?, ?, ?, ?, ?)");
@@ -53,11 +64,29 @@ if (!function_exists('get_system_setting')) {
         static $settings_cache = null;
         if ($settings_cache === null) {
             $settings_cache = [];
-            $res = $conn->query("SELECT setting_key, setting_value FROM system_settings");
-            if ($res) {
-                while ($row = $res->fetch_assoc()) {
-                    $settings_cache[$row['setting_key']] = $row['setting_value'];
+            $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "ideas_system_settings.json";
+            
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+                $settings_cache = json_decode(file_get_contents($cacheFile), true) ?: [];
+            }
+            
+            if (empty($settings_cache)) {
+                $settings_cache = [];
+                if ($conn instanceof PDO) {
+                    $stmt = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+                    $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                    foreach ($rows as $row) {
+                        $settings_cache[$row['setting_key']] = $row['setting_value'];
+                    }
+                } else {
+                    $res = $conn->query("SELECT setting_key, setting_value FROM system_settings");
+                    if ($res) {
+                        while ($row = $res->fetch_assoc()) {
+                            $settings_cache[$row['setting_key']] = $row['setting_value'];
+                        }
+                    }
                 }
+                @file_put_contents($cacheFile, json_encode($settings_cache));
             }
         }
         if ($key === null) {

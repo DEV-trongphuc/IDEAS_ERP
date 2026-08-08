@@ -119,7 +119,11 @@ export const DashboardPage: React.FC = () => {
     }
   }, [dateRange]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+    const intervalId = setInterval(fetchAll, 60000);
+    return () => clearInterval(intervalId);
+  }, [fetchAll]);
   useEffect(() => { setActivityIndex(0); }, [dateRange]);
 
   const margin = stats?.won_value > 0 ? (stats?.profit / stats?.won_value) * 100 : 0;

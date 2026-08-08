@@ -101,10 +101,13 @@ class UserController {
         if (!in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director', 'hr'], true) && (int)$auth['user_id'] !== (int)$id) respond(403, null, 'Không có quyền cập nhật thông tin người khác', false);
         
         $b = getBody();
-        $fields = ['email', 'full_name', 'phone', 'avatar_url', 'signature_url', 'is_active', 'dob', 'gender', 'citizen_id', 'address', 'bank_name', 'bank_account', 'permissions_json', 'job_title', 'team_id', 'zalo_chat_id', 'telegram_chat_id', 'bio'];
+        $fields = ['email', 'full_name', 'phone', 'avatar_url', 'signature_url', 'dob', 'gender', 'citizen_id', 'address', 'bank_name', 'bank_account', 'zalo_chat_id', 'telegram_chat_id', 'bio'];
         if (in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director', 'hr'], true)) {
             $fields[] = 'role';
             $fields[] = 'is_active';
+            $fields[] = 'permissions_json';
+            $fields[] = 'job_title';
+            $fields[] = 'team_id';
         }
 
         // Admin lockout prevention

@@ -959,323 +959,326 @@ function checkNightShiftAvailability($conn, $consultantId, $currentTime)
 
 function getNextConsultantInRound($conn, $roundId, $lead = null, $excludeIds = [])
 {
-    // 1. Get round info with FOR UPDATE lock
-    $stmt = $conn->prepare("SELECT last_assigned_consultant_id FROM distribution_rounds WHERE id = ? AND is_active = 1 FOR UPDATE");
-    $stmt->bind_param("i", $roundId);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    $conn->begin_transaction();
+    try {
+        // 1. Get round info with FOR UPDATE lock
+        $stmt = $conn->prepare("SELECT last_assigned_consultant_id FROM distribution_rounds WHERE id = ? AND is_active = 1 FOR UPDATE");
+        $stmt->bind_param("i", $roundId);
+        $stmt->execute();
+        $res = $stmt->get_result();
 
-    if ($res->num_rows === 0) {
+        if ($res->num_rows === 0) {
+            $stmt->close();
+            $conn->commit();
+            return null; // Round not found or inactive
+        }
+
+        $roundInfo = $res->fetch_assoc();
+        $lastAssignedId = $roundInfo['last_assigned_consultant_id'];
         $stmt->close();
-        return null; // Round not found or inactive
-    }
 
-    $roundInfo = $res->fetch_assoc();
-    $lastAssignedId = $roundInfo['last_assigned_consultant_id'];
-    $stmt->close();
-
-    // Get absolute last assigned consultant for this round from distribution_logs to prevent back-to-back leads
-    $absoluteLastAssignedId = null;
-    $logStmt = $conn->prepare("SELECT assigned_to FROM distribution_logs WHERE round_id = ? ORDER BY id DESC LIMIT 1");
-    if ($logStmt) {
-        $logStmt->bind_param("i", $roundId);
-        $logStmt->execute();
-        $logRes = $logStmt->get_result();
-        if ($logRow = $logRes->fetch_assoc()) {
-            $absoluteLastAssignedId = $logRow['assigned_to'] !== null ? (int) $logRow['assigned_to'] : null;
-        }
-        $logStmt->close();
-    }
-
-    // Load starvation prevention settings
-    $starvationEnabled = (int) get_system_setting($conn, 'starvation_prevention_enabled');
-    $starvationMaxPerHour = (int) get_system_setting($conn, 'starvation_max_leads_per_hour');
-    if ($starvationMaxPerHour <= 0) {
-        $starvationMaxPerHour = 5;
-    }
-
-    // 2. Get active consultants with ALL rules
-    if ($starvationEnabled === 1) {
-        // Query ALL active consultants (include vacation_mode / leave so we can process and skip them)
-        $cStmt = $conn->prepare("
-            SELECT c.id, rc.receive_ratio, rc.skip_count, rc.compensation_count, 
-                   rc.data_per_turn, rc.current_turn_remaining, rc.skipped_credit,
-                   c.vacation_mode, c.leave_start, c.leave_end, c.work_start_time, c.work_end_time, c.work_schedule
-            FROM round_consultants rc 
-            JOIN consultants c ON rc.consultant_id = c.id 
-            WHERE rc.round_id = ? 
-              AND rc.is_active = 1 
-              AND c.status = 'active'
-            ORDER BY c.id ASC
-        ");
-    } else {
-        // Original query: exclude vacation mode and leave
-        $cStmt = $conn->prepare("
-            SELECT c.id, rc.receive_ratio, rc.skip_count, rc.compensation_count, 
-                   rc.data_per_turn, rc.current_turn_remaining, 0 as skipped_credit,
-                   c.vacation_mode, c.leave_start, c.leave_end, c.work_start_time, c.work_end_time, c.work_schedule
-            FROM round_consultants rc 
-            JOIN consultants c ON rc.consultant_id = c.id 
-            WHERE rc.round_id = ? 
-              AND rc.is_active = 1 
-              AND c.status = 'active' 
-              AND c.vacation_mode = 0 
-              AND (c.leave_start IS NULL OR CURDATE() < c.leave_start OR (c.leave_end IS NOT NULL AND c.leave_end < CURDATE()))
-            ORDER BY c.id ASC
-        ");
-    }
-
-    $cStmt->bind_param("i", $roundId);
-    $cStmt->execute();
-    $cRes = $cStmt->get_result();
-
-    if ($cRes->num_rows === 0) {
-        error_log("IDEAS ERROR: Round ID $roundId has no active consultants!");
-        $cStmt->close();
-        return null;
-    }
-
-    $consultants = [];
-    while ($row = $cRes->fetch_assoc()) {
-        if (!empty($excludeIds) && in_array((int)$row['id'], $excludeIds, true)) {
-            continue;
-        }
-        $consultants[] = $row;
-    }
-
-    $starvationCounts = [];
-    if ($starvationEnabled === 1 && !empty($consultants)) {
-        $consultantIds = array_map(function ($c) {
-            return (int) $c['id'];
-        }, $consultants);
-        $placeholders = implode(',', array_fill(0, count($consultantIds), '?'));
-
-        $logStmt = $conn->prepare("
-            SELECT assigned_to, COUNT(*) as cnt 
-            FROM distribution_logs 
-            WHERE assigned_to IN ($placeholders)
-              AND status = 'compensation' 
-              AND message LIKE '%(Starvation Prevention)%' 
-              AND received_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-            GROUP BY assigned_to
-        ");
+        // Get absolute last assigned consultant for this round from distribution_logs to prevent back-to-back leads
+        $absoluteLastAssignedId = null;
+        $logStmt = $conn->prepare("SELECT assigned_to FROM distribution_logs WHERE round_id = ? ORDER BY id DESC LIMIT 1");
         if ($logStmt) {
-            $types = str_repeat('i', count($consultantIds));
-            $logStmt->bind_param($types, ...$consultantIds);
+            $logStmt->bind_param("i", $roundId);
             $logStmt->execute();
             $logRes = $logStmt->get_result();
-            while ($logRow = $logRes->fetch_assoc()) {
-                $starvationCounts[(int) $logRow['assigned_to']] = (int) $logRow['cnt'];
+            if ($logRow = $logRes->fetch_assoc()) {
+                $absoluteLastAssignedId = $logRow['assigned_to'] !== null ? (int) $logRow['assigned_to'] : null;
             }
             $logStmt->close();
         }
-    }
 
-    $compensatedConsultant = null;
-    $starvationConsultant = null;
-    $midTurnConsultant = null;  // Consultant who is mid-turn (current_turn_remaining > 0)
-
-    $today = date('Y-m-d');
-    $currentTime = date('H:i');
-
-    $goldenHoursStart = get_system_setting($conn, 'golden_hours_start_time') ?: '06:00';
-    $goldenHoursEnd = get_system_setting($conn, 'golden_hours_end_time') ?: '08:30';
-    $isGoldenHoursTime = false;
-    if ($goldenHoursStart < $goldenHoursEnd) {
-        $isGoldenHoursTime = ($currentTime >= $goldenHoursStart && $currentTime <= $goldenHoursEnd);
-    } else {
-        $isGoldenHoursTime = ($currentTime >= $goldenHoursStart || $currentTime <= $goldenHoursEnd);
-    }
-
-    // Calculate active count of available consultants (who pass all 5 gates and are currently on shift)
-    $activeCount = 0;
-    foreach ($consultants as $c) {
-        $isOnVacation = ($c['vacation_mode'] == 1 || (!empty($c['leave_start']) && $today >= $c['leave_start'] && (empty($c['leave_end']) || $today <= $c['leave_end'])));
-        $isGatePassed = (checkConsultantGates($conn, (int)$c['id'], $lead) === true);
-        $cInWorkHours = isConsultantInWorkHours($currentTime, $c['work_start_time'], $c['work_end_time'], $c['work_schedule']);
-        $cNightShift = checkNightShiftAvailability($conn, (int)$c['id'], $currentTime);
-        if (!$isOnVacation && $isGatePassed && ($cInWorkHours || $cNightShift || $isGoldenHoursTime)) {
-            $activeCount++;
-        }
-    }
-
-    foreach ($consultants as $row) {
-        $isOnVacation = ($row['vacation_mode'] == 1 || (!empty($row['leave_start']) && $today >= $row['leave_start'] && (empty($row['leave_end']) || $today <= $row['leave_end'])));
-        $isInWorkHours = isConsultantInWorkHours($currentTime, $row['work_start_time'], $row['work_end_time'], $row['work_schedule']);
-        $isNightShiftActive = checkNightShiftAvailability($conn, (int)$row['id'], $currentTime);
-        
-        $gateResult = checkConsultantGates($conn, (int)$row['id'], $lead);
-        $isGatePassed = ($gateResult === true);
-        if ($gateResult !== true) {
-            error_log("IDEAS INFO: Consultant ID " . $row['id'] . " failed gate check: " . $gateResult);
+        // Load starvation prevention settings
+        $starvationEnabled = (int) get_system_setting($conn, 'starvation_prevention_enabled');
+        $starvationMaxPerHour = (int) get_system_setting($conn, 'starvation_max_leads_per_hour');
+        if ($starvationMaxPerHour <= 0) {
+            $starvationMaxPerHour = 5;
         }
 
-        // Must be on duty (either in regular work hours OR active approved night shift OR active checked-in golden hours)
-        $isAvailable = !$isOnVacation && $isGatePassed && ($isInWorkHours || $isNightShiftActive || $isGoldenHoursTime);
-
-        // Priority 1: Compensation (error data replacement) - only if available (not on vacation)
-        // BUGFIX/ENHANCEMENT: Tránh dồn dập đền bù liên tục cho cùng 1 sale. 
-        // Nếu Sale này vừa nhận lead trước đó (absoluteLastAssignedId từ logs), ta sẽ bỏ qua lượt đền bù này nếu trong vòng còn có TVV khác đang hoạt động.
-        $isLastAssigned = ($absoluteLastAssignedId !== null && (int) $row['id'] === (int) $absoluteLastAssignedId);
-        $shouldSkipConsecutiveComp = ($isLastAssigned && $activeCount > 1);
-
-        if (empty($compensatedConsultant) && $isAvailable && !$shouldSkipConsecutiveComp && intval($row['compensation_count']) > 0) {
-            $compensatedConsultant = $row;
+        // 2. Get active consultants with ALL rules
+        if ($starvationEnabled === 1) {
+            // Query ALL active consultants (include vacation_mode / leave so we can process and skip them)
+            $cStmt = $conn->prepare("
+                SELECT c.id, rc.receive_ratio, rc.skip_count, rc.compensation_count, 
+                       rc.data_per_turn, rc.current_turn_remaining, rc.skipped_credit,
+                       c.vacation_mode, c.leave_start, c.leave_end, c.work_start_time, c.work_end_time, c.work_schedule
+                FROM round_consultants rc 
+                JOIN consultants c ON rc.consultant_id = c.id 
+                WHERE rc.round_id = ? 
+                  AND rc.is_active = 1 
+                  AND c.status = 'active'
+                ORDER BY c.id ASC
+            ");
+        } else {
+            // Original query: exclude vacation mode and leave
+            $cStmt = $conn->prepare("
+                SELECT c.id, rc.receive_ratio, rc.skip_count, rc.compensation_count, 
+                       rc.data_per_turn, rc.current_turn_remaining, 0 as skipped_credit,
+                       c.vacation_mode, c.leave_start, c.leave_end, c.work_start_time, c.work_end_time, c.work_schedule
+                FROM round_consultants rc 
+                JOIN consultants c ON rc.consultant_id = c.id 
+                WHERE rc.round_id = ? 
+                  AND rc.is_active = 1 
+                  AND c.status = 'active' 
+                  AND c.vacation_mode = 0 
+                  AND (c.leave_start IS NULL OR CURDATE() < c.leave_start OR (c.leave_end IS NOT NULL AND c.leave_end < CURDATE()))
+                ORDER BY c.id ASC
+            ");
         }
 
-        // Priority 2: Starvation Prevention (skipped_credit) - only if available (not on vacation), enabled, within hourly limit, and currently on shift
-        // TỐI ƯU CÔNG BẰNG: Chọn người có skipped_credit cao nhất (ưu tiên ID thấp nếu hòa)
-        if ($starvationEnabled === 1 && $isAvailable && $isInWorkHours && intval($row['skipped_credit']) > 0) {
-            if (empty($starvationConsultant) || intval($row['skipped_credit']) > intval($starvationConsultant['skipped_credit'])) {
-                $hourlyCount = $starvationCounts[(int) $row['id']] ?? 0;
-                if ($hourlyCount < $starvationMaxPerHour) {
-                    $starvationConsultant = $row;
+        $cStmt->bind_param("i", $roundId);
+        $cStmt->execute();
+        $cRes = $cStmt->get_result();
+
+        if ($cRes->num_rows === 0) {
+            error_log("IDEAS ERROR: Round ID $roundId has no active consultants!");
+            $cStmt->close();
+            $conn->commit();
+            return null;
+        }
+
+        $consultants = [];
+        while ($row = $cRes->fetch_assoc()) {
+            if (!empty($excludeIds) && in_array((int)$row['id'], $excludeIds, true)) {
+                continue;
+            }
+            $consultants[] = $row;
+        }
+
+        $starvationCounts = [];
+        if ($starvationEnabled === 1 && !empty($consultants)) {
+            $consultantIds = array_map(function ($c) {
+                return (int) $c['id'];
+            }, $consultants);
+            $placeholders = implode(',', array_fill(0, count($consultantIds), '?'));
+
+            $logStmt = $conn->prepare("
+                SELECT assigned_to, COUNT(*) as cnt 
+                FROM distribution_logs 
+                WHERE assigned_to IN ($placeholders)
+                  AND status = 'compensation' 
+                  AND message LIKE '%(Starvation Prevention)%' 
+                  AND received_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                GROUP BY assigned_to
+            ");
+            if ($logStmt) {
+                $types = str_repeat('i', count($consultantIds));
+                $logStmt->bind_param($types, ...$consultantIds);
+                $logStmt->execute();
+                $logRes = $logStmt->get_result();
+                while ($logRow = $logRes->fetch_assoc()) {
+                    $starvationCounts[(int) $logRow['assigned_to']] = (int) $logRow['cnt'];
+                }
+                $logStmt->close();
+            }
+        }
+
+        $compensatedConsultant = null;
+        $starvationConsultant = null;
+        $midTurnConsultant = null;  // Consultant who is mid-turn (current_turn_remaining > 0)
+
+        $today = date('Y-m-d');
+        $currentTime = date('H:i');
+
+        $goldenHoursStart = get_system_setting($conn, 'golden_hours_start_time') ?: '06:00';
+        $goldenHoursEnd = get_system_setting($conn, 'golden_hours_end_time') ?: '08:30';
+        $isGoldenHoursTime = false;
+        if ($goldenHoursStart < $goldenHoursEnd) {
+            $isGoldenHoursTime = ($currentTime >= $goldenHoursStart && $currentTime <= $goldenHoursEnd);
+        } else {
+            $isGoldenHoursTime = ($currentTime >= $goldenHoursStart || $currentTime <= $goldenHoursEnd);
+        }
+
+        // Calculate active count of available consultants (who pass all 5 gates and are currently on shift)
+        $activeCount = 0;
+        foreach ($consultants as $c) {
+            $isOnVacation = ($c['vacation_mode'] == 1 || (!empty($c['leave_start']) && $today >= $c['leave_start'] && (empty($c['leave_end']) || $today <= $c['leave_end'])));
+            $isGatePassed = (checkConsultantGates($conn, (int)$c['id'], $lead) === true);
+            $cInWorkHours = isConsultantInWorkHours($currentTime, $c['work_start_time'], $c['work_end_time'], $c['work_schedule']);
+            $cNightShift = checkNightShiftAvailability($conn, (int)$c['id'], $currentTime);
+            if (!$isOnVacation && $isGatePassed && ($cInWorkHours || $cNightShift || $isGoldenHoursTime)) {
+                $activeCount++;
+            }
+        }
+
+        foreach ($consultants as $row) {
+            $isOnVacation = ($row['vacation_mode'] == 1 || (!empty($row['leave_start']) && $today >= $row['leave_start'] && (empty($row['leave_end']) || $today <= $row['leave_end'])));
+            $isInWorkHours = isConsultantInWorkHours($currentTime, $row['work_start_time'], $row['work_end_time'], $row['work_schedule']);
+            $isNightShiftActive = checkNightShiftAvailability($conn, (int)$row['id'], $currentTime);
+            
+            $gateResult = checkConsultantGates($conn, (int)$row['id'], $lead);
+            $isGatePassed = ($gateResult === true);
+            if ($gateResult !== true) {
+                error_log("IDEAS INFO: Consultant ID " . $row['id'] . " failed gate check: " . $gateResult);
+            }
+
+            // Must be on duty (either in regular work hours OR active approved night shift OR active checked-in golden hours)
+            $isAvailable = !$isOnVacation && $isGatePassed && ($isInWorkHours || $isNightShiftActive || $isGoldenHoursTime);
+
+            // Priority 1: Compensation (error data replacement) - only if available (not on vacation)
+            // BUGFIX/ENHANCEMENT: Tránh dồn dập đền bù liên tục cho cùng 1 sale. 
+            // Nếu Sale này vừa nhận lead trước đó (absoluteLastAssignedId từ logs), ta sẽ bỏ qua lượt đền bù này nếu trong vòng còn có TVV khác đang hoạt động.
+            $isLastAssigned = ($absoluteLastAssignedId !== null && (int) $row['id'] === (int) $absoluteLastAssignedId);
+            $shouldSkipConsecutiveComp = ($isLastAssigned && $activeCount > 1);
+
+            if (empty($compensatedConsultant) && $isAvailable && !$shouldSkipConsecutiveComp && intval($row['compensation_count']) > 0) {
+                $compensatedConsultant = $row;
+            }
+
+            // Priority 2: Starvation Prevention (skipped_credit) - only if available (not on vacation), enabled, within hourly limit, and currently on shift
+            if ($starvationEnabled === 1 && $isAvailable && $isInWorkHours && intval($row['skipped_credit']) > 0) {
+                if (empty($starvationConsultant) || intval($row['skipped_credit']) > intval($starvationConsultant['skipped_credit'])) {
+                    $hourlyCount = $starvationCounts[(int) $row['id']] ?? 0;
+                    if ($hourlyCount < $starvationMaxPerHour) {
+                        $starvationConsultant = $row;
+                    }
+                }
+            }
+
+            // Priority 3: Mid-turn - only if available
+            if (empty($compensatedConsultant) && empty($starvationConsultant) && empty($midTurnConsultant) && $isAvailable && intval($row['current_turn_remaining']) > 0) {
+                $midTurnConsultant = $row;
+            }
+        }
+
+        // === PRIORITY 1: COMPENSATION ===
+        if ($compensatedConsultant) {
+            $nextId = $compensatedConsultant['id'];
+            $compStmt = $conn->prepare("UPDATE round_consultants SET compensation_count = compensation_count - 1, skip_count = 0 WHERE round_id = ? AND consultant_id = ?");
+            $compStmt->bind_param("ii", $roundId, $nextId);
+            $compStmt->execute();
+            $compStmt->close();
+            if (isset($cStmt)) $cStmt->close();
+            $conn->commit();
+            return ['id' => $nextId, 'is_compensation' => true];
+        }
+
+        // === PRIORITY 2: STARVATION PREVENTION ===
+        if ($starvationConsultant) {
+            $nextId = $starvationConsultant['id'];
+            $starvStmt = $conn->prepare("UPDATE round_consultants SET skipped_credit = skipped_credit - 1, skip_count = 0 WHERE round_id = ? AND consultant_id = ?");
+            $starvStmt->bind_param("ii", $roundId, $nextId);
+            $starvStmt->execute();
+            $starvStmt->close();
+            if (isset($cStmt)) $cStmt->close();
+            $conn->commit();
+            return ['id' => $nextId, 'is_compensation' => true, 'is_starvation' => true];
+        }
+
+        // === PRIORITY 3: MID-TURN ===
+        if ($midTurnConsultant) {
+            $nextId = $midTurnConsultant['id'];
+            $midStmt = $conn->prepare("UPDATE round_consultants SET current_turn_remaining = current_turn_remaining - 1 WHERE round_id = ? AND consultant_id = ?");
+            $midStmt->bind_param("ii", $roundId, $nextId);
+            $midStmt->execute();
+            $midStmt->close();
+            if (isset($cStmt)) $cStmt->close();
+            $conn->commit();
+            return ['id' => $nextId, 'is_compensation' => false];
+        }
+
+        // === PRIORITY 4: ROUND-ROBIN — Find next consultant by receive_ratio ===
+        $nextIdx = 0;
+        if ($lastAssignedId) {
+            foreach ($consultants as $i => $c) {
+                if ($c['id'] == $lastAssignedId) {
+                    $nextIdx = ($i + 1) % count($consultants);
+                    break;
                 }
             }
         }
 
-        // Priority 3: Mid-turn - only if available
-        if (empty($compensatedConsultant) && empty($starvationConsultant) && empty($midTurnConsultant) && $isAvailable && intval($row['current_turn_remaining']) > 0) {
-            $midTurnConsultant = $row;
-        }
-    }
+        $startIdx = $nextIdx;
+        $chosenConsultant = null;
+        $skippedConsultants = [];
 
-    // === PRIORITY 1: COMPENSATION — Ai cần được đền bù thì được giao ngay ===
-    if ($compensatedConsultant) {
-        $nextId = $compensatedConsultant['id'];
-        $compStmt = $conn->prepare("UPDATE round_consultants SET compensation_count = compensation_count - 1, skip_count = 0 WHERE round_id = ? AND consultant_id = ?");
-        $compStmt->bind_param("ii", $roundId, $nextId);
-        $compStmt->execute();
-        $compStmt->close();
-        if (isset($cStmt))
-            $cStmt->close();
-        return ['id' => $nextId, 'is_compensation' => true];
-    }
+        $skipResetStmt = $conn->prepare("UPDATE round_consultants SET skip_count = 0 WHERE round_id = ? AND consultant_id = ?");
+        $skipIncrStmt = $conn->prepare("UPDATE round_consultants SET skip_count = skip_count + 1 WHERE round_id = ? AND consultant_id = ?");
 
-    // === PRIORITY 2: STARVATION PREVENTION — Bù lượt thiếu do nghỉ phép/ngoài giờ ===
-    if ($starvationConsultant) {
-        $nextId = $starvationConsultant['id'];
-        $starvStmt = $conn->prepare("UPDATE round_consultants SET skipped_credit = skipped_credit - 1, skip_count = 0 WHERE round_id = ? AND consultant_id = ?");
-        $starvStmt->bind_param("ii", $roundId, $nextId);
-        $starvStmt->execute();
-        $starvStmt->close();
-        if (isset($cStmt))
-            $cStmt->close();
-        return ['id' => $nextId, 'is_compensation' => true, 'is_starvation' => true];
-    }
+        do {
+            $candidate = $consultants[$nextIdx];
 
-    // === PRIORITY 3: MID-TURN — Đang trong lượt nhận nhiều data, tiếp tục giao cho họ ===
-    if ($midTurnConsultant) {
-        $nextId = $midTurnConsultant['id'];
-        // Decrement remaining counter
-        $midStmt = $conn->prepare("UPDATE round_consultants SET current_turn_remaining = current_turn_remaining - 1 WHERE round_id = ? AND consultant_id = ?");
-        $midStmt->bind_param("ii", $roundId, $nextId);
-        $midStmt->execute();
-        $midStmt->close();
-        if (isset($cStmt))
-            $cStmt->close();
-        return ['id' => $nextId, 'is_compensation' => false];
-    }
+            // Check availability (only vacation/leave counts as unavailable for skipping)
+            $isOnVacation = ($candidate['vacation_mode'] == 1 || (!empty($candidate['leave_start']) && $today >= $candidate['leave_start'] && (empty($candidate['leave_end']) || $today <= $candidate['leave_end'])));
+            $isGatePassed = (checkConsultantGates($conn, (int)$candidate['id'], $lead) === true);
+            $isAvailable = !$isOnVacation && $isGatePassed;
 
-    // === PRIORITY 4: ROUND-ROBIN — Find next consultant by receive_ratio ===
-    $nextIdx = 0;
-    if ($lastAssignedId) {
-        foreach ($consultants as $i => $c) {
-            if ($c['id'] == $lastAssignedId) {
-                $nextIdx = ($i + 1) % count($consultants);
-                break;
-            }
-        }
-    }
+            if ($isAvailable) {
+                $ratio = max(1, (int) ($candidate['receive_ratio'] ?? 1));
+                $skipCount = (int) ($candidate['skip_count'] ?? 0);
 
-    $startIdx = $nextIdx;
-    $chosenConsultant = null;
-    $skippedConsultants = [];
-
-    $skipResetStmt = $conn->prepare("UPDATE round_consultants SET skip_count = 0 WHERE round_id = ? AND consultant_id = ?");
-    $skipIncrStmt = $conn->prepare("UPDATE round_consultants SET skip_count = skip_count + 1 WHERE round_id = ? AND consultant_id = ?");
-
-    do {
-        $candidate = $consultants[$nextIdx];
-
-        // Check availability (only vacation/leave counts as unavailable for skipping)
-        $isOnVacation = ($candidate['vacation_mode'] == 1 || (!empty($candidate['leave_start']) && $today >= $candidate['leave_start'] && (empty($candidate['leave_end']) || $today <= $candidate['leave_end'])));
-        $isGatePassed = (checkConsultantGates($conn, (int)$candidate['id'], $lead) === true);
-        $isAvailable = !$isOnVacation && $isGatePassed;
-
-        if ($isAvailable) {
-            $ratio = max(1, (int) ($candidate['receive_ratio'] ?? 1));
-            $skipCount = (int) ($candidate['skip_count'] ?? 0);
-
-            if ($ratio == 1 || $skipCount >= $ratio - 1) {
-                $chosenConsultant = $candidate;
-                $skipResetStmt->bind_param("ii", $roundId, $candidate['id']);
-                $skipResetStmt->execute();
-                break;
+                if ($ratio == 1 || $skipCount >= $ratio - 1) {
+                    $chosenConsultant = $candidate;
+                    $skipResetStmt->bind_param("ii", $roundId, $candidate['id']);
+                    $skipResetStmt->execute();
+                    break;
+                } else {
+                    $skipIncrStmt->bind_param("ii", $roundId, $candidate['id']);
+                    $skipIncrStmt->execute();
+                    $nextIdx = ($nextIdx + 1) % count($consultants);
+                }
             } else {
-                $skipIncrStmt->bind_param("ii", $roundId, $candidate['id']);
-                $skipIncrStmt->execute();
+                if ($starvationEnabled === 1 && !$isAvailable) {
+                    $skippedConsultants[] = (int) $candidate['id'];
+                }
                 $nextIdx = ($nextIdx + 1) % count($consultants);
             }
-        } else {
-            // Unavailable or skipped due to consecutive rule
-            if ($starvationEnabled === 1 && !$isAvailable) {
-                $skippedConsultants[] = (int) $candidate['id'];
-            }
-            $nextIdx = ($nextIdx + 1) % count($consultants);
-        }
-    } while ($nextIdx != $startIdx);
+        } while ($nextIdx != $startIdx);
 
-    // Fallback: everyone is skipped or offline simultaneously
-    if (!$chosenConsultant) {
-        if (isset($skipResetStmt))
-            $skipResetStmt->close();
-        if (isset($skipIncrStmt))
-            $skipIncrStmt->close();
-        if (isset($cStmt))
-            $cStmt->close();
+        // Fallback: everyone is skipped or offline simultaneously
+        if (!$chosenConsultant) {
+            if (isset($skipResetStmt)) $skipResetStmt->close();
+            if (isset($skipIncrStmt)) $skipIncrStmt->close();
+            if (isset($cStmt)) $cStmt->close();
+            $conn->commit();
+            return null;
+        }
+
+        $nextId = $chosenConsultant['id'];
+        $dataPerTurn = max(1, (int) ($chosenConsultant['data_per_turn'] ?? 1));
+
+        // If data_per_turn > 1, set current_turn_remaining = dataPerTurn - 1
+        if ($dataPerTurn > 1) {
+            $setTurnStmt = $conn->prepare("UPDATE round_consultants SET current_turn_remaining = ? WHERE round_id = ? AND consultant_id = ?");
+            $remaining = $dataPerTurn - 1;
+            $setTurnStmt->bind_param("iii", $remaining, $roundId, $nextId);
+            $setTurnStmt->execute();
+            $setTurnStmt->close();
+        }
+
+        // Update last_assigned for round-robin tracking
+        $updStmt = $conn->prepare("UPDATE distribution_rounds SET last_assigned_consultant_id = ? WHERE id = ?");
+        $updStmt->bind_param("ii", $nextId, $roundId);
+        $updStmt->execute();
+        $updStmt->close();
+
+        // Increment skipped_credit for bypassed/skipped consultants
+        if (!empty($skippedConsultants) && $starvationEnabled === 1) {
+            $placeholders = implode(',', array_fill(0, count($skippedConsultants), '?'));
+            $stmtSkip = $conn->prepare("UPDATE round_consultants SET skipped_credit = skipped_credit + 1 WHERE round_id = ? AND consultant_id IN ($placeholders)");
+            if ($stmtSkip) {
+                $bindParams = array_merge([$roundId], $skippedConsultants);
+                $types = 'i' . str_repeat('i', count($skippedConsultants));
+                $stmtSkip->bind_param($types, ...$bindParams);
+                $stmtSkip->execute();
+                $stmtSkip->close();
+            }
+        }
+
+        if (isset($skipResetStmt)) $skipResetStmt->close();
+        if (isset($skipIncrStmt)) $skipIncrStmt->close();
+        if (isset($cStmt)) $cStmt->close();
+
+        $conn->commit();
+        return ['id' => $nextId, 'is_compensation' => false];
+
+    } catch (Exception $ex) {
+        $conn->rollback();
+        error_log("IDEAS ERROR: Exception in getNextConsultantInRound: " . $ex->getMessage());
         return null;
     }
-
-    $nextId = $chosenConsultant['id'];
-    $dataPerTurn = max(1, (int) ($chosenConsultant['data_per_turn'] ?? 1));
-
-    // If data_per_turn > 1, set current_turn_remaining = dataPerTurn - 1
-    if ($dataPerTurn > 1) {
-        $setTurnStmt = $conn->prepare("UPDATE round_consultants SET current_turn_remaining = ? WHERE round_id = ? AND consultant_id = ?");
-        $remaining = $dataPerTurn - 1;
-        $setTurnStmt->bind_param("iii", $remaining, $roundId, $nextId);
-        $setTurnStmt->execute();
-        $setTurnStmt->close();
-    }
-
-    // Update last_assigned for round-robin tracking
-    $updStmt = $conn->prepare("UPDATE distribution_rounds SET last_assigned_consultant_id = ? WHERE id = ?");
-    $updStmt->bind_param("ii", $nextId, $roundId);
-    $updStmt->execute();
-    $updStmt->close();
-
-    // Increment skipped_credit for bypassed/skipped consultants
-    if (!empty($skippedConsultants) && $starvationEnabled === 1) {
-        $placeholders = implode(',', array_fill(0, count($skippedConsultants), '?'));
-        $stmtSkip = $conn->prepare("UPDATE round_consultants SET skipped_credit = skipped_credit + 1 WHERE round_id = ? AND consultant_id IN ($placeholders)");
-        if ($stmtSkip) {
-            $bindParams = array_merge([$roundId], $skippedConsultants);
-            $types = 'i' . str_repeat('i', count($skippedConsultants));
-            $stmtSkip->bind_param($types, ...$bindParams);
-            $stmtSkip->execute();
-            $stmtSkip->close();
-        }
-    }
-
-    if (isset($skipResetStmt))
-        $skipResetStmt->close();
-    if (isset($skipIncrStmt))
-        $skipIncrStmt->close();
-    if (isset($cStmt))
-        $cStmt->close();
-
-    return ['id' => $nextId, 'is_compensation' => false];
 }
 
 function isLeadBlocked($conn, $phone, $email) {

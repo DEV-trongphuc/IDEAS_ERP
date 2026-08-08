@@ -32,6 +32,27 @@ assertTest("CSDL: Cấu hình enum role chứa vai trò 'accountant'", $hasAccou
 assertTest("CSDL: Cấu hình enum role chứa vai trò 'marketing'", $hasMarketingRole, "Enum value: $roleEnumVal");
 
 // 2. Kiểm tra sự tồn tại của 3 tài khoản thử nghiệm
+$testUsersRbac = [
+    100013 => ['email' => 'hr@Ideas.test', 'username' => 'hr_test', 'full_name' => 'HR Tester', 'role' => 'hr'],
+    100014 => ['email' => 'accountant@Ideas.test', 'username' => 'accountant_test', 'full_name' => 'Accountant Tester', 'role' => 'accountant'],
+    100015 => ['email' => 'marketing@Ideas.test', 'username' => 'marketing_test', 'full_name' => 'Marketing Tester', 'role' => 'marketing']
+];
+
+$GLOBALS['rbac_inserted_uids'] = [];
+
+foreach ($testUsersRbac as $uid => $u) {
+    $stmtCheck = $conn->prepare("SELECT id FROM users WHERE id = ?");
+    $stmtCheck->bind_param("i", $uid);
+    $stmtCheck->execute();
+    if ($stmtCheck->get_result()->num_rows === 0) {
+        $stmtIns = $conn->prepare("INSERT INTO users (id, email, username, full_name, role, tenant_id) VALUES (?, ?, ?, ?, ?, 1)");
+        $stmtIns->bind_param("issss", $uid, $u['email'], $u['username'], $u['full_name'], $u['role']);
+        if ($stmtIns->execute()) {
+            $GLOBALS['rbac_inserted_uids'][] = $uid;
+        }
+    }
+}
+
 assertDbField($conn, 'users', 'role', "email = 'hr@Ideas.test'", 'hr', "Tài khoản hr@Ideas.test có role 'hr'");
 assertDbField($conn, 'users', 'role', "email = 'accountant@Ideas.test'", 'accountant', "Tài khoản accountant@Ideas.test có role 'accountant'");
 assertDbField($conn, 'users', 'role', "email = 'marketing@Ideas.test'", 'marketing', "Tài khoản marketing@Ideas.test có role 'marketing'");
@@ -58,5 +79,11 @@ assertTest("Marketing Scope: Lead data (leads) -> 'all'", getModulePermissionSco
 assertTest("Marketing Scope: Chiến dịch (campaigns) -> 'all'", getModulePermissionScope($mktUser, 'campaigns', 'read') === 'all');
 assertTest("Marketing Scope: Dự án (projects) -> 'all'", getModulePermissionScope($mktUser, 'projects', 'read') === 'all');
 assertTest("Marketing Scope: Cài đặt hệ thống (settings) -> 'none'", getModulePermissionScope($mktUser, 'settings', 'write') === 'none');
+
+// Dọn dẹp dữ liệu test
+if (!empty($GLOBALS['rbac_inserted_uids'])) {
+    $inClause = implode(',', array_map('intval', $GLOBALS['rbac_inserted_uids']));
+    $conn->query("DELETE FROM users WHERE id IN ($inClause)");
+}
 
 printTestSummary();

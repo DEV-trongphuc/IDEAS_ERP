@@ -44,8 +44,7 @@ if (empty($text) || empty($chatId)) {
 }
 
 // TỐI ƯU HIỆU SUẤT: Lấy Bot Token một lần duy nhất từ DB
-$stmtToken = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'telegram_bot_token' LIMIT 1");
-$botToken = $stmtToken->fetch_assoc()['setting_value'] ?? '';
+$botToken = get_system_setting($conn, 'telegram_bot_token');
 
 if (empty($botToken)) {
     echo json_encode(["message" => "Telegram Bot Token not configured"]);

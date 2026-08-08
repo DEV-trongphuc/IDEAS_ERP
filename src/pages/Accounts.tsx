@@ -21,7 +21,7 @@ const AccountsInner = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showConfirm } = useUIStore();
-  const isSale = user?.role === 'sale';
+  const isRestrictedRole = user && ['sale', 'viewer', 'hr', 'accountant', 'marketing'].includes(user.role);
 
   const renderLastLogin = (lastLoginStr: string | null) => {
     if (!lastLoginStr) {
@@ -483,8 +483,8 @@ const AccountsInner = () => {
   }, []);
 
   useEffect(() => {
-    if (isSale && accounts.length > 0) {
-      const acc = accounts[0];
+    if (isRestrictedRole && accounts.length > 0) {
+      const acc = accounts.find(a => Number(a.id) === Number(user?.id)) || accounts[0];
       setEditingAccount(acc);
       setFormData({
         username: acc.username || '',
@@ -505,7 +505,7 @@ const AccountsInner = () => {
         bank_account: acc.bank_account || ''
       });
     }
-  }, [accounts, isSale]);
+  }, [accounts, isRestrictedRole]);
 
   const openAddModal = () => {
     setEditingAccount(null);
@@ -777,7 +777,7 @@ const AccountsInner = () => {
   const totalAccountsPages = Math.ceil(filteredAccounts.length / ACCOUNTS_PER_PAGE);
   const paginatedAccounts = filteredAccounts.slice((accountsPage - 1) * ACCOUNTS_PER_PAGE, accountsPage * ACCOUNTS_PER_PAGE);
 
-  if (isSale) {
+  if (isRestrictedRole) {
     return (
       <div style={{ animation: 'fadeIn 0.3s ease-out', maxWidth: '600px', margin: '2rem auto', padding: '1.5rem' }}>
         <div className="card" style={{ padding: '2rem' }}>

@@ -366,7 +366,7 @@ class PostController {
             unset($c['attachments_json']);
             
             $pid = $c['parent_id'];
-            if ($pid === null) {
+            if ($pid === null || $pid === 0 || $pid === '0' || $pid === '') {
                 $rootComments[] = $c;
             } else {
                 $byParent[(int)$pid][] = $c;

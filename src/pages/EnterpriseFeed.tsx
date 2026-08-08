@@ -1402,7 +1402,9 @@ export const EnterpriseFeed: React.FC = () => {
                           {t('Chưa có bình luận nào. Hãy trở thành người đầu tiên!')}
                         </span>
                       ) : (
-                        commentsMap[post.id].map(comment => (
+                        commentsMap[post.id]
+                          .filter(c => !c.parent_id || Number(c.parent_id) === 0)
+                          .map(comment => (
                           <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {/* Parent Comment */}
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>

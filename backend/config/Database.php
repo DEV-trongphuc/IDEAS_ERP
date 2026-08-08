@@ -16,6 +16,7 @@ class Database {
                 PDO::ATTR_PERSISTENT         => true,
             ];
             self::$instance = new PDO($dsn, DB_USER, DB_PASS, $opts);
+            self::$instance->exec("SET time_zone = '+07:00'");
         }
         return self::$instance;
     }

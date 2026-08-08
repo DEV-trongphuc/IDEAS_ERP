@@ -92,14 +92,24 @@ class CapiController {
 
     public function getLogs(array $auth): void {
         requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director']);
+        $tid = (int)$auth['tenant_id'];
 
-        $stmt = $this->db->query("
+        // Auto-cleanup logs older than 90 days to prevent database bloating
+        try {
+            $this->db->exec("DELETE FROM capi_logs WHERE sent_at < DATE_SUB(NOW(), INTERVAL 90 DAY)");
+        } catch (Throwable $e) {
+            error_log("Failed to clean old capi logs: " . $e->getMessage());
+        }
+
+        $stmt = $this->db->prepare("
             SELECT cl.*, c.full_name, c.phone 
             FROM capi_logs cl
-            LEFT JOIN contacts c ON cl.contact_id = c.id
+            JOIN contacts c ON cl.contact_id = c.id
+            WHERE c.tenant_id = ?
             ORDER BY cl.sent_at DESC 
             LIMIT 100
         ");
+        $stmt->execute([$tid]);
         $logs = $stmt->fetchAll() ?: [];
         respond(200, $logs, 'Lấy lịch sử CAPI logs thành công');
     }

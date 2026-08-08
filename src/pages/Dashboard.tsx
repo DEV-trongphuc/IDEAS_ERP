@@ -315,61 +315,77 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
   useEffect(() => {
     if (isActive) {
-      // BUG-04 fix: Tạo AbortController để hủy fetch cũ khi dateFilter thay đổi nhanh
-      const abortController = new AbortController();
+      let abortController = new AbortController();
       fetchDashboard(abortController.signal);
-      return () => abortController.abort(); // Cleanup: hủy khi component unmount hoặc dateFilter đổi
+
+      const intervalId = setInterval(() => {
+        abortController.abort();
+        abortController = new AbortController();
+        fetchDashboard(abortController.signal);
+      }, 60000);
+
+      return () => {
+        abortController.abort();
+        clearInterval(intervalId);
+      };
     }
   }, [dateFilter, isActive]);
 
   useEffect(() => {
     if (isActive) {
-      fetchAPI('get_reports&status=pending&date=all&pageSize=1')
-        .then(res => { if (res.success) setPendingTicketsCount(res.total_count ?? 0); })
-        .catch(e => console.error(e));
-        
-      fetchAPI('get_held_leads&pageSize=1&date=all')
-        .then(res => { if (res.success) setHeldLeadsCount(res.total_count ?? 0); })
-        .catch(e => console.error(e));
+      const fetchBadgeCounts = () => {
+        fetchAPI('get_reports&status=pending&date=all&pageSize=1')
+          .then(res => { if (res.success) setPendingTicketsCount(res.total_count ?? 0); })
+          .catch(e => console.error(e));
+          
+        fetchAPI('get_held_leads&pageSize=1&date=all')
+          .then(res => { if (res.success) setHeldLeadsCount(res.total_count ?? 0); })
+          .catch(e => console.error(e));
 
-      fetchAPI('check-ins&status=pending_approval')
-        .then(res => { if (res.success && Array.isArray(res.data)) setPendingCheckInsCount(res.data.length); })
-        .catch(e => console.error(e));
+        fetchAPI('check-ins&status=pending_approval')
+          .then(res => { if (res.success && Array.isArray(res.data)) setPendingCheckInsCount(res.data.length); })
+          .catch(e => console.error(e));
 
-      fetchAPI('cooperation-slips')
-        .then(res => {
-          if (res.success && Array.isArray(res.data)) {
-            const pending = res.data.filter((c: any) => c.status === 'pending_manager_approval');
-            setPendingCoopsCount(pending.length);
-          }
-        })
-        .catch(e => console.error(e));
-
-      fetchAPI('expenses?status=pending&limit=1')
-        .then(res => { if (res.success) setPendingExpensesCount(res.data?.total ?? 0); })
-        .catch(e => console.error(e));
-
-      if (currentViewRole === 'accountant') {
-        fetchAPI('purchase-orders')
+        fetchAPI('cooperation-slips')
           .then(res => {
-            setPoList(res?.data || res || []);
+            if (res.success && Array.isArray(res.data)) {
+              const pending = res.data.filter((c: any) => c.status === 'pending_manager_approval');
+              setPendingCoopsCount(pending.length);
+            }
           })
           .catch(e => console.error(e));
 
-        fetchAPI('deposits')
-          .then(res => {
-            setSoList(res?.data || res || []);
-          })
+        fetchAPI('expenses?status=pending&limit=1')
+          .then(res => { if (res.success) setPendingExpensesCount(res.data?.total ?? 0); })
           .catch(e => console.error(e));
-      }
 
-      if (currentViewRole === 'marketing') {
-        fetchAPI('campaigns')
-          .then(res => {
-            setCampaignsList(Array.isArray(res) ? res : res?.data || []);
-          })
-          .catch(e => console.error(e));
-      }
+        if (currentViewRole === 'accountant') {
+          fetchAPI('purchase-orders')
+            .then(res => {
+              setPoList(res?.data || res || []);
+            })
+            .catch(e => console.error(e));
+
+          fetchAPI('deposits')
+            .then(res => {
+              setSoList(res?.data || res || []);
+            })
+            .catch(e => console.error(e));
+        }
+
+        if (currentViewRole === 'marketing') {
+          fetchAPI('campaigns')
+            .then(res => {
+              setCampaignsList(Array.isArray(res) ? res : res?.data || []);
+            })
+            .catch(e => console.error(e));
+        }
+      };
+
+      fetchBadgeCounts();
+
+      const intervalId = setInterval(fetchBadgeCounts, 60000);
+      return () => clearInterval(intervalId);
     }
   }, [isActive, currentViewRole]);
 

@@ -34,11 +34,7 @@ if (file_exists($logFile) && @filesize($logFile) > 5 * 1024 * 1024) {
 @file_put_contents($logFile, date('[Y-m-d H:i:s]') . " [HeaderSecret: " . ($headerSecret ?: 'NONE') . "] PAYLOAD: " . $rawBody . "\n\n", FILE_APPEND | LOCK_EX);
 
 // 2. Lấy cấu hình Secret Token từ DB
-$stmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'zalo_webhook_secret' LIMIT 1");
-$secretToken = '';
-if ($stmt && $stmt->num_rows > 0) {
-    $secretToken = trim($stmt->fetch_assoc()['setting_value'] ?? '');
-}
+$secretToken = trim(get_system_setting($conn, 'zalo_webhook_secret'));
 
 // 3. Xác thực Secret Token (nếu có cấu hình secretToken và headerSecret không rỗng)
 if (!empty($secretToken)) {
@@ -58,8 +54,7 @@ if (!$data || !isset($data['event_name'])) {
     exit;
 }
 // Lấy Bot Token một lần duy nhất từ DB
-$stmtToken = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'zalo_bot_token' LIMIT 1");
-$botToken = $stmtToken->fetch_assoc()['setting_value'] ?? '';
+$botToken = get_system_setting($conn, 'zalo_bot_token');
 
 $eventName = $data['event_name'] ?? '';
 
@@ -96,8 +91,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
         if ($isOAMessage) {
             $oaAccessToken = '';
             try {
-                $stmtOA = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'zalo_oa_access_token' LIMIT 1");
-                if ($stmtOA) $oaAccessToken = $stmtOA->fetch_assoc()['setting_value'] ?? '';
+                $oaAccessToken = get_system_setting($conn, 'zalo_oa_access_token');
             } catch (\Throwable $e) {}
 
             if (!empty($oaAccessToken)) {
@@ -1018,13 +1012,7 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
                         }
                     } else {
                         // Direct routing to Fallback Admin
-                        $fbSettings = [];
-                        $fbRes = $conn->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('fallback_type', 'fallback_admin_id', 'fallback_cc_email')");
-                        if ($fbRes) {
-                            while ($row = $fbRes->fetch_assoc()) {
-                                $fbSettings[$row['setting_key']] = $row['setting_value'];
-                            }
-                        }
+                        $fbSettings = get_system_setting($conn);
 
                         $fbType = $fbSettings['fallback_type'] ?? 'round';
                         $fbCc = $fbSettings['fallback_cc_email'] ?? '';

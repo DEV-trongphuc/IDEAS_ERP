@@ -21,6 +21,18 @@ class DashboardController {
         $fromTs = $from . ' 00:00:00';
         $toTs   = $to . ' 23:59:59';
 
+        // 60-second cache check
+        $cacheKey = "ideas_stats_cache_" . $tid . "_" . $uid . "_" . md5($fromTs . $toTs . $auth['role']);
+        $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $cacheKey . ".json";
+        
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 60)) {
+            $cachedData = json_decode(file_get_contents($cacheFile), true);
+            if ($cachedData) {
+                respond(200, $cachedData);
+                return;
+            }
+        }
+
         $fetchStats = function($f, $t, $fTs, $tTs) use ($tid, $isSale, $isManager, $userIds, $uid) {
             // 1. Deals Stats
             $qDeals = "SELECT COALESCE(SUM(value),0) FROM deals WHERE tenant_id=? AND deleted_at IS NULL AND created_at BETWEEN ? AND ?";
@@ -212,7 +224,7 @@ class DashboardController {
         }
         $totalContacts = (int)$this->queryScalar($qTotalContacts, $pTotalContacts);
 
-        respond(200, [
+        $result = [
             'total_value'       => $res['total_value'],
             'won_value'         => $res['won_value'],
             'won_count'         => $res['won_count'],
@@ -233,7 +245,10 @@ class DashboardController {
             'profit_change'     => $calcChange($currRev - $currExp, $prevRev - $prevExp),
             'leads_change'      => $calcChange($res['contacts'], $resPrev['contacts']),
             'expenses_change'   => $calcChange($currExp, $prevExp)
-        ]);
+        ];
+
+        @file_put_contents($cacheFile, json_encode($result));
+        respond(200, $result);
     }
 
     private function queryScalar(string $sql, array $params = []) {

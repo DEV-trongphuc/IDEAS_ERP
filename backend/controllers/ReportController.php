@@ -233,66 +233,99 @@ class ReportController
         $from = ($_GET['from'] ?? date('Y-m-01')) . ' 00:00:00';
         $to = ($_GET['to'] ?? date('Y-m-t')) . ' 23:59:59';
 
-        // Fetch the first pipeline stage ID to default empty stages
-        $sFirst = $this->db->prepare("SELECT id FROM pipeline_stages WHERE tenant_id = ? ORDER BY order_index LIMIT 1");
-        $sFirst->execute([$tid]);
-        $firstStageId = (int)$sFirst->fetchColumn();
+        // Fetch stages
+        $sStages = $this->db->prepare("SELECT id, name, color FROM pipeline_stages WHERE tenant_id = ? ORDER BY order_index");
+        $sStages->execute([$tid]);
+        $stages = $sStages->fetchAll(PDO::FETCH_ASSOC);
 
-        $dealFilter = ""; $dealParams = [];
+        if (empty($stages)) {
+            respond(200, []);
+            return;
+        }
+        $firstStageId = (int)$stages[0]['id'];
+
+        $stageMap = [];
+        foreach ($stages as $st) {
+            $stageMap[(int)$st['id']] = [
+                'stage' => $st['name'],
+                'color' => $st['color'],
+                'count' => 0,
+                'total_value' => 0.0
+            ];
+        }
+
+        // Deal Filter
+        $dealFilter = ""; $dealParams = [$tid, $from, $to];
         if ($isSale) {
-            $dealFilter = " AND d.owner_id = ?";
+            $dealFilter = " AND owner_id = ?";
             $dealParams[] = $uid;
         } else if ($isManager) {
             $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-            $dealFilter = " AND d.owner_id IN ($placeholders)";
-            $dealParams = $userIds;
+            $dealFilter = " AND owner_id IN ($placeholders)";
+            $dealParams = array_merge($dealParams, $userIds);
         }
+        $sDeals = $this->db->prepare("
+            SELECT stage_id, COUNT(*) as cnt, COALESCE(SUM(value), 0) as val
+            FROM deals
+            WHERE tenant_id = ? AND deleted_at IS NULL AND created_at BETWEEN ? AND ? $dealFilter
+            GROUP BY stage_id
+        ");
+        $sDeals->execute($dealParams);
+        $dealsData = $sDeals->fetchAll(PDO::FETCH_ASSOC);
 
-        $contactFilter = ""; $contactParams = [];
+        // Contact Filter
+        $contactFilter = ""; $contactParams = [$tid, $from, $to];
         if ($isSale) {
-            $contactFilter = " AND c.owner_id = ?";
+            $contactFilter = " AND owner_id = ?";
             $contactParams[] = $uid;
         } else if ($isManager) {
             $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-            $contactFilter = " AND c.owner_id IN ($placeholders)";
-            $contactParams = $userIds;
+            $contactFilter = " AND owner_id IN ($placeholders)";
+            $contactParams = array_merge($contactParams, $userIds);
         }
+        $sContacts = $this->db->prepare("
+            SELECT stage_id, COUNT(*) as cnt, COALESCE(SUM(expected_revenue), 0) as val
+            FROM contacts
+            WHERE tenant_id = ? AND deleted_at IS NULL AND created_at BETWEEN ? AND ? $contactFilter
+            GROUP BY stage_id
+        ");
+        $sContacts->execute($contactParams);
+        $contactsData = $sContacts->fetchAll(PDO::FETCH_ASSOC);
 
-        $companyFilter = ""; $companyParams = [];
+        // Company Filter
+        $companyFilter = ""; $companyParams = [$tid, $from, $to];
         if ($isSale) {
-            $companyFilter = " AND cp.owner_id = ?";
+            $companyFilter = " AND owner_id = ?";
             $companyParams[] = $uid;
         }
-
-        $stmt = $this->db->prepare("
-            SELECT ps.name as stage, ps.color, 
-                   (
-                      (SELECT COUNT(*) FROM deals d WHERE (d.stage_id = ps.id OR (d.stage_id IS NULL OR d.stage_id = 0 OR d.stage_id = '0') AND ps.id = ?) AND d.deleted_at IS NULL AND d.tenant_id = ? AND d.created_at BETWEEN ? AND ? $dealFilter) +
-                      (SELECT COUNT(*) FROM contacts c WHERE (c.stage_id = ps.id OR (c.stage_id IS NULL OR c.stage_id = 0 OR c.stage_id = '0') AND ps.id = ?) AND c.deleted_at IS NULL AND c.tenant_id = ? AND c.created_at BETWEEN ? AND ? $contactFilter) +
-                      (SELECT COUNT(*) FROM companies cp WHERE (cp.stage_id = ps.id OR (cp.stage_id IS NULL OR cp.stage_id = 0 OR cp.stage_id = '0') AND ps.id = ?) AND cp.deleted_at IS NULL AND cp.tenant_id = ? AND cp.created_at BETWEEN ? AND ? $companyFilter)
-                   ) as count,
-                   (
-                      (SELECT COALESCE(SUM(value),0) FROM deals d WHERE (d.stage_id = ps.id OR (d.stage_id IS NULL OR d.stage_id = 0 OR d.stage_id = '0') AND ps.id = ?) AND d.deleted_at IS NULL AND d.tenant_id = ? AND d.created_at BETWEEN ? AND ? $dealFilter) +
-                      (SELECT COALESCE(SUM(expected_revenue),0) FROM contacts c WHERE (c.stage_id = ps.id OR (c.stage_id IS NULL OR c.stage_id = 0 OR c.stage_id = '0') AND ps.id = ?) AND c.deleted_at IS NULL AND c.tenant_id = ? AND c.created_at BETWEEN ? AND ? $contactFilter) +
-                      (SELECT COALESCE(SUM(expected_revenue),0) FROM companies cp WHERE (cp.stage_id = ps.id OR (cp.stage_id IS NULL OR cp.stage_id = 0 OR cp.stage_id = '0') AND ps.id = ?) AND cp.deleted_at IS NULL AND cp.tenant_id = ? AND cp.created_at BETWEEN ? AND ? $companyFilter)
-                   ) as total_value
-            FROM pipeline_stages ps 
-            WHERE ps.tenant_id = ?
-            GROUP BY ps.id ORDER BY ps.order_index
+        $sCompanies = $this->db->prepare("
+            SELECT stage_id, COUNT(*) as cnt, COALESCE(SUM(expected_revenue), 0) as val
+            FROM companies
+            WHERE tenant_id = ? AND deleted_at IS NULL AND created_at BETWEEN ? AND ? $companyFilter
+            GROUP BY stage_id
         ");
+        $sCompanies->execute($companyParams);
+        $companiesData = $sCompanies->fetchAll(PDO::FETCH_ASSOC);
 
-        $p = array_merge(
-            [$firstStageId, $tid, $from, $to], $dealParams,
-            [$firstStageId, $tid, $from, $to], $contactParams,
-            [$firstStageId, $tid, $from, $to], $companyParams,
-            [$firstStageId, $tid, $from, $to], $dealParams,
-            [$firstStageId, $tid, $from, $to], $contactParams,
-            [$firstStageId, $tid, $from, $to], $companyParams,
-            [$tid]
-        );
+        // Aggregation function
+        $aggregate = function($dataList) use (&$stageMap, $firstStageId) {
+            foreach ($dataList as $row) {
+                $sid = (int)($row['stage_id'] ?? 0);
+                if ($sid <= 0 || !isset($stageMap[$sid])) {
+                    $sid = $firstStageId;
+                }
+                if (isset($stageMap[$sid])) {
+                    $stageMap[$sid]['count'] += (int)$row['cnt'];
+                    $stageMap[$sid]['total_value'] += (float)$row['val'];
+                }
+            }
+        };
 
-        $stmt->execute($p);
-        respond(200, $stmt->fetchAll());
+        $aggregate($dealsData);
+        $aggregate($contactsData);
+        $aggregate($companiesData);
+
+        respond(200, array_values($stageMap));
     }
 
     public function customers(array $auth): void

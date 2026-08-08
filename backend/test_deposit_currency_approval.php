@@ -30,6 +30,12 @@ if (!function_exists('respond')) {
     }
 }
 
+if (!function_exists('logInteraction')) {
+    function logInteraction($db, $tid, $uid, string $type, string $subject, ?string $body = null, ?string $relType = null, $relId = null): void {
+        // Mock
+    }
+}
+
 if (!function_exists('requireRole')) {
     function requireRole(array $payload, array $roles): void {
         // Pass validation in test mode
