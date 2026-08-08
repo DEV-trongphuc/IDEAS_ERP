@@ -2560,6 +2560,7 @@ export default function Approvals() {
                                 description: finalDesc,
                                 notes: finalDesc,
                                 amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
+                                vat_amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (it.vat / 100), 0),
                                 status: 'pending',
                                 approver_id: appVal1 || finalApproverId,
                                 approver_id_2: appVal2,
