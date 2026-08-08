@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Flame, Play, Pause, RotateCcw, Coffee, Eye, EyeOff, Clock } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Eye, Flame } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export const WorkspaceStickyPomodoro: React.FC = () => {
@@ -127,6 +127,26 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
 
   return (
     <div ref={widgetRef} style={{ position: 'fixed', top: '50%', right: '24px', transform: 'translateY(-50%)', zIndex: 9999 }}>
+      {/* Thêm CSS Keyframes cho hiệu ứng xoay tròn và nhấp nháy cực nét */}
+      <style>{`
+        @keyframes pomodoro-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes pomodoro-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.95); }
+        }
+        /* Ghi đè triệt tiêu hoàn toàn khung xanh ngọc có thể bị áp đặt bởi CSS bên ngoài */
+        .pomodoro-icon-clean, .pomodoro-icon-clean svg, .pomodoro-icon-clean path {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          background: none !important;
+          background-color: transparent !important;
+        }
+      `}</style>
+
       {/* Popover Control Menu (Mở lên phía trên nút tròn) */}
       {isOpen && (
         <div style={{
@@ -147,7 +167,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Clock size={11} />
+              <Clock size={11} className="pomodoro-icon-clean" />
               {mode === 'work' ? t('Tập trung') : t('Giải lao')}
             </span>
             <button
@@ -167,7 +187,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                 gap: '3px'
               }}
             >
-              <Eye size={11} />
+              <Eye size={11} className="pomodoro-icon-clean" />
               {t('Toàn màn hình')}
             </button>
           </div>
@@ -229,7 +249,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
               }}
               title={t('Đặt lại')}
             >
-              <RotateCcw size={12} />
+              <RotateCcw size={12} className="pomodoro-icon-clean" />
             </button>
 
             <button
@@ -248,7 +268,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                 boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
               }}
             >
-              {isRunning ? <Pause size={14} fill="white" /> : <Play size={14} fill="white" style={{ marginLeft: '2px' }} />}
+              {isRunning ? <Pause size={14} fill="white" className="pomodoro-icon-clean" /> : <Play size={14} fill="white" style={{ marginLeft: '2px' }} className="pomodoro-icon-clean" />}
             </button>
           </div>
 
@@ -294,7 +314,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
         title={t('Pomodoro Focus')}
       >
         {/* SVG Progress Ring */}
-        <svg width="64" height="64" viewBox="0 0 64 64" style={{ position: 'absolute', transform: 'rotate(-90deg)', top: 0, left: 0 }}>
+        <svg width="64" height="64" viewBox="0 0 64 64" style={{ position: 'absolute', transform: 'rotate(-90deg)', top: 0, left: 0, border: 'none', outline: 'none', background: 'none' }}>
           <circle
             cx="32"
             cy="32"
@@ -313,18 +333,23 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             strokeDasharray={2 * Math.PI * 28}
             strokeDashoffset={2 * Math.PI * 28 * (1 - progressPercent / 100)}
             strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+            style={{ transition: 'stroke-dashoffset 0.5s ease', border: 'none', outline: 'none' }}
           />
         </svg>
 
         {/* Center Display */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 }}>
-          <Flame
+          <Clock
             size={18}
+            className="pomodoro-icon-clean"
             style={{
               color: mode === 'work' ? '#ef4444' : '#10b981',
-              animation: isRunning ? 'pulse 1.5s infinite' : 'none',
-              marginBottom: '2px'
+              animation: isRunning ? 'pomodoro-spin 10s linear infinite' : 'none',
+              marginBottom: '2px',
+              border: 'none',
+              outline: 'none',
+              background: 'none',
+              backgroundColor: 'transparent'
             }}
           />
           <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--color-text)' }}>
@@ -354,7 +379,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
           {/* Header */}
           <div style={{ position: 'absolute', top: '2rem', display: 'flex', justifyContent: 'space-between', width: '80%', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Flame size={20} style={{ color: '#ef4444' }} />
+              <Clock size={20} style={{ color: '#ef4444' }} className="pomodoro-icon-clean" />
               <span style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.1em' }}>IDEAS FOCUS ENGINE</span>
             </div>
             <button
@@ -381,7 +406,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             </span>
 
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="240" height="240" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+              <svg width="240" height="240" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)', border: 'none', outline: 'none' }}>
                 <circle
                   cx="60"
                   cy="60"
@@ -400,7 +425,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                   strokeDasharray={2 * Math.PI * 50}
                   strokeDashoffset={2 * Math.PI * 50 * (1 - progressPercent / 100)}
                   strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                  style={{ transition: 'stroke-dashoffset 0.5s ease', border: 'none', outline: 'none' }}
                 />
               </svg>
 
@@ -428,7 +453,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                   justifyContent: 'center'
                 }}
               >
-                <RotateCcw size={16} />
+                <RotateCcw size={16} className="pomodoro-icon-clean" />
               </button>
 
               <button
@@ -447,7 +472,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                   boxShadow: mode === 'work' ? '0 8px 24px rgba(239, 68, 68, 0.3)' : '0 8px 24px rgba(16, 185, 129, 0.3)'
                 }}
               >
-                {isRunning ? <Pause size={24} fill="white" /> : <Play size={24} fill="white" style={{ marginLeft: '3px' }} />}
+                {isRunning ? <Pause size={24} fill="white" className="pomodoro-icon-clean" /> : <Play size={24} fill="white" style={{ marginLeft: '3px' }} className="pomodoro-icon-clean" />}
               </button>
             </div>
           </div>
