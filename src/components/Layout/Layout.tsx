@@ -17,6 +17,7 @@ import { useUIStore } from '../../store/uiStore';
 import { DepositCreateDrawer } from '../DepositCreateDrawer';
 import { AlertToast } from '../ui/AlertToast';
 import { StatRowSkeleton } from '../ui/Skeleton';
+import { WorkspaceStickyPomodoro } from '../WorkspaceStickyPomodoro';
 import { 
   Ticket as TicketIcon, 
   Activity, 
@@ -937,6 +938,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       </div>
       <AlertToast />
       <QuickAddLeadModal />
+
+      {/* Workspace Sticky Pomodoro Timer */}
+      {(location.pathname === '/workspace' || location.pathname === '/') && (
+        <WorkspaceStickyPomodoro />
+      )}
       {showPOS && (
         <DepositCreateDrawer 
           isOpen={!!showPOS}

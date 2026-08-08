@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { CustomModal } from '../ui/CustomModal';
 import { NotificationSettingsModal } from '../ui/NotificationSettingsModal';
 import { fetchAPI } from '../../utils/api';
-import { HeaderPomodoro } from '../HeaderPomodoro';
 import vnFlag from '../../assets/vn.svg';
 import usFlag from '../../assets/us.svg';
 import jpFlag from '../../assets/jp.svg';
@@ -1116,9 +1115,6 @@ export const Header = ({
             )}
           </button>
         )}
-
-        {/* Pomodoro Focus Tracker */}
-        <HeaderPomodoro />
 
         {/* Notification Bell Button */}
         <button
