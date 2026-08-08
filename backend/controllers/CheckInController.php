@@ -221,7 +221,7 @@ class CheckInController {
         }
 
         // Fetch system settings for checkout & auto-approve requirements
-        $stmtSettings = $this->db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('require_checkin_weekend_lead', 'require_checkin_holiday_lead', 'holiday_schedules', 'require_checkout', 'auto_approve_checkin', 'global_work_start_time', 'global_work_end_time')");
+        $stmtSettings = $this->db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('require_checkin_weekend_lead', 'require_checkin_holiday_lead', 'holiday_schedules', 'require_checkout', 'auto_approve_checkin', 'global_work_start_time', 'global_work_end_time', 'office_latitude', 'office_longitude', 'office_allowed_radius')");
         $stmtSettings->execute();
         $settingsMap = $stmtSettings->fetchAll(PDO::FETCH_KEY_PAIR);
 
@@ -424,17 +424,47 @@ class CheckInController {
             }
         }
 
+        $officeLat = isset($settingsMap['office_latitude']) ? (float)$settingsMap['office_latitude'] : 10.7950;
+        $officeLng = isset($settingsMap['office_longitude']) ? (float)$settingsMap['office_longitude'] : 106.7219;
+        $allowedRadius = isset($settingsMap['office_allowed_radius']) ? (float)$settingsMap['office_allowed_radius'] : 200.0;
+
+        $distance = 0.0;
+        $isOutOfRange = false;
+        if (!$isSupplementary && $lat !== '' && $lng !== '') {
+            $earthRadius = 6371000;
+            $latFrom = deg2rad((float)$lat);
+            $lonFrom = deg2rad((float)$lng);
+            $latTo = deg2rad($officeLat);
+            $lonTo = deg2rad($officeLng);
+
+            $latDelta = $latTo - $latFrom;
+            $lonDelta = $lonTo - $lonFrom;
+
+            $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+                cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+            $distance = $angle * $earthRadius;
+            
+            if ($distance > $allowedRadius) {
+                $isOutOfRange = true;
+            }
+        }
+
         $status = 'approved';
         if ($isSupplementary) {
             $status = 'pending_approval';
-        } else if ($isMandatoryAutoApprove || $autoApprove === 1) {
-            // Auto-approve check-in when auto_approve_checkin is ON or on Weekend/Holiday mandatory check-in
-            $status = 'approved';
+        } else if ($isOutOfRange) {
+            if (empty($reason)) {
+                respond(422, null, 'Bạn đang check-in ngoài phạm vi văn phòng (' . round($distance) . 'm). Vui lòng nhập lý do giải trình để gửi quản lý phê duyệt.', false);
+            }
+            $status = 'pending_approval';
         } else if ($isLate) {
             if (empty($reason)) {
                 respond(422, null, 'Bạn đi làm trễ ' . $lateMinutes . ' phút. Vui lòng gửi lý do để quản lý phê duyệt.', false);
             }
             $status = 'pending_approval';
+        } else if ($isMandatoryAutoApprove || $autoApprove === 1) {
+            // Auto-approve check-in when auto_approve_checkin is ON or on Weekend/Holiday mandatory check-in
+            $status = 'approved';
         }
 
         $inTimeStr = $today . ' ' . $currentTime;

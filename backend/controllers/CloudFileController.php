@@ -145,9 +145,38 @@ class CloudFileController {
             $blockedExts = [
                 'php', 'php3', 'php4', 'php5', 'phtml', 
                 'js', 'ts', 'py', 'pl', 'sh', 'cgi', 'rb', 'go', 'c', 'cpp', 'java', 'h', 'cs', 'swift', 'kt', 'rs',
-                'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'wsf', 'ps1', 'jar', 'apk'
+                'exe', 'bat', 'cmd', 'com', 'msi', 'scr', 'vbs', 'wsf', 'ps1', 'jar', 'apk', 'htaccess', 'config'
             ];
             if (in_array($ext, $blockedExts)) respond(422, null, "Định dạng tệp .$ext không được hỗ trợ hoặc không an toàn", false);
+
+            // Kiểm tra nội dung file có chứa mã script hoặc PHP độc hại không
+            $fileContent = @file_get_contents($file['tmp_name']);
+            if ($fileContent !== false) {
+                if (preg_match('/<\?php/i', $fileContent) || preg_match('/<\?=/i', $fileContent) || preg_match('/<script/i', $fileContent)) {
+                    respond(422, null, 'Nội dung file chứa mã độc hại nguy hiểm bị chặn', false);
+                }
+            }
+
+            // Kiểm tra MIME type thực tế bằng finfo
+            if (function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+                
+                $allowedMimes = [
+                    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp',
+                    'application/pdf',
+                    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'text/plain', 'text/csv',
+                    'application/zip', 'application/x-rar-compressed', 'application/x-zip-compressed', 'application/octet-stream'
+                ];
+                
+                if (!in_array($mime, $allowedMimes, true)) {
+                    respond(422, null, 'Định dạng MIME không được phép tải lên hệ thống', false);
+                }
+            }
 
             if (empty($name)) {
                 $name = $file['name'];

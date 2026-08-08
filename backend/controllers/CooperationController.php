@@ -665,11 +665,17 @@ class CooperationController {
                 if (count($data) > 1) {
                     $imgData = base64_decode($data[1]);
                     $filename = "slip_" . $id . "_user_" . $userId . "_" . time() . ".png";
-                    file_put_contents($sigDir . "/" . $filename, $imgData);
-                    $sigImg = "uploads/signatures/" . $filename;
+                    
+                    require_once __DIR__ . '/../config/ImageHelper.php';
+                    if (ImageHelper::saveCleanPngSignature($imgData, $sigDir . "/" . $filename)) {
+                        $sigImg = "uploads/signatures/" . $filename;
+                    } else {
+                        respond(400, null, "Định dạng chữ ký không hợp lệ!", false);
+                    }
                 }
             } catch (Throwable $sigEx) {
                 error_log("Error saving base64 signature image: " . $sigEx->getMessage());
+                respond(500, null, "Lỗi khi lưu chữ ký: " . $sigEx->getMessage(), false);
             }
         }
 
@@ -748,50 +754,65 @@ class CooperationController {
     public function approveSlip(array $auth, int $id): void {
         requireRole($auth, ['admin', 'superadmin', 'super_admin', 'manager', 'director']);
 
-        $stmtSlip = $this->db->prepare("
-            SELECT cs.*, c.tenant_id, c.project_id
-            FROM cooperation_slips cs
-            JOIN contacts c ON cs.contact_id = c.id
-            WHERE cs.id = ? AND c.tenant_id = ?
-        ");
-        $stmtSlip->execute([$id, $auth['tenant_id']]);
-        $slip = $stmtSlip->fetch();
+        $this->db->beginTransaction();
+        try {
+            $stmtSlip = $this->db->prepare("
+                SELECT cs.*, c.tenant_id, c.project_id
+                FROM cooperation_slips cs
+                JOIN contacts c ON cs.contact_id = c.id
+                WHERE cs.id = ? AND c.tenant_id = ?
+                FOR UPDATE
+            ");
+            $stmtSlip->execute([$id, $auth['tenant_id']]);
+            $slip = $stmtSlip->fetch();
 
-        if (!$slip) {
-            respond(404, null, 'Phiếu hợp tác không tồn tại', false);
-        }
-
-        // Restriction: Only GĐKD (director role) or Admin can approve.
-        // Deny regular team managers.
-        $isAdminOrSuper = in_array($auth['role'], ['admin', 'superadmin', 'super_admin'], true);
-        if (!$isAdminOrSuper) {
-            if ($auth['role'] === 'manager') {
-                respond(403, null, 'Bạn không có quyền phê duyệt phiếu hợp tác (Quyền duyệt thuộc về GĐKD/Admin)', false);
+            if (!$slip) {
+                $this->db->rollBack();
+                respond(404, null, 'Phiếu hợp tác không tồn tại', false);
             }
+
+            // Restriction: Only GĐKD (director role) or Admin can approve.
+            // Deny regular team managers.
+            $isAdminOrSuper = in_array($auth['role'], ['admin', 'superadmin', 'super_admin'], true);
+            if (!$isAdminOrSuper) {
+                if ($auth['role'] === 'manager') {
+                    $this->db->rollBack();
+                    respond(403, null, 'Bạn không có quyền phê duyệt phiếu hợp tác (Quyền duyệt thuộc về GĐKD/Admin)', false);
+                }
+            }
+
+            if (!$this->checkSlipAccess($auth, $id)) {
+                $this->db->rollBack();
+                respond(403, null, 'Bạn không có quyền phê duyệt phiếu hợp tác này', false);
+            }
+
+            if ($slip['status'] !== 'pending_manager_approval') {
+                $this->db->rollBack();
+                respond(400, null, 'Phiếu chưa được ký đủ chữ ký của các bên để phê duyệt hoặc đã được duyệt', false);
+            }
+
+            $stmt = $this->db->prepare("UPDATE cooperation_slips SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ?");
+            $stmt->execute([$auth['user_id'], $id]);
+
+            $this->db->commit();
+
+            // Email shareholders about approval
+            $shares = json_decode($slip['shares_json'], true) ?: [];
+            $emailSubject = "[IDEAS] Phiếu hợp tác #" . $id . " đã được phê duyệt thành công";
+            $emailTitle = "PHÊ DUYỆT PHIẾU HỢP TÁC";
+            $emailContent = "Chào các thành viên,<br/><br/>" .
+                            "Phiếu hợp tác chia sẻ hoa hồng #" . $id . " đã được phê duyệt thành công bởi quản trị viên.<br/>" .
+                            "Vui lòng truy cập hệ thống để xem chi tiết.";
+            $this->notifyShareholders($id, $shares, $emailSubject, $emailTitle, $emailContent);
+
+            logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE_COOPERATION_SLIP', 'cooperation_slip', $id, "Duyệt phiếu hợp tác hoa hồng ID: $id");
+            respond(200, null, 'Phê duyệt phiếu hợp tác hoa hồng thành công');
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            respond(500, null, 'Lỗi khi phê duyệt phiếu hợp tác: ' . $e->getMessage(), false);
         }
-
-        if (!$this->checkSlipAccess($auth, $id)) {
-            respond(403, null, 'Bạn không có quyền phê duyệt phiếu hợp tác này', false);
-        }
-
-        if ($slip['status'] !== 'pending_manager_approval') {
-            respond(400, null, 'Phiếu chưa được ký đủ chữ ký của các bên để phê duyệt', false);
-        }
-
-        $stmt = $this->db->prepare("UPDATE cooperation_slips SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ?");
-        $stmt->execute([$auth['user_id'], $id]);
-
-        // Email shareholders about approval
-        $shares = json_decode($slip['shares_json'], true) ?: [];
-        $emailSubject = "[IDEAS] Phiếu hợp tác #" . $id . " đã được phê duyệt thành công";
-        $emailTitle = "PHÊ DUYỆT PHIẾU HỢP TÁC";
-        $emailContent = "Chào các thành viên,<br/><br/>" .
-                        "Phiếu hợp tác chia sẻ hoa hồng #" . $id . " đã được phê duyệt thành công bởi quản trị viên.<br/>" .
-                        "Vui lòng truy cập hệ thống để xem chi tiết.";
-        $this->notifyShareholders($id, $shares, $emailSubject, $emailTitle, $emailContent);
-
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'APPROVE_COOPERATION_SLIP', 'cooperation_slip', $id, "Duyệt phiếu hợp tác hoa hồng ID: $id");
-        respond(200, null, 'Phê duyệt phiếu hợp tác hoa hồng thành công');
     }
 
     public function rejectSlip(array $auth, int $id): void {

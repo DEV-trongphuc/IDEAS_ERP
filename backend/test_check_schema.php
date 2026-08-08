@@ -57,6 +57,9 @@ printIndexes($conn, 'project_roster');
 printIndexes($conn, 'marketing_campaigns');
 printIndexes($conn, 'purchase_orders');
 printIndexes($conn, 'purchase_order_items');
+printIndexes($conn, 'tickets');
+printIndexes($conn, 'ticket_comments');
+printIndexes($conn, 'check_ins');
 
 
 

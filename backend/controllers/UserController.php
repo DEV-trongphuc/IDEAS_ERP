@@ -139,8 +139,12 @@ class UserController {
                     }
                     $sigFileName = 'sig_' . (int)$id . '_' . time() . '_' . substr(md5(uniqid()), 0, 6) . '.png';
                     $sigPath = $sigDir . $sigFileName;
-                    if (@file_put_contents($sigPath, $decoded)) {
+                    
+                    require_once __DIR__ . '/../config/ImageHelper.php';
+                    if (ImageHelper::saveCleanPngSignature($decoded, $sigPath)) {
                         $b['signature_url'] = 'uploads/signatures/' . $sigFileName;
+                    } else {
+                        respond(400, null, 'Chữ ký tải lên không đúng định dạng hình ảnh hợp lệ', false);
                     }
                 }
             }

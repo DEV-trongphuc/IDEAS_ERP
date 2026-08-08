@@ -86,4 +86,39 @@ class ImageHelper {
             'is_webp' => ($ext === 'webp')
         ];
     }
+
+    /**
+     * Decode and save signature base64 cleanly as PNG, removing malicious metadata.
+     */
+    public static function saveCleanPngSignature(string $decodedData, string $targetPath): bool {
+        if (!function_exists('imagecreatefromstring') || !function_exists('imagepng')) {
+            // GD missing fallback: check if valid image signature
+            if (strpos($decodedData, '<?php') !== false || strpos($decodedData, '<script') !== false) {
+                return false;
+            }
+            return @file_put_contents($targetPath, $decodedData) !== false;
+        }
+
+        $img = @imagecreatefromstring($decodedData);
+        if (!$img) {
+            return false;
+        }
+        
+        $width = imagesx($img);
+        $height = imagesy($img);
+        $cleanCanvas = imagecreatetruecolor($width, $height);
+        
+        imagealphablending($cleanCanvas, false);
+        imagesavealpha($cleanCanvas, true);
+        
+        $transparent = imagecolorallocatealpha($cleanCanvas, 255, 255, 255, 127);
+        imagefilledrectangle($cleanCanvas, 0, 0, $width, $height, $transparent);
+        
+        imagecopyresampled($cleanCanvas, $img, 0, 0, 0, 0, $width, $height, $width, $height);
+        
+        $saved = @imagepng($cleanCanvas, $targetPath);
+        imagedestroy($cleanCanvas);
+        imagedestroy($img);
+        return $saved;
+    }
 }
