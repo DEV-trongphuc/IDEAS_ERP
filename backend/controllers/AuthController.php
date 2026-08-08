@@ -251,8 +251,8 @@ class AuthController {
             respond(422, null, 'Mật khẩu cũ và mật khẩu mới là bắt buộc', false);
         }
 
-        if (strlen($newPassword) < 6) {
-            respond(422, null, 'Mật khẩu mới phải có ít nhất 6 ký tự', false);
+        if (!preg_match('/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/', $newPassword)) {
+            respond(422, null, 'Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm cả chữ và số', false);
         }
 
         $stmt = $this->db->prepare("SELECT id, password_hash FROM users WHERE id = ? LIMIT 1");

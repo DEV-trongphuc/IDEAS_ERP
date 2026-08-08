@@ -210,8 +210,9 @@ const PersonalAccountInner = () => {
       toast.error(t('Mật khẩu mới không khớp'));
       return;
     }
-    if (passData.newPassword.length < 6) {
-      toast.error(t('Mật khẩu mới phải có ít nhất 6 ký tự'));
+    const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    if (!strongPasswordRegex.test(passData.newPassword)) {
+      toast.error(t('Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm cả chữ và số'));
       return;
     }
     setLoading(true);

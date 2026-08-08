@@ -1192,6 +1192,7 @@ switch ($resource) {
         if ($resourceId === 'settings' && $method === 'GET') $ctrl->getSettings($auth);
         elseif ($resourceId === 'settings' && $method === 'POST') $ctrl->saveSettings($auth);
         elseif ($resourceId === 'logs' && $method === 'GET') $ctrl->getLogs($auth);
+        elseif ($resourceId === 'retry' && $subResource && $method === 'POST') $ctrl->retry($auth, (int)$subResource);
         else respond(404, null, 'Route không tồn tại', false);
         break;
 

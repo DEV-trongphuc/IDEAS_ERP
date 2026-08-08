@@ -103,4 +103,59 @@ class CapiController {
         $logs = $stmt->fetchAll() ?: [];
         respond(200, $logs, 'Lấy lịch sử CAPI logs thành công');
     }
+
+    public function retry(array $auth, int $id): void {
+        requireRole($auth, ['admin', 'superadmin', 'super_admin', 'director']);
+        
+        $stmt = $this->db->prepare("SELECT * FROM capi_logs WHERE id = ?");
+        $stmt->execute([$id]);
+        $log = $stmt->fetch();
+        if (!$log) {
+            respond(404, null, 'Không tìm thấy nhật ký sự kiện', false);
+        }
+
+        // Get credentials from system_settings
+        $stmtSet = $this->db->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('meta_pixel_id', 'meta_access_token')");
+        $settings = [];
+        if ($stmtSet) {
+            while ($row = $stmtSet->fetch()) {
+                $settings[$row['setting_key']] = $row['setting_value'];
+            }
+        }
+
+        $pixelId = trim($settings['meta_pixel_id'] ?? '');
+        $token = trim($settings['meta_access_token'] ?? '');
+
+        if (empty($pixelId) || empty($token)) {
+            respond(422, null, 'Meta Pixel ID hoặc Access Token chưa được cấu hình', false);
+        }
+
+        $payloadJson = $log['sent_payload'];
+        $url = "https://graph.facebook.com/v19.0/$pixelId/events?access_token=$token";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        // Update the capi_logs entry with the retry result
+        $up = $this->db->prepare("UPDATE capi_logs SET response_status = ?, response_body = ?, sent_at = NOW() WHERE id = ?");
+        $up->execute([$httpCode, $response, $id]);
+
+        if ($httpCode === 200) {
+            respond(200, null, 'Gửi lại sự kiện CAPI thành công');
+        } else {
+            respond(400, null, 'Gửi lại sự kiện thất bại: ' . $response, false);
+        }
+    }
 }

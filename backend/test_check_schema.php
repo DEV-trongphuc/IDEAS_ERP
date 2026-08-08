@@ -52,6 +52,7 @@ printIndexes($conn, 'system_settings');
 printIndexes($conn, 'custom_fields');
 printIndexes($conn, 'cooperation_slips');
 printIndexes($conn, 'deposits');
+printIndexes($conn, 'capi_logs');
 
 
 

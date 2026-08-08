@@ -36,6 +36,7 @@ export default function CapiPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
+  const [retryingIds, setRetryingIds] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const handleResize = () => setIsLargeScreen(window.innerWidth >= 1024);
@@ -74,6 +75,27 @@ export default function CapiPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleRetry = async (logId: number) => {
+    setRetryingIds(prev => ({ ...prev, [logId]: true }));
+    try {
+      const res = await fetchAPI(`capi/retry/${logId}`, { method: 'POST' });
+      if (res.success) {
+        addToast('Gửi lại sự kiện CAPI thành công!', 'success');
+        // Reload logs
+        const resLogs = await fetchAPI('capi/logs');
+        if (resLogs.success) {
+          setLogs(resLogs.data || []);
+        }
+      } else {
+        addToast(res.message || 'Lỗi gửi lại sự kiện', 'error');
+      }
+    } catch (e: any) {
+      addToast(e.message || 'Lỗi kết nối', 'error');
+    } finally {
+      setRetryingIds(prev => ({ ...prev, [logId]: false }));
+    }
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,6 +285,7 @@ export default function CapiPage() {
                       <th style={{ padding: '0.5rem 0', textAlign: 'left' }}>Khách hàng</th>
                       <th style={{ padding: '0.5rem 0', textAlign: 'center' }}>Mã HTTP</th>
                       <th style={{ padding: '0.5rem 0', textAlign: 'center' }}>Payload</th>
+                      <th style={{ padding: '0.5rem 0', textAlign: 'center' }}>Thao tác</th>
                       <th style={{ padding: '0.5rem 0', textAlign: 'right' }}>Múi giờ gửi</th>
                     </tr>
                   </thead>
@@ -273,6 +296,7 @@ export default function CapiPage() {
                         <td style={{ padding: '0.75rem 0' }}><Skeleton width="80%" height={12} /></td>
                         <td style={{ padding: '0.75rem 0', textAlign: 'center' }}><Skeleton width="40px" height={16} style={{ margin: '0 auto' }} /></td>
                         <td style={{ padding: '0.75rem 0', textAlign: 'center' }}><Skeleton width="30px" height={16} style={{ margin: '0 auto' }} /></td>
+                        <td style={{ padding: '0.75rem 0', textAlign: 'center' }}><Skeleton width="40px" height={16} style={{ margin: '0 auto' }} /></td>
                         <td style={{ padding: '0.75rem 0', textAlign: 'right' }}><Skeleton width="50%" height={12} style={{ marginLeft: 'auto' }} /></td>
                       </tr>
                     ))}
@@ -292,6 +316,7 @@ export default function CapiPage() {
                       <th style={{ padding: '0.5rem 0', textAlign: 'left' }}>Khách hàng</th>
                       <th style={{ padding: '0.5rem 0', textAlign: 'center' }}>Mã HTTP</th>
                       <th style={{ padding: '0.5rem 0', textAlign: 'center' }}>Payload</th>
+                      <th style={{ padding: '0.5rem 0', textAlign: 'center' }}>Thao tác</th>
                       <th style={{ padding: '0.5rem 0', textAlign: 'right' }}>Múi giờ gửi</th>
                     </tr>
                   </thead>
@@ -328,6 +353,31 @@ export default function CapiPage() {
                           >
                             <Code size={12} />
                           </button>
+                        </td>
+                        <td style={{ padding: '0.75rem 0', textAlign: 'center' }}>
+                          {l.response_status !== 200 ? (
+                            <button
+                              onClick={() => handleRetry(l.id)}
+                              disabled={retryingIds[l.id]}
+                              className="btn sm secondary"
+                              style={{ 
+                                padding: '2px 8px', 
+                                height: '24px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '4px', 
+                                margin: '0 auto',
+                                fontSize: '11px',
+                                fontWeight: 700
+                              }}
+                              title="Gửi lại sự kiện lỗi"
+                            >
+                              <RefreshCw size={11} className={retryingIds[l.id] ? 'animate-spin' : ''} />
+                              {retryingIds[l.id] ? 'Gửi...' : 'Gửi lại'}
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>-</span>
+                          )}
                         </td>
                         <td style={{ padding: '0.75rem 0', textAlign: 'right', color: 'var(--color-text-light)', fontFamily: 'monospace' }}>
                           {new Date(l.sent_at).toLocaleString()}
