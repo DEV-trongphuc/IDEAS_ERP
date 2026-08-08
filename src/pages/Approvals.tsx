@@ -2407,7 +2407,8 @@ export default function Approvals() {
                                   from_date: fromVal,
                                   to_date: toVal,
                                   total_days: daysVal,
-                                  approver_id: finalApproverId
+                                  approver_id: appVal1 || finalApproverId,
+                                  approver_id_2: appVal2
                                 })
                               });
                             } else if (formType === 'late_early') {

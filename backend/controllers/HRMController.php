@@ -159,7 +159,7 @@ class HRMController {
 
         $stmt = $this->db->prepare("
             INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, reason, status, approver_id, approver_id_2, status_level_1, status_level_2, related_user_ids)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, 'pending', 'pending', ?)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, 'pending', ?, ?)
         ");
         $stmt->execute([
             $auth['user_id'],
@@ -170,6 +170,7 @@ class HRMController {
             $b['reason'] ?? '',
             $approverId,
             $approverId2,
+            $approverId2 ? 'pending' : 'none',
             $relatedUserIds
         ]);
 
@@ -428,7 +429,7 @@ class HRMController {
 
         $stmt = $this->db->prepare("
             INSERT INTO hrm_salary_advances (user_id, amount, request_date, reason, status, approver_id, approver_id_2, status_level_1, status_level_2, related_user_ids)
-            VALUES (?, ?, CURDATE(), ?, 'pending', ?, ?, 'pending', 'pending', ?)
+            VALUES (?, ?, CURDATE(), ?, 'pending', ?, ?, 'pending', ?, ?)
         ");
         $stmt->execute([
             $auth['user_id'],
@@ -436,6 +437,7 @@ class HRMController {
             $b['reason'] ?? '',
             $approverId,
             $approverId2,
+            $approverId2 ? 'pending' : 'none',
             $relatedUserIds
         ]);
 
