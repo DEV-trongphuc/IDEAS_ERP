@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../api/axios';
-import { Flame, Play, Pause, RotateCcw, Coffee, Eye, EyeOff, ClipboardList, CheckCircle, Clock } from 'lucide-react';
+import { Flame, Play, Pause, RotateCcw, Coffee, Eye, EyeOff, Clock } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
 
 export const WorkspaceStickyPomodoro: React.FC = () => {
   const { t } = useLanguage();
-  const { user } = useAuth();
   
   // Timer States
   const [mode, setMode] = useState<'work' | 'break'>('work');
@@ -15,49 +12,25 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Tasks List States
-  const [myTasks, setMyTasks] = useState<any[]>([]);
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
-  const [loadingTasks, setLoadingTasks] = useState(false);
-
-  // Stats state
-  const [totalSessions, setTotalSessions] = useState(0);
-  const [totalMinutes, setTotalMinutes] = useState(0);
+  // Stats state (Lưu trữ và đọc từ localStorage để theo dõi trong ngày)
+  const [totalSessions, setTotalSessions] = useState(() => {
+    const today = new Date().toDateString();
+    const savedDate = localStorage.getItem('pomodoro_date');
+    if (savedDate === today) {
+      return Number(localStorage.getItem('pomodoro_sessions')) || 0;
+    }
+    return 0;
+  });
 
   const timerRef = useRef<any>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
 
-  // Load danh sách tasks được giao cho user hiện tại để gán khi tập trung
-  const loadMyTasksAndStats = async () => {
-    if (!user?.id) return;
-    setLoadingTasks(true);
-    try {
-      const res = await api.get(`/activities?type=task&status=planned&user_id=${user.id}`);
-      const list = Array.isArray(res.data) ? res.data : (res.data?.items || []);
-      setMyTasks(list);
-      if (list.length > 0 && !selectedTaskId) {
-        setSelectedTaskId(list[0].id);
-      }
-
-      // Load luôn stats tích lũy
-      if (selectedTaskId) {
-        const statsRes = await api.get(`/activities/${selectedTaskId}/focus-summary`);
-        if (statsRes.data) {
-          setTotalSessions(statsRes.data.total_sessions || 0);
-          setTotalMinutes(statsRes.data.total_minutes || 0);
-        }
-      }
-    } catch (e) {}
-    finally {
-      setLoadingTasks(false);
-    }
-  };
-
+  // Đồng bộ stats lên localStorage khi thay đổi
   useEffect(() => {
-    if (isOpen) {
-      loadMyTasksAndStats();
-    }
-  }, [isOpen, user?.id, selectedTaskId]);
+    const today = new Date().toDateString();
+    localStorage.setItem('pomodoro_date', today);
+    localStorage.setItem('pomodoro_sessions', String(totalSessions));
+  }, [totalSessions]);
 
   // Bộ đếm thời gian
   useEffect(() => {
@@ -114,21 +87,13 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
   };
 
   // Hoàn thành đếm ngược Pomodoro
-  const handleTimerComplete = async () => {
+  const handleTimerComplete = () => {
     setIsRunning(false);
     playAlertSound();
 
     if (mode === 'work') {
-      if (selectedTaskId) {
-        try {
-          await api.post(`/activities/${selectedTaskId}/focus-log`, { duration_minutes: 25 });
-          const taskName = myTasks.find(t => t.id === selectedTaskId)?.subject || '';
-          alert(`${t('🎉 Tuyệt vời! Bạn đã hoàn thành 25 phút tập trung cho công việc')}: "${taskName}". ${t('Hãy nghỉ ngơi 5 phút nhé!')}`);
-          loadMyTasksAndStats();
-        } catch (e) {}
-      } else {
-        alert(t('🎉 Tuyệt vời! Bạn đã hoàn thành 25 phút tập trung tự do. Hãy nghỉ ngơi 5 phút nhé!'));
-      }
+      setTotalSessions(prev => prev + 1);
+      alert(t('🎉 Tuyệt vời! Bạn đã hoàn thành 25 phút tập trung cao độ. Hãy nghỉ ngơi 5 phút nhé!'));
       setMode('break');
       setTimeLeft(5 * 60);
     } else {
@@ -161,29 +126,29 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
   const progressPercent = ((totalDuration - timeLeft) / totalDuration) * 100;
 
   return (
-    <div ref={widgetRef} style={{ position: 'fixed', bottom: '130px', right: '24px', zIndex: 9999 }}>
+    <div ref={widgetRef} style={{ position: 'fixed', top: '50%', right: '24px', transform: 'translateY(-50%)', zIndex: 9999 }}>
       {/* Popover Control Menu (Mở lên phía trên nút tròn) */}
       {isOpen && (
         <div style={{
           position: 'absolute',
-          bottom: '72px',
+          bottom: '76px',
           right: 0,
-          width: '280px',
+          width: '240px',
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
           borderRadius: '16px',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
-          padding: '16px',
+          padding: '12px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
+          gap: '10px',
           animation: 'slideUpFade 0.2s ease-out'
         }}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Clock size={12} />
-              {mode === 'work' ? t('Phiên tập trung') : t('Thời gian giải lao')}
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={11} />
+              {mode === 'work' ? t('Tập trung') : t('Giải lao')}
             </span>
             <button
               onClick={() => {
@@ -195,14 +160,14 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                 background: 'transparent',
                 color: 'var(--color-primary)',
                 cursor: 'pointer',
-                fontSize: '0.7rem',
+                fontSize: '0.68rem',
                 fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '3px'
               }}
             >
-              <Eye size={12} />
+              <Eye size={11} />
               {t('Toàn màn hình')}
             </button>
           </div>
@@ -213,8 +178,8 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
               onClick={() => switchMode('work')}
               style={{
                 flex: 1,
-                padding: '5px',
-                fontSize: '0.68rem',
+                padding: '4px',
+                fontSize: '0.65rem',
                 fontWeight: 700,
                 borderRadius: '6px',
                 border: 'none',
@@ -230,8 +195,8 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
               onClick={() => switchMode('break')}
               style={{
                 flex: 1,
-                padding: '5px',
-                fontSize: '0.68rem',
+                padding: '4px',
+                fontSize: '0.65rem',
                 fontWeight: 700,
                 borderRadius: '6px',
                 border: 'none',
@@ -245,45 +210,13 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             </button>
           </div>
 
-          {/* Task Picker */}
-          {mode === 'work' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <ClipboardList size={11} />
-                {t('Tập trung cho công việc:')}
-              </label>
-              <select
-                value={selectedTaskId || ''}
-                onChange={(e) => setSelectedTaskId(e.target.value ? Number(e.target.value) : null)}
-                style={{
-                  padding: '8px',
-                  fontSize: '0.72rem',
-                  borderRadius: '8px',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-text)',
-                  maxWidth: '100%',
-                  outline: 'none'
-                }}
-                disabled={loadingTasks}
-              >
-                <option value="">{t('-- Tập trung tự do --')}</option>
-                {myTasks.map(task => (
-                  <option key={task.id} value={task.id}>
-                    {task.subject.length > 30 ? task.subject.substring(0, 30) + '...' : task.subject}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {/* Controls */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', alignItems: 'center', margin: '4px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center', margin: '2px 0' }}>
             <button
               onClick={resetTimer}
               style={{
-                width: '32px',
-                height: '32px',
+                width: '28px',
+                height: '28px',
                 borderRadius: '50%',
                 border: '1px solid var(--color-border)',
                 background: 'var(--color-surface)',
@@ -296,14 +229,14 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
               }}
               title={t('Đặt lại')}
             >
-              <RotateCcw size={14} />
+              <RotateCcw size={12} />
             </button>
 
             <button
               onClick={toggleTimer}
               style={{
-                width: '40px',
-                height: '40px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
                 border: 'none',
                 background: mode === 'work' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
@@ -315,31 +248,23 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
                 boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
               }}
             >
-              {isRunning ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" style={{ marginLeft: '2px' }} />}
+              {isRunning ? <Pause size={14} fill="white" /> : <Play size={14} fill="white" style={{ marginLeft: '2px' }} />}
             </button>
           </div>
 
           {/* Stats Summary */}
-          {selectedTaskId && (
-            <div style={{
-              borderTop: '1px solid var(--color-border-light)',
-              paddingTop: '8px',
-              display: 'flex',
-              justifyContent: 'space-around',
-              fontSize: '0.65rem',
-              color: 'var(--color-text-muted)'
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontWeight: 850, color: 'var(--color-text)', fontSize: '0.75rem' }}>{totalSessions}</span>
-                <span>{t('Phiên')}</span>
-              </div>
-              <div style={{ borderLeft: '1px solid var(--color-border-light)' }} />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontWeight: 850, color: 'var(--color-text)', fontSize: '0.75rem' }}>{totalMinutes}m</span>
-                <span>{t('Tập trung')}</span>
-              </div>
-            </div>
-          )}
+          <div style={{
+            borderTop: '1px solid var(--color-border-light)',
+            paddingTop: '6px',
+            display: 'flex',
+            justifyContent: 'center',
+            fontSize: '0.65rem',
+            color: 'var(--color-text-muted)',
+            gap: '6px'
+          }}>
+            <span>{t('Hôm nay đã tập trung:')}</span>
+            <span style={{ fontWeight: 850, color: 'var(--color-text)' }}>{totalSessions} {t('phiên')}</span>
+          </div>
         </div>
       )}
 
@@ -454,13 +379,6 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
               {mode === 'work' ? t('ĐANG TẬP TRUNG LÀM VIỆC') : t('ĐANG GIẢI LAO')}
             </span>
-
-            {selectedTaskId && mode === 'work' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', color: '#ef4444', fontWeight: 700 }}>
-                <CheckCircle size={14} />
-                {myTasks.find(t => t.id === selectedTaskId)?.subject}
-              </div>
-            )}
 
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="240" height="240" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
