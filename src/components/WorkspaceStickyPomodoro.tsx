@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Clock, Play, Pause, RotateCcw, Eye, Flame } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -358,8 +359,8 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
         </div>
       </button>
 
-      {/* FULL SCREEN FOCUS MODE OVERLAY */}
-      {isFocusMode && (
+      {/* FULL SCREEN FOCUS MODE OVERLAY (Sử dụng React Portal để trỏ trực tiếp ra document.body) */}
+      {isFocusMode && createPortal(
         <div style={{
           position: 'fixed',
           top: 0,
@@ -476,7 +477,8 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
