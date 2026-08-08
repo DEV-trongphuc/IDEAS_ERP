@@ -7136,7 +7136,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                               
                               {/* Collaborator Stack */}
                               {collaborators.length > 0 && (
-                                <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginLeft: '14px' }}>
                                   {collaborators.slice(0, 3).map((collab, index) => (
                                     <div
                                       key={collab.id}
@@ -7205,7 +7205,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1, overflow: 'hidden', minWidth: 0 }}
             >
               {selectedTaskForDetails ? (
-                <div style={{ height: '100%', overflowY: 'auto' }}>
+                <div style={{ height: '100%', width: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                   <Suspense fallback={null}>
                     <WorkspaceTaskDrawer
                       isOpen={true}

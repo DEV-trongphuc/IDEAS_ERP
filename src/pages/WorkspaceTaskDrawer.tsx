@@ -1939,7 +1939,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
       )}
         {/* Drawer Header */}
         <div style={{
-          padding: isMobileOrTablet ? '0.5rem 0.75rem' : (embedMode ? '0.75rem 1rem' : '1.25rem 1.5rem'),
+          padding: isMobileOrTablet ? '0.5rem 0.75rem' : (embedMode ? '0.75rem 0.5rem' : '1.25rem 1.5rem'),
           borderBottom: '1px solid var(--color-border-light)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -1980,7 +1980,12 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             )}
             <div style={{ minWidth: 0, flex: 1 }}>
               <h3 style={{ fontSize: isMobileOrTablet ? '0.75rem' : '1.1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: isMobileOrTablet ? '4px' : '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t("Chi tiết công việc")}</span>
+                <span 
+                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  title={formData.subject || t("Chi tiết công việc")}
+                >
+                  {formData.subject || t("Chi tiết công việc")}
+                </span>
                 <span className="badge" style={{
                   background: 'rgba(107, 114, 128, 0.1)',
                   color: 'var(--color-text-muted)',
@@ -2225,7 +2230,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               gap: isMobileOrTablet ? '1rem' : (embedMode ? '12px' : '1.5rem'), 
               minWidth: 0,
               overflowY: 'auto',
-              padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 1.25rem 1.5rem 1.25rem' : '1.5rem 2rem 1.5rem 2rem')
+              padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 0.5rem 1.5rem 1.25rem' : '1.5rem 2rem 1.5rem 2rem')
             }}
             className="custom-scrollbar"
           >
@@ -4007,7 +4012,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               background: 'var(--color-bg)',
               borderLeft: isMobileOrTablet ? 'none' : '1px solid var(--color-border-light)',
               overflowY: 'auto',
-              padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 1.25rem 1.5rem 1.25rem' : '1.5rem 2rem 1.5rem 2rem')
+              padding: isMobileOrTablet ? '1rem 1rem 100px 1rem' : (embedMode ? '1rem 0.5rem 1.5rem 0.5rem' : '1.5rem 2rem 1.5rem 2rem')
             }}
             className="custom-scrollbar"
           >
