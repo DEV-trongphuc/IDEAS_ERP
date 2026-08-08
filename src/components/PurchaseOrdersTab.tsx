@@ -570,7 +570,13 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                            Người duyệt Cấp 2 <span className="text-danger">*</span>
+                            Người duyệt Cấp 2 {(() => {
+                              const subtotal = calculateTotal();
+                              const taxRate = Number(formData.tax_rate || 0);
+                              const tax = Math.round(subtotal * taxRate / 100);
+                              const total = subtotal + tax;
+                              return total >= threshold ? <span className="text-danger">*</span> : <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Tùy chọn)</span>;
+                            })()}
                           </label>
                           <CustomSelect 
                             options={users.map((u: any) => ({
@@ -588,13 +594,7 @@ export const PurchaseOrdersTab: React.FC<Props> = ({ showModal, setShowModal, de
                         </div>
                         <div className="form-group" style={{ marginBottom: 0 }}>
                           <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                            Người duyệt Cấp 3 {(() => {
-                              const subtotal = calculateTotal();
-                              const taxRate = Number(formData.tax_rate || 0);
-                              const tax = Math.round(subtotal * taxRate / 100);
-                              const total = subtotal + tax;
-                              return total >= threshold ? <span className="text-danger">*</span> : <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Tùy chọn)</span>;
-                            })()}
+                            Người duyệt Cấp 3 <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>(Tùy chọn)</span>
                           </label>
                           <CustomSelect 
                             options={users.map((u: any) => ({
