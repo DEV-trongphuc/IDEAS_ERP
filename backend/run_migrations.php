@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 217;
+$targetVersion = 218;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1359,9 +1359,81 @@ try {
         $logMsg("Nâng cấp lên phiên bản 217 hoàn tất.", "success");
     }
 
-    // 24. Update DB version in system_settings
-    $targetVersion = 217;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '217') ON DUPLICATE KEY UPDATE setting_value = '217'");
+    // 24. Upgrade to 218: Optimize Index coverage for Multi-tenant (tenant_id) columns & Foreign key relation columns
+    if ($currentVersion < 218) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 218...", "info");
+        try {
+            $addIndexIfMissing = function($conn, $table, $column, $indexName) use ($logMsg) {
+                $chkIndex = $conn->query("
+                    SELECT COUNT(*) 
+                    FROM INFORMATION_SCHEMA.STATISTICS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                      AND TABLE_NAME = '" . $table . "' 
+                      AND INDEX_NAME = '" . $indexName . "'
+                ");
+                if ($chkIndex) {
+                    $row = $chkIndex->fetch_row();
+                    if ((int)$row[0] === 0) {
+                        $conn->query("ALTER TABLE `" . $table . "` ADD INDEX `" . $indexName . "` (`" . $column . "`)");
+                        $logMsg("Đã thêm chỉ mục " . $indexName . " cho bảng " . $table . ".", "success");
+                    } else {
+                        $logMsg("Chỉ mục " . $indexName . " đã tồn tại trên bảng " . $table . ".", "info");
+                    }
+                }
+            };
+
+            // 1. tenant_id indexes (15 tables)
+            $tenantTables = [
+                'absent_reasons' => 'idx_absent_reasons_tenant',
+                'academic_lecturers' => 'idx_academic_lecturers_tenant',
+                'checks' => 'idx_checks_tenant',
+                'contact_tags' => 'idx_contact_tags_tenant',
+                'defaults' => 'idx_defaults_tenant',
+                'departments' => 'idx_departments_tenant',
+                'deposit_milestones' => 'idx_deposit_milestones_tenant',
+                'honors' => 'idx_honors_tenant',
+                'inventory' => 'idx_inventory_tenant',
+                'list_views' => 'idx_list_views_tenant',
+                'lms_campaign_lecturer_allocations' => 'idx_lms_camp_lect_alloc_tenant',
+                'lms_lecturer_schedule_details' => 'idx_lms_lect_sched_det_tenant',
+                'lms_student_campaign_allocations' => 'idx_lms_stud_camp_alloc_tenant',
+                'monthly_payslips' => 'idx_monthly_payslips_tenant',
+                'quyen_truy_cap' => 'idx_quyen_truy_cap_tenant'
+            ];
+
+            foreach ($tenantTables as $table => $indexName) {
+                $addIndexIfMissing($conn, $table, 'tenant_id', $indexName);
+            }
+
+            // 2. foreign key indexes (12 columns)
+            $relationColumns = [
+                ['table' => 'check_ins', 'col' => 'created_by', 'idx' => 'idx_check_ins_created_by'],
+                ['table' => 'contact_tags', 'col' => 'contact_id', 'idx' => 'idx_contact_tags_contact'],
+                ['table' => 'contact_tags', 'col' => 'tag_id', 'idx' => 'idx_contact_tags_tag'],
+                ['table' => 'deposit_milestones', 'col' => 'deposit_id', 'idx' => 'idx_deposit_milestones_deposit'],
+                ['table' => 'deposit_milestones', 'col' => 'approved_by', 'idx' => 'idx_deposit_milestones_approved_by'],
+                ['table' => 'lms_campaign_lecturer_allocations', 'col' => 'campaign_id', 'idx' => 'idx_lms_camp_lect_alloc_campaign'],
+                ['table' => 'lms_campaign_lecturer_allocations', 'col' => 'lecturer_id', 'idx' => 'idx_lms_camp_lect_alloc_lecturer'],
+                ['table' => 'lms_lecturer_schedule_details', 'col' => 'lecturer_id', 'idx' => 'idx_lms_lect_sched_det_lecturer'],
+                ['table' => 'lms_lecturer_schedule_details', 'col' => 'campaign_id', 'idx' => 'idx_lms_lect_sched_det_campaign'],
+                ['table' => 'lms_student_campaign_allocations', 'col' => 'student_id', 'idx' => 'idx_lms_stud_camp_alloc_student'],
+                ['table' => 'lms_student_campaign_allocations', 'col' => 'campaign_id', 'idx' => 'idx_lms_stud_camp_alloc_campaign'],
+                ['table' => 'quyen_truy_cap', 'col' => 'invited_by', 'idx' => 'idx_quyen_truy_cap_invited_by']
+            ];
+
+            foreach ($relationColumns as $rc) {
+                $addIndexIfMissing($conn, $rc['table'], $rc['col'], $rc['idx']);
+            }
+
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 218: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 218 hoàn tất.", "success");
+    }
+
+    // 25. Update DB version in system_settings
+    $targetVersion = 218;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '218') ON DUPLICATE KEY UPDATE setting_value = '218'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

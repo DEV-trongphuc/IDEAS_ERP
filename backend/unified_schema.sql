@@ -2813,3 +2813,37 @@ CREATE TABLE `zalo_queue` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-07-27 13:20:45
+
+-- ------------------------------------------------------
+-- Database Performance Indexes Optimization (v218)
+-- ------------------------------------------------------
+
+ALTER TABLE `absent_reasons` ADD INDEX `idx_absent_reasons_tenant` (`tenant_id`);
+ALTER TABLE `academic_lecturers` ADD INDEX `idx_academic_lecturers_tenant` (`tenant_id`);
+ALTER TABLE `checks` ADD INDEX `idx_checks_tenant` (`tenant_id`);
+ALTER TABLE `contact_tags` ADD INDEX `idx_contact_tags_tenant` (`tenant_id`);
+ALTER TABLE `defaults` ADD INDEX `idx_defaults_tenant` (`tenant_id`);
+ALTER TABLE `departments` ADD INDEX `idx_departments_tenant` (`tenant_id`);
+ALTER TABLE `deposit_milestones` ADD INDEX `idx_deposit_milestones_tenant` (`tenant_id`);
+ALTER TABLE `honors` ADD INDEX `idx_honors_tenant` (`tenant_id`);
+ALTER TABLE `inventory` ADD INDEX `idx_inventory_tenant` (`tenant_id`);
+ALTER TABLE `list_views` ADD INDEX `idx_list_views_tenant` (`tenant_id`);
+ALTER TABLE `lms_campaign_lecturer_allocations` ADD INDEX `idx_lms_camp_lect_alloc_tenant` (`tenant_id`);
+ALTER TABLE `lms_lecturer_schedule_details` ADD INDEX `idx_lms_lect_sched_det_tenant` (`tenant_id`);
+ALTER TABLE `lms_student_campaign_allocations` ADD INDEX `idx_lms_stud_camp_alloc_tenant` (`tenant_id`);
+ALTER TABLE `monthly_payslips` ADD INDEX `idx_monthly_payslips_tenant` (`tenant_id`);
+ALTER TABLE `quyen_truy_cap` ADD INDEX `idx_quyen_truy_cap_tenant` (`tenant_id`);
+
+ALTER TABLE `check_ins` ADD INDEX `idx_check_ins_created_by` (`created_by`);
+ALTER TABLE `contact_tags` ADD INDEX `idx_contact_tags_contact` (`contact_id`);
+ALTER TABLE `contact_tags` ADD INDEX `idx_contact_tags_tag` (`tag_id`);
+ALTER TABLE `deposit_milestones` ADD INDEX `idx_deposit_milestones_deposit` (`deposit_id`);
+ALTER TABLE `deposit_milestones` ADD INDEX `idx_deposit_milestones_approved_by` (`approved_by`);
+ALTER TABLE `lms_campaign_lecturer_allocations` ADD INDEX `idx_lms_camp_lect_alloc_campaign` (`campaign_id`);
+ALTER TABLE `lms_campaign_lecturer_allocations` ADD INDEX `idx_lms_camp_lect_alloc_lecturer` (`lecturer_id`);
+ALTER TABLE `lms_lecturer_schedule_details` ADD INDEX `idx_lms_lect_sched_det_lecturer` (`lecturer_id`);
+ALTER TABLE `lms_lecturer_schedule_details` ADD INDEX `idx_lms_lect_sched_det_campaign` (`campaign_id`);
+ALTER TABLE `lms_student_campaign_allocations` ADD INDEX `idx_lms_stud_camp_alloc_student` (`student_id`);
+ALTER TABLE `lms_student_campaign_allocations` ADD INDEX `idx_lms_stud_camp_alloc_campaign` (`campaign_id`);
+ALTER TABLE `quyen_truy_cap` ADD INDEX `idx_quyen_truy_cap_invited_by` (`invited_by`);
+
