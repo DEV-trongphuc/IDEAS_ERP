@@ -7312,33 +7312,27 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
                       <div className="card-panel" style={{ marginTop: '1.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-                          <FileText size={18} style={{ color: 'var(--color-primary)' }} />
+                          <FileText size={18} style={{ color: '#eab308' }} />
                           <h4 className="panel-title" style={{ margin: 0 }}>Ghi chú học viên / ban đầu</h4>
                         </div>
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                          <style>{`
-                            #notes-textarea {
-                              min-height: 260px !important;
-                              height: 280px !important;
-                            }
-                          `}</style>
-                          <textarea
-                            id="notes-textarea"
-                            className="form-input"
-                            style={{ 
-                              fontSize: '0.875rem', 
-                              lineHeight: 1.5, 
-                              padding: '10px 12px', 
-                              fontFamily: 'inherit',
-                              resize: 'vertical'
-                            }}
-                            placeholder="Nhập ghi chú hoặc thông tin học viên..."
-                            value={formData.notes || ''}
-                            onChange={e => {
-                              const val = e.target.value;
-                              setFormData((prev: any) => ({ ...prev, notes: val }));
-                            }}
-                          />
+                        <div 
+                          style={{ 
+                            background: '#fefce8', 
+                            border: '1px solid #fef08a',
+                            borderLeft: '4px solid #eab308',
+                            color: '#713f12', 
+                            borderRadius: '8px',
+                            padding: '16px',
+                            fontSize: '0.875rem',
+                            lineHeight: '1.6',
+                            fontFamily: 'inherit',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02), 0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                            minHeight: '200px'
+                          }}
+                        >
+                          {formData.notes || 'Không có ghi chú ban đầu'}
                         </div>
                       </div>
 
