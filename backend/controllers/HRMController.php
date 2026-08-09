@@ -1044,11 +1044,21 @@ class HRMController {
         $monthYear = $b['month_year'] ?? '';
 
         if ($id > 0) {
-            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'sent', signature_url = NULL, confirmed_at = NULL, note = NULL WHERE id = ?");
-            $stmt->execute([$id]);
+            $stmt = $this->db->prepare("
+                UPDATE monthly_payslips mp
+                JOIN users u ON mp.user_id = u.id
+                SET mp.status = 'sent', mp.signature_url = NULL, mp.confirmed_at = NULL, mp.note = NULL 
+                WHERE mp.id = ? AND u.tenant_id = ?
+            ");
+            $stmt->execute([$id, $auth['tenant_id']]);
 
-            $stmtP = $this->db->prepare("SELECT p.*, u.full_name FROM monthly_payslips p JOIN users u ON p.user_id = u.id WHERE p.id = ?");
-            $stmtP->execute([$id]);
+            $stmtP = $this->db->prepare("
+                SELECT p.*, u.full_name 
+                FROM monthly_payslips p 
+                JOIN users u ON p.user_id = u.id 
+                WHERE p.id = ? AND u.tenant_id = ?
+            ");
+            $stmtP->execute([$id, $auth['tenant_id']]);
             $psRow = $stmtP->fetch(PDO::FETCH_ASSOC);
 
             if ($psRow) {
@@ -1068,12 +1078,22 @@ class HRMController {
         if (empty($monthYear)) respond(400, null, 'Thiếu tháng gửi phiếu lương', false);
 
         // Fetch users who have draft/disputed payslips in this month to notify them
-        $stmtUsers = $this->db->prepare("SELECT DISTINCT user_id FROM monthly_payslips WHERE month_year = ? AND status IN ('draft', 'disputed')");
-        $stmtUsers->execute([$monthYear]);
+        $stmtUsers = $this->db->prepare("
+            SELECT DISTINCT mp.user_id 
+            FROM monthly_payslips mp
+            JOIN users u ON mp.user_id = u.id
+            WHERE mp.month_year = ? AND mp.status IN ('draft', 'disputed') AND u.tenant_id = ?
+        ");
+        $stmtUsers->execute([$monthYear, $auth['tenant_id']]);
         $userIds = $stmtUsers->fetchAll(PDO::FETCH_COLUMN) ?: [];
 
-        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'sent' WHERE month_year = ? AND status IN ('draft', 'disputed')");
-        $stmt->execute([$monthYear]);
+        $stmt = $this->db->prepare("
+            UPDATE monthly_payslips mp
+            JOIN users u ON mp.user_id = u.id
+            SET mp.status = 'sent' 
+            WHERE mp.month_year = ? AND mp.status IN ('draft', 'disputed') AND u.tenant_id = ?
+        ");
+        $stmt->execute([$monthYear, $auth['tenant_id']]);
 
         // Dispatch Notifications
         try {
@@ -1103,13 +1123,23 @@ class HRMController {
 
         if ($id <= 0) respond(400, null, 'Thiếu ID phiếu lương', false);
 
-        // Fetch payslip to verify permission
-        $stmtCheck = $this->db->prepare("SELECT * FROM monthly_payslips WHERE id = ?");
+        // Fetch payslip to verify permission and tenant ownership
+        $stmtCheck = $this->db->prepare("
+            SELECT mp.*, u.tenant_id as owner_tenant_id 
+            FROM monthly_payslips mp
+            JOIN users u ON mp.user_id = u.id
+            WHERE mp.id = ?
+        ");
         $stmtCheck->execute([$id]);
         $psRow = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
         if (!$psRow) {
             respond(404, null, 'Không tìm thấy phiếu lương', false);
+            return;
+        }
+
+        if ((int)$psRow['owner_tenant_id'] !== (int)$auth['tenant_id']) {
+            respond(403, null, 'Không có quyền truy cập dữ liệu của tenant khác', false);
             return;
         }
 
@@ -1124,8 +1154,13 @@ class HRMController {
         if ($action === 'dispute') {
             if (empty($note)) respond(400, null, 'Vui lòng nhập lý do/ghi chú yêu cầu thay đổi', false);
 
-            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'disputed', note = ? WHERE id = ?");
-            $stmt->execute([$note, $id]);
+            $stmt = $this->db->prepare("
+                UPDATE monthly_payslips mp
+                JOIN users u ON mp.user_id = u.id
+                SET mp.status = 'disputed', mp.note = ? 
+                WHERE mp.id = ? AND u.tenant_id = ?
+            ");
+            $stmt->execute([$note, $id, $auth['tenant_id']]);
 
             // Dispatch Notification
             try {
@@ -1143,8 +1178,13 @@ class HRMController {
 
         if (empty($signatureUrl)) respond(400, null, 'Chữ ký là bắt buộc để xác nhận phiếu lương', false);
 
-        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'confirmed', signature_url = ?, confirmed_at = NOW() WHERE id = ?");
-        $stmt->execute([$signatureUrl, $id]);
+        $stmt = $this->db->prepare("
+            UPDATE monthly_payslips mp
+            JOIN users u ON mp.user_id = u.id
+            SET mp.status = 'confirmed', mp.signature_url = ?, mp.confirmed_at = NOW() 
+            WHERE mp.id = ? AND u.tenant_id = ?
+        ");
+        $stmt->execute([$signatureUrl, $id, $auth['tenant_id']]);
 
         // Dispatch Notification
         try {
@@ -1166,14 +1206,24 @@ class HRMController {
 
         $action = $b['action'] ?? 'lock';
         if ($action === 'unlock') {
-            $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'draft', signature_url = NULL, confirmed_at = NULL WHERE month_year = ?");
-            $stmt->execute([$monthYear]);
+            $stmt = $this->db->prepare("
+                UPDATE monthly_payslips mp
+                JOIN users u ON mp.user_id = u.id
+                SET mp.status = 'draft', mp.signature_url = NULL, mp.confirmed_at = NULL 
+                WHERE mp.month_year = ? AND u.tenant_id = ?
+            ");
+            $stmt->execute([$monthYear, $auth['tenant_id']]);
             respond(200, ['success' => true, 'message' => 'Unlocked successfully']);
             return;
         }
 
-        $stmt = $this->db->prepare("UPDATE monthly_payslips SET status = 'locked' WHERE month_year = ?");
-        $stmt->execute([$monthYear]);
+        $stmt = $this->db->prepare("
+            UPDATE monthly_payslips mp
+            JOIN users u ON mp.user_id = u.id
+            SET mp.status = 'locked' 
+            WHERE mp.month_year = ? AND u.tenant_id = ?
+        ");
+        $stmt->execute([$monthYear, $auth['tenant_id']]);
 
         respond(200, ['success' => true]);
     }
@@ -1494,22 +1544,29 @@ class HRMController {
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare("
-                UPDATE monthly_payslips SET
-                    work_days_required = ?,
-                    work_days_actual = ?,
-                    lateness_minutes = ?,
-                    lateness_penalty = ?,
-                    salary_basic_calculated = ?,
-                    allowance_total = ?,
-                    kpi_bonus = ?,
-                    insurance_bhxh = ?,
-                    tax_pit = ?,
-                    advance_deduction = ?,
-                    net_salary = ?,
-                    overtime_days = ?,
-                    overtime_salary = ?,
-                    diligence_bonus = ?
-                WHERE id = ?
+                UPDATE monthly_payslips mp
+                JOIN users u ON mp.user_id = u.id
+                SET
+                    mp.work_days_required = ?,
+                    mp.work_days_actual = ?,
+                    mp.lateness_minutes = ?,
+                    mp.lateness_penalty = ?,
+                    mp.lateness_compensatory_deducted = ?,
+                    mp.lateness_annual_deducted = ?,
+                    mp.salary_basic_calculated = ?,
+                    mp.allowance_total = ?,
+                    mp.kpi_bonus = ?,
+                    mp.insurance_bhxh = ?,
+                    mp.insurance_bhyt = ?,
+                    mp.insurance_bhtn = ?,
+                    mp.tax_pit = ?,
+                    mp.advance_deduction = ?,
+                    mp.net_salary = ?,
+                    mp.overtime_days = ?,
+                    mp.overtime_salary = ?,
+                    mp.diligence_bonus = ?,
+                    mp.note = ?
+                WHERE mp.id = ? AND u.tenant_id = ?
             ");
             
             foreach ($payslips as $ps) {
@@ -1518,17 +1575,23 @@ class HRMController {
                     $ps['work_days_actual'],
                     $ps['lateness_minutes'],
                     $ps['lateness_penalty'],
+                    $ps['lateness_compensatory_deducted'] ?? 0.00,
+                    $ps['lateness_annual_deducted'] ?? 0.00,
                     $ps['salary_basic_calculated'],
                     $ps['allowance_total'],
                     $ps['kpi_bonus'],
                     $ps['insurance_bhxh'],
+                    $ps['insurance_bhyt'] ?? 0.00,
+                    $ps['insurance_bhtn'] ?? 0.00,
                     $ps['tax_pit'],
                     $ps['advance_deduction'],
                     $ps['net_salary'],
                     $ps['overtime_days'],
                     $ps['overtime_salary'],
                     $ps['diligence_bonus'],
-                    $ps['id']
+                    $ps['note'] ?? null,
+                    $ps['id'],
+                    $auth['tenant_id']
                 ]);
             }
             
