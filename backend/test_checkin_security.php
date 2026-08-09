@@ -69,7 +69,13 @@ function assertTest(string $name, bool $expr, string $errorMsg = '') {
 try {
     // Setup test users for Tenant A (1) and Tenant B (9999)
     $db->exec("DELETE FROM users WHERE id IN (88881, 88882)");
+    $db->exec("DELETE FROM tenants WHERE id = 9999");
     $db->exec("DELETE FROM attendance_bulk_requests WHERE id IN (888801, 888802)");
+
+    $db->prepare("
+        INSERT INTO tenants (id, name, slug) 
+        VALUES (9999, 'Test Staging Tenant B', 'test-staging-tenant-b')
+    ")->execute();
 
     $db->prepare("
         INSERT INTO users (id, tenant_id, email, password_hash, full_name, role) 
@@ -164,6 +170,7 @@ try {
     // Clean up
     $db->exec("DELETE FROM users WHERE id IN (88881, 88882)");
     $db->exec("DELETE FROM attendance_bulk_requests WHERE id IN (888801, 888802)");
+    $db->exec("DELETE FROM tenants WHERE id = 9999");
 
     echo "\n📊 ALL CHECK-IN SECURITY TEST CASES PASSED SUCCESSFULLY!\n";
 
@@ -173,6 +180,7 @@ try {
     try {
         $db->exec("DELETE FROM users WHERE id IN (88881, 88882)");
         $db->exec("DELETE FROM attendance_bulk_requests WHERE id IN (888801, 888802)");
+        $db->exec("DELETE FROM tenants WHERE id = 9999");
     } catch (\Throwable $ex) {}
     exit(1);
 }
