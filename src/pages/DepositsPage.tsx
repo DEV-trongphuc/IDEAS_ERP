@@ -1576,7 +1576,7 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
           ) : filteredDepositsList.length === 0 ? (
             <EmptyCard
               icon={<CreditCard />}
-              title="Chưa có phiếu thanh toán nào"
+              title="Chưa có lịch thanh toán nào"
               description="Theo dõi đơn hàng, tiến độ thanh toán và duyệt Sales Order."
               actionText={isViewer ? undefined : "Tạo đơn hàng mới"}
               onAction={isViewer ? undefined : () => setShowPOS(true)}
@@ -2350,13 +2350,13 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
                       Vui lòng chủ động liên hệ nhắc nhở khách hàng thanh toán đợt: <strong>{previewReminderMilestone.milestone_name}</strong>.<br />
                       Số tiền cần thanh toán: <strong>{amountStr}</strong>.<br />
                       Hạn thanh toán: <strong>{payDateStr}</strong>.<br />
-                      Chương trình: <strong>{selectedDepForManage.project_name}</strong> (Căn {selectedDepForManage.unit_code}).
+                      Chương trình: <strong>{selectedDepForManage.project_name}</strong>{selectedDepForManage.unit_code && selectedDepForManage.unit_code !== '—' && selectedDepForManage.unit_code !== '-' && selectedDepForManage.unit_code.trim() !== '' ? ` (Căn ${selectedDepForManage.unit_code})` : ''}.
                     </div>
                   ) : (
                     <div>
                       Chào <strong>{custName}</strong>,<br /><br />
                       Đây là thông báo nhắc lịch thanh toán cho đợt: <strong>{previewReminderMilestone.milestone_name}</strong>.<br /><br />
-                      Chương trình: <strong>{selectedDepForManage.project_name}</strong> (Căn {selectedDepForManage.unit_code}).<br />
+                      Chương trình: <strong>{selectedDepForManage.project_name}</strong>{selectedDepForManage.unit_code && selectedDepForManage.unit_code !== '—' && selectedDepForManage.unit_code !== '-' && selectedDepForManage.unit_code.trim() !== '' ? ` (Căn ${selectedDepForManage.unit_code})` : ''}.<br />
                       Số tiền cần đóng: <strong>{amountStr}</strong>.<br />
                       Hạn thanh toán: <strong>{payDateStr}</strong>.<br /><br />
                       Vui lòng hoàn tất thanh toán và tải hình ảnh Ủy nhiệm chi (UNC) lên hệ thống. Xin cảm ơn!

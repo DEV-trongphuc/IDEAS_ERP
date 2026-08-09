@@ -1027,9 +1027,16 @@ class DepositController {
             if ($isAdmin) {
                 if (isset($input['expected_commission'])) {
                     $expComm = (float)$input['expected_commission'];
-                    $stmtComm = $this->db->prepare("UPDATE deposits SET expected_commission = ? WHERE id = ?");
-                    $stmtComm->execute([$expComm, $id]);
-                    logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_COMMISSION', 'deposit', $id, "Cập nhật hoa hồng dự kiến: " . number_format($expComm) . " VND");
+                    
+                    $stmtGetComm = $this->db->prepare("SELECT expected_commission FROM deposits WHERE id = ?");
+                    $stmtGetComm->execute([$id]);
+                    $oldExpComm = (float)($stmtGetComm->fetchColumn() ?: 0);
+                    
+                    if (abs($oldExpComm - $expComm) > 0.01) {
+                        $stmtComm = $this->db->prepare("UPDATE deposits SET expected_commission = ? WHERE id = ?");
+                        $stmtComm->execute([$expComm, $id]);
+                        logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_COMMISSION', 'deposit', $id, "Cập nhật hoa hồng dự kiến: " . number_format($expComm) . " VND");
+                    }
                 }
                 
                 if (isset($input['shares'])) {
@@ -1054,12 +1061,19 @@ class DepositController {
                         
                         if ($coopRow) {
                             $coopId = (int)$coopRow['id'];
+                            $oldSharesJson = $coopRow['shares_json'];
                             
-                            $stmtUpdCs = $this->db->prepare("UPDATE cooperation_slips SET shares_json = ?, deposit_slip_id = ? WHERE id = ?");
-                            $stmtUpdCs->execute([$newSharesJson, $id, $coopId]);
+                            $oldSharesDecoded = json_decode($oldSharesJson, true) ?: [];
+                            $newSharesDecoded = json_decode($newSharesJson, true) ?: [];
+                            ksort($oldSharesDecoded);
+                            ksort($newSharesDecoded);
                             
-                            logActivity($this->db, $tid, $auth['user_id'], 'ADMIN_UPDATE_COOP_SHARES', 'cooperation_slip', $coopId, "Admin đã cập nhật lại tỷ lệ hoa hồng cho phiếu cọc #$id");
-                            logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_SHARES', 'deposit', $id, "Cập nhật lại tỷ lệ chia sẻ hoa hồng: " . json_encode($sharesMap, JSON_UNESCAPED_UNICODE));
+                            if ($oldSharesDecoded !== $newSharesDecoded) {
+                                $stmtUpdCs = $this->db->prepare("UPDATE cooperation_slips SET shares_json = ?, deposit_slip_id = ? WHERE id = ?");
+                                $stmtUpdCs->execute([$newSharesJson, $id, $coopId]);
+                                
+                                logActivity($this->db, $tid, $auth['user_id'], 'ADMIN_UPDATE_COOP_SHARES', 'cooperation_slip', $coopId, "Admin đã cập nhật lại tỷ lệ hoa hồng cho phiếu cọc #$id");
+                                logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_SHARES', 'deposit', $id, "Cập nhật lại tỷ lệ chia sẻ hoa hồng: " . json_encode($sharesMap, JSON_UNESCAPED_UNICODE));
 
                             $stmtCust = $this->db->prepare("SELECT full_name FROM contacts WHERE id = ?");
                             $stmtCust->execute([$dep['contact_id']]);
@@ -1103,10 +1117,10 @@ class DepositController {
             }
 
             // Get current milestones in database
-            $stmtM = $this->db->prepare("SELECT id, status FROM deposit_milestones WHERE deposit_id = ?");
+            $stmtM = $this->db->prepare("SELECT id, milestone_name, expected_amount, original_amount, expected_pay_date, status FROM deposit_milestones WHERE deposit_id = ?");
             $stmtM->execute([$id]);
             $currentDbMilestones = $stmtM->fetchAll(PDO::FETCH_ASSOC);
-            $currentDbIds = array_column($currentDbMilestones, 'id');
+            $currentDbIds = array_map('intval', array_column($currentDbMilestones, 'id'));
 
             $payloadIds = [];
             foreach ($milestones as $m) {
@@ -1115,72 +1129,150 @@ class DepositController {
                 }
             }
 
-            // Delete milestones not in payload (only if they are not approved or paid)
+            // Check if milestones count or IDs changed (deletes or inserts)
             $toDeleteIds = array_diff($currentDbIds, $payloadIds);
-            foreach ($toDeleteIds as $delId) {
-                $dbMilestone = null;
-                foreach ($currentDbMilestones as $cdm) {
-                    if ((int)$cdm['id'] === $delId) {
-                        $dbMilestone = $cdm;
+            
+            $hasChanges = !empty($toDeleteIds);
+            
+            if (!$hasChanges) {
+                // If any milestone has no ID, it's an insert
+                foreach ($milestones as $m) {
+                    if (!isset($m['id']) || empty($m['id'])) {
+                        $hasChanges = true;
                         break;
                     }
                 }
-                if ($dbMilestone && ($dbMilestone['status'] === 'approved' || $dbMilestone['status'] === 'paid')) {
-                    throw new Exception("Không thể xóa đợt thanh toán đã đóng tiền hoặc đã được duyệt.");
-                }
-                $stmtDel = $this->db->prepare("DELETE FROM deposit_milestones WHERE id = ?");
-                $stmtDel->execute([$delId]);
             }
 
-            // Update or Insert milestones
-            $currency = $dep['currency'] ?? 'VND';
-            $rate = (float)($dep['exchange_rate'] ?? 1);
-            if ($rate <= 0) $rate = 1;
+            if (!$hasChanges) {
+                // Check if any existing milestone details changed
+                $currency = $dep['currency'] ?? 'VND';
+                $rate = (float)($dep['exchange_rate'] ?? 1);
+                if ($rate <= 0) $rate = 1;
 
-            foreach ($milestones as $m) {
-                $mName = trim($m['milestone_name'] ?? $m['name'] ?? '');
-                $mAmount = (float)($m['expected_amount'] ?? $m['amount'] ?? 0);
-                $origAmount = isset($m['original_amount']) ? (float)$m['original_amount'] : null;
-                $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
-                if (empty($mName)) continue;
+                foreach ($milestones as $m) {
+                    if (isset($m['id']) && !empty($m['id'])) {
+                        $mId = (int)$m['id'];
+                        $dbMilestone = null;
+                        foreach ($currentDbMilestones as $cdm) {
+                            if ((int)$cdm['id'] === $mId) {
+                                $dbMilestone = $cdm;
+                                break;
+                            }
+                        }
 
-                if ($currency !== 'VND') {
-                    if ($origAmount === null || $origAmount <= 0) {
-                        $origAmount = round($mAmount / $rate, 2);
-                    } else {
-                        $mAmount = round($origAmount * $rate);
+                        if ($dbMilestone) {
+                            $mName = trim($m['milestone_name'] ?? $m['name'] ?? '');
+                            $mAmount = (float)($m['expected_amount'] ?? $m['amount'] ?? 0);
+                            $origAmount = isset($m['original_amount']) ? (float)$m['original_amount'] : null;
+                            $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
+
+                            if ($currency !== 'VND') {
+                                if ($origAmount === null || $origAmount <= 0) {
+                                    $origAmount = round($mAmount / $rate, 2);
+                                } else {
+                                    $mAmount = round($origAmount * $rate);
+                                }
+                            } else {
+                                $origAmount = null;
+                            }
+
+                            // Normalize dates (YYYY-MM-DD)
+                            $dbPayDate = !empty($dbMilestone['expected_pay_date']) ? substr($dbMilestone['expected_pay_date'], 0, 10) : null;
+                            $newPayDate = !empty($payDate) ? substr($payDate, 0, 10) : null;
+
+                            if (trim($dbMilestone['milestone_name']) !== $mName) {
+                                $hasChanges = true;
+                                break;
+                            }
+                            if ($dbPayDate !== $newPayDate) {
+                                $hasChanges = true;
+                                break;
+                            }
+
+                            if ($dbMilestone['status'] !== 'approved' && $dbMilestone['status'] !== 'paid') {
+                                if (abs((float)$dbMilestone['expected_amount'] - $mAmount) > 0.01) {
+                                    $hasChanges = true;
+                                    break;
+                                }
+                                if ($origAmount !== null && abs((float)$dbMilestone['original_amount'] - $origAmount) > 0.01) {
+                                    $hasChanges = true;
+                                    break;
+                                }
+                            }
+                        }
                     }
-                } else {
-                    $origAmount = null;
                 }
+            }
 
-                if (isset($m['id']) && !empty($m['id'])) {
-                    $mId = (int)$m['id'];
-                    // Update existing
+            if ($hasChanges) {
+                // Delete milestones not in payload (only if they are not approved or paid)
+                foreach ($toDeleteIds as $delId) {
                     $dbMilestone = null;
                     foreach ($currentDbMilestones as $cdm) {
-                        if ((int)$cdm['id'] === $mId) {
+                        if ((int)$cdm['id'] === $delId) {
                             $dbMilestone = $cdm;
                             break;
                         }
                     }
                     if ($dbMilestone && ($dbMilestone['status'] === 'approved' || $dbMilestone['status'] === 'paid')) {
-                        // Allow updating name and pay date, but prevent changing amount
-                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_pay_date = ? WHERE id = ?");
-                        $stmtUpd->execute([$mName, $payDate, $mId]);
-                    } else {
-                        $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_amount = ?, original_amount = ?, expected_pay_date = ? WHERE id = ?");
-                        $stmtUpd->execute([$mName, $mAmount, $origAmount, $payDate, $mId]);
+                        throw new Exception("Không thể xóa đợt thanh toán đã đóng tiền hoặc đã được duyệt.");
                     }
-                } else {
-                    // Insert new
-                    $stmtIns = $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, original_amount, expected_pay_date, status) VALUES (?, ?, ?, ?, ?, 'pending')");
-                    $stmtIns->execute([$id, $mName, $mAmount, $origAmount, $payDate]);
+                    $stmtDel = $this->db->prepare("DELETE FROM deposit_milestones WHERE id = ?");
+                    $stmtDel->execute([$delId]);
                 }
+
+                // Update or Insert milestones
+                $currency = $dep['currency'] ?? 'VND';
+                $rate = (float)($dep['exchange_rate'] ?? 1);
+                if ($rate <= 0) $rate = 1;
+
+                foreach ($milestones as $m) {
+                    $mName = trim($m['milestone_name'] ?? $m['name'] ?? '');
+                    $mAmount = (float)($m['expected_amount'] ?? $m['amount'] ?? 0);
+                    $origAmount = isset($m['original_amount']) ? (float)$m['original_amount'] : null;
+                    $payDate = !empty($m['expected_pay_date']) ? $m['expected_pay_date'] : null;
+                    if (empty($mName)) continue;
+
+                    if ($currency !== 'VND') {
+                        if ($origAmount === null || $origAmount <= 0) {
+                            $origAmount = round($mAmount / $rate, 2);
+                        } else {
+                            $mAmount = round($origAmount * $rate);
+                        }
+                    } else {
+                        $origAmount = null;
+                    }
+
+                    if (isset($m['id']) && !empty($m['id'])) {
+                        $mId = (int)$m['id'];
+                        // Update existing
+                        $dbMilestone = null;
+                        foreach ($currentDbMilestones as $cdm) {
+                            if ((int)$cdm['id'] === $mId) {
+                                $dbMilestone = $cdm;
+                                break;
+                            }
+                        }
+                        if ($dbMilestone && ($dbMilestone['status'] === 'approved' || $dbMilestone['status'] === 'paid')) {
+                            // Allow updating name and pay date, but prevent changing amount
+                            $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_pay_date = ? WHERE id = ?");
+                            $stmtUpd->execute([$mName, $payDate, $mId]);
+                        } else {
+                            $stmtUpd = $this->db->prepare("UPDATE deposit_milestones SET milestone_name = ?, expected_amount = ?, original_amount = ?, expected_pay_date = ? WHERE id = ?");
+                            $stmtUpd->execute([$mName, $mAmount, $origAmount, $payDate, $mId]);
+                        }
+                    } else {
+                        // Insert new
+                        $stmtIns = $this->db->prepare("INSERT INTO deposit_milestones (deposit_id, milestone_name, expected_amount, original_amount, expected_pay_date, status) VALUES (?, ?, ?, ?, ?, 'pending')");
+                        $stmtIns->execute([$id, $mName, $mAmount, $origAmount, $payDate]);
+                    }
+                }
+
+                logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_MILESTONES', 'deposit', $id, "Cập nhật danh sách các đợt thanh toán");
             }
 
             $this->db->commit();
-            logActivity($this->db, $tid, $auth['user_id'], 'UPDATE_MILESTONES', 'deposit', $id, "Cập nhật danh sách các đợt thanh toán");
             respond(200, null, 'Cập nhật lịch trình thanh toán thành công');
         } catch (Exception $e) {
             $this->db->rollBack();

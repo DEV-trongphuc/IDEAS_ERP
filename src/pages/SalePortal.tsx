@@ -6408,6 +6408,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', flex: 1 }}>
                       {task.tags && task.tags.split(',').filter(Boolean).map((tag: string) => {
+                        const trimmedTag = tag.trim();
+                        if (trimmedTag === 'internal_task') return null;
                         return (
                           <span 
                             key={tag} 
@@ -6420,7 +6422,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                               fontWeight: 700 
                             }}
                           >
-                            #{tag.trim()}
+                            #{trimmedTag}
                           </span>
                         );
                       })}
@@ -6927,21 +6929,25 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                             {/* Tags */}
                             {task.tags && (
                               <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                                {task.tags.split(',').filter(Boolean).map((tag: string) => (
-                                  <span 
-                                    key={tag} 
-                                    style={{ 
-                                      fontSize: '0.65rem', 
-                                      padding: '2px 8px', 
-                                      borderRadius: '20px', 
-                                      background: 'var(--color-bg)', 
-                                      color: 'var(--color-text-light)', 
-                                      fontWeight: 700 
-                                    }}
-                                  >
-                                    #{tag.trim()}
-                                  </span>
-                                ))}
+                                {task.tags.split(',').filter(Boolean).map((tag: string) => {
+                                  const trimmedTag = tag.trim();
+                                  if (trimmedTag === 'internal_task') return null;
+                                  return (
+                                    <span 
+                                      key={tag} 
+                                      style={{ 
+                                        fontSize: '0.65rem', 
+                                        padding: '2px 8px', 
+                                        borderRadius: '20px', 
+                                        background: 'var(--color-bg)', 
+                                        color: 'var(--color-text-light)', 
+                                        fontWeight: 700 
+                                      }}
+                                    >
+                                      #{trimmedTag}
+                                    </span>
+                                  );
+                                })}
                               </div>
                             )}
 

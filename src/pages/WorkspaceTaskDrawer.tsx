@@ -4957,20 +4957,24 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 {t('Thẻ tag')}
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-                {(formData.tags || '').split(',').filter(Boolean).map((tag: string, tIdx: number) => (
-                  <span key={tIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(107, 114, 128, 0.08)', color: 'var(--color-text-light)', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px' }}>
-                    <span>{tag}</span>
-                    <button
-                      onClick={() => {
-                        const next = (formData.tags || '').split(',').filter(Boolean).filter((t: string) => t !== tag).join(',');
-                        handleUpdateField('tags', next);
-                      }}
-                      style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', padding: 0 }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+                {(formData.tags || '').split(',').filter(Boolean).map((tag: string, tIdx: number) => {
+                  const trimmedTag = tag.trim();
+                  if (trimmedTag === 'internal_task') return null;
+                  return (
+                    <span key={tIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(107, 114, 128, 0.08)', color: 'var(--color-text-light)', fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '4px' }}>
+                      <span>{trimmedTag}</span>
+                      <button
+                        onClick={() => {
+                          const next = (formData.tags || '').split(',').filter(Boolean).filter((t: string) => t !== tag).join(',');
+                          handleUpdateField('tags', next);
+                        }}
+                        style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
               <input
                 type="text"

@@ -2426,7 +2426,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       const depositsList = (Array.isArray(depositsData) ? depositsData : []).map((d: any) => ({
         ...d,
         id: d.id,
-        title: `${d.project_name} - Căn ${d.unit_code}`,
+        title: d.unit_code && d.unit_code !== '—' && d.unit_code !== '-' && d.unit_code.trim() !== '' 
+          ? `${d.project_name} - Căn ${d.unit_code}` 
+          : d.project_name,
         value: d.price,
         stage: (() => {
           if (d.status === 'pending_admin') {
@@ -3402,7 +3404,9 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
         const depositsList = (depositsRes.data.data || []).map((d: any) => ({
           ...d,
           id: d.id,
-          title: `${d.project_name} - Căn ${d.unit_code}`,
+          title: d.unit_code && d.unit_code !== '—' && d.unit_code !== '-' && d.unit_code.trim() !== '' 
+            ? `${d.project_name} - Căn ${d.unit_code}` 
+            : d.project_name,
           value: d.price,
           stage: (() => {
             if (d.status === 'pending_admin') {
@@ -10015,21 +10019,21 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   {activeTab === 'deals' && (
                     <div className="animate-fade">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Phiếu thanh toán - {deals.length}</h3>
+                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>Lịch thanh toán - {deals.length}</h3>
                         {!isViewer && (
                           <button 
                             className="btn primary sm" 
                             onClick={() => {
                               if (!isAtLeastDongLePhiHoSo) {
-                                addToast(<span>Chặn thao tác: Chỉ được tạo phiếu thanh toán khi khách hàng ở bước <strong>Đóng lệ phí hồ sơ</strong> trở đi!</span>, 'warning');
+                                addToast(<span>Chặn thao tác: Chỉ được tạo lịch thanh toán khi khách hàng ở bước <strong>Đóng lệ phí hồ sơ</strong> trở đi!</span>, 'warning');
                                 return;
                               }
                               useUIStore.getState().setShowPOS(contact || formData);
                             }}
                             style={!isAtLeastDongLePhiHoSo ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
-                            title={!isAtLeastDongLePhiHoSo ? 'Chỉ được tạo phiếu thanh toán khi khách hàng ở bước Đóng lệ phí hồ sơ trở đi' : ''}
+                            title={!isAtLeastDongLePhiHoSo ? 'Chỉ được tạo lịch thanh toán khi khách hàng ở bước Đóng lệ phí hồ sơ trở đi' : ''}
                           >
-                            <Plus size={14} /> Tạo phiếu thanh toán
+                            <Plus size={14} /> Tạo lịch thanh toán
                           </button>
                         )}
                       </div>
@@ -10042,27 +10046,54 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                       ) : deals.length === 0 ? (
                         <div className="card-panel" style={{ textAlign: 'center', padding: '4rem 2rem', border: '2px dashed var(--color-border-light)', borderRadius: '24px' }}>
                           <CreditCard size={48} style={{ color: 'var(--color-border)', margin: '0 auto 1.5rem', opacity: 0.4 }} />
-                          <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Chưa có phiếu thanh toán</h4>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '240px', margin: '0 auto' }}>Đang không có phiếu thanh toán nào cho khách hàng này.</p>
+                          <h4 style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: '8px' }}>Chưa có lịch thanh toán</h4>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', maxWidth: '240px', margin: '0 auto' }}>Đang không có lịch thanh toán nào cho khách hàng này.</p>
                         </div>
                       ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                           {deals.map((d: any) => {
+                            const approvedCount = d.milestones ? d.milestones.filter((m: any) => m.status === 'approved').length : 0;
+                            const totalCount = d.milestones ? d.milestones.length : 0;
+                            const progressPercent = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0;
+
                             return (
                               <div 
                                 key={d.id} 
-                                className="card-panel table-row-hover" 
+                                className="card-panel" 
                                 style={{ padding: 0, overflow: 'hidden', border: `1px solid var(--color-border)`, transition: 'transform 0.2s, box-shadow 0.2s', borderRadius: '16px', cursor: 'pointer' }}
                                 onClick={() => {
                                   handleOpenManageMilestones(d);
                                 }}
                               >
-                                <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'var(--color-surface)' }}>
-                                  <div>
+                                <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--color-surface)' }}>
+                                  <div style={{ minWidth: '150px' }}>
                                     <h4 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text)', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>{d.title}</h4>
                                     <span className="badge" style={{ background: `${d.stage_color}15`, color: d.stage_color, fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: '8px' }}>{d.stage}</span>
                                   </div>
-                                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                                  
+                                  <div style={{ flex: '1 1 200px', minWidth: '180px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-light)' }}>
+                                        Tiến độ duyệt: <strong>{approvedCount}/{totalCount} đợt</strong>
+                                      </span>
+                                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: progressPercent === 100 ? '#10b981' : 'var(--color-primary)' }}>
+                                        {progressPercent}%
+                                      </span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '8px', background: 'rgba(0, 0, 0, 0.05)', borderRadius: '99px', overflow: 'hidden' }}>
+                                      <div 
+                                        style={{ 
+                                          width: `${progressPercent}%`, 
+                                          height: '100%', 
+                                          background: progressPercent === 100 ? '#10b981' : 'linear-gradient(90deg, #BD1D2D, #F97316)', 
+                                          borderRadius: '99px', 
+                                          transition: 'width 0.4s ease-in-out' 
+                                        }} 
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', minWidth: '120px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                       <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem', letterSpacing: '-0.01em' }}>
                                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(d.value || 0)}
@@ -10076,50 +10107,85 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
 
                                 {d.milestones && d.milestones.length > 0 && (
                                   <div style={{ padding: '1rem 1.5rem', background: 'var(--color-bg-light)', borderTop: '1px solid var(--color-border-light)' }}>
-                                    <h5 style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-text)' }}>Lịch trình thanh toán:</h5>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                      {d.milestones.map((m: any) => (
-                                        <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                                          <span>{m.milestone_name}</span>
-                                          <span style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                            <strong>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(m.expected_amount || 0)}</strong>
-                                            <span style={{
-                                              padding: '2px 8px',
-                                              borderRadius: '6px',
-                                              fontSize: '0.7rem',
-                                              fontWeight: 700,
-                                              background: m.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : m.status === 'paid' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                              color: m.status === 'approved' ? '#10b981' : m.status === 'paid' ? '#f59e0b' : '#ef4444'
-                                            }}>
-                                              {m.status === 'approved' ? 'Đã duyệt' : m.status === 'paid' ? 'Chờ duyệt' : 'Chưa đóng'}
-                                            </span>
-                                          </span>
-                                        </div>
-                                      ))}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                      {/* Header row */}
+                                      <div 
+                                        style={{ 
+                                          display: 'grid', 
+                                          gridTemplateColumns: '90px 1fr 110px 90px', 
+                                          fontSize: '0.7rem', 
+                                          fontWeight: 700, 
+                                          textTransform: 'uppercase', 
+                                          color: 'var(--color-text-muted)', 
+                                          padding: '0 12px',
+                                          gap: '8px'
+                                        }}
+                                      >
+                                        <div>Hạn đóng</div>
+                                        <div>Nội dung</div>
+                                        <div style={{ textAlign: 'right' }}>Số tiền</div>
+                                        <div style={{ textAlign: 'right' }}>Trạng thái</div>
+                                      </div>
+                                      
+                                      {/* Milestone rows */}
+                                      {d.milestones.map((m: any) => {
+                                        let formattedDate = '—';
+                                        if (m.expected_pay_date) {
+                                          const dateParts = m.expected_pay_date.split('-');
+                                          if (dateParts.length === 3) {
+                                            formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                                          }
+                                        }
+
+                                        return (
+                                          <div 
+                                            key={m.id} 
+                                            style={{ 
+                                              display: 'grid', 
+                                              gridTemplateColumns: '90px 1fr 110px 90px', 
+                                              alignItems: 'center', 
+                                              fontSize: '0.78rem', 
+                                              padding: '8px 12px', 
+                                              background: 'var(--color-surface)', 
+                                              borderRadius: '8px', 
+                                              border: '1px solid var(--color-border-light)',
+                                              gap: '8px'
+                                            }}
+                                          >
+                                            {/* Ngày tháng */}
+                                            <div style={{ fontWeight: 600, color: 'var(--color-text-light)' }}>
+                                              {formattedDate}
+                                            </div>
+                                            {/* Nội dung */}
+                                            <div style={{ fontWeight: 500, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={m.milestone_name}>
+                                              {m.milestone_name}
+                                            </div>
+                                            {/* Số tiền */}
+                                            <div style={{ fontWeight: 700, color: 'var(--color-text)', textAlign: 'right' }}>
+                                              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(m.expected_amount || 0)}
+                                            </div>
+                                            {/* Trạng thái */}
+                                            <div style={{ textAlign: 'right' }}>
+                                              <span style={{
+                                                padding: '3px 8px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 700,
+                                                display: 'inline-block',
+                                                textAlign: 'center',
+                                                width: '80px',
+                                                background: m.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : m.status === 'paid' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                color: m.status === 'approved' ? '#10b981' : m.status === 'paid' ? '#f59e0b' : '#ef4444'
+                                              }}>
+                                                {m.status === 'approved' ? 'Đã duyệt' : m.status === 'paid' ? 'Chờ duyệt' : 'Chưa đóng'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 )}
-
-                                {d.stage_id !== 'cancelled' && (() => {
-                                  const isCreator = String(d.created_by) === String(currentUser?.id);
-                                  const isOwner = String(d.contact_owner_id) === String(currentUser?.id);
-                                  const isStaff = currentUser && ['admin', 'superadmin', 'super_admin', 'assistant', 'manager', 'director'].includes(currentUser.role);
-                                  
-                                  if (isStaff || isCreator || isOwner) {
-                                    return (
-                                      <div style={{ padding: '0.75rem 1.5rem', display: 'flex', justifyContent: 'flex-end', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border-light)' }}>
-                                        <button 
-                                          className="btn outline danger sm"
-                                          onClick={(e) => { e.stopPropagation(); handleCancelDeposit(d.id); }}
-                                          style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '28px', fontSize: '0.75rem', padding: '0 10px', cursor: 'pointer' }}
-                                        >
-                                          <Ban size={12} /> Hủy giao dịch (Bể cọc)
-                                        </button>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })()}
                               </div>
                             );
                           })}

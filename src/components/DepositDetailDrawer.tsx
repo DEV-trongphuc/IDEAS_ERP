@@ -146,13 +146,21 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   }, [deposit]);
 
   // Load comments and history when open
-  const loadComments = async () => {
+  const loadComments = async (isInitial = false) => {
     if (!selectedDepForManage?.id) return;
     setLoadingComments(true);
     try {
       const res = await fetchAPI(`deposits/${selectedDepForManage.id}/comments`);
       if (res.success) {
-        setComments(res.data || []);
+        const commentsList = res.data || [];
+        setComments(commentsList);
+        if (isInitial) {
+          if (commentsList.length === 0) {
+            setActiveDrawerTab('history');
+          } else {
+            setActiveDrawerTab('comments');
+          }
+        }
         setTimeout(() => commentEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
     } catch (err) {
@@ -194,7 +202,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
   useEffect(() => {
     if (isOpen && selectedDepForManage?.id) {
-      loadComments();
+      loadComments(true);
       loadHistory();
     }
   }, [isOpen, selectedDepForManage?.id]);
@@ -762,7 +770,9 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px', background: 'var(--color-bg-light)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
                         <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chương trình</span>
                         <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-text)', wordBreak: 'break-word' }}>
-                          {selectedDepForManage.project_name} (Căn {selectedDepForManage.unit_code})
+                          {selectedDepForManage.unit_code && selectedDepForManage.unit_code !== '—' && selectedDepForManage.unit_code !== '-' && selectedDepForManage.unit_code.trim() !== ''
+                            ? `${selectedDepForManage.project_name} (Căn ${selectedDepForManage.unit_code})`
+                            : selectedDepForManage.project_name}
                         </span>
                       </div>
                     </div>
@@ -1631,8 +1641,10 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                             <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Chưa ghi nhận lịch sử chỉnh sửa nào</span>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', paddingLeft: '16px' }}>
-                            <div style={{ position: 'absolute', top: '8px', bottom: '8px', left: '4px', width: '2px', background: 'var(--color-border-light)' }} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', paddingLeft: '28px' }}>
+                            {/* Vertical Line */}
+                            <div style={{ position: 'absolute', top: '24px', bottom: '24px', left: '12px', width: '2px', background: 'var(--color-border-light, #e2e8f0)' }} />
+                            
                             {historyLogs.map((log) => {
                               let actionLabel = log.action;
                               let actionColor = 'var(--color-primary)';
@@ -1661,29 +1673,64 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                 actionLabel = 'Tải lên minh chứng (UNC)';
                                 actionColor = '#3b82f6';
                               }
+                              
                               return (
-                                <div key={log.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div key={log.id} style={{ position: 'relative' }}>
+                                  {/* Timeline dot */}
                                   <div style={{
                                     position: 'absolute',
-                                    top: '5px',
-                                    left: '-16px',
+                                    top: '25px', // Aligned with the center of the 32px avatar
+                                    left: '-21px', // Aligned with the vertical line at left: 12px
                                     width: '10px',
                                     height: '10px',
                                     borderRadius: '50%',
-                                    background: actionColor,
-                                    border: '2px solid var(--color-surface)',
-                                    boxShadow: 'var(--shadow-sm)'
+                                    background: '#cbd5e1', // Neutral grey dot
+                                    border: '2px solid var(--color-surface, #fff)',
+                                    boxShadow: '0 0 0 3px rgba(0, 0, 0, 0.03)',
+                                    zIndex: 2
                                   }} />
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                                      {log.user_name || 'Hệ thống'}
-                                    </span>
-                                    <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                      {new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                    </span>
-                                  </div>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-                                    <strong style={{ color: actionColor }}>{actionLabel}</strong>: {log.new_data}
+
+                                  {/* Card */}
+                                  <div 
+                                    style={{ 
+                                      display: 'flex', 
+                                      gap: '12px', 
+                                      background: 'var(--color-surface, #fff)', 
+                                      border: '1px solid var(--color-border-light)', 
+                                      padding: '14px 18px', 
+                                      borderRadius: '16px',
+                                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.015)'
+                                    }}
+                                  >
+                                    {/* User Avatar */}
+                                    <Avatar src={log.avatar_url} name={log.user_name || 'Hệ thống'} size={32} />
+                                    
+                                    {/* Log details */}
+                                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                                          {log.user_name || 'Hệ thống'}
+                                        </span>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                          {new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: 1.45, textAlign: 'left', wordBreak: 'break-word' }}>
+                                        <span style={{ 
+                                          color: actionColor, 
+                                          fontWeight: 700,
+                                          background: `${actionColor}10`,
+                                          padding: '2px 6px',
+                                          borderRadius: '4px',
+                                          fontSize: '0.72rem',
+                                          marginRight: '6px',
+                                          display: 'inline-block'
+                                        }}>
+                                          {actionLabel}
+                                        </span>
+                                        <span>{log.new_data}</span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -1837,13 +1884,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                       Vui lòng chủ động liên hệ nhắc nhở khách hàng thanh toán đợt: <strong>{previewReminderMilestone.milestone_name}</strong>.<br />
                       Số tiền cần thanh toán: <strong>{amountStr}</strong>.<br />
                       Hạn thanh toán: <strong>{payDateStr}</strong>.<br />
-                      Chương trình: <strong>{selectedDepForManage.project_name}</strong> (Căn {selectedDepForManage.unit_code}).
+                      Chương trình: <strong>{selectedDepForManage.project_name}</strong>{selectedDepForManage.unit_code && selectedDepForManage.unit_code !== '—' && selectedDepForManage.unit_code !== '-' && selectedDepForManage.unit_code.trim() !== '' ? ` (Căn ${selectedDepForManage.unit_code})` : ''}.
                     </div>
                   ) : (
                     <div>
                       Chào <strong>{custName}</strong>,<br /><br />
                       Đây là thông báo nhắc lịch thanh toán cho đợt: <strong>{previewReminderMilestone.milestone_name}</strong>.<br /><br />
-                      Chương trình: <strong>{selectedDepForManage.project_name}</strong> (Căn {selectedDepForManage.unit_code}).<br />
+                      Chương trình: <strong>{selectedDepForManage.project_name}</strong>{selectedDepForManage.unit_code && selectedDepForManage.unit_code !== '—' && selectedDepForManage.unit_code !== '-' && selectedDepForManage.unit_code.trim() !== '' ? ` (Căn ${selectedDepForManage.unit_code})` : ''}.<br />
                       Số tiền cần đóng: <strong>{amountStr}</strong>.<br />
                       Hạn thanh toán: <strong>{payDateStr}</strong>.<br /><br />
                       Vui lòng hoàn tất thanh toán và tải hình ảnh Ủy nhiệm chi (UNC) lên hệ thống. Xin cảm ơn!
