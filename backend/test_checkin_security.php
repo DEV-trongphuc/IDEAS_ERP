@@ -112,14 +112,14 @@ try {
 
     // Create a bulk request for Tenant A
     $db->prepare("
-        INSERT INTO attendance_bulk_requests (id, user_id, month_period, status, reason)
-        VALUES (888801, 88881, '2026-08', 'pending_approval', 'Tenant A bulk request')
+        INSERT INTO attendance_bulk_requests (id, user_id, month_period, status)
+        VALUES (888801, 88881, '2026-08', 'pending_approval')
     ")->execute();
 
     // Create a bulk request for Tenant B
     $db->prepare("
-        INSERT INTO attendance_bulk_requests (id, user_id, month_period, status, reason)
-        VALUES (888802, 88882, '2026-08', 'pending_approval', 'Tenant B bulk request')
+        INSERT INTO attendance_bulk_requests (id, user_id, month_period, status)
+        VALUES (888802, 88882, '2026-08', 'pending_approval')
     ")->execute();
 
 
