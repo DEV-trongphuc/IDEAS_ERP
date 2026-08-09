@@ -63,6 +63,7 @@ DROP TABLE IF EXISTS `active_compensation_logs`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `active_compensation_logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `round_id` int(11) NOT NULL,
   `consultant_id` int(11) NOT NULL,
   `admin_id` int(11) NOT NULL,
@@ -73,9 +74,11 @@ CREATE TABLE `active_compensation_logs` (
   KEY `round_id` (`round_id`),
   KEY `consultant_id` (`consultant_id`),
   KEY `admin_id` (`admin_id`),
+  KEY `idx_active_compensation_tenant` (`tenant_id`),
   CONSTRAINT `active_compensation_logs_ibfk_1` FOREIGN KEY (`round_id`) REFERENCES `distribution_rounds` (`id`) ON DELETE CASCADE,
   CONSTRAINT `active_compensation_logs_ibfk_2` FOREIGN KEY (`consultant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `active_compensation_logs_ibfk_3` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `active_compensation_logs_ibfk_3` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_compensation_logs_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1024,6 +1027,7 @@ DROP TABLE IF EXISTS `distribution_rounds`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `distribution_rounds` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tenant_id` int(11) NOT NULL DEFAULT 1,
   `round_name` varchar(255) NOT NULL,
   `description` mediumtext DEFAULT NULL,
   `cc_emails` mediumtext DEFAULT NULL,
@@ -1032,7 +1036,9 @@ CREATE TABLE `distribution_rounds` (
   `project_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `last_assigned_consultant_id` (`last_assigned_consultant_id`),
-  CONSTRAINT `distribution_rounds_ibfk_1` FOREIGN KEY (`last_assigned_consultant_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+  KEY `idx_dist_rounds_tenant` (`tenant_id`),
+  CONSTRAINT `distribution_rounds_ibfk_1` FOREIGN KEY (`last_assigned_consultant_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_dist_rounds_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=10000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

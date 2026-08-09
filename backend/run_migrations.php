@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 216;
+$targetVersion = 217;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1319,9 +1319,49 @@ try {
         $logMsg("Nâng cấp lên phiên bản 216 hoàn tất.", "success");
     }
 
-    // 23. Update DB version in system_settings
-    $targetVersion = 216;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '216') ON DUPLICATE KEY UPDATE setting_value = '216'");
+    // 23. Upgrade to 217: Standardize Tenant ID across all missing tables (suppliers, distribution_rounds, active_compensation_logs)
+    if ($currentVersion < 217) {
+        $logMsg("Bắt đầu nâng cấp lên phiên bản 217...", "info");
+        try {
+            // 1. suppliers
+            $chkCol = $conn->query("SHOW COLUMNS FROM `suppliers` LIKE 'tenant_id'");
+            if (!$chkCol || $chkCol->num_rows === 0) {
+                $conn->query("ALTER TABLE `suppliers` ADD COLUMN `tenant_id` INT(11) NOT NULL DEFAULT 1 AFTER `id`");
+                $conn->query("ALTER TABLE `suppliers` ADD CONSTRAINT `fk_suppliers_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE");
+                $logMsg("Đã bổ sung cột tenant_id và khóa ngoại vào bảng suppliers.", "success");
+            } else {
+                $logMsg("Cột tenant_id đã tồn tại trong bảng suppliers.", "info");
+            }
+
+            // 2. distribution_rounds
+            $chkColDist = $conn->query("SHOW COLUMNS FROM `distribution_rounds` LIKE 'tenant_id'");
+            if (!$chkColDist || $chkColDist->num_rows === 0) {
+                $conn->query("ALTER TABLE `distribution_rounds` ADD COLUMN `tenant_id` INT(11) NOT NULL DEFAULT 1 AFTER `id`");
+                $conn->query("ALTER TABLE `distribution_rounds` ADD CONSTRAINT `fk_dist_rounds_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE");
+                $logMsg("Đã bổ sung cột tenant_id và khóa ngoại vào bảng distribution_rounds.", "success");
+            } else {
+                $logMsg("Cột tenant_id đã tồn tại trong bảng distribution_rounds.", "info");
+            }
+
+            // 3. active_compensation_logs
+            $chkColComp = $conn->query("SHOW COLUMNS FROM `active_compensation_logs` LIKE 'tenant_id'");
+            if (!$chkColComp || $chkColComp->num_rows === 0) {
+                $conn->query("ALTER TABLE `active_compensation_logs` ADD COLUMN `tenant_id` INT(11) NOT NULL DEFAULT 1 AFTER `id`");
+                $conn->query("ALTER TABLE `active_compensation_logs` ADD CONSTRAINT `fk_compensation_logs_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE");
+                $logMsg("Đã bổ sung cột tenant_id và khóa ngoại vào bảng active_compensation_logs.", "success");
+            } else {
+                $logMsg("Cột tenant_id đã tồn tại trong bảng active_compensation_logs.", "info");
+            }
+
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 217: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 217 hoàn tất.", "success");
+    }
+
+    // 24. Update DB version in system_settings
+    $targetVersion = 217;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '217') ON DUPLICATE KEY UPDATE setting_value = '217'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
