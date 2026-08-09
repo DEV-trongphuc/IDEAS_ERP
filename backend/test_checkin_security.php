@@ -48,6 +48,16 @@ if (!function_exists('respond')) {
     }
 }
 
+if (!function_exists('requireRole')) {
+    function requireRole(array $payload, array $roles): void {
+        $userRole = strtolower($payload['role'] ?? '');
+        $allowed = array_map('strtolower', $roles);
+        if (!in_array($userRole, $allowed, true)) {
+            respond(403, null, 'Bạn không có quyền thực hiện hành động này', false);
+        }
+    }
+}
+
 if (!function_exists('logActivity')) {
     function logActivity($db, $tid, $uid, string $action, ?string $resource = null, $resourceId = null, ?string $data = null): void {
         // Mock log activity in test harness
