@@ -919,13 +919,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           onMobileClose={() => setIsMobileSidebarOpen(false)}
         />
       )}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
         <Header 
           onActivityFeedClick={() => setIsActivityFeedOpen(true)}
           onMenuClick={() => setIsMobileSidebarOpen(true)}
           version={backendVersion}
           pendingInboxCount={pendingTicketsCount + heldLeadsCount + pendingCheckInsCount + pendingCoopsCount + supportTicketsCount + pendingExpensesCount}
           onUnifiedInboxClick={() => setIsUnifiedInboxOpen(true)}
+          requireCheckout={sysSettings?.require_checkout === '1' || sysSettings?.require_checkout === 1}
         />
 
 
@@ -2288,7 +2288,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
 
 
-      {/* Global AI Smart Check-in Modal */}
       {checkInModalOpen && (
         <SmartCheckInModal
           isOpen={checkInModalOpen}
@@ -2296,6 +2295,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           todayCheckIn={todayCheckIn}
           consultantProfile={consultantProfile}
           user={user}
+          requireCheckout={sysSettings?.require_checkout === '1' || sysSettings?.require_checkout === 1}
           onCheckInSuccess={() => {
             loadCheckInStatus();
             window.dispatchEvent(new CustomEvent('checkin-status-changed'));

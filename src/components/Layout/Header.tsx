@@ -38,13 +38,15 @@ export const Header = ({
   onMenuClick, 
   version,
   pendingInboxCount,
-  onUnifiedInboxClick
+  onUnifiedInboxClick,
+  requireCheckout = false
 }: { 
   onActivityFeedClick: () => void; 
   onMenuClick?: () => void; 
   version?: string;
   pendingInboxCount?: number;
   onUnifiedInboxClick?: () => void;
+  requireCheckout?: boolean;
 }) => {
   const isDemo = localStorage.getItem('IDEAS_DEMO_MODE') === 'true';
   const { user, logout } = useAuth();
@@ -1002,8 +1004,40 @@ export const Header = ({
         {/* Sales widgets for check-in */}
         {isSales && (
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px', marginRight: isMobile ? '2px' : '8px' }}>
-            {/* Check-in status / trigger button */}
-            {(!headerCheckIn || headerCheckIn.status === 'rejected' || headerCheckIn.status === 'approved') ? null : (
+            {headerCheckIn && headerCheckIn.status === 'approved' && (
+              <div 
+                onClick={() => {
+                  if (requireCheckout && !headerCheckIn.check_out_time) {
+                    window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
+                  }
+                }}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px', 
+                  background: headerCheckIn.check_out_time ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
+                  border: headerCheckIn.check_out_time ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)', 
+                  color: headerCheckIn.check_out_time ? '#2563eb' : 'var(--color-success)', 
+                  borderRadius: '8px', 
+                  padding: isMobile ? '4px 6px' : '4px 10px', 
+                  height: isMobile ? '30px' : '36px', 
+                  fontSize: '0.72rem', 
+                  fontWeight: 700, 
+                  whiteSpace: 'nowrap',
+                  cursor: (requireCheckout && !headerCheckIn.check_out_time) ? 'pointer' : 'default'
+                }}
+                title={requireCheckout && !headerCheckIn.check_out_time ? t('Click để Chấm công Ra ca') : undefined}
+              >
+                <CheckCircle2 size={12} color={headerCheckIn.check_out_time ? '#2563eb' : undefined} />
+                <span>
+                  {headerCheckIn.check_out_time 
+                    ? `${t('Đã Ra ca')} (${headerCheckIn.check_out_time.substring(11, 16) || headerCheckIn.check_out_time.substring(0, 5)})` 
+                    : `${t('Đã Vào ca')} (${headerCheckIn.check_in_time.substring(0, 5)})`
+                  }
+                </span>
+              </div>
+            )}
+            {headerCheckIn && headerCheckIn.status === 'pending_approval' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--color-warning)', borderRadius: '8px', padding: isMobile ? '4px 6px' : '4px 10px', height: isMobile ? '30px' : '36px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                 <Clock size={12} />
                 <span>{isMobile ? 'Chờ duyệt' : `${t('Chờ duyệt trễ')} (${headerCheckIn.check_in_time.substring(0, 5)})`}</span>
@@ -2170,7 +2204,7 @@ export const Header = ({
         `}</style>
       </CustomModal>
 
-       {isSales && !isOvertime && (!headerCheckIn || headerCheckIn.status === 'rejected') && (
+       {isSales && !isOvertime && (!headerCheckIn || headerCheckIn.status === 'rejected' || (requireCheckout && !headerCheckIn.check_out_time)) && (
         <>
           <style>{`
             @media (max-width: 768px) {
@@ -2192,19 +2226,23 @@ export const Header = ({
               width: 52,
               height: 52,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              background: headerCheckIn && headerCheckIn.status === 'approved' 
+                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+                : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
               color: 'white',
               border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: '0 10px 25px rgba(239, 68, 68, 0.4)',
+              boxShadow: headerCheckIn && headerCheckIn.status === 'approved'
+                ? '0 10px 25px rgba(245, 158, 11, 0.4)'
+                : '0 10px 25px rgba(239, 68, 68, 0.4)',
               zIndex: 90,
               transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
               outline: 'none'
             }}
-            title={t('Chấm công ngay')}
+            title={headerCheckIn && headerCheckIn.status === 'approved' ? t('Chấm công ra về') : t('Chấm công ngay')}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           >

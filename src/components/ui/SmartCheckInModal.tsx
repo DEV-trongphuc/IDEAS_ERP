@@ -12,6 +12,7 @@ interface SmartCheckInModalProps {
   consultantProfile: any;
   user: any;
   onCheckInSuccess: () => void;
+  requireCheckout?: boolean;
 }
 
 export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
@@ -20,7 +21,8 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
   todayCheckIn,
   consultantProfile,
   user,
-  onCheckInSuccess
+  onCheckInSuccess,
+  requireCheckout = false
 }) => {
   const { t } = useLanguage();
 
@@ -185,8 +187,9 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     return Math.max(0, currentTotal - startTotal);
   };
 
-  const isLate = checkIsLate();
-  const minutesLate = getMinutesLate();
+  const isCheckOutMode = !!(requireCheckout && todayCheckIn && todayCheckIn.status !== 'rejected' && !todayCheckIn.check_out_time);
+  const isLate = isCheckOutMode ? false : checkIsLate();
+  const minutesLate = isCheckOutMode ? 0 : getMinutesLate();
 
   // Camera Control
   const startCamera = async () => {
@@ -247,7 +250,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
 
   // Start camera automatically when modal opens
   useEffect(() => {
-    if (isOpen && (!todayCheckIn || todayCheckIn.status === 'rejected') && !isSuccessScreen) {
+    if (isOpen && (!todayCheckIn || todayCheckIn.status === 'rejected' || isCheckOutMode) && !isSuccessScreen) {
       startCamera();
     } else if (!isOpen) {
       stopCamera();
@@ -260,7 +263,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen, todayCheckIn, isSuccessScreen]);
+  }, [isOpen, todayCheckIn, isSuccessScreen, isCheckOutMode]);
 
   // Capture current frame to dataUrl
   const takeSnapshot = (): string | null => {
@@ -470,7 +473,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
         const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-        setSuccessMeta({ time: timeStr, date: dateStr, isLate });
+        setSuccessMeta({ time: timeStr, date: dateStr, isLate, isCheckOut: isCheckOutMode });
         setIsSuccessScreen(true);
 
         onCheckInSuccess();
@@ -499,7 +502,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
       title={isSuccessScreen ? '' : (
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Fingerprint size={20} color="#BD1D2D" />
-          <span>{t("CHẤM CÔNG HÀNG NGÀY")}</span>
+          <span>{isCheckOutMode ? t("CHẤM CÔNG RA CA") : t("CHẤM CÔNG HÀNG NGÀY")}</span>
         </span>
       )}
       width="100%"
@@ -507,8 +510,8 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
       fullScreenOnMobile={false}
       modalClassName="checkin-modal-dark"
     >
-      {/* 1. Already Checked-In State */}
-      {todayCheckIn && todayCheckIn.status !== 'rejected' && !isSuccessScreen ? (
+      {/* 1. Already Checked-In / Out State */}
+      {todayCheckIn && todayCheckIn.status !== 'rejected' && (!requireCheckout || todayCheckIn.check_out_time) && !isSuccessScreen ? (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -523,23 +526,29 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
             width: '72px',
             height: '72px',
             borderRadius: '50%',
-            background: todayCheckIn.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-            color: todayCheckIn.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)',
+            background: todayCheckIn.check_out_time ? 'rgba(59, 130, 246, 0.12)' : todayCheckIn.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+            color: todayCheckIn.check_out_time ? 'var(--color-primary)' : todayCheckIn.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '2.5rem',
             fontWeight: 'bold',
-            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15)'
+            boxShadow: todayCheckIn.check_out_time ? '0 8px 24px rgba(59, 130, 246, 0.15)' : '0 8px 24px rgba(16, 185, 129, 0.15)'
           }}>
-            {todayCheckIn.status === 'approved' ? <CheckCircle2 size={38} /> : <Clock size={38} />}
+            {todayCheckIn.check_out_time ? <CheckCircle2 size={38} color="#2563eb" /> : todayCheckIn.status === 'approved' ? <CheckCircle2 size={38} /> : <Clock size={38} />}
           </div>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-text)' }}>
-              {todayCheckIn.status === 'approved' ? t('Đã Chấm công Thành công') : t('Đang chờ phê duyệt đi trễ')}
+              {todayCheckIn.check_out_time 
+                ? t('Đã Hoàn thành Ngày làm việc') 
+                : todayCheckIn.status === 'approved' 
+                  ? t('Đã Chấm công Thành công') 
+                  : t('Đang chờ phê duyệt đi trễ')}
             </h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: '6px 0 0' }}>
-              {t('Thời gian chấm công:')} <b>{todayCheckIn.check_in_time ? todayCheckIn.check_in_time.substring(0, 5) : ''}</b> ngày {todayCheckIn.check_in_date}
+              {todayCheckIn.check_out_time 
+                ? `${t('Vào:')} ${todayCheckIn.check_in_time.substring(0, 5)} • ${t('Ra:')} ${(todayCheckIn.check_out_time.substring(11, 16) || todayCheckIn.check_out_time.substring(0, 5))}`
+                : `${t('Thời gian chấm công:')} ${todayCheckIn.check_in_time ? todayCheckIn.check_in_time.substring(0, 5) : ''}`} ngày {todayCheckIn.check_in_date}
             </p>
           </div>
           {todayCheckIn.reason && (
@@ -587,13 +596,15 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
           </div>
 
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
-            {t('CHẤM CÔNG THÀNH CÔNG!')}
+            {successMeta?.isCheckOut ? t('CHẤM CÔNG RA CA THÀNH CÔNG!') : t('CHẤM CÔNG THÀNH CÔNG!')}
           </h2>
           
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: '0 0 1.25rem 0', maxWidth: '340px', lineHeight: 1.5 }}>
-            {successMeta?.isLate 
-              ? t('Yêu cầu đi trễ đã gửi tới quản lý. Đã ghi nhận thời gian chấm công!')
-              : t('Cổng nhận data tự động hôm nay đã mở. Chúc bạn giao dịch chốt cọc bùng nổ!')}
+            {successMeta?.isCheckOut 
+              ? t('Hẹn gặp lại bạn vào ca làm việc tiếp theo. Chúc bạn một buổi tối vui vẻ!')
+              : successMeta?.isLate 
+                ? t('Yêu cầu đi trễ đã gửi tới quản lý. Đã ghi nhận thời gian chấm công!')
+                : t('Cổng nhận data tự động hôm nay đã mở. Chúc bạn giao dịch chốt cọc bùng nổ!')}
           </p>
 
           <div style={{
@@ -631,7 +642,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
           {/* Header Info */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
-              {t('Tự động quét & nhận diện khuôn mặt')}
+              {isCheckOutMode ? t('Xác nhận khuôn mặt để chấm công ra về') : t('Tự động quét & nhận diện khuôn mặt')}
             </span>
             <div style={{
               backgroundColor: 'var(--color-bg)',
@@ -642,7 +653,11 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
               fontWeight: 700,
               border: '1px solid var(--color-border)'
             }}>
-              {t('Quy định:')} <span style={{ color: '#BD1D2D' }}>{consultantProfile?.work_start_time || '08:00'}</span>
+              {t('Quy định:')} <span style={{ color: '#BD1D2D' }}>
+                {isCheckOutMode 
+                  ? (consultantProfile?.work_end_time || '17:30') 
+                  : (consultantProfile?.work_start_time || '08:00')}
+              </span>
             </div>
           </div>
 
@@ -836,7 +851,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
                       <RefreshCw size={16} className="spin" /> {t('Đang gửi...')}
                     </span>
                   ) : (
-                    t('Xác nhận Chấm công')
+                    isCheckOutMode ? t('Xác nhận Ra ca') : t('Xác nhận Chấm công')
                   )}
                 </button>
 
