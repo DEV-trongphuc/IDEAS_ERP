@@ -919,6 +919,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           onMobileClose={() => setIsMobileSidebarOpen(false)}
         />
       )}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
         <Header 
           onActivityFeedClick={() => setIsActivityFeedOpen(true)}
           onMenuClick={() => setIsMobileSidebarOpen(true)}
