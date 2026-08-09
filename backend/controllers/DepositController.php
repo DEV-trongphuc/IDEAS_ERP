@@ -1115,6 +1115,7 @@ class DepositController {
                     }
                 }
             }
+        }
 
             // Get current milestones in database
             $stmtM = $this->db->prepare("SELECT id, milestone_name, expected_amount, original_amount, expected_pay_date, status FROM deposit_milestones WHERE deposit_id = ?");
