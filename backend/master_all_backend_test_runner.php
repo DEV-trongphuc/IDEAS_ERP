@@ -108,6 +108,9 @@ require_once __DIR__ . '/test_workspace_task_suite.php';
 echo "\n--- 28. CHAY TEST SUITE: AI DATASETS & PARAMETERS SCHEMA ---\n";
 require_once __DIR__ . '/test_ai_training_structure.php';
 
+echo "\n--- 29. CHAY TEST SUITE: WEBHOOK & REMINDERS TENANT ISOLATION ---\n";
+require_once __DIR__ . '/test_webhook_sync_tenant_isolation.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 

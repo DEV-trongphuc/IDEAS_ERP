@@ -3,7 +3,7 @@
 // Extended RBAC & Database verification suite for new roles (HR, Accountant, Marketing)
 // Initiates the testing harness bootstrap
 
-define('DIAG_TOKEN', true); // Allow bootstrap bypass
+if (!defined('DIAG_TOKEN')) define('DIAG_TOKEN', true); // Allow bootstrap bypass
 require_once __DIR__ . '/test_bootstrap.php';
 require_once __DIR__ . '/permission_matrix_helper.php';
 

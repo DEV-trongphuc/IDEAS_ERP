@@ -874,9 +874,9 @@ class CheckInController {
             SELECT r.*, u.full_name, u.role as user_role
             FROM attendance_bulk_requests r
             JOIN users u ON r.user_id = u.id
-            WHERE 1=1
+            WHERE u.tenant_id = ?
         ";
-        $params = [];
+        $params = [$auth['tenant_id']];
 
         if ($role === 'manager') {
             // Find team members
@@ -890,7 +890,7 @@ class CheckInController {
             if (!empty($teamIds)) {
                 $placeholders = implode(',', array_fill(0, count($teamIds), '?'));
                 $sql .= " AND (r.user_id = ? OR u.team_id IN ($placeholders))";
-                $params = array_merge([$userId], $teamIds);
+                $params = array_merge($params, [$userId], $teamIds);
             } else {
                 $sql .= " AND r.user_id = ?";
                 $params[] = $userId;
@@ -922,9 +922,9 @@ class CheckInController {
             SELECT r.*, u.full_name, u.role as user_role
             FROM attendance_bulk_requests r
             JOIN users u ON r.user_id = u.id
-            WHERE r.id = ?
+            WHERE r.id = ? AND u.tenant_id = ?
         ");
-        $stmt->execute([$id]);
+        $stmt->execute([$id, $auth['tenant_id']]);
         $req = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$req) {
@@ -963,6 +963,11 @@ class CheckInController {
 
         if (!$req) {
             respond(404, null, 'Không tìm thấy phiếu đề xuất', false);
+        }
+
+        if ((int)$req['tenant_id'] !== (int)$auth['tenant_id']) {
+            respond(403, null, 'Bạn không có quyền thao tác trên dữ liệu này', false);
+            return;
         }
 
         // Manager checks: only approve their own team members

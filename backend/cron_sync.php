@@ -3190,7 +3190,7 @@ function sendShiftRemindersAndCheckInAlerts($conn) {
         
         // Query active users who have not checked in today (only Sales, or Managers in combined mode)
         $userQuery = "
-            SELECT u.id, u.full_name, u.email, u.zalo_chat_id, u.telegram_chat_id, u.work_schedule,
+            SELECT u.id, u.full_name, u.email, u.zalo_chat_id, u.telegram_chat_id, u.work_schedule, u.tenant_id,
                    IF(u.use_custom_work_hours = 1, u.work_start_time, (SELECT setting_value FROM system_settings WHERE setting_key = 'global_work_start_time' LIMIT 1)) AS work_start_time
             FROM users u
             WHERE u.status = 'active'
@@ -3266,9 +3266,10 @@ function sendShiftRemindersAndCheckInAlerts($conn) {
                                     // 1. Send Web In-App Notification Bell (Isolated)
                                     if ($getSaleMatrixSetting($conn, $userId, 'ATTENDANCE_REMINDER', 'bell')) {
                                         try {
-                                            $insNotif = $conn->prepare("INSERT INTO notifications (user_id, tenant_id, title, body, type, link) VALUES (?, 1, '⏰ ĐÃ ĐẾN GIỜ CHẤM CÔNG', ?, 'attendance_reminder', '/attendance')");
+                                            $insNotif = $conn->prepare("INSERT INTO notifications (user_id, tenant_id, title, body, type, link) VALUES (?, ?, '⏰ ĐÃ ĐẾN GIỜ CHẤM CÔNG', ?, 'attendance_reminder', '/attendance')");
                                             if ($insNotif) {
-                                                $insNotif->bind_param("is", $userId, $msg);
+                                                $userTenantId = (int)$user['tenant_id'];
+                                                $insNotif->bind_param("iis", $userId, $userTenantId, $msg);
                                                 $insNotif->execute();
                                                 $insNotif->close();
                                             }
@@ -3349,7 +3350,7 @@ function sendShiftRemindersAndCheckInAlerts($conn) {
                 if ($nowTimestamp >= $reminderTimestamp && $nowTimestamp < $nightStartTimestamp) {
                     // Get all active approved night shift registrations for today
                     $nightRegsQuery = "
-                        SELECT n.user_id, u.full_name, u.email, u.zalo_chat_id, u.telegram_chat_id
+                        SELECT n.user_id, u.full_name, u.email, u.zalo_chat_id, u.telegram_chat_id, u.tenant_id
                         FROM night_shift_registrations n
                         JOIN users u ON n.user_id = u.id
                         WHERE n.shift_date = ? AND n.approved = 1 AND u.status = 'active'
@@ -3374,9 +3375,10 @@ function sendShiftRemindersAndCheckInAlerts($conn) {
                             // 1. Send Web In-App Notification Bell (Isolated)
                             if ($getSaleMatrixSetting($conn, $userId, 'NIGHT_SHIFT_BOOKING', 'bell')) {
                                 try {
-                                    $insNotif = $conn->prepare("INSERT INTO notifications (user_id, tenant_id, title, body, type, link) VALUES (?, 1, '🌙 Nhắc nhở ca trực đêm', ?, 'night_duty_reminder', '/attendance')");
+                                    $insNotif = $conn->prepare("INSERT INTO notifications (user_id, tenant_id, title, body, type, link) VALUES (?, ?, '🌙 Nhắc nhở ca trực đêm', ?, 'night_duty_reminder', '/attendance')");
                                     if ($insNotif) {
-                                        $insNotif->bind_param("is", $userId, $msg);
+                                        $regTenantId = (int)$reg['tenant_id'];
+                                        $insNotif->bind_param("iis", $userId, $regTenantId, $msg);
                                         $insNotif->execute();
                                         $insNotif->close();
                                     }

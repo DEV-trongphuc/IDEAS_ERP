@@ -1,7 +1,7 @@
 <?php
 // backend/test_workspace_task_suite.php
 // Live Integration Test Suite for Workspace Task Drawer and Notifications
-define('DIAG_TOKEN', true);
+if (!defined('DIAG_TOKEN')) define('DIAG_TOKEN', true);
 require_once __DIR__ . '/test_bootstrap.php';
 require_once __DIR__ . '/controllers/ActivityController.php';
 

@@ -3828,10 +3828,11 @@ function ensurePersonAndContact($conn, $leadId) {
         }
         $secExpiresTime = null;
 
+        $tenantId = 1; // default fallback
         $ownerUserId = null;
         if ($assigned_to > 0) {
             $stmtCUser = $conn->prepare("
-                SELECT u.id 
+                SELECT u.id, u.tenant_id 
                 FROM consultants cons 
                 JOIN users u ON cons.email = u.email 
                 WHERE cons.id = ? 
@@ -3844,11 +3845,22 @@ function ensurePersonAndContact($conn, $leadId) {
                 $stmtCUser->close();
                 if ($cUserRes) {
                     $ownerUserId = (int)$cUserRes['id'];
+                    $tenantId = (int)$cUserRes['tenant_id'];
                 }
             }
         }
         if (empty($ownerUserId)) {
             $ownerUserId = $assigned_to; // fallback
+            $stmtU = $conn->prepare("SELECT tenant_id FROM users WHERE id = ? LIMIT 1");
+            if ($stmtU) {
+                $stmtU->bind_param("i", $ownerUserId);
+                $stmtU->execute();
+                $uRes = $stmtU->get_result()->fetch_assoc();
+                $stmtU->close();
+                if ($uRes) {
+                    $tenantId = (int)$uRes['tenant_id'];
+                }
+            }
         }
 
         // Get all active contacts for this person
@@ -3896,8 +3908,8 @@ function ensurePersonAndContact($conn, $leadId) {
             }
 
             $stmtContact = $conn->prepare("
-                INSERT INTO contacts (person_id, project_id, owner_id, created_by, full_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type, temperature, suggested_temperature)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, ?, ?, ?, ?, ?)
+                INSERT INTO contacts (tenant_id, person_id, project_id, owner_id, created_by, full_name, email, phone, source, status, pipeline_status, security_expires_at, notes, customer_type, temperature, suggested_temperature)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'lead', ?, ?, ?, ?, ?, ?)
             ");
             if ($stmtContact) {
                 $createdBy = 1;
@@ -3907,7 +3919,7 @@ function ensurePersonAndContact($conn, $leadId) {
                         $projectId = null;
                     }
                 }
-                $stmtContact->bind_param("iiiissssssssss", $person_id, $projectId, $ownerUserId, $createdBy, $fullName, $email, $phone, $source, $triggerStatus, $secExpiresTime, $note, $type, $initTemp, $initTemp);
+                $stmtContact->bind_param("iiiiissssssssss", $tenantId, $person_id, $projectId, $ownerUserId, $createdBy, $fullName, $email, $phone, $source, $triggerStatus, $secExpiresTime, $note, $type, $initTemp, $initTemp);
                 $stmtContact->execute();
                 $stmtContact->close();
             }

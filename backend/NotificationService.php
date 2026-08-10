@@ -1114,6 +1114,88 @@ class NotificationService {
                                     "Vui lòng kiểm tra lịch sử ký trên hệ thống CRM."
                 ];
 
+            case 'PO_WAITING_APPROVAL':
+                $recipients = self::getRecipientById($db, (int)($payload['target_user_id'] ?? 0));
+                $poNumber = $payload['po_number'] ?? '';
+                $currentLevel = $payload['current_level'] ?? 1;
+                $poId = $payload['po_id'] ?? 0;
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Yêu cầu phê duyệt đơn nhập hàng",
+                    'body' => "Đơn nhập hàng " . $poNumber . " đang chờ bạn phê duyệt Cấp " . $currentLevel,
+                    'type' => "purchase_order",
+                    'link' => "/purchase-orders?open_id=" . $poId,
+                    'zalo_msg' => "📦 [ YÊU CẦU PHÊ DUYỆT ĐƠN NHẬP HÀNG ]\n\n"
+                        . "Đơn nhập hàng $poNumber đang chờ bạn phê duyệt Cấp $currentLevel.\n"
+                        . "  • Mã đơn: $poNumber\n"
+                        . "  • Cấp phê duyệt: Cấp $currentLevel\n\n"
+                        . "Vui lòng truy cập hệ thống CRM để xử lý.",
+                    'tg_msg' => "📦 <b>[ YÊU CẦU PHÊ DUYỆT ĐƠN NHẬP HÀNG ]</b>\n\n"
+                        . "Đơn nhập hàng <b>$poNumber</b> đang chờ bạn phê duyệt Cấp <b>$currentLevel</b>.\n"
+                        . "  • Mã đơn: <code>$poNumber</code>\n"
+                        . "  • Cấp phê duyệt: Cấp <b>$currentLevel</b>\n\n"
+                        . "Vui lòng truy cập hệ thống CRM để xử lý.",
+                    'email_subject' => "[IDEAS] Đơn nhập hàng $poNumber chờ phê duyệt Cấp $currentLevel",
+                    'email_title' => "YÊU CẦU PHÊ DUYỆT ĐƠN NHẬP HÀNG",
+                    'email_content' => "Chào quản trị viên/Người phê duyệt,<br/><br/>"
+                        . "Đơn nhập hàng <strong>$poNumber</strong> đang chờ bạn phê duyệt Cấp $currentLevel.<br/>"
+                        . "Vui lòng truy cập hệ thống CRM để xử lý."
+                ];
+
+            case 'PO_APPROVED':
+                $recipients = self::getRecipientById($db, (int)($payload['target_user_id'] ?? 0));
+                $poNumber = $payload['po_number'] ?? '';
+                $poId = $payload['po_id'] ?? 0;
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Đơn nhập hàng đã được phê duyệt",
+                    'body' => "Đơn nhập hàng " . $poNumber . " đã được phê duyệt hoàn tất",
+                    'type' => "purchase_order",
+                    'link' => "/purchase-orders?open_id=" . $poId,
+                    'zalo_msg' => "✅ [ ĐƠN NHẬP HÀNG ĐÃ ĐƯỢC PHÊ DUYỆT ]\n\n"
+                        . "Đơn nhập hàng $poNumber của bạn đã được phê duyệt hoàn tất.\n"
+                        . "  • Mã đơn: $poNumber\n"
+                        . "  • Trạng thái: Đã phê duyệt (Approved)\n\n"
+                        . "Vui lòng kiểm tra trên hệ thống CRM.",
+                    'tg_msg' => "✅ <b>[ ĐƠN NHẬP HÀNG ĐÃ ĐƯỢC PHÊ DUYỆT ]</b>\n\n"
+                        . "Đơn nhập hàng <b>$poNumber</b> của bạn đã được phê duyệt hoàn tất.\n"
+                        . "  • Mã đơn: <code>$poNumber</code>\n"
+                        . "  • Trạng thái: <b>Đã phê duyệt (Approved)</b>\n\n"
+                        . "Vui lòng kiểm tra trên hệ thống CRM.",
+                    'email_subject' => "[IDEAS] Đơn nhập hàng $poNumber đã được phê duyệt",
+                    'email_title' => "ĐƠN NHẬP HÀNG ĐÃ ĐƯỢC PHÊ DUYỆT",
+                    'email_content' => "Chào bạn,<br/><br/>"
+                        . "Đơn nhập hàng <strong>$poNumber</strong> của bạn đã được phê duyệt hoàn tất.<br/>"
+                        . "Vui lòng truy cập hệ thống CRM để kiểm tra."
+                ];
+
+            case 'PO_REJECTED':
+                $recipients = self::getRecipientById($db, (int)($payload['target_user_id'] ?? 0));
+                $poNumber = $payload['po_number'] ?? '';
+                $poId = $payload['po_id'] ?? 0;
+                return [
+                    'recipients' => $recipients,
+                    'title' => "Đơn nhập hàng đã bị từ chối",
+                    'body' => "Đơn nhập hàng " . $poNumber . " đã bị từ chối phê duyệt",
+                    'type' => "purchase_order",
+                    'link' => "/purchase-orders?open_id=" . $poId,
+                    'zalo_msg' => "❌ [ ĐƠN NHẬP HÀNG ĐÃ BỊ TỪ CHỐI ]\n\n"
+                        . "Đơn nhập hàng $poNumber của bạn đã bị từ chối phê duyệt.\n"
+                        . "  • Mã đơn: $poNumber\n"
+                        . "  • Trạng thái: Bị từ chối (Rejected)\n\n"
+                        . "Vui lòng kiểm tra lý do trên hệ thống CRM.",
+                    'tg_msg' => "❌ <b>[ ĐƠN NHẬP HÀNG ĐÃ BỊ TỪ CHỐI ]</b>\n\n"
+                        . "Đơn nhập hàng <b>$poNumber</b> của bạn đã bị từ chối phê duyệt.\n"
+                        . "  • Mã đơn: <code>$poNumber</code>\n"
+                        . "  • Trạng thái: <b>Bị từ chối (Rejected)</b>\n\n"
+                        . "Vui lòng kiểm tra lý do trên hệ thống CRM.",
+                    'email_subject' => "[IDEAS] Đơn nhập hàng $poNumber đã bị từ chối",
+                    'email_title' => "ĐƠN NHẬP HÀNG ĐÃ BỊ TỪ CHỐI",
+                    'email_content' => "Chào bạn,<br/><br/>"
+                        . "Đơn nhập hàng <strong>$poNumber</strong> của bạn đã bị từ chối phê duyệt.<br/>"
+                        . "Vui lòng truy cập hệ thống CRM để kiểm tra chi tiết."
+                ];
+
             default:
                 return null;
         }

@@ -970,6 +970,11 @@ class HRMController {
 
             // Link advances to this payslip once generated
             $payslipId = (int)$this->db->lastInsertId();
+            if ($payslipId === 0) {
+                $stmtId = $this->db->prepare("SELECT id FROM monthly_payslips WHERE user_id = ? AND month_year = ?");
+                $stmtId->execute([$userId, $monthYear]);
+                $payslipId = (int)$stmtId->fetchColumn();
+            }
             if ($payslipId > 0 && $advanceDeduction > 0) {
                 $upAdv = $this->db->prepare("UPDATE hrm_salary_advances SET deducted_payslip_id = ? WHERE user_id = ? AND status = 'approved' AND deducted_payslip_id IS NULL");
                 $upAdv->execute([$payslipId, $userId]);
