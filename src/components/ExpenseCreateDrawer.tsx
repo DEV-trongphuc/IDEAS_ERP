@@ -440,13 +440,15 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
           >
             {/* Header with Cancel and Save buttons at the top right */}
             <div className="modal-header" style={{
-              padding: '0.75rem 1.5rem',
+              padding: isMobile ? '0.75rem 1rem' : '0.75rem 1.5rem',
               background: 'linear-gradient(to right, var(--color-bg), var(--color-surface))',
               borderBottom: '1px solid var(--color-border)',
               flexShrink: 0,
               display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? '0.75rem' : 'normal',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: isMobile ? 'stretch' : 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                 {/* Close Button as "<" ChevronLeft on the Left */}
@@ -482,13 +484,26 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
               </div>
 
               {/* Action Buttons in top right corner */}
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <div style={{
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'center',
+                justifyContent: isMobile ? 'space-between' : 'flex-end',
+                width: isMobile ? '100%' : 'auto'
+              }}>
                 <button
                   type="button"
                   className="btn outline"
                   onClick={onClose}
                   disabled={saving}
-                  style={{ height: '34px', minWidth: '90px', fontSize: '0.85rem', fontWeight: 700, borderRadius: '10px' }}
+                  style={{
+                    height: '34px',
+                    flex: isMobile ? 1 : 'none',
+                    minWidth: isMobile ? 'none' : '90px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    borderRadius: '10px'
+                  }}
                 >
                   Hủy
                 </button>
@@ -499,7 +514,8 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   disabled={saving}
                   style={{
                     height: '34px',
-                    minWidth: '150px',
+                    flex: isMobile ? 2 : 'none',
+                    minWidth: isMobile ? 'none' : '150px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     display: 'flex',

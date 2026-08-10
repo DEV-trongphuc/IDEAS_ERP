@@ -1645,49 +1645,58 @@ export const Header = ({
           const getItemColor = (itemName: string) => {
             const lowercase = itemName.toLowerCase();
             
-            // Exact matches for distinct, beautiful multi-color gradients
+            // 1. Exact string matches
             if (lowercase === 'dashboard') return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
             if (lowercase === 'bàn làm việc') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
+            if (lowercase === 'chấm công') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
             if (lowercase === 'báo cáo') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
             if (lowercase === 'thanh toán') return { bg: 'linear-gradient(135deg, #0d9488, #115e59)', color: '#ffffff' };
-            if (lowercase === 'chi phí chi tiêu') return { bg: 'linear-gradient(135deg, #d946ef, #701a75)', color: '#ffffff' };
-            if (lowercase === 'quy trình' || lowercase === 'quy trình phê duyệt') return { bg: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#ffffff' };
+            if (lowercase === 'chi phí chi tiêu' || lowercase === 'purchase order') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
+            if (lowercase === 'quy trình' || lowercase === 'quy trình phê duyệt') return { bg: 'linear-gradient(135deg, #dc2626, #991b1b)', color: '#ffffff' };
             if (lowercase === 'sales order') return { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff' };
             if (lowercase === 'nhà cung cấp') return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
-            if (lowercase === 'đối tác kinh doanh') return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
+            if (lowercase === 'đối tác kinh doanh' || lowercase === 'đối tác') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
             if (lowercase === 'chương trình') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
             if (lowercase === 'tài liệu') return { bg: 'linear-gradient(135deg, #eab308, #a16207)', color: '#ffffff' };
             if (lowercase === 'chiến dịch') return { bg: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' };
             if (lowercase === 'tài khoản cá nhân') return { bg: 'linear-gradient(135deg, #64748b, #475569)', color: '#ffffff' };
-            if (lowercase === 'lịch trình') return { bg: 'linear-gradient(135deg, #818cf8, #4f46e5)', color: '#ffffff' };
-            if (lowercase === 'phiếu lương cá nhân') return { bg: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#ffffff' };
-            if (lowercase === 'ticket hỗ trợ') return { bg: 'linear-gradient(135deg, #14b8a6, #0f766e)', color: '#ffffff' };
+            if (lowercase === 'phòng ban') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
+            if (lowercase === 'nhân sự công ty') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
+            if (lowercase === 'lịch trình') return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
+            if (lowercase === 'phiếu lương cá nhân' || lowercase === 'phiếu lương') return { bg: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#ffffff' };
+            if (lowercase === 'ticket hỗ trợ' || lowercase === 'helpdesk') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
 
-            // General fallbacks
+            // 2. Keyword fallback checks (ordered from specific to general)
             if (lowercase.includes('dashboard')) return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
-            if (lowercase.includes('bàn làm việc') || lowercase.includes('chấm công') || lowercase.includes('hoạt động')) return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
-            if (lowercase.includes('báo cáo') || lowercase.includes('thống kê')) return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
-            if (lowercase.includes('databank') || lowercase.includes('kho data')) return { bg: 'linear-gradient(135deg, #f59e0b, #b45309)', color: '#ffffff' };
+            if (lowercase.includes('chấm công')) return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
+            if (lowercase.includes('bàn làm việc') || lowercase.includes('hoạt động')) return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
+            if (lowercase.includes('báo cáo') || lowercase.includes('thống kê')) return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
+            if (lowercase.includes('databank') || lowercase.includes('kho data')) return { bg: 'linear-gradient(135deg, #eab308, #a16207)', color: '#ffffff' };
             if (lowercase.includes('khách hàng') || lowercase.includes('contacts')) return { bg: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' };
-            if (lowercase.includes('pipeline') || lowercase.includes('chi phí')) return { bg: 'linear-gradient(135deg, #a855f7, #7e22ce)', color: '#ffffff' };
+            if (lowercase.includes('pipeline') || lowercase.includes('chi phí') || lowercase.includes('purchase')) return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
             if (lowercase.includes('vòng phân bổ') || lowercase.includes('phân bổ') || lowercase.includes('chiến dịch')) return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
             if (lowercase.includes('định tuyến') || lowercase.includes('logic')) return { bg: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#ffffff' };
             if (lowercase.includes('tích hợp')) return { bg: 'linear-gradient(135deg, #0d9488, #0f766e)', color: '#ffffff' };
             if (lowercase.includes('capi')) return { bg: 'linear-gradient(135deg, #2563eb, #1e40af)', color: '#ffffff' };
-            if (lowercase.includes('cài đặt hệ thống') || lowercase.includes('cài đặt')) return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
-            if (lowercase.includes('quản lý tài khoản') || lowercase.includes('tài khoản cá nhân') || lowercase.includes('tài khoản')) return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
+            if (lowercase.includes('cài đặt')) return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
+            if (lowercase.includes('phòng ban')) return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
+            if (lowercase.includes('tài khoản')) return { bg: 'linear-gradient(135deg, #64748b, #475569)', color: '#ffffff' };
             if (lowercase.includes('đối soát') || lowercase.includes('phân quyền')) return { bg: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#ffffff' };
             if (lowercase.includes('huấn luyện ai')) return { bg: 'linear-gradient(135deg, #BD1D2D, #8b101b)', color: '#ffffff' };
             if (lowercase.includes('ai') || lowercase.includes('gatekeeper')) return { bg: 'linear-gradient(135deg, #14b8a6, #0f766e)', color: '#ffffff' };
-            if (lowercase.includes('ticket')) return { bg: 'linear-gradient(135deg, #0ea5e9, #0369a1)', color: '#ffffff' };
-            if (lowercase.includes('dự án') || lowercase.includes('công ty')) return { bg: 'linear-gradient(135deg, #64748b, #475569)', color: '#ffffff' };
+            if (lowercase.includes('ticket') || lowercase.includes('helpdesk')) return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
             if (lowercase.includes('giỏ hàng') || lowercase.includes('sản phẩm')) return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
             if (lowercase.includes('tài liệu')) return { bg: 'linear-gradient(135deg, #eab308, #a16207)', color: '#ffffff' };
             if (lowercase.includes('chủ đầu tư')) return { bg: 'linear-gradient(135deg, #84cc16, #4d7c0f)', color: '#ffffff' };
-            if (lowercase.includes('báo giá') || lowercase.includes('hóa đơn')) return { bg: 'linear-gradient(135deg, #10b981, #059669)', color: '#ffffff' };
-            if (lowercase.includes('đặt cọc') || lowercase.includes('hợp tác')) return { bg: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#ffffff' };
-            if (lowercase.includes('chi nhánh') || lowercase.includes('team') || lowercase.includes('nhân viên')) return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
-            return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
+            if (lowercase.includes('báo giá') || lowercase.includes('hóa đơn')) return { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff' };
+            if (lowercase.includes('đặt cọc') || lowercase.includes('hợp tác') || lowercase.includes('sales order') || lowercase.includes('dự báo')) return { bg: 'linear-gradient(135deg, #14b8a6, #0f766e)', color: '#ffffff' };
+            if (lowercase.includes('lịch trình') || lowercase.includes('lịch biểu') || lowercase.includes('lịch học')) return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
+            if (lowercase.includes('khóa học') || lowercase.includes('học viên')) return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
+            if (lowercase.includes('bảng tin')) return { bg: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' };
+            if (lowercase.includes('chi nhánh') || lowercase.includes('team') || lowercase.includes('nhân viên') || lowercase.includes('nhân sự') || lowercase.includes('nhân sự công ty')) return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
+            if (lowercase.includes('dự án') || lowercase.includes('công ty')) return { bg: 'linear-gradient(135deg, #64748b, #475569)', color: '#ffffff' };
+            
+            return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
           };
 
           const ITEM_DESC: Record<string, string> = {
@@ -1840,7 +1849,7 @@ export const Header = ({
                   {filteredItems.length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px 24px' }}>
                       {filteredItems.map(item => {
-                        const IconComponent = item.icon;
+                        const IconComponent = item.name.toLowerCase().includes('chấm công') ? Fingerprint : item.icon;
                         const colors = getItemColor(item.name);
                         const desc = ITEM_DESC[item.name] || 'Xem chi tiết thông tin';
                         return (
@@ -1979,7 +1988,7 @@ export const Header = ({
 
                         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: isMobile ? '10px' : '12px 24px' }}>
                           {group.items.map(item => {
-                            const IconComponent = item.icon;
+                            const IconComponent = item.name.toLowerCase().includes('chấm công') ? Fingerprint : item.icon;
                             const colors = getItemColor(item.name);
                             const desc = ITEM_DESC[item.name] || 'Xem chi tiết thông tin';
                             return (

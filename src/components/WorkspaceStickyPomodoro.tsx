@@ -152,7 +152,7 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
       {isOpen && (
         <div style={{
           position: 'absolute',
-          bottom: '76px',
+          bottom: '56px',
           right: 0,
           width: '240px',
           background: 'var(--color-surface)',
@@ -231,6 +231,28 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
             </button>
           </div>
 
+          {/* Digital Timer Display inside Popover */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '10px 0',
+            background: 'var(--color-bg-subtle, rgba(0,0,0,0.02))',
+            borderRadius: '12px',
+            border: '1px dashed var(--color-border-light)'
+          }}>
+            <span style={{
+              fontSize: '2rem',
+              fontWeight: 850,
+              fontFamily: 'monospace',
+              color: mode === 'work' ? '#ef4444' : '#10b981',
+              letterSpacing: '-0.5px'
+            }}>
+              {formatTime(timeLeft)}
+            </span>
+          </div>
+
           {/* Controls */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center', margin: '2px 0' }}>
             <button
@@ -293,18 +315,18 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          width: '64px',
-          height: '64px',
+          width: '44px',
+          height: '44px',
           borderRadius: '50%',
           background: 'var(--color-surface)',
           border: 'none',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
+          boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           outline: 'none',
           backdropFilter: 'blur(8px)',
           borderWidth: '1px',
@@ -315,47 +337,43 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
         title={t('Pomodoro Focus')}
       >
         {/* SVG Progress Ring */}
-        <svg width="64" height="64" viewBox="0 0 64 64" style={{ position: 'absolute', transform: 'rotate(-90deg)', top: 0, left: 0, border: 'none', outline: 'none', background: 'none' }}>
+        <svg width="44" height="44" viewBox="0 0 44 44" style={{ position: 'absolute', transform: 'rotate(-90deg)', top: -1, left: -1, border: 'none', outline: 'none', background: 'none' }}>
           <circle
-            cx="32"
-            cy="32"
-            r="28"
+            cx="22"
+            cy="22"
+            r="19"
             stroke="transparent"
-            strokeWidth="3.5"
+            strokeWidth="2.5"
             fill="transparent"
           />
           <circle
-            cx="32"
-            cy="32"
-            r="28"
+            cx="22"
+            cy="22"
+            r="19"
             stroke={mode === 'work' ? '#ef4444' : '#10b981'}
-            strokeWidth="3.5"
+            strokeWidth="2.5"
             fill="transparent"
-            strokeDasharray={2 * Math.PI * 28}
-            strokeDashoffset={2 * Math.PI * 28 * (1 - progressPercent / 100)}
+            strokeDasharray={2 * Math.PI * 19}
+            strokeDashoffset={2 * Math.PI * 19 * (1 - progressPercent / 100)}
             strokeLinecap="round"
             style={{ transition: 'stroke-dashoffset 0.5s ease', border: 'none', outline: 'none' }}
           />
         </svg>
 
         {/* Center Display */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
           <Clock
             size={18}
             className="pomodoro-icon-clean"
             style={{
               color: mode === 'work' ? '#ef4444' : '#10b981',
               animation: isRunning ? 'pomodoro-spin 10s linear infinite' : 'none',
-              marginBottom: '2px',
               border: 'none',
               outline: 'none',
               background: 'none',
               backgroundColor: 'transparent'
             }}
           />
-          <span style={{ fontSize: '0.72rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--color-text)' }}>
-            {formatTime(timeLeft)}
-          </span>
         </div>
       </button>
 

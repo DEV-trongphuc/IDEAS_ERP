@@ -49,7 +49,8 @@ import {
   Fingerprint,
   Camera,
   CheckSquare,
-  DollarSign
+  DollarSign,
+  Clipboard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -131,6 +132,43 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const managerBehaviorMode = user?.manager_behavior_mode || 'combined';
   const isSales = user?.role === 'sale' || (user?.role === 'manager' && managerBehaviorMode === 'combined');
   const shouldCheckIn = user?.role && !['admin', 'superadmin', 'super_admin', 'director'].includes(user.role.toLowerCase());
+
+  const getBottomNavItems = () => {
+    const roleLower = user?.role?.toLowerCase() || '';
+    const isSalesRole = roleLower === 'sale' || roleLower === 'sales';
+    const isAccountantRole = roleLower === 'accountant';
+
+    if (isSalesRole) {
+      return [
+        { label: t('Quy trình'), href: '/approvals', icon: Clipboard },
+        { label: t('Chấm công'), href: '/attendance', icon: Fingerprint },
+        { label: t('Khách hàng'), href: '/contacts', icon: Users, isCenter: true },
+        { label: t('Bàn làm việc'), href: '/workspace', icon: CheckSquare },
+        { label: t('Tôi'), href: '/account', icon: User }
+      ];
+    }
+
+    if (isAccountantRole) {
+      return [
+        { label: t('Dashboard'), href: '/', icon: Home },
+        { label: t('Lịch trình'), href: '/calendar', icon: Calendar },
+        { label: t('Khách hàng'), href: '/contacts', icon: Users, isCenter: true },
+        { label: t('Quy trình'), href: '/approvals', icon: Clipboard },
+        { label: t('Tôi'), href: '/account', icon: User }
+      ];
+    }
+
+    // Default for everyone else
+    return [
+      { label: t('Dashboard'), href: isSales ? '/sale-portal' : '/', icon: Home },
+      { label: t('Bàn làm việc'), href: '/workspace', icon: CheckSquare },
+      { label: t('Khách hàng'), href: '/contacts', icon: Users, isCenter: true },
+      { label: t('Quy trình'), href: '/approvals', icon: Clipboard },
+      { label: t('Tôi'), href: '/account', icon: User }
+    ];
+  };
+
+  const bottomNavItems = getBottomNavItems();
 
   const loadCheckInStatus = async () => {
     if (!user || !shouldCheckIn) return;
@@ -2244,45 +2282,39 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       
       {/* Mobile Bottom Navigation Bar */}
       <div className="mobile-bottom-nav">
-        {/* 1. Dashboard */}
-        <button 
-          className={`mobile-bottom-nav-item ${(location.pathname === '/' || location.pathname === '/sale-portal') ? 'active' : ''}`}
-          onClick={() => navigate(isSales ? '/sale-portal' : '/')}
-        >
-          <Home size={20} />
-          <span className="mobile-bottom-nav-item-label">{t('Dashboard')}</span>
-        </button>
+        {bottomNavItems.map((item, idx) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.href || 
+            (item.href === '/' && location.pathname === '/sale-portal') ||
+            (item.href === '/sale-portal' && location.pathname === '/');
 
-        {/* 2. Bàn làm việc */}
-        <button 
-          className={`mobile-bottom-nav-item ${location.pathname === '/workspace' ? 'active' : ''}`}
-          onClick={() => navigate('/workspace')}
-        >
-          <CheckSquare size={20} />
-          <span className="mobile-bottom-nav-item-label">{t('Bàn làm việc')}</span>
-        </button>
+          if (item.isCenter) {
+            return (
+              <button 
+                key={idx}
+                className={`mobile-bottom-nav-center-item ${isActive ? 'active' : ''}`}
+                onClick={() => navigate(item.href)}
+              >
+                <div className="raised-button-bg-hump" />
+                <div className="raised-button-circle">
+                  <Icon size={24} />
+                </div>
+                <span className="mobile-bottom-nav-item-label">{item.label}</span>
+              </button>
+            );
+          }
 
-        {/* 3. Khách hàng (MoMo raised center button) */}
-        <button 
-          className={`mobile-bottom-nav-center-item ${location.pathname === '/contacts' ? 'active' : ''}`}
-          onClick={() => navigate('/contacts')}
-        >
-          <div className="raised-button-bg-hump" />
-          <div className="raised-button-circle">
-            <Users size={24} />
-          </div>
-          <span className="mobile-bottom-nav-item-label">{t('Khách hàng')}</span>
-        </button>
-
-
-        {/* 5. Tôi */}
-        <button 
-          className={`mobile-bottom-nav-item ${location.pathname === '/account' ? 'active' : ''}`}
-          onClick={() => navigate('/account')}
-        >
-          <User size={20} />
-          <span className="mobile-bottom-nav-item-label">{t('Tôi')}</span>
-        </button>
+          return (
+            <button 
+              key={idx}
+              className={`mobile-bottom-nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => navigate(item.href)}
+            >
+              <Icon size={20} />
+              <span className="mobile-bottom-nav-item-label">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <AIChatbot />

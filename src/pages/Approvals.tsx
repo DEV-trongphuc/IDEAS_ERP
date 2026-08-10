@@ -442,6 +442,7 @@ export default function Approvals() {
   const [leaveSession, setLeaveSession] = useState<'full' | 'morning' | 'afternoon' | 'range' | 'intermittent'>('full');
   const [lateEarlyType, setLateEarlyType] = useState<'late' | 'early'>('late');
   const [lateEarlyMinutes, setLateEarlyMinutes] = useState(30);
+  const [isCustomMinutesMode, setIsCustomMinutesMode] = useState(false);
   const [otDate, setOtDate] = useState(new Date().toISOString().split('T')[0]);
   const [otStart, setOtStart] = useState('17:30');
   const [otEnd, setOtEnd] = useState('21:30');
@@ -2412,6 +2413,11 @@ export default function Approvals() {
                                 })
                               });
                             } else if (formType === 'late_early') {
+                              if (lateEarlyMinutes > 180) {
+                                toast.error(t('Thời gian đi muộn/về sớm không được quá 3 tiếng (180 phút). Vui lòng đăng ký nghỉ phép 1 buổi.'));
+                                setSubmitting(false);
+                                return;
+                              }
                               const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
                               const startTimeStr = `${d}T${otStart}`;
                               const fromDateObj = new Date(startTimeStr);
@@ -3039,17 +3045,50 @@ export default function Approvals() {
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số phút đăng ký')}</label>
-                                <CustomSelect
-                                  value={String(lateEarlyMinutes)}
-                                  onChange={(val: any) => setLateEarlyMinutes(Number(val))}
-                                  options={[
-                                    { value: '30', label: t('30 phút') },
-                                    { value: '60', label: t('60 phút (1 giờ)') },
-                                    { value: '90', label: t('90 phút') },
-                                    { value: '120', label: t('120 phút (2 giờ)') }
-                                  ]}
-                                  width="100%"
-                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  <CustomSelect
+                                    value={isCustomMinutesMode ? 'custom' : String(lateEarlyMinutes)}
+                                    onChange={(val: any) => {
+                                      if (val === 'custom') {
+                                        setIsCustomMinutesMode(true);
+                                      } else {
+                                        setIsCustomMinutesMode(false);
+                                        setLateEarlyMinutes(Number(val));
+                                      }
+                                    }}
+                                    options={[
+                                      { value: '30', label: t('30 phút') },
+                                      { value: '60', label: t('60 phút (1 giờ)') },
+                                      { value: '90', label: t('90 phút') },
+                                      { value: '120', label: t('120 phút (2 giờ)') },
+                                      { value: '150', label: t('150 phút (2.5 giờ)') },
+                                      { value: '180', label: t('180 phút (3 giờ)') },
+                                      { value: 'custom', label: t('Tùy chọn khác (Tự nhập số phút)...') }
+                                    ]}
+                                    width="100%"
+                                  />
+                                  {isCustomMinutesMode && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                                      <input
+                                        type="number"
+                                        className="form-input"
+                                        value={lateEarlyMinutes || ''}
+                                        onChange={e => {
+                                          const val = Number(e.target.value);
+                                          setLateEarlyMinutes(val);
+                                        }}
+                                        placeholder={t('Nhập số phút đi muộn / về sớm...')}
+                                        style={{ height: '36px', fontSize: '0.8rem' }}
+                                        min="1"
+                                      />
+                                      {lateEarlyMinutes > 180 && (
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--color-danger, #ef4444)', fontWeight: 600, marginTop: '2px' }}>
+                                          ⚠️ {t('Không được đi muộn/về sớm quá 3 tiếng (180 phút). Vui lòng đăng ký nghỉ phép 1 buổi.')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
 

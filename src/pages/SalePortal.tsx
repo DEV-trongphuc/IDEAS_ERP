@@ -38,6 +38,27 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Avatar } from '../components/ui/Avatar';
+
+const getRoleDisplayName = (user: any) => {
+  if (!user) return '';
+  if (user.job_title) return user.job_title;
+  const roleMap: Record<string, string> = {
+    super_admin: 'Super Admin',
+    superadmin: 'Super Admin',
+    admin: 'Admin',
+    director: 'Giám đốc',
+    manager: 'Quản lý',
+    sales: 'Kinh doanh',
+    sale: 'Kinh doanh',
+    accountant: 'Kế toán',
+    hr: 'Nhân sự',
+    sale_admin: 'Sale Admin',
+    saleadmin: 'Sale Admin',
+    marketing: 'Marketing',
+    viewer: 'Viewer'
+  };
+  return roleMap[user.role?.toLowerCase()] || user.role || '';
+};
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { Pagination } from '../components/ui/Pagination';
 import { TableSkeleton, StatRowSkeleton, CalendarSkeleton, CardSkeleton, Skeleton } from '../components/ui/Skeleton';
@@ -2384,7 +2405,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
         })).filter((u: any) => {
           if (!u || !u.role) return false;
           const roleLower = u.role.toLowerCase();
-          return ['admin', 'superadmin', 'super_admin', 'sales', 'sale', 'manager', 'assistant', 'telesale', 'prescreener', 'director', 'staff', 'employee'].includes(roleLower);
+          return ['admin', 'superadmin', 'super_admin', 'sales', 'sale', 'manager', 'assistant', 'telesale', 'prescreener', 'director', 'staff', 'employee', 'accountant', 'hr', 'sale_admin', 'saleadmin', 'marketing', 'viewer'].includes(roleLower);
         });
         setUsers(team);
       }).catch(() => {});
@@ -6989,7 +7010,10 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                                 const assigneeUser = users.find((u: any) => String(u.id) === String(task.user_id));
                                 const approverUser = task.approver_id ? users.find((u: any) => String(u.id) === String(task.approver_id)) : null;
                                 const participantIds = task.participant_ids ? task.participant_ids.split(',').filter(Boolean) : [];
-                                const participantUsers = participantIds.map((id: string) => users.find((u: any) => String(u.id) === String(id))).filter(Boolean);
+                                const participantUsers = participantIds
+                                  .map((id: string) => users.find((u: any) => String(u.id) === String(id)))
+                                  .filter(Boolean)
+                                  .filter((u: any) => String(u.id) !== String(task.user_id));
 
                                 if (!assigneeUser && !approverUser && participantUsers.length === 0) return null;
 
@@ -12191,7 +12215,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                             value: String(u.id),
                             label: u.name || u.full_name || u.username,
                             avatar: u.avatar || u.avatar_url,
-                            sublabel: u.role ? `(${u.role})` : undefined
+                            sublabel: (u.job_title || getRoleDisplayName(u)) ? `(${u.job_title || getRoleDisplayName(u)})` : undefined
                           }))}
                           placeholder={t('Chọn người quản lý trực tiếp...')}
                           searchable

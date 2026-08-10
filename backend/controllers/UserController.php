@@ -78,13 +78,11 @@ class UserController {
                 $b['bank_account']??null
             ]);
         $newId = (int)$this->db->lastInsertId();
-        
         logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'CREATE', 'user', $newId, json_encode(['email' => $b['email'], 'role' => $b['role']??'sales']));
-        
         $this->show($auth, $newId);
     }
     public function show(array $auth,int $id): void {
-        if (!in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director', 'manager', 'sales', 'sale', 'assistant', 'viewer', 'hr', 'sale_admin', 'saleadmin'], true)) {
+        if (!in_array($auth['role'], ['admin', 'super_admin', 'superadmin', 'director', 'manager', 'sales', 'sale', 'assistant', 'viewer', 'hr', 'sale_admin', 'saleadmin', 'accountant', 'marketing'], true)) {
             respond(403, null, 'Quyền truy cập không đủ', false);
         }
         try {

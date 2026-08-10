@@ -39,6 +39,27 @@ interface WorkspaceTaskDrawerProps {
   zIndex?: number;
 }
 
+const getRoleDisplayName = (user: any) => {
+  if (!user) return '';
+  if (user.job_title) return user.job_title;
+  const roleMap: Record<string, string> = {
+    super_admin: 'Super Admin',
+    superadmin: 'Super Admin',
+    admin: 'Admin',
+    director: 'Giám đốc',
+    manager: 'Quản lý',
+    sales: 'Kinh doanh',
+    sale: 'Kinh doanh',
+    accountant: 'Kế toán',
+    hr: 'Nhân sự',
+    sale_admin: 'Sale Admin',
+    saleadmin: 'Sale Admin',
+    marketing: 'Marketing',
+    viewer: 'Viewer'
+  };
+  return roleMap[user.role?.toLowerCase()] || user.role || '';
+};
+
 export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({ 
   isOpen, 
   onClose, 
@@ -570,6 +591,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   // Participants modal state
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [participantsSearch, setParticipantsSearch] = useState('');
+  const [selectedSubtaskForParticipants, setSelectedSubtaskForParticipants] = useState<any | null>(null);
+  const [showAddParticipantsSection, setShowAddParticipantsSection] = useState(false);
 
   // Contacts state
   const [contacts, setContacts] = useState<any[]>([]);
@@ -1895,6 +1918,14 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         return 'đã thêm bình luận mới';
       case 'DELETE_COMMENT':
         return 'đã xóa bình luận';
+      case 'COMPLETE_SUBTASK':
+        return `đã hoàn thành công việc con "${data.title || ''}"`;
+      case 'INCOMPLETE_SUBTASK':
+        return `đã đánh dấu chưa hoàn thành công việc con "${data.title || ''}"`;
+      case 'ADD_SUBTASK':
+        return `đã thêm công việc con "${data.title || ''}"`;
+      case 'DELETE_SUBTASK':
+        return `đã xóa công việc con "${data.title || ''}"`;
       case 'CANCEL_MEETING':
         return `đã hủy lịch hẹn. Lý do: "${data.reason || ''}"`;
       case 'RESCHEDULE_MEETING':
@@ -2827,7 +2858,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                  <div 
                                    onClick={(e) => {
                                      e.stopPropagation();
-                                     setActiveAssigneeDropdownId(isAssigneeDropdownOpen ? null : item.id);
+                                     setSelectedSubtaskForParticipants(item);
                                    }}
                                    className="subtask-assignee-trigger"
                                    style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
@@ -3856,6 +3887,14 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                                   return t('đã thêm bình luận mới');
                                 case 'DELETE_COMMENT':
                                   return t('đã xóa bình luận');
+                                case 'COMPLETE_SUBTASK':
+                                  return `${t('đã hoàn thành công việc con')} "${data.title || ''}"`;
+                                case 'INCOMPLETE_SUBTASK':
+                                  return `${t('đã đánh dấu chưa hoàn thành công việc con')} "${data.title || ''}"`;
+                                case 'ADD_SUBTASK':
+                                  return `${t('đã thêm công việc con')} "${data.title || ''}"`;
+                                case 'DELETE_SUBTASK':
+                                  return `${t('đã xóa công việc con')} "${data.title || ''}"`;
                                 case 'CANCEL_MEETING':
                                   return `${t('đã hủy lịch hẹn')} (Lý do: "${data.reason || ''}")`;
                                 case 'RESCHEDULE_MEETING':
@@ -4555,7 +4594,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   <CustomSelect
                     options={approverOptions.map(u => ({
                       value: String(u.id),
-                      label: `${u.full_name} (${u.role})`,
+                      label: `${u.full_name} (${getRoleDisplayName(u)})`,
                       avatar: u.avatar || u.avatar_url
                     }))}
                     value={formData.approver_id ? String(formData.approver_id) : ''}
@@ -4787,7 +4826,12 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                     {/* Selected participant avatars */}
                     {participants.length > 0 && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <div 
+                        style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => setShowParticipantsModal(true)}
+                        title={t('Xem chi tiết người liên quan')}
+                        className="hover-lift"
+                      >
                         {participants.map((u, idx) => (
                           <div
                             key={u.id}
@@ -5214,12 +5258,12 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               justifyContent: 'center',
               animation: 'fade-in 0.2s ease-out'
             }}
-            onClick={() => setShowParticipantsModal(false)}
+            onClick={() => { setShowParticipantsModal(false); setShowAddParticipantsSection(false); }}
           >
             <div 
               style={{
-                width: '600px',
-                maxWidth: '90vw',
+                width: '850px',
+                maxWidth: '94vw',
                 height: '80vh',
                 background: 'var(--color-surface)',
                 borderRadius: '20px',
@@ -5242,7 +5286,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   </p>
                 </div>
                 <button 
-                  onClick={() => setShowParticipantsModal(false)}
+                  onClick={() => { setShowParticipantsModal(false); setShowAddParticipantsSection(false); }}
                   style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer' }}
                 >
                   <X size={18} />
@@ -5265,90 +5309,300 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
               {/* Members List */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.5rem' }} className="custom-scrollbar">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {filteredUsersForParticipants.map((u: any) => {
-                    const isParticipant = participantIds.includes(Number(u.id));
-                    const subtasks = (erpMeta.checklist || []).filter((item: any) => Number(item.assignee_id) === Number(u.id));
+                {(() => {
+                  const currentRelatedUsers = filteredUsersForParticipants.filter((u: any) => participantIds.includes(Number(u.id)));
+                  const nonRelatedUsers = filteredUsersForParticipants.filter((u: any) => !participantIds.includes(Number(u.id)));
 
-                    return (
-                      <div 
-                        key={u.id}
-                        style={{
-                          background: isParticipant ? 'rgba(189,29,45,0.02)' : 'transparent',
-                          border: `1px solid ${isParticipant ? 'var(--color-border-light)' : 'rgba(0,0,0,0.03)'}`,
-                          borderRadius: '12px',
-                          padding: '10px 14px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <input
-                              type="checkbox"
-                              checked={isParticipant}
-                              onChange={() => handleToggleParticipant(u.id)}
-                              style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
-                            />
-                            <Avatar src={u.avatar_url || u.avatar} name={u.full_name} size={28} />
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{u.full_name}</span>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{u.role}</span>
-                            </div>
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Current Related Members Section */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {t('Thành viên liên quan')} ({currentRelatedUsers.length})
+                        </span>
+                        {currentRelatedUsers.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--color-text-muted)', fontSize: '0.78rem', fontStyle: 'italic', border: '1px dashed var(--color-border-light)', borderRadius: '12px' }}>
+                            {t('Chưa có thành viên liên quan nào')}
                           </div>
-                        </div>
+                        ) : (
+                          currentRelatedUsers.map((u: any) => {
+                            const isParticipant = true;
+                            const subtasks = (erpMeta.checklist || []).filter((item: any) => Number(item.assignee_id) === Number(u.id));
 
-                        {/* Display sub-tasks for this member */}
-                        {isParticipant && (
-                          <div style={{ borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px', marginTop: '4px' }}>
-                            {subtasks.length > 0 ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '38px' }}>
-                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                  {t('Nhiệm vụ được giao')} ({subtasks.length}):
-                                </span>
-                                {subtasks.map((st: any) => (
-                                  <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem' }}>
-                                    <input 
-                                      type="checkbox" 
-                                      checked={!!st.done} 
-                                      readOnly
-                                      style={{ width: 12, height: 12, accentColor: 'var(--color-success)', cursor: 'default' }} 
+                            return (
+                              <div 
+                                key={u.id}
+                                style={{
+                                  background: 'rgba(189,29,45,0.02)',
+                                  border: '1px solid var(--color-border-light)',
+                                  borderRadius: '12px',
+                                  padding: '10px 14px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '6px',
+                                  transition: 'all 0.2s'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isParticipant}
+                                      onChange={() => handleToggleParticipant(u.id)}
+                                      style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
                                     />
-                                    <span style={{ textDecoration: st.done ? 'line-through' : 'none', color: st.done ? 'var(--color-text-muted)' : 'var(--color-text-light)' }}>
-                                      {st.title}
+                                    <Avatar src={u.avatar_url || u.avatar} name={u.full_name} size={28} />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-text)' }}>{u.full_name}</span>
+                                      <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{getRoleDisplayName(u)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Display sub-tasks for this member */}
+                                <div style={{ borderTop: '1px dashed var(--color-border-light)', paddingTop: '6px', marginTop: '4px' }}>
+                                  {subtasks.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginLeft: '38px' }}>
+                                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        {t('Nhiệm vụ được giao')} ({subtasks.length}):
+                                      </span>
+                                      {subtasks.map((st: any) => (
+                                        <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem' }}>
+                                          <input 
+                                            type="checkbox" 
+                                            checked={!!st.done} 
+                                            readOnly
+                                            style={{ width: 12, height: 12, accentColor: 'var(--color-success)', cursor: 'default' }} 
+                                          />
+                                          <span style={{ textDecoration: st.done ? 'line-through' : 'none', color: st.done ? 'var(--color-text-muted)' : 'var(--color-text-light)' }}>
+                                            {st.title}
+                                          </span>
+                                          {st.due_date && (
+                                            <span style={{
+                                              fontSize: '0.68rem',
+                                              color: 'var(--color-text-muted)',
+                                              background: 'var(--color-bg-subtle, rgba(0,0,0,0.02))',
+                                              padding: '1px 6px',
+                                              borderRadius: '4px',
+                                              border: '1px solid var(--color-border-light)',
+                                              marginLeft: '6px'
+                                            }}>
+                                              {t('Hạn')}: {new Date(st.due_date).toLocaleDateString('vi-VN')}
+                                            </span>
+                                          )}
+                                          {st.priority && st.priority !== 'medium' && (
+                                            <span style={{
+                                              fontSize: '0.55rem',
+                                              fontWeight: 800,
+                                              padding: '1px 4px',
+                                              borderRadius: '3px',
+                                              background: st.priority === 'high' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+                                              color: st.priority === 'high' ? 'var(--color-danger)' : 'var(--color-info)',
+                                              textTransform: 'uppercase',
+                                              marginLeft: '6px'
+                                            }}>
+                                              {st.priority === 'high' ? t('Cao') : t('Thấp')}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginLeft: '38px', fontStyle: 'italic' }}>
+                                      {t('Chưa giao việc con nào')}
                                     </span>
-                                    <span style={{
-                                      fontSize: '0.55rem',
-                                      fontWeight: 800,
-                                      padding: '1px 4px',
-                                      borderRadius: '3px',
-                                      background: st.priority === 'high' ? 'rgba(239, 68, 68, 0.08)' : st.priority === 'low' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                                      color: st.priority === 'high' ? 'var(--color-danger)' : st.priority === 'low' ? 'var(--color-info)' : 'var(--color-warning)',
-                                      textTransform: 'uppercase'
-                                    }}>
-                                      {st.priority === 'high' ? t('Cao') : st.priority === 'low' ? t('Thấp') : t('Trung bình')}
-                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Add Member Button / Section */}
+                      <div style={{ marginTop: '8px', borderTop: '1px solid var(--color-border-light)', paddingTop: '16px' }}>
+                        {!showAddParticipantsSection ? (
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => setShowAddParticipantsSection(true)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 24px',
+                                background: 'var(--color-primary-light, rgba(163,20,34,0.05))',
+                                color: 'var(--color-primary, #a31422)',
+                                border: '1px dashed var(--color-primary, #a31422)',
+                                borderRadius: '24px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              className="hover-lift"
+                            >
+                              <UserPlus size={15} />
+                              {t('Thêm thành viên')}
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {t('Thành viên chưa liên quan')} ({nonRelatedUsers.length})
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowAddParticipantsSection(false)}
+                                style={{
+                                  border: 'none',
+                                  background: 'transparent',
+                                  color: 'var(--color-primary)',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {t('Thu gọn')}
+                              </button>
+                            </div>
+
+                            {nonRelatedUsers.length === 0 ? (
+                              <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                                {t('Tất cả nhân sự đều đã được thêm làm người liên quan')}
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }} className="custom-scrollbar">
+                                {nonRelatedUsers.map((u: any) => (
+                                  <div
+                                    key={u.id}
+                                    style={{
+                                      background: 'transparent',
+                                      border: '1px solid rgba(0,0,0,0.03)',
+                                      borderRadius: '12px',
+                                      padding: '8px 12px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    className="hover-bg-alt"
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={false}
+                                        onChange={() => handleToggleParticipant(u.id)}
+                                        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                                      />
+                                      <Avatar src={u.avatar_url || u.avatar} name={u.full_name} size={28} />
+                                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text)' }}>{u.full_name}</span>
+                                        <span style={{ fontSize: '0.66rem', color: 'var(--color-text-muted)' }}>{getRoleDisplayName(u)}</span>
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                            ) : (
-                              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginLeft: '38px', fontStyle: 'italic' }}>
-                                {t('Chưa giao việc con nào')}
-                              </span>
                             )}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Modal Footer */}
               <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', justifyContent: 'flex-end', background: 'var(--color-surface)' }}>
-                <button className="btn outline" onClick={() => setShowParticipantsModal(false)} style={{ borderRadius: '20px', padding: '6px 20px' }}>
+                <button className="btn outline" onClick={() => { setShowParticipantsModal(false); setShowAddParticipantsSection(false); }} style={{ borderRadius: '20px', padding: '6px 20px' }}>
+                  {t('Đóng')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUBTASK PARTICIPANTS MODAL */}
+        {selectedSubtaskForParticipants && (
+          <div 
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.65)',
+              zIndex: 1000300,
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'fade-in 0.2s ease-out'
+            }}
+            onClick={() => setSelectedSubtaskForParticipants(null)}
+          >
+            <div 
+              style={{
+                width: '450px',
+                maxWidth: '90vw',
+                background: 'var(--color-surface)',
+                borderRadius: '16px',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.25)',
+                display: 'flex',
+                flexDirection: 'column',
+                animation: 'scale-up 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                overflow: 'hidden'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
+                    {t('Người thực hiện công việc con')}
+                  </h3>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '340px' }}>
+                    {selectedSubtaskForParticipants.title}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedSubtaskForParticipants(null)}
+                  style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* List of Users */}
+              <div style={{ padding: '1.25rem 1.5rem', maxHeight: '400px', overflowY: 'auto' }} className="custom-scrollbar">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {(() => {
+                    const assigneeIds = selectedSubtaskForParticipants.assignee_id ? selectedSubtaskForParticipants.assignee_id.split(',').filter(Boolean) : [];
+                    const subtaskUsers = assigneeIds.map((id: string) => users.find((u: any) => String(u.id) === String(id))).filter(Boolean);
+
+                    if (subtaskUsers.length === 0) {
+                      return (
+                        <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                          {t('Chưa phân công ai')}
+                        </div>
+                      );
+                    }
+
+                    return subtaskUsers.map((u: any) => (
+                      <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: 'var(--color-bg-subtle, rgba(0,0,0,0.01))', borderRadius: '10px', border: '1px solid var(--color-border-light)' }}>
+                        <Avatar src={u.avatar_url || u.avatar} name={u.full_name} size={32} />
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--color-text)' }}>{u.full_name}</span>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{getRoleDisplayName(u)}</span>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-border-light)', display: 'flex', justifyContent: 'flex-end', background: 'var(--color-surface)' }}>
+                <button className="btn outline" onClick={() => setSelectedSubtaskForParticipants(null)} style={{ borderRadius: '20px', padding: '6px 20px', fontSize: '0.8rem' }}>
                   {t('Đóng')}
                 </button>
               </div>

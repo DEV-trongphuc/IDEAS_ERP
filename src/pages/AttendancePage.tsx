@@ -12,7 +12,7 @@ import { TableRowSkeleton } from '../components/ui/Skeleton';
 import { CustomSelect } from '../components/ui/CustomSelect';
 const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(module => ({ default: module.CustomerProfileDrawer })));
 import api from '../api/axios';
-import { Clock, Calendar, Check, X, Trash2, Eye, ShieldAlert, AlertCircle, CheckCircle, Info, Download, Lightbulb, Upload, ChevronLeft, ChevronRight, Camera, Image, FileText, Zap, RefreshCw, Moon, MapPin, CheckSquare, Users } from 'lucide-react';
+import { Clock, Calendar, Check, X, Trash2, Eye, ShieldAlert, AlertCircle, CheckCircle, Info, Download, Lightbulb, Upload, ChevronLeft, ChevronRight, Camera, Image, FileText, Zap, RefreshCw, Moon, MapPin, CheckSquare, Users, Plus, Home, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PeriodFilter, getDateRange } from '../components/ui/PeriodFilter';
 import { useUIStore } from '../store/uiStore';
@@ -56,6 +56,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const isSales = user?.role && ['sale', 'sales', 'marketing', 'employee'].includes(user.role.toLowerCase());
   const canSelectUser = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr', 'accountant'].includes(user?.role || '');
   const canApprove = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'hr', 'accountant'].includes(user?.role || '') || (user?.role === 'manager' && managerBehaviorMode === 'pure');
+  const canApproveShifts = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'hr'].includes(user?.role || '') || (user?.role === 'manager' && managerBehaviorMode === 'pure');
   useEffect(() => {
     fetchAPI('get_settings').then(res => {
       if (res && res.success) {
@@ -97,9 +98,204 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     }
   }, [location.search]);
 
+  // New Creation Modal States & Helpers for Leave/Attendance Requests
+  const [showCreateLeaveModal, setShowCreateLeaveModal] = useState(false);
+  const [showMenuModal, setShowMenuModal] = useState(false);
+  const [createLeaveType, setCreateLeaveType] = useState('leave'); // 'leave' | 'late_early' | 'overtime' | 'remote_work'
+  
+  // Form fields states
+  const [leaveTypeField, setLeaveTypeField] = useState('annual'); // 'annual' | 'sick' | 'compensatory' | 'unpaid'
+  const [leaveSessionField, setLeaveSessionField] = useState('full'); // 'full' | 'morning' | 'afternoon' | 'range'
+  const [leaveFromField, setLeaveFromField] = useState(() => new Date().toISOString().split('T')[0]);
+  const [leaveToField, setLeaveToField] = useState(() => new Date().toISOString().split('T')[0]);
+  const [leaveReasonField, setLeaveReasonField] = useState('');
+  
+  const [lateEarlyTypeField, setLateEarlyTypeField] = useState('late'); // 'late' | 'early'
+  const [lateEarlyMinutesField, setLateEarlyMinutesField] = useState(30);
+  const [isCustomMinutesMode, setIsCustomMinutesMode] = useState(false);
+  const [lateEarlyDateField, setLateEarlyDateField] = useState(() => new Date().toISOString().split('T')[0]);
+  const [lateEarlyTimeField, setLateEarlyTimeField] = useState('08:30');
+  
+  const [otDateField, setOtDateField] = useState(() => new Date().toISOString().split('T')[0]);
+  const [otStartField, setOtStartField] = useState('17:30');
+  const [otEndField, setOtEndField] = useState('21:30');
+  
+  const [approverIdField, setApproverIdField] = useState('');
+  const [approverId2Field, setApproverId2Field] = useState('');
+  
+  const [submittingLeave, setSubmittingLeave] = useState(false);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [leaveBalance, setLeaveBalance] = useState<any>(null);
+
+  const calculateWorkingDays = (from: string, to: string, session: string) => {
+    if (!from || !to) return 0;
+    if (session === 'morning' || session === 'afternoon') return 0.5;
+    if (session === 'full') return 1.0;
+    const f = new Date(from);
+    const t = new Date(to);
+    let count = 0;
+    let current = new Date(f.getTime());
+    while (current <= t) {
+      const day = current.getDay();
+      if (day !== 0 && day !== 6) { // Skip Sunday (0) and Saturday (6)
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
+  };
+
+  const diffHours = (start: string, end: string) => {
+    if (!start || !end) return 0;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+    return diffMin > 0 ? Number((diffMin / 60).toFixed(1)) : 0;
+  };
+
+  const fetchLeaveBalance = async () => {
+    try {
+      const res = await api.get('/hrm/my-balance');
+      if (res && res.data && res.data.success) {
+        setLeaveBalance(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching balance:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (showCreateLeaveModal) {
+      fetchLeaveBalance();
+      if (usersList.length === 0) {
+        fetchAPI('users?all=1').then(res => {
+          if (res && res.success && Array.isArray(res.data)) {
+            setUsersList(res.data);
+            const approvers = res.data.filter((u: any) => 
+              ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr', 'assistant'].includes(String(u.role).toLowerCase())
+            );
+            if (approvers.length > 0) {
+              setApproverIdField(String(approvers[0].id));
+            }
+          }
+        });
+      }
+    }
+  }, [showCreateLeaveModal, usersList]);
+
+  const handleCreateLeaveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!approverIdField) {
+      toast.error(t('Vui lòng chọn người duyệt!'));
+      return;
+    }
+    
+    // Check lateness limit (Rule 6: max 3 hours / 180 mins)
+    if (createLeaveType === 'late_early' && lateEarlyMinutesField > 180) {
+      toast.error(t('Đi muộn/về sớm không được quá 3 tiếng (180 phút). Vui lòng làm đơn xin nghỉ phép!'));
+      return;
+    }
+
+    setSubmittingLeave(true);
+    try {
+      let payload: any = {};
+      
+      if (createLeaveType === 'leave') {
+        payload = {
+          leave_type: leaveTypeField,
+          reason: leaveReasonField,
+          from_date: `${leaveFromField}T08:00`,
+          to_date: `${leaveToField}T17:30`,
+          total_days: calculateWorkingDays(leaveFromField, leaveToField, leaveSessionField),
+          approver_id: Number(approverIdField),
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+        };
+      } else if (createLeaveType === 'late_early') {
+        const fromStr = `${lateEarlyDateField}T${lateEarlyTimeField}`;
+        const fromDateObj = new Date(fromStr);
+        const toDateObj = new Date(fromDateObj.getTime() + lateEarlyMinutesField * 60 * 1000);
+        const toStr = toDateObj.toISOString().slice(0, 16);
+        const descStr = `[Đăng ký ${lateEarlyTypeField === 'late' ? 'Đi muộn' : 'Về sớm'}] Thời gian: ${lateEarlyTimeField} (${lateEarlyMinutesField} phút). Lý do: ${leaveReasonField}`;
+        
+        payload = {
+          leave_type: 'late_early',
+          reason: descStr,
+          from_date: fromStr,
+          to_date: toStr,
+          total_days: 0.0,
+          approver_id: Number(approverIdField),
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+        };
+      } else if (createLeaveType === 'overtime') {
+        const fromStr = `${otDateField}T${otStartField}`;
+        const toStr = `${otDateField}T${otEndField}`;
+        const hours = diffHours(otStartField, otEndField);
+        const daysVal = Number((hours / 8).toFixed(2));
+        const descStr = `[Đăng ký Tăng ca] Thời gian: ${otStartField} - ${otEndField} (${hours} giờ = ${daysVal} ngày công OT). Lý do: ${leaveReasonField}`;
+        
+        payload = {
+          leave_type: 'overtime',
+          reason: descStr,
+          from_date: fromStr,
+          to_date: toStr,
+          total_days: daysVal,
+          approver_id: Number(approverIdField),
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+        };
+      } else if (createLeaveType === 'remote_work') {
+        let fromVal = `${leaveFromField}T08:00`;
+        let toVal = `${leaveToField}T17:30`;
+        let daysVal = 1.0;
+
+        if (leaveSessionField === 'morning') {
+          fromVal = `${leaveFromField}T08:00`;
+          toVal = `${leaveFromField}T12:00`;
+          daysVal = 0.5;
+        } else if (leaveSessionField === 'afternoon') {
+          fromVal = `${leaveFromField}T13:30`;
+          toVal = `${leaveFromField}T17:30`;
+          daysVal = 0.5;
+        } else if (leaveSessionField === 'range') {
+          daysVal = calculateWorkingDays(leaveFromField, leaveToField, 'range');
+        }
+
+        const descStr = `[Đăng ký làm việc từ xa] Lý do: ${leaveReasonField}`;
+        
+        payload = {
+          leave_type: 'remote_work',
+          reason: descStr,
+          from_date: fromVal,
+          to_date: toVal,
+          total_days: daysVal,
+          approver_id: Number(approverIdField),
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+        };
+      }
+      
+      const res = await api.post('/hrm/leaves', payload);
+      
+      if (res && res.data && res.data.success) {
+        toast.success(t('Gửi đề xuất thành công!'));
+        setShowCreateLeaveModal(false);
+      } else {
+        toast.error(res?.data?.message || t('Có lỗi xảy ra khi gửi đề xuất!'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || err?.message || t('Lỗi kết nối máy chủ!'));
+    } finally {
+      setSubmittingLeave(false);
+    }
+  };
+
   const [loading, setLoading] = useState(true);
   const [checkIns, setCheckIns] = useState<any[]>([]);
   const [consultants, setConsultants] = useState<any[]>([]);
+
+  const [showLeaveDrawer, setShowLeaveDrawer] = useState(false);
+  const [leavesList, setLeavesList] = useState<any[]>([]);
+  const [loadingLeaves, setLoadingLeaves] = useState(false);
+  const [leavesTab, setLeavesTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
 
   // View mode switcher: list or calendar (default to calendar for quick overview, list for embed mode)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>(() => {
@@ -442,7 +638,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   }, [viewMode, currentMonth, currentYear, filterUser, filterStatus]);
 
   const fetchRegistrations = async () => {
-    if (!canApprove) return;
+    if (!canApproveShifts) return;
     setRegistrationsLoading(true);
     try {
       const res = await fetchAPI('get_shift_registrations_admin');
@@ -458,6 +654,28 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       setRegistrationsLoading(false);
     }
   };
+
+  const fetchLeaves = async () => {
+    setLoadingLeaves(true);
+    try {
+      const res = await fetchAPI('hrm/leaves');
+      if (Array.isArray(res)) {
+        setLeavesList(res);
+      } else if (res && Array.isArray(res.data)) {
+        setLeavesList(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching leaves:', err);
+    } finally {
+      setLoadingLeaves(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showLeaveDrawer) {
+      fetchLeaves();
+    }
+  }, [showLeaveDrawer]);
 
   const handleApproveRegistration = async (id: number, shiftType: string) => {
     setActioningRegId(id);
@@ -1505,6 +1723,1055 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
 
 
 
+  const renderLeaveDrawer = () => {
+    if (!showLeaveDrawer) return null;
+
+    const filteredLeaves = leavesList.filter(l => {
+      if (leavesTab === 'all') return true;
+      if (leavesTab === 'pending') return l.status === 'pending';
+      if (leavesTab === 'approved') return l.status === 'approved';
+      if (leavesTab === 'rejected') return l.status === 'rejected';
+      return true;
+    });
+
+    const getLeaveTypeLabel = (type: string) => {
+      switch (type) {
+        case 'annual': return t('Nghỉ phép năm');
+        case 'sick': return t('Nghỉ ốm');
+        case 'compensatory': return t('Nghỉ bù');
+        case 'unpaid': return t('Nghỉ không lương');
+        case 'late_early': return t('Đi trễ / Về sớm');
+        case 'overtime': return t('Đăng ký tăng ca');
+        case 'remote_work': return t('Làm việc từ xa');
+        default: return type;
+      }
+    };
+
+    const getStatusBadgeColor = (status: string) => {
+      switch (status) {
+        case 'pending': return { bg: '#fef3c7', text: '#d97706', label: t('Chờ duyệt') };
+        case 'approved': return { bg: '#d1fae5', text: '#059669', label: t('Đã duyệt') };
+        case 'rejected': return { bg: '#fee2e2', text: '#dc2626', label: t('Từ chối') };
+        default: return { bg: '#f3f4f6', text: '#4b5563', label: status };
+      }
+    };
+
+    const refreshAllAttendanceData = () => {
+      if (typeof fetchCheckInsList === 'function') fetchCheckInsList();
+      if (typeof fetchCalendarCheckIns === 'function') fetchCalendarCheckIns();
+      if (typeof fetchRegistrations === 'function') fetchRegistrations();
+      if (typeof fetchBulkRequests === 'function') fetchBulkRequests();
+    };
+
+    const handleApproveReject = async (id: number, status: 'approved' | 'rejected') => {
+      try {
+        const res = await fetchAPI('hrm/leaves', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status })
+        });
+        if (res && (res.success || res.status === 200 || !res.error)) {
+          toast.success(status === 'approved' ? t('Đã duyệt đơn xin phép thành công!') : t('Đã từ chối đơn xin phép.'));
+          fetchLeaves();
+          refreshAllAttendanceData();
+        } else {
+          toast.error(res?.message || t('Lỗi xử lý đơn xin phép.'));
+        }
+      } catch (err: any) {
+        toast.error(err?.message || t('Lỗi kết nối máy chủ.'));
+      }
+    };
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.3)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 9999,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        animation: 'fadeIn 0.2s ease-out'
+      }} onClick={() => setShowLeaveDrawer(false)}>
+        <div style={{
+          width: '520px',
+          maxWidth: '90vw',
+          height: '100vh',
+          backgroundColor: 'var(--color-surface)',
+          boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          position: 'relative'
+        }} onClick={e => e.stopPropagation()}>
+          
+          {/* Header */}
+          <div style={{
+            padding: '1.25rem 1.5rem',
+            borderBottom: '1px solid var(--color-border-light)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                {t('Đơn từ xin phép')}
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
+                {t('Quản lý các loại đơn xin nghỉ phép, đi trễ, về sớm, tăng ca')}
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowLeaveDrawer(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-light)',
+                padding: '4px',
+                borderRadius: '4px'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{
+            display: 'flex',
+            padding: '0.5rem 1rem',
+            backgroundColor: 'var(--color-background-light)',
+            borderBottom: '1px solid var(--color-border-light)',
+            gap: '8px'
+          }}>
+            {[
+              { id: 'pending', label: t('Chờ duyệt') },
+              { id: 'approved', label: t('Đã duyệt') },
+              { id: 'rejected', label: t('Từ chối') },
+              { id: 'all', label: t('Tất cả') }
+            ].map(tab => {
+              const isActive = leavesTab === tab.id;
+              const count = tab.id === 'pending' ? leavesList.filter(l => l.status === 'pending').length : null;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setLeavesTab(tab.id as any)}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.8rem',
+                    fontWeight: isActive ? 700 : 500,
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: isActive ? 'var(--color-surface)' : 'transparent',
+                    color: isActive ? 'var(--color-text)' : 'var(--color-text-light)',
+                    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  {tab.label}
+                  {count !== null && count > 0 && (
+                    <span style={{
+                      backgroundColor: 'var(--color-danger, #ef4444)',
+                      color: '#ffffff',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      borderRadius: '10px',
+                      padding: '2px 6px',
+                      lineHeight: '1'
+                    }}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* List content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+            {loadingLeaves ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+              </div>
+            ) : filteredLeaves.length === 0 ? (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '200px',
+                color: 'var(--color-text-muted)'
+              }}>
+                <FileText size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                <span style={{ fontSize: '0.85rem' }}>{t('Không có đơn từ nào trong danh mục này.')}</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {filteredLeaves.map((item: any) => {
+                  const badge = getStatusBadgeColor(item.status);
+                  const isPending = item.status === 'pending';
+                  const showActionButtons = isPending && canApprove;
+                  
+                  return (
+                    <div 
+                      key={item.id}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        border: '1px solid var(--color-border-light)',
+                        borderRadius: '10px',
+                        padding: '1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <Avatar src={null} name={item.employee_name || 'N/A'} size={32} />
+                          <div>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                              {item.employee_name}
+                            </span>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              color: 'var(--color-text-light)',
+                              display: 'block'
+                            }}>
+                              {new Date(item.created_at).toLocaleDateString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        <span style={{
+                          backgroundColor: badge.bg,
+                          color: badge.text,
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '12px'
+                        }}>
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      <div style={{
+                        backgroundColor: 'var(--color-background-light)',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        borderLeft: '3px solid var(--color-primary, #6366f1)'
+                      }}>
+                        <strong style={{ color: 'var(--color-text)' }}>
+                          {getLeaveTypeLabel(item.leave_type)}
+                        </strong>
+                        <div style={{ marginTop: '4px', color: 'var(--color-text-muted)' }}>
+                          {t('Thời gian')}: {new Date(item.start_date).toLocaleDateString('vi-VN')} {new Date(item.start_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          {` -> `}
+                          {new Date(item.end_date).toLocaleDateString('vi-VN')} {new Date(item.end_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                          {item.total_days > 0 && ` (${item.total_days} ${t('ngày')})`}
+                        </div>
+                      </div>
+
+                      {item.reason && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>
+                          <strong>{t('Lý do')}:</strong> {item.reason}
+                        </div>
+                      )}
+
+                      {showActionButtons && (
+                        <div style={{
+                          display: 'flex',
+                          gap: '8px',
+                          marginTop: '4px',
+                          borderTop: '1px dashed var(--color-border-light)',
+                          paddingTop: '8px'
+                        }}>
+                          <button
+                            onClick={() => handleApproveReject(item.id, 'approved')}
+                            style={{
+                              flex: 1,
+                              height: '28px',
+                              backgroundColor: '#10b981',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <Check size={12} />
+                            {t('Duyệt')}
+                          </button>
+                          <button
+                            onClick={() => handleApproveReject(item.id, 'rejected')}
+                            style={{
+                              flex: 1,
+                              height: '28px',
+                              backgroundColor: 'transparent',
+                              color: '#ef4444',
+                              border: '1px solid #ef4444',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <X size={12} />
+                            {t('Từ chối')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
+  const renderCreateLeaveModal = () => {
+    if (!showCreateLeaveModal) return null;
+
+    // Calculate working days or hours dynamically for preview
+    let previewMessage = '';
+    if (createLeaveType === 'leave') {
+      const days = calculateWorkingDays(leaveFromField, leaveToField, leaveSessionField);
+      previewMessage = `${t('Tổng số ngày nghỉ đăng ký:')} ${days} ${t('ngày')}`;
+    } else if (createLeaveType === 'overtime') {
+      const hours = diffHours(otStartField, otEndField);
+      const daysVal = Number((hours / 8).toFixed(2));
+      previewMessage = `${t('Tổng thời gian tăng ca:')} ${hours} ${t('giờ')} (${daysVal} ${t('ngày công tăng ca')})`;
+    } else if (createLeaveType === 'remote_work') {
+      let days = 1.0;
+      if (leaveSessionField === 'morning' || leaveSessionField === 'afternoon') {
+        days = 0.5;
+      } else if (leaveSessionField === 'range') {
+        days = calculateWorkingDays(leaveFromField, leaveToField, 'range');
+      }
+      previewMessage = `${t('Tổng số ngày làm việc từ xa:')} ${days} ${t('ngày')}`;
+    }
+
+    const approversOptions = usersList
+      .filter(u => ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr', 'assistant'].includes(String(u.role).toLowerCase()))
+      .map(u => ({ 
+        value: String(u.id), 
+        label: `${u.full_name} (${u.role === 'admin' ? 'Admin' : u.role === 'hr' ? 'HR' : u.role === 'director' ? 'Giám đốc' : 'Quản lý'})`,
+        avatar: resolveAttachmentUrl(u.avatar_url || u.avatar)
+      }));
+
+    const getThemeColor = () => {
+      if (createLeaveType === 'leave') return '#f43f5e';
+      if (createLeaveType === 'late_early') return '#ff7a00';
+      if (createLeaveType === 'overtime') return '#8b5cf6';
+      if (createLeaveType === 'remote_work') return '#10b981';
+      return 'var(--color-primary, #ef4444)';
+    };
+    const themeColor = getThemeColor();
+
+    const getModalTitleInfo = () => {
+      switch (createLeaveType) {
+        case 'leave':
+          return {
+            gradient: 'linear-gradient(135deg, #f43f5e, #be123c)',
+            icon: <Calendar size={14} />
+          };
+        case 'late_early':
+          return {
+            gradient: 'linear-gradient(135deg, #ff7a00, #d05300)',
+            icon: <Clock size={14} />
+          };
+        case 'overtime':
+          return {
+            gradient: 'linear-gradient(135deg, #8b5cf6, #5b21b6)',
+            icon: <Zap size={14} />
+          };
+        case 'remote_work':
+        default:
+          return {
+            gradient: 'linear-gradient(135deg, #10b981, #047857)',
+            icon: <MapPin size={14} />
+          };
+      }
+    };
+    const titleInfo = getModalTitleInfo();
+
+    const modalTitle = (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            setShowCreateLeaveModal(false);
+            setShowMenuModal(true);
+          }}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--color-text-muted)',
+            padding: '6px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+            marginRight: '-4px'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--color-border-light)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          title={t('Quay lại chọn loại đơn')}
+        >
+          <ArrowLeft size={16} />
+        </button>
+
+        <div style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '50%',
+          background: titleInfo.gradient,
+          color: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          {titleInfo.icon}
+        </div>
+
+        <span style={{ fontSize: '0.95rem', fontWeight: 800 }}>
+          {createLeaveType === 'leave' ? t('Đăng ký Nghỉ phép') :
+           createLeaveType === 'late_early' ? t('Đăng ký Đi muộn / Về sớm') :
+           createLeaveType === 'overtime' ? t('Đăng ký Tăng ca (OT)') :
+           t('Đăng ký Làm việc từ xa (WFH)')}
+        </span>
+      </div>
+    );
+
+    return (
+      <CustomModal
+        isOpen={showCreateLeaveModal}
+        onClose={() => setShowCreateLeaveModal(false)}
+        title={modalTitle}
+        width="750px"
+      >
+        <style>{`
+          .leave-modal-input {
+            width: 100%;
+            height: 38px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: 0.8125rem;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+          }
+          .leave-modal-input:focus {
+            border-color: ${themeColor};
+            box-shadow: 0 0 0 3px ${themeColor}22;
+          }
+          .leave-modal-input::placeholder {
+            color: var(--color-text-muted);
+            opacity: 0.6;
+          }
+        `}</style>
+
+        <form 
+          onSubmit={handleCreateLeaveSubmit}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            padding: '4px 0'
+          }}
+        >
+          {/* Subtitle description */}
+          <p style={{ margin: '-4px 0 12px 0', fontSize: '0.78rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '12px' }}>
+            {createLeaveType === 'leave' ? t('Khai báo thông tin xin nghỉ phép năm, nghỉ bù hoặc nghỉ việc riêng') :
+             createLeaveType === 'late_early' ? t('Khai báo số phút trễ hoặc về sớm và giờ dự kiến (tối đa 3 tiếng)') :
+             createLeaveType === 'overtime' ? t('Đăng ký khoảng thời gian làm tăng ca thực tế') :
+             t('Đăng ký khoảng thời gian làm việc từ xa ngoài văn phòng')}
+          </p>
+
+          {/* Balance banner for leave */}
+          {createLeaveType === 'leave' && leaveBalance && (
+            <div style={{ 
+              fontSize: '0.78rem', 
+              fontWeight: 600, 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(245, 158, 11, 0.05))',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(239, 68, 68, 0.1)',
+              color: 'var(--color-text)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+                <span>{t('Còn lại phép năm:')} <strong style={{ color: '#ef4444', fontSize: '0.85rem' }}>{Number((leaveBalance.annual_leave_total - leaveBalance.annual_leave_used).toFixed(2))}</strong> {t('ngày')}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }} />
+                <span>{t('Còn lại phép bù:')} <strong style={{ color: '#f59e0b', fontSize: '0.85rem' }}>{Number((leaveBalance.compensatory_leave_total - leaveBalance.compensatory_leave_used).toFixed(2))}</strong> {t('ngày')}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Form Fields: Nghỉ phép */}
+          {createLeaveType === 'leave' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Loại nghỉ phép')}
+                  </label>
+                  <CustomSelect
+                    value={leaveTypeField}
+                    onChange={setLeaveTypeField}
+                    options={[
+                      { value: 'annual', label: t('Nghỉ phép năm') },
+                      { value: 'compensatory', label: t('Nghỉ bù') },
+                      { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') }
+                    ]}
+                    width="100%"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Thời gian nghỉ')}
+                  </label>
+                  <CustomSelect
+                    value={leaveSessionField}
+                    onChange={(val: any) => setLeaveSessionField(val)}
+                    options={[
+                      { value: 'full', label: t('Cả ngày (1 ngày)') },
+                      { value: 'morning', label: t('Buổi sáng (0.5 ngày)') },
+                      { value: 'afternoon', label: t('Buổi chiều (0.5 ngày)') },
+                      { value: 'range', label: t('Nhiều ngày liên tiếp') }
+                    ]}
+                    width="100%"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (leaveSessionField === 'range' ? '1fr 1fr' : '1fr'), gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {leaveSessionField === 'range' ? t('Từ ngày') : t('Ngày xin nghỉ')}
+                  </label>
+                  <input
+                    type="date"
+                    className="leave-modal-input"
+                    value={leaveFromField}
+                    onChange={e => {
+                      setLeaveFromField(e.target.value);
+                      if (leaveSessionField !== 'range') setLeaveToField(e.target.value);
+                    }}
+                    required
+                  />
+                </div>
+                {leaveSessionField === 'range' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                      {t('Đến ngày')}
+                    </label>
+                    <input
+                      type="date"
+                      className="leave-modal-input"
+                      value={leaveToField}
+                      onChange={e => setLeaveToField(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Form Fields: Đi muộn / Về sớm */}
+          {createLeaveType === 'late_early' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Loại đăng ký')}
+                  </label>
+                  <CustomSelect
+                    value={lateEarlyTypeField}
+                    onChange={setLateEarlyTypeField}
+                    options={[
+                      { value: 'late', label: t('Đi muộn') },
+                      { value: 'early', label: t('Về sớm') }
+                    ]}
+                    width="100%"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Số phút đăng ký')}
+                  </label>
+                  {isCustomMinutesMode ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        className="leave-modal-input"
+                        value={lateEarlyMinutesField}
+                        onChange={e => setLateEarlyMinutesField(Number(e.target.value))}
+                        placeholder={t('Nhập số phút...')}
+                        min={1}
+                        max={180}
+                        style={{ flex: 1 }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomMinutesMode(false);
+                          setLateEarlyMinutesField(30);
+                        }}
+                        style={{
+                          height: '38px', padding: '0 12px', borderRadius: '8px', border: '1px solid var(--color-border)',
+                          fontSize: '0.725rem', fontWeight: 700, cursor: 'pointer', background: 'var(--color-bg-light)', color: 'var(--color-text)',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {t('Mẫu')}
+                      </button>
+                    </div>
+                  ) : (
+                    <CustomSelect
+                      value={String(lateEarlyMinutesField)}
+                      onChange={val => {
+                        if (val === 'custom') {
+                          setIsCustomMinutesMode(true);
+                          setLateEarlyMinutesField(30);
+                        } else {
+                          setLateEarlyMinutesField(Number(val));
+                        }
+                      }}
+                      options={[
+                        { value: '30', label: t('30 phút') },
+                        { value: '60', label: t('60 phút') },
+                        { value: '90', label: t('90 phút') },
+                        { value: '120', label: t('120 phút') },
+                        { value: '150', label: t('150 phút') },
+                        { value: '180', label: t('180 phút (3 tiếng)') },
+                        { value: 'custom', label: t('Tự nhập số khác...') }
+                      ]}
+                      width="100%"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Ngày đăng ký')}
+                  </label>
+                  <input
+                    type="date"
+                    className="leave-modal-input"
+                    value={lateEarlyDateField}
+                    onChange={e => setLateEarlyDateField(e.target.value)}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Giờ dự kiến')}
+                  </label>
+                  <input
+                    type="time"
+                    className="leave-modal-input"
+                    value={lateEarlyTimeField}
+                    onChange={e => setLateEarlyTimeField(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Rule 6 Warning Block in UI */}
+              {lateEarlyMinutesField > 180 && (
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.15)',
+                  color: '#ef4444',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={14} />
+                  <span>{t('Thời gian đi muộn/về sớm không được vượt quá 3 tiếng (180 phút). Vui lòng làm đơn xin nghỉ phép!')}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Form Fields: Tăng ca */}
+          {createLeaveType === 'overtime' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Ngày tăng ca')}
+                  </label>
+                  <input
+                    type="date"
+                    className="leave-modal-input"
+                    value={otDateField}
+                    onChange={e => setOtDateField(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Giờ bắt đầu')}
+                  </label>
+                  <input
+                    type="time"
+                    className="leave-modal-input"
+                    value={otStartField}
+                    onChange={e => setOtStartField(e.target.value)}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Giờ kết thúc')}
+                  </label>
+                  <input
+                    type="time"
+                    className="leave-modal-input"
+                    value={otEndField}
+                    onChange={e => setOtEndField(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Form Fields: Làm việc từ xa WFH */}
+          {createLeaveType === 'remote_work' && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {t('Thời gian làm việc từ xa WFH')}
+                  </label>
+                  <CustomSelect
+                    value={leaveSessionField}
+                    onChange={(val: any) => setLeaveSessionField(val)}
+                    options={[
+                      { value: 'full', label: t('Cả ngày (1 ngày)') },
+                      { value: 'morning', label: t('Buổi sáng (0.5 ngày)') },
+                      { value: 'afternoon', label: t('Buổi chiều (0.5 ngày)') },
+                      { value: 'range', label: t('Nhiều ngày liên tiếp') }
+                    ]}
+                    width="100%"
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (leaveSessionField === 'range' ? '1fr 1fr' : '1fr'), gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                    {leaveSessionField === 'range' ? t('Từ ngày') : t('Ngày làm việc từ xa')}
+                  </label>
+                  <input
+                    type="date"
+                    className="leave-modal-input"
+                    value={leaveFromField}
+                    onChange={e => {
+                      setLeaveFromField(e.target.value);
+                      if (leaveSessionField !== 'range') setLeaveToField(e.target.value);
+                    }}
+                    required
+                  />
+                </div>
+                {leaveSessionField === 'range' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                      {t('Đến ngày')}
+                    </label>
+                    <input
+                      type="date"
+                      className="leave-modal-input"
+                      value={leaveToField}
+                      onChange={e => setLeaveToField(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Common: Reason */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+              {t('Lý do đề xuất / Giải trình chi tiết')}
+            </label>
+            <textarea
+              className="leave-modal-input"
+              value={leaveReasonField}
+              onChange={e => setLeaveReasonField(e.target.value)}
+              placeholder={t('Nhập lý do chi tiết...')}
+              rows={3}
+              style={{ height: 'auto', minHeight: '80px', resize: 'vertical' }}
+              required
+            />
+          </div>
+
+          {/* Common: Approver selection */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                {t('Người duyệt 1')}
+              </label>
+              <CustomSelect
+                value={approverIdField}
+                onChange={setApproverIdField}
+                options={approversOptions}
+                width="100%"
+                searchable={true}
+                showAvatars={true}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+                {t('Người duyệt 2 (Không bắt buộc)')}
+              </label>
+              <CustomSelect
+                value={approverId2Field}
+                onChange={setApproverId2Field}
+                options={[
+                  { value: '', label: t('-- Không chọn --') },
+                  ...approversOptions.filter(opt => opt.value !== approverIdField)
+                ]}
+                width="100%"
+                searchable={true}
+                showAvatars={true}
+              />
+            </div>
+          </div>
+
+          {/* Preview Banner */}
+          {previewMessage && (
+            <div style={{ 
+              padding: '12px 16px', 
+              borderRadius: '12px', 
+              background: 'rgba(59, 130, 246, 0.04)', 
+              border: '1px solid rgba(59, 130, 246, 0.12)',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              color: 'var(--color-primary-dark, #2563eb)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <Info size={16} />
+              <span>{previewMessage}</span>
+            </div>
+          )}
+
+          {/* Footer Buttons */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+            borderTop: '1px solid var(--color-border-light)',
+            paddingTop: '1.25rem',
+            marginTop: '0.5rem'
+          }}>
+            <button
+              type="button"
+              onClick={() => setShowCreateLeaveModal(false)}
+              style={{
+                height: '38px', padding: '0 20px', borderRadius: '8px', border: '1px solid var(--color-border)',
+                fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', background: 'transparent', color: 'var(--color-text)'
+              }}
+            >
+              {t('Hủy')}
+            </button>
+            <button
+              type="submit"
+              disabled={submittingLeave || (createLeaveType === 'late_early' && lateEarlyMinutesField > 180)}
+              className="btn"
+              style={{
+                height: '38px', padding: '0 20px', borderRadius: '8px', border: 'none',
+                fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', color: '#ffffff',
+                backgroundColor: createLeaveType === 'late_early' && lateEarlyMinutesField > 180 ? 'var(--color-text-muted)' : 'var(--color-primary)',
+                boxShadow: createLeaveType === 'late_early' && lateEarlyMinutesField > 180 ? 'none' : '0 4px 12px rgba(99, 102, 241, 0.2)',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                transition: 'all 0.2s'
+              }}
+            >
+              {submittingLeave ? <RefreshCw size={14} className="animate-spin" style={{ display: 'inline' }} /> : null}
+              <span>{submittingLeave ? t('Đang gửi...') : t('Gửi đề xuất')}</span>
+            </button>
+          </div>
+        </form>
+      </CustomModal>
+    );
+  };
+
+  const renderMenuModal = () => {
+    if (!showMenuModal) return null;
+
+    const leaveMenuOptions = [
+      {
+        id: 'leave',
+        title: t('Nghỉ phép'),
+        desc: t('Đăng ký nghỉ phép năm, nghỉ bù, nghỉ thai sản hoặc nghỉ không lương.'),
+        icon: <Calendar size={18} />,
+        bg: 'linear-gradient(135deg, #f43f5e, #be123c)',
+        color: '#f43f5e'
+      },
+      {
+        id: 'late_early',
+        title: t('Đi muộn / Về sớm'),
+        desc: t('Đăng ký xin đi muộn hoặc về sớm trong ca làm việc (tối đa 3 tiếng).'),
+        icon: <Clock size={18} />,
+        bg: 'linear-gradient(135deg, #ff7a00, #d05300)',
+        color: '#ff7a00'
+      },
+      {
+        id: 'overtime',
+        title: t('Tăng ca (OT)'),
+        desc: t('Đăng ký làm thêm giờ để tính ngày công tăng ca và phụ cấp.'),
+        icon: <Zap size={18} />,
+        bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)',
+        color: '#8b5cf6'
+      },
+      {
+        id: 'remote_work',
+        title: t('Làm việc từ xa (WFH)'),
+        desc: t('Đăng ký làm việc tại nhà hoặc ngoài văn phòng theo buổi hoặc nhiều ngày.'),
+        icon: <MapPin size={18} />,
+        bg: 'linear-gradient(135deg, #10b981, #047857)',
+        color: '#10b981'
+      }
+    ];
+
+    return (
+      <CustomModal
+        isOpen={showMenuModal}
+        onClose={() => setShowMenuModal(false)}
+        title={t('Tạo đề xuất xin phép mới')}
+        width="650px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '4px 0' }}>
+          <p style={{ margin: '-4px 0 12px 0', fontSize: '0.78rem', color: 'var(--color-text-muted)', borderBottom: '1px solid var(--color-border-light)', paddingBottom: '12px' }}>
+            {t('Chọn loại đề xuất phép & công bạn muốn gửi phê duyệt')}
+          </p>
+
+          <div style={{
+            fontSize: '0.7rem',
+            fontWeight: 800,
+            color: 'var(--color-text-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: '4px'
+          }}>
+            {t('QUY TRÌNH PHÉP & CÔNG')}
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: '16px'
+          }}>
+            {leaveMenuOptions.map(opt => (
+              <div
+                key={opt.id}
+                onClick={() => {
+                  setShowMenuModal(false);
+                  setCreateLeaveType(opt.id);
+                  setShowCreateLeaveModal(true);
+                }}
+                style={{
+                  display: 'flex',
+                  gap: '14px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  background: 'var(--color-surface)'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'var(--color-bg-light)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = `0 4px 12px rgba(0, 0, 0, 0.04)`;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'var(--color-surface)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: opt.bg,
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {opt.icon}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                    {opt.title}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.3' }}>
+                    {opt.desc}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CustomModal>
+    );
+  };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
@@ -1549,65 +2816,20 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             </p>
           </div>
 
-          {/* View Mode Switcher */}
-          <div style={{
-            display: 'flex',
-            backgroundColor: 'var(--color-border-light)',
-            border: '1px solid var(--color-border)',
-            padding: '2px',
-            borderRadius: '8px',
-            gap: '2px',
-            width: 'fit-content'
-          }}>
-            <button
-              onClick={() => setViewMode('list')}
-              style={{
-                height: '30px',
-                padding: '0 16px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                backgroundColor: viewMode === 'list' ? 'var(--color-surface)' : 'transparent',
-                color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
-                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-            >
-              <Clock size={14} />
-              {t('Danh sách')}
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              style={{
-                height: '30px',
-                padding: '0 16px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                backgroundColor: viewMode === 'calendar' ? 'var(--color-surface)' : 'transparent',
-                color: viewMode === 'calendar' ? 'var(--color-text)' : 'var(--color-text-light)',
-                boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-            >
-              <Calendar size={14} />
-              {t('Lịch biểu')}
-            </button>
-            {canApprove && (
+          {/* Header Action Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* View Mode Switcher */}
+            <div style={{
+              display: 'flex',
+              backgroundColor: 'var(--color-border-light)',
+              border: '1px solid var(--color-border)',
+              padding: '2px',
+              borderRadius: '8px',
+              gap: '2px',
+              width: 'fit-content'
+            }}>
               <button
-                onClick={() => setViewMode('registrations' as any)}
+                onClick={() => setViewMode('list')}
                 style={{
                   height: '30px',
                   padding: '0 16px',
@@ -1619,39 +2841,91 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  backgroundColor: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
-                  color: (viewMode as string) === 'registrations' ? 'var(--color-text)' : 'var(--color-text-light)',
-                  boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  backgroundColor: viewMode === 'list' ? 'var(--color-surface)' : 'transparent',
+                  color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
+                  boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   transition: 'all 0.2s',
                   outline: 'none'
                 }}
               >
-                <Zap size={14} />
-                {t('Duyệt đăng ký ca')}
+                <Clock size={14} />
+                {t('Danh sách')}
               </button>
-            )}
+              <button
+                onClick={() => setViewMode('calendar')}
+                style={{
+                  height: '30px',
+                  padding: '0 16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: viewMode === 'calendar' ? 'var(--color-surface)' : 'transparent',
+                  color: viewMode === 'calendar' ? 'var(--color-text)' : 'var(--color-text-light)',
+                  boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+              >
+                <Calendar size={14} />
+                {t('Lịch biểu')}
+              </button>
+              {canApproveShifts && (
+                <button
+                  onClick={() => setViewMode('registrations' as any)}
+                  style={{
+                    height: '30px',
+                    padding: '0 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
+                    color: (viewMode as string) === 'registrations' ? 'var(--color-text)' : 'var(--color-text-light)',
+                    boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                >
+                  <Zap size={14} />
+                  {t('Duyệt đăng ký ca')}
+                </button>
+              )}
+            </div>
+
+            {/* Red Standalone Button for Leave/Attendance Requests */}
             <button
-              onClick={() => setViewMode('bulk_requests' as any)}
+              onClick={() => {
+                setShowMenuModal(true);
+              }}
+              className="btn danger hover-lift"
               style={{
-                height: '30px',
+                borderRadius: '8px',
+                height: '34px',
                 padding: '0 16px',
-                fontSize: '0.85rem',
                 fontWeight: 700,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
+                fontSize: '0.8125rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                backgroundColor: (viewMode as string) === 'bulk_requests' ? 'var(--color-surface)' : 'transparent',
-                color: (viewMode as string) === 'bulk_requests' ? 'var(--color-text)' : 'var(--color-text-light)',
-                boxShadow: (viewMode as string) === 'bulk_requests' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-                outline: 'none'
+                backgroundColor: 'var(--color-danger, #ef4444)',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.25)',
+                transition: 'all 0.2s'
               }}
             >
-              <CheckSquare size={14} />
-              {t('Bổ sung công gộp')}
+              <FileText size={14} />
+              {t('Đơn xin phép')}
             </button>
           </div>
         </div>
@@ -4053,6 +5327,9 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         </>,
         document.body
       )}
+      {renderLeaveDrawer()}
+      {renderCreateLeaveModal()}
+      {renderMenuModal()}
     </div>
   );
 };

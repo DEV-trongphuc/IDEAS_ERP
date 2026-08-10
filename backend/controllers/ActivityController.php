@@ -897,6 +897,61 @@ class ActivityController {
             }
         }
 
+        // Compare old and new checklist for subtask changes
+        $oldBodyData = json_decode($activity['body'] ?? '', true);
+        $newBodyData = isset($b['body']) ? json_decode($b['body'] ?? '', true) : null;
+
+        if ($newBodyData !== null) {
+            $oldChecklist = $oldBodyData['erp_task']['checklist'] ?? [];
+            $newChecklist = $newBodyData['erp_task']['checklist'] ?? [];
+
+            // Index checklists by ID
+            $oldMap = [];
+            foreach ($oldChecklist as $item) {
+                if (isset($item['id'])) {
+                    $oldMap[$item['id']] = $item;
+                }
+            }
+            $newMap = [];
+            foreach ($newChecklist as $item) {
+                if (isset($item['id'])) {
+                    $newMap[$item['id']] = $item;
+                }
+            }
+
+            // Check for completed/added subtasks
+            foreach ($newMap as $idKey => $newItem) {
+                if (isset($oldMap[$idKey])) {
+                    $oldItem = $oldMap[$idKey];
+                    $oldDone = !empty($oldItem['done']);
+                    $newDone = !empty($newItem['done']);
+                    if (!$oldDone && $newDone) {
+                        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'COMPLETE_SUBTASK', 'activity', $id, json_encode(['title' => $newItem['title'] ?? 'Công việc con']));
+                    } elseif ($oldDone && !$newDone) {
+                        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'INCOMPLETE_SUBTASK', 'activity', $id, json_encode(['title' => $newItem['title'] ?? 'Công việc con']));
+                    }
+                } else {
+                    logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_SUBTASK', 'activity', $id, json_encode(['title' => $newItem['title'] ?? 'Công việc con']));
+                }
+            }
+
+            // Check for deleted subtasks
+            foreach ($oldMap as $idKey => $oldItem) {
+                if (!isset($newMap[$idKey])) {
+                    logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'DELETE_SUBTASK', 'activity', $id, json_encode(['title' => $oldItem['title'] ?? 'Công việc con']));
+                }
+            }
+
+            // If only the checklist changed (not the task description), don't log a generic description change
+            if (isset($actualChanges['body'])) {
+                $oldDesc = $oldBodyData['erp_task']['description'] ?? '';
+                $newDesc = $newBodyData['erp_task']['description'] ?? '';
+                if ($oldDesc === $newDesc) {
+                    unset($actualChanges['body']);
+                }
+            }
+        }
+
         if (!empty($actualChanges)) {
             logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'UPDATE', 'activity', $id, json_encode($actualChanges));
         }
@@ -1137,7 +1192,7 @@ class ActivityController {
             }
         }
 
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_COMMENT', 'activity', $id);
+        // logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_COMMENT', 'activity', $id);
 
         respond(200, ['id' => $commentId], 'Đã thêm bình luận');
     }
@@ -1257,7 +1312,7 @@ class ActivityController {
         $deleteStmt = $this->db->prepare("DELETE FROM activity_comments WHERE (id = ? OR parent_id = ?) AND tenant_id = ?");
         $deleteStmt->execute([$commentId, $commentId, $auth['tenant_id']]);
 
-        logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'DELETE_COMMENT', 'activity_comment', $commentId);
+        // logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'DELETE_COMMENT', 'activity_comment', $commentId);
         respond(200, null, 'Đã xóa bình luận thành công');
     }
 
