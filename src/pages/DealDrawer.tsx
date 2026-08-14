@@ -465,7 +465,15 @@ export const DealDrawer: React.FC<DealDrawerProps> = ({ isOpen, onClose, deal, o
                         </div>
                         <div className="form-group">
                           <label className="form-label">Giá trị dự kiến (đ)</label>
-                          <input className="form-input" type="number" value={formData?.value || ''} onChange={e => setFormData({...formData, value: Number(e.target.value)})} />
+                          <input 
+                            className="form-input" 
+                            type="text" 
+                            value={formData?.value ? Number(formData.value).toLocaleString('en-US') : ''} 
+                            onChange={e => {
+                              const rawDigits = e.target.value.replace(/\D/g, '');
+                              setFormData({...formData, value: rawDigits ? Number(rawDigits) : ''});
+                            }} 
+                          />
                           {formData?.value > 0 && (
                             <div style={{ marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, fontStyle: 'italic' }}>
                               {numberToText(formData.value)}

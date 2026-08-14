@@ -288,11 +288,14 @@ export const CreateExpenseModal: React.FC<Props> = ({ isOpen, onClose, initialEn
                       }}>
                         <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>₫</span>
                         <input
-                          type="number"
+                          type="text"
                           style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-text)' }}
                           placeholder="0"
-                          value={formData.amount}
-                          onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                          value={formData.amount ? Number(formData.amount).toLocaleString('en-US') : ''}
+                          onChange={e => {
+                            const rawDigits = e.target.value.replace(/\D/g, '');
+                            setFormData({ ...formData, amount: rawDigits });
+                          }}
                         />
                       </div>
                       {formData.amount && Number(formData.amount) > 0 && (

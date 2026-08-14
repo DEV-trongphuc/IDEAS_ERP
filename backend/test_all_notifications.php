@@ -98,7 +98,7 @@ testNotificationEvent($pdo, $conn, $userId, $userRow, 'EXPENSE_REQUEST', [
 testNotificationEvent($pdo, $conn, $userId, $userRow, 'DEPOSIT_NEW', [
     'customer_name' => 'Nguyễn Văn A',
     'amount' => 5000000,
-], ['đơn đặt hàng', 'Nguyễn Văn A', '5.000.000']);
+], ['Sale Order', 'Nguyễn Văn A', '5.000.000']);
 
 testNotificationEvent($pdo, $conn, $userId, $userRow, 'COOPERATION_PENDING_APPROVAL', [
     'slip_id' => '12345',

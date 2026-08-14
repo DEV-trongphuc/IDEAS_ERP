@@ -606,7 +606,17 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label" style={{ fontWeight: 600 }}>Số tiền ({form.currency || 'VND'}) *</label>
                     <div style={{ position: 'relative' }}>
-                      <input className="form-input" type="number" min="0" style={{ paddingRight: '2.5rem', fontWeight: 800, color: 'var(--color-danger)', fontSize: '1.1rem' }} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
+                      <input 
+                        className="form-input" 
+                        type="text" 
+                        style={{ paddingRight: '2.5rem', fontWeight: 800, color: 'var(--color-danger)', fontSize: '1.1rem' }} 
+                        value={form.amount ? Number(form.amount).toLocaleString('en-US') : ''} 
+                        onChange={e => {
+                          const rawDigits = e.target.value.replace(/\D/g, '');
+                          setForm({ ...form, amount: rawDigits });
+                        }} 
+                        placeholder="0" 
+                      />
                       <Wallet size={16} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                     </div>
                     {form.amount && Number(form.amount) > 0 && (
@@ -724,9 +734,12 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                           <label className="form-label" style={{ fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '6px', display: 'block' }}>Tiền thuế VAT ({form.currency || 'VND'})</label>
                           <input
                             className="form-input"
-                            type="number"
-                            value={form.vat_amount || ''}
-                            onChange={e => setForm({ ...form, vat_amount: e.target.value })}
+                            type="text"
+                            value={form.vat_amount ? Number(form.vat_amount).toLocaleString('en-US') : ''}
+                            onChange={e => {
+                              const rawDigits = e.target.value.replace(/\D/g, '');
+                              setForm({ ...form, vat_amount: rawDigits });
+                            }}
                             placeholder="Nhập số tiền thuế..."
                             style={{ height: '38px', borderRadius: '8px', fontSize: '0.85rem' }}
                           />

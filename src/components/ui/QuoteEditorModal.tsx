@@ -543,10 +543,13 @@ export const QuoteEditorModal: React.FC<QuoteEditorProps> = ({
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
                                 <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Đơn giá (đ)</label>
                                 <input 
-                                  type="number" 
+                                  type="text" 
                                   style={{ width: '100%', height: '36px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', borderRadius: '8px', outline: 'none', textAlign: 'right', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--color-text)', padding: '0 10px', transition: 'border 0.2s' }}
-                                  value={item.unit_price}
-                                  onChange={e => updateItem(idx, { unit_price: Number(e.target.value) })}
+                                  value={item.unit_price ? Number(item.unit_price).toLocaleString('en-US') : ''}
+                                  onChange={e => {
+                                    const rawDigits = e.target.value.replace(/\D/g, '');
+                                    updateItem(idx, { unit_price: rawDigits ? Number(rawDigits) : 0 });
+                                  }}
                                   onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
                                   onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
                                 />
@@ -632,15 +635,18 @@ export const QuoteEditorModal: React.FC<QuoteEditorProps> = ({
                     <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '10px' }}>
                       <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-light)', whiteSpace: 'nowrap' }}>Giảm giá (₫)</span>
                       <input
-                        type="number"
+                        type="text"
                         style={{
                           width: '110px', height: '34px', padding: '0 10px', textAlign: 'right',
                           border: '1px solid var(--color-border)', borderRadius: '8px',
                           fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-danger)',
                           background: 'var(--color-danger-light)', outline: 'none',
                         }}
-                        value={form.discount}
-                        onChange={e => setForm({ ...form, discount: Number(e.target.value) })}
+                        value={form.discount ? Number(form.discount).toLocaleString('en-US') : ''}
+                        onChange={e => {
+                          const rawDigits = e.target.value.replace(/\D/g, '');
+                          setForm({ ...form, discount: rawDigits ? Number(rawDigits) : 0 });
+                        }}
                       />
                       {form.discount > 0 && (
                         <div style={{ position: 'absolute', bottom: '-18px', right: '1.25rem', fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, fontStyle: 'italic', whiteSpace: 'nowrap' }}>

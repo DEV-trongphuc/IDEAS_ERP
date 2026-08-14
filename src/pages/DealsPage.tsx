@@ -385,12 +385,12 @@ export const DealsPage: React.FC = () => {
       const currentUser = useAuthStore.getState().user;
 
       if (viewMode === 'kanban') {
-        // Fetch contacts/deals/companies for each stage in parallel (limit 100 per stage)
+        // Fetch contacts/deals/companies for each stage in parallel (limit 30 per stage)
         const promises = stages.map(async (stage) => {
           const stageParams = {
             ...params,
             page: 1,
-            limit: 100,
+            limit: 30,
             stage_id: stage.id
           };
           const res = await api.get(endpoint, { params: stageParams });
@@ -638,25 +638,53 @@ export const DealsPage: React.FC = () => {
 
     try {
       setIsConfirmingTransition(true);
-      const endpoint = pipelineView === 'contacts' ? `/contacts/${transitionModal.itemId}/stage` : (pipelineView === 'companies' ? `/companies/${transitionModal.itemId}/stage` : `/deals/${transitionModal.itemId}/stage`);
+      const itemId = transitionModal.itemId;
+      const fromStageId = transitionModal.fromStage;
+      const toStageId = transitionModal.toStage;
+      
+      // Perform optimistic update locally
+      const sourceItems = items[fromStageId] || [];
+      const itemToMove = sourceItems.find(d => d.id === itemId);
+      
+      if (itemToMove) {
+        const updatedItem = { 
+          ...itemToMove, 
+          stage_id: toStageId, 
+          pipeline_status: stages.find(s => s.id === toStageId)?.system_slug || itemToMove.pipeline_status 
+        };
+        
+        setItems(prev => {
+          const next = { ...prev };
+          next[fromStageId] = (prev[fromStageId] || []).filter(d => d.id !== itemId);
+          next[toStageId] = [updatedItem, ...(prev[toStageId] || [])];
+          return next;
+        });
+        
+        setStageTotals(prev => ({
+          ...prev,
+          [fromStageId]: Math.max(0, (prev[fromStageId] || 0) - 1),
+          [toStageId]: (prev[toStageId] || 0) + 1
+        }));
+      }
+
+      const endpoint = pipelineView === 'contacts' ? `/contacts/${itemId}/stage` : (pipelineView === 'companies' ? `/companies/${itemId}/stage` : `/deals/${itemId}/stage`);
       await api.patch(endpoint, { 
-        stage_id: transitionModal.toStage,
+        stage_id: toStageId,
         note: transitionModal.isCancellation 
           ? `[Bể cọc - Không doanh thu] ${transitionModal.note}`
           : transitionModal.note
       });
-      fetchData(); // Refresh
       
-      const item = items[transitionModal.fromStage]?.find(d => d.id === transitionModal.itemId);
-      const toStage = stages.find(s => s.id === transitionModal.toStage);
+      const toStage = stages.find(s => s.id === toStageId);
       if (toStage?.is_won) {
         triggerFullConfetti();
-        addToast(`TUYỆT VỜI! Chúc mừng bạn đã chốt thành công "${pipelineView === 'contacts' ? item?.full_name : (pipelineView === 'companies' ? item?.name : item?.title)}"`, 'success');
+        addToast(`TUYỆT VỜI! Chúc mừng bạn đã chốt thành công "${pipelineView === 'contacts' ? itemToMove?.full_name : (pipelineView === 'companies' ? itemToMove?.name : itemToMove?.title)}"`, 'success');
       } else {
         addToast('Đã chuyển trạng thái & lưu Audit Log', 'success');
       }
     } catch (err: any) { 
       addToast(err.response?.data?.message || 'Lỗi khi di chuyển thẻ', 'error'); 
+      fetchData(); // Rollback and sync on error
     } finally {
       setIsConfirmingTransition(false);
       setTransitionModal(null);

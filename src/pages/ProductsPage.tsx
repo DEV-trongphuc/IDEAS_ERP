@@ -349,7 +349,16 @@ export const ProductsPage: React.FC = () => {
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label" style={{ fontWeight: 700 }}>Giá bán (đ)</label>
                       <div style={{ position: 'relative' }}>
-                        <input className="form-input" type="number" value={form.price} onChange={e => setForm({...form, price:e.target.value})} style={{ paddingRight: '2.5rem' }} />
+                        <input 
+                          className="form-input" 
+                          type="text" 
+                          value={form.price ? Number(form.price).toLocaleString('en-US') : ''} 
+                          onChange={e => {
+                            const rawDigits = e.target.value.replace(/\D/g, '');
+                            setForm({...form, price: rawDigits});
+                          }} 
+                          style={{ paddingRight: '2.5rem' }} 
+                        />
                         <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>đ</span>
                         {form.price && Number(form.price) > 0 && (
                           <div style={{ marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, fontStyle: 'italic' }}>
@@ -362,7 +371,16 @@ export const ProductsPage: React.FC = () => {
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontWeight: 700 }}>Giá vốn nhập (đ)</label>
                         <div style={{ position: 'relative' }}>
-                          <input className="form-input" type="number" value={form.cost} onChange={e => setForm({...form, cost:e.target.value})} style={{ paddingRight: '2.5rem' }} />
+                          <input 
+                            className="form-input" 
+                            type="text" 
+                            value={form.cost ? Number(form.cost).toLocaleString('en-US') : ''} 
+                            onChange={e => {
+                              const rawDigits = e.target.value.replace(/\D/g, '');
+                              setForm({...form, cost: rawDigits});
+                            }} 
+                            style={{ paddingRight: '2.5rem' }} 
+                          />
                           <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>đ</span>
                           {form.cost && Number(form.cost) > 0 && (
                             <div style={{ marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600, fontStyle: 'italic' }}>

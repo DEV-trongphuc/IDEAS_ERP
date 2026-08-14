@@ -248,7 +248,17 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
                               <button className="btn-icon-bare" onClick={() => setHelpModal({ title: 'Dự kiến doanh thu', content: 'Ước tính số tiền mà Deal này có thể mang lại nếu chốt thành công.\n\nChỉ số này sẽ được tổng hợp tự động lên Bảng điều khiển (Dashboard) của Giám đốc để dự báo dòng tiền trong tương lai của doanh nghiệp.' })}><HelpCircle size={14} color="var(--color-text-muted)" /></button>
                             </label>
                             <div style={{ position: 'relative' }}>
-                              <input className="form-input" type="number" placeholder="0" style={{ paddingRight: '40px' }} value={formData?.expected_revenue || ''} onChange={e => setFormData((prev: any) => ({ ...prev, expected_revenue: e.target.value }))} />
+                              <input 
+                                className="form-input" 
+                                type="text" 
+                                placeholder="0" 
+                                style={{ paddingRight: '40px' }} 
+                                value={formData?.expected_revenue ? Number(formData.expected_revenue).toLocaleString('en-US') : ''} 
+                                onChange={e => {
+                                  const rawDigits = e.target.value.replace(/\D/g, '');
+                                  setFormData((prev: any) => ({ ...prev, expected_revenue: rawDigits }));
+                                }} 
+                              />
                               <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>VNĐ</span>
                             </div>
                           </div>
@@ -425,7 +435,16 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
 
                               <div className="form-group mb-4">
                                 <label className="form-label">Chiết khấu / Giảm giá (VNĐ)</label>
-                                <input type="number" className="form-input" placeholder="Nhập số tiền giảm" value={invoiceForm.discount} onChange={e => setInvoiceForm({ ...invoiceForm, discount: Number(e.target.value) })} />
+                                <input 
+                                  type="text" 
+                                  className="form-input" 
+                                  placeholder="Nhập số tiền giảm" 
+                                  value={invoiceForm.discount ? Number(invoiceForm.discount).toLocaleString('en-US') : ''} 
+                                  onChange={e => {
+                                    const rawDigits = e.target.value.replace(/\D/g, '');
+                                    setInvoiceForm({ ...invoiceForm, discount: rawDigits ? Number(rawDigits) : 0 });
+                                  }} 
+                                />
                               </div>
                             </div>
 
@@ -441,11 +460,19 @@ export const EntityDrawer: React.FC<EntityDrawerProps> = ({ isOpen, onClose, ent
                                     newCosts[idx].name = e.target.value;
                                     setInvoiceForm({ ...invoiceForm, incurred_costs: newCosts });
                                   }} />
-                                  <input className="form-input sm" type="number" style={{ width: '120px' }} placeholder="Số tiền" value={cost.amount || ''} onChange={e => {
-                                    const newCosts = [...invoiceForm.incurred_costs];
-                                    newCosts[idx].amount = Number(e.target.value);
-                                    setInvoiceForm({ ...invoiceForm, incurred_costs: newCosts });
-                                  }} />
+                                  <input 
+                                    className="form-input sm" 
+                                    type="text" 
+                                    style={{ width: '120px' }} 
+                                    placeholder="Số tiền" 
+                                    value={cost.amount ? Number(cost.amount).toLocaleString('en-US') : ''} 
+                                    onChange={e => {
+                                      const rawDigits = e.target.value.replace(/\D/g, '');
+                                      const newCosts = [...invoiceForm.incurred_costs];
+                                      newCosts[idx].amount = rawDigits ? Number(rawDigits) : 0;
+                                      setInvoiceForm({ ...invoiceForm, incurred_costs: newCosts });
+                                    }} 
+                                  />
                                 </div>
                               ))}
 

@@ -1497,9 +1497,9 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                 </div>
 
                 {/* Right Pane (Thảo luận & Lịch sử) */}
-                <div style={{ flex: '0 0 420px', display: 'flex', flexDirection: 'column', height: '100%', borderLeft: '1px solid var(--color-border)' }}>
+                <div style={{ flex: '0 0 420px', display: 'flex', flexDirection: 'column', height: '100%', borderLeft: '1px solid var(--color-border)', background: '#f8f9fa' }}>
                   {/* Tabs */}
-                  <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-light)', padding: '0 8px' }}>
+                  <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: '#f8f9fa', padding: '0 8px' }}>
                     <button
                       onClick={() => setActiveDrawerTab('comments')}
                       style={{
@@ -1547,7 +1547,7 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                   </div>
 
                   {/* Tab contents */}
-                  <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-bg-light)' }}>
+                  <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#f8f9fa' }}>
                     {activeDrawerTab === 'comments' ? (
                       <>
                         {loadingComments ? (
@@ -1641,9 +1641,9 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                             <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Chưa ghi nhận lịch sử chỉnh sửa nào</span>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', paddingLeft: '28px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', paddingLeft: '28px' }}>
                             {/* Vertical Line */}
-                            <div style={{ position: 'absolute', top: '24px', bottom: '24px', left: '12px', width: '2px', background: 'var(--color-border-light, #e2e8f0)' }} />
+                            <div style={{ position: 'absolute', top: '18px', bottom: '18px', left: '12px', width: '2px', background: 'var(--color-border-light, #e2e8f0)' }} />
                             
                             {historyLogs.map((log) => {
                               let actionLabel = log.action;
@@ -1679,10 +1679,10 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                   {/* Timeline dot */}
                                   <div style={{
                                     position: 'absolute',
-                                    top: '25px', // Aligned with the center of the 32px avatar
+                                    top: '18px', // Aligned with the center of the 24px avatar (padding-top: 6px + half-avatar: 12px)
                                     left: '-21px', // Aligned with the vertical line at left: 12px
-                                    width: '10px',
-                                    height: '10px',
+                                    width: '8px',
+                                    height: '8px',
                                     borderRadius: '50%',
                                     background: '#cbd5e1', // Neutral grey dot
                                     border: '2px solid var(--color-surface, #fff)',
@@ -1690,39 +1690,40 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
                                     zIndex: 2
                                   }} />
 
-                                  {/* Card */}
+                                  {/* Compact List Item (Borderless/Backgroundless) */}
                                   <div 
                                     style={{ 
                                       display: 'flex', 
-                                      gap: '12px', 
-                                      background: 'var(--color-surface, #fff)', 
-                                      border: '1px solid var(--color-border-light)', 
-                                      padding: '14px 18px', 
-                                      borderRadius: '16px',
-                                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.015)'
+                                      gap: '10px', 
+                                      background: 'transparent', 
+                                      border: 'none', 
+                                      padding: '6px 0', 
+                                      borderRadius: '0',
+                                      boxShadow: 'none'
                                     }}
                                   >
                                     {/* User Avatar */}
-                                    <Avatar src={log.avatar_url} name={log.user_name || 'Hệ thống'} size={32} />
+                                    <Avatar src={log.avatar_url} name={log.user_name || 'Hệ thống'} size={24} />
                                     
                                     {/* Log details */}
-                                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--color-text)' }}>
+                                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
                                           {log.user_name || 'Hệ thống'}
                                         </span>
-                                        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                                          {new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>•</span>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                                          {new Date(log.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                                         </span>
                                       </div>
-                                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: 1.45, textAlign: 'left', wordBreak: 'break-word' }}>
+                                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', lineHeight: 1.4, textAlign: 'left', wordBreak: 'break-word' }}>
                                         <span style={{ 
                                           color: actionColor, 
                                           fontWeight: 700,
-                                          background: `${actionColor}10`,
-                                          padding: '2px 6px',
+                                          background: `${actionColor}12`,
+                                          padding: '1px 6px',
                                           borderRadius: '4px',
-                                          fontSize: '0.72rem',
+                                          fontSize: '0.68rem',
                                           marginRight: '6px',
                                           display: 'inline-block'
                                         }}>
@@ -1743,8 +1744,8 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
 
                   {/* Send Comment Input */}
                   {activeDrawerTab === 'comments' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border)', padding: '12px', background: 'var(--color-surface)' }}>
-                      <div style={{ background: 'rgba(0, 0, 0, 0.015)', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.01)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--color-border)', padding: '12px', background: '#f8f9fa' }}>
+                      <div style={{ background: '#ffffff', border: '1px solid var(--color-border-light)', padding: '10px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'var(--shadow-sm)' }}>
                         <MentionInput
                           value={newCommentText}
                           onChange={(e: any) => setNewCommentText(e.target.value)}
