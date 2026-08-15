@@ -74,7 +74,7 @@ try {
     // TC01: Check-in hợp lệ đúng giờ trong bán kính GPS văn phòng (vào ngày hôm nay)
     $mockBody = [
         'check_in_date' => $today,
-        'check_in_time' => '07:55:00',
+        'check_in_time' => (date('H:i:s') < '07:55:00') ? date('H:i:s') : '07:55:00',
         'selfie_url' => 'https://ideas.vn/selfie1.jpg',
         'latitude' => '10.795050',
         'longitude' => '106.721950',

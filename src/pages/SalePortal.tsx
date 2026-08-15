@@ -16,6 +16,7 @@ import { createPortal } from 'react-dom';
 import { triggerFullConfetti } from '../utils/confettiHelper';
 
 const WarRoomFlightDeck = lazy(() => import('../components/Dashboard/WarRoomFlightDeck').then(module => ({ default: module.WarRoomFlightDeck })));
+const MyPayslips = lazy(() => import('./MyPayslips'));
 import { QuickAddLeadModal } from '../components/QuickAddLeadModal';
 import { AddressSelect } from '../components/ui/AddressSelect';
 import { ToggleSwitch } from '../components/ui/ToggleSwitch';
@@ -10923,6 +10924,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       switch (tab) {
         case 'schedule': return t('Lịch trực nhận data');
         case 'personal': return t('Thông tin cá nhân');
+        case 'payslips': return t('Phiếu lương của tôi');
         case 'erp': return t('Hồ sơ & ERP');
         case 'assets': return t('Tài sản cấp phát');
         case 'certificates': return t('Bằng cấp & Chứng chỉ');
@@ -11299,7 +11301,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                           padding: '14px 16px',
                           background: 'transparent',
                           border: 'none',
-                          borderBottom: 'none',
+                          borderBottom: '1px solid var(--color-border-light)',
                           width: '100%',
                           cursor: 'pointer',
                           textAlign: 'left'
@@ -11308,6 +11310,29 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--color-text)' }}>
                           {renderColoredIcon(User, '#eb4e3d')}
                           <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{t('Thông tin cá nhân')}</span>
+                        </div>
+                        <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setProfileActiveTab('payslips')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '14px 16px',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: 'none',
+                          width: '100%',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--color-text)' }}>
+                          {renderColoredIcon(Receipt, '#10b981')}
+                          <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{t('Phiếu lương của tôi')}</span>
                         </div>
                         <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
                       </button>
@@ -11544,6 +11569,15 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                     </button>
                     <button
                       type="button"
+                      className={`${styles.sidebarTabBtn} ${profileActiveTab === 'payslips' ? styles.sidebarTabActive : ''}`}
+                      onClick={() => setProfileActiveTab('payslips')}
+                      style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+                    >
+                      {renderColoredIcon(Receipt, '#10b981')}
+                      <span style={{ whiteSpace: 'nowrap' }}>{t('Phiếu lương của tôi')}</span>
+                    </button>
+                    <button
+                      type="button"
                       className={`${styles.sidebarTabBtn} ${profileActiveTab === 'erp' ? styles.sidebarTabActive : ''}`}
                       onClick={() => setProfileActiveTab('erp')}
                       style={{ width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer' }}
@@ -11705,6 +11739,15 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   </button>
                 </div>
               )}
+            {/* 0. PAYSLIPS */}
+            {renderedTab === 'payslips' && (
+              <div className={isMobile ? "animate-fade-in" : "card animate-fade-in"} style={cardContainerStyle(isMobile)}>
+                <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}><Loader2 className="spin" size={24} /></div>}>
+                  <MyPayslips />
+                </Suspense>
+              </div>
+            )}
+
             {/* 1. PERSONAL INFO */}
             {renderedTab === 'personal' && (
               <div className={isMobile ? "animate-fade-in" : "card animate-fade-in"} style={cardContainerStyle(isMobile)}>

@@ -486,9 +486,9 @@ export default function MyPayslips() {
           <div 
             style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(4, 1fr)', 
-              gap: '16px', 
-              marginBottom: '2rem' 
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', 
+              gap: isMobile ? '8px' : '16px', 
+              marginBottom: isMobile ? '1rem' : '2rem' 
             }} 
             className="no-print"
           >
@@ -496,40 +496,41 @@ export default function MyPayslips() {
             <div style={{
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
-              borderRadius: '16px',
-              padding: '20px 24px',
+              borderRadius: isMobile ? '12px' : '16px',
+              padding: isMobile ? '12px 14px' : '20px 24px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
-              minHeight: '135px'
+              minHeight: isMobile ? '95px' : '135px'
             }}>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <span style={{ fontSize: isMobile ? '0.625rem' : '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {t('TỔNG THỰC NHẬN')}
                   </span>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: isMobile ? '24px' : '32px',
+                    height: isMobile ? '24px' : '32px',
                     borderRadius: '8px',
                     background: 'rgba(16, 185, 129, 0.1)',
                     color: '#10b981',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    flexShrink: 0
                   }}>
-                    <DollarSign size={16} />
+                    <DollarSign size={isMobile ? 13 : 16} />
                   </div>
                 </div>
-                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                <strong style={{ fontSize: isMobile ? '1.1rem' : '1.625rem', fontWeight: 900, color: 'var(--color-text, #1e293b)', display: 'block', lineHeight: 1.2 }}>
                   {formatCurrency(totalNet)}
                 </strong>
               </div>
-              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
-                  {t('Trung bình')}: <strong style={{ color: 'var(--color-text, #1e293b)' }}>{formatCurrency(avgNet)}</strong> / {t('tháng')}
+              <div style={{ marginTop: isMobile ? '6px' : '12px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+                <span style={{ fontSize: isMobile ? '0.65rem' : '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                  {t('TB')}: <strong style={{ color: 'var(--color-text, #1e293b)' }}>{formatCurrency(avgNet)}</strong>{!isMobile && ` / ${t('tháng')}`}
                 </span>
               </div>
             </div>
@@ -538,40 +539,41 @@ export default function MyPayslips() {
             <div style={{
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
-              borderRadius: '16px',
-              padding: '20px 24px',
+              borderRadius: isMobile ? '12px' : '16px',
+              padding: isMobile ? '12px 14px' : '20px 24px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
-              minHeight: '135px'
+              minHeight: isMobile ? '95px' : '135px'
             }}>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t('BẢO HIỂM ĐÃ KHẤU TRỪ')}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <span style={{ fontSize: isMobile ? '0.625rem' : '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('BẢO HIỂM')}
                   </span>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: isMobile ? '24px' : '32px',
+                    height: isMobile ? '24px' : '32px',
                     borderRadius: '8px',
                     background: 'rgba(239, 68, 68, 0.1)',
                     color: '#ef4444',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    flexShrink: 0
                   }}>
-                    <ShieldCheck size={16} />
+                    <ShieldCheck size={isMobile ? 13 : 16} />
                   </div>
                 </div>
-                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                <strong style={{ fontSize: isMobile ? '1.1rem' : '1.625rem', fontWeight: 900, color: 'var(--color-text, #1e293b)', display: 'block', lineHeight: 1.2 }}>
                   {formatCurrency(totalInsurance)}
                 </strong>
               </div>
-              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }}></span>
-                  {t('BHXH, BHYT & BHTN')}
+              <div style={{ marginTop: isMobile ? '6px' : '12px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+                <span style={{ fontSize: isMobile ? '0.65rem' : '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }}></span>
+                  {t('BHXH, BHYT')}
                 </span>
               </div>
             </div>
@@ -580,40 +582,41 @@ export default function MyPayslips() {
             <div style={{
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
-              borderRadius: '16px',
-              padding: '20px 24px',
+              borderRadius: isMobile ? '12px' : '16px',
+              padding: isMobile ? '12px 14px' : '20px 24px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
-              minHeight: '135px'
+              minHeight: isMobile ? '95px' : '135px'
             }}>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t('TỔNG TIỀN THƯỞNG')}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <span style={{ fontSize: isMobile ? '0.625rem' : '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('TỔNG THƯỞNG')}
                   </span>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: isMobile ? '24px' : '32px',
+                    height: isMobile ? '24px' : '32px',
                     borderRadius: '8px',
                     background: 'rgba(59, 130, 246, 0.1)',
                     color: '#3b82f6',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    flexShrink: 0
                   }}>
-                    <Award size={16} />
+                    <Award size={isMobile ? 13 : 16} />
                   </div>
                 </div>
-                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                <strong style={{ fontSize: isMobile ? '1.1rem' : '1.625rem', fontWeight: 900, color: 'var(--color-text, #1e293b)', display: 'block', lineHeight: 1.2 }}>
                   {formatCurrency(totalBonus)}
                 </strong>
               </div>
-              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }}></span>
-                  {t('Thưởng KPI, chuyên cần & OT')}
+              <div style={{ marginTop: isMobile ? '6px' : '12px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+                <span style={{ fontSize: isMobile ? '0.65rem' : '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }}></span>
+                  {t('KPI & Thưởng')}
                 </span>
               </div>
             </div>
@@ -622,40 +625,41 @@ export default function MyPayslips() {
             <div style={{
               background: 'var(--color-surface, #ffffff)',
               border: '1px solid var(--color-border, #e2e8f0)',
-              borderRadius: '16px',
-              padding: '20px 24px',
+              borderRadius: isMobile ? '12px' : '16px',
+              padding: isMobile ? '12px 14px' : '20px 24px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               boxShadow: '0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04)',
-              minHeight: '135px'
+              minHeight: isMobile ? '95px' : '135px'
             }}>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {t('THUẾ TNCN ĐÃ ĐÓNG')}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                  <span style={{ fontSize: isMobile ? '0.625rem' : '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {t('THUẾ TNCN')}
                   </span>
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: isMobile ? '24px' : '32px',
+                    height: isMobile ? '24px' : '32px',
                     borderRadius: '8px',
                     background: 'rgba(245, 158, 11, 0.1)',
                     color: '#f59e0b',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    flexShrink: 0
                   }}>
-                    <Percent size={16} />
+                    <Percent size={isMobile ? 13 : 16} />
                   </div>
                 </div>
-                <strong style={{ fontSize: '1.625rem', fontWeight: 900, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>
+                <strong style={{ fontSize: isMobile ? '1.1rem' : '1.625rem', fontWeight: 900, color: 'var(--color-text, #1e293b)', display: 'block', lineHeight: 1.2 }}>
                   {formatCurrency(totalTax)}
                 </strong>
               </div>
-              <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
-                  {t('Đã khấu trừ năm')} {selectedYear}
+              <div style={{ marginTop: isMobile ? '6px' : '12px', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+                <span style={{ fontSize: isMobile ? '0.65rem' : '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
+                  {t('Năm')} {selectedYear}
                 </span>
               </div>
             </div>

@@ -1839,20 +1839,20 @@ export default function Approvals() {
                 alignItems: 'center',
                 zIndex: 10000000,
                 animation: 'fadeIn 0.2s ease-out',
-                padding: '1rem'
+                padding: isMobile ? '0.75rem' : '1rem'
               }} onClick={() => {
                 setShowCreateModal(false);
                 setSelectedWorkflowDef(null);
               }}>
                 <div style={{
-                  width: '1160px',
+                  width: isMobile ? '96%' : '1160px',
                   maxWidth: '100%',
-                  maxHeight: '90vh',
+                  maxHeight: isMobile ? '85vh' : '90vh',
                   background: 'var(--color-surface)',
                   boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
                   display: 'flex',
                   flexDirection: 'column',
-                  borderRadius: '16px',
+                  borderRadius: isMobile ? '14px' : '16px',
                   overflow: 'hidden',
                   border: '1px solid var(--color-border)',
                   animation: 'zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1861,14 +1861,14 @@ export default function Approvals() {
                   
                   {/* Modal Header */}
                   <div style={{
-                    padding: '1.25rem 1.5rem',
+                    padding: isMobile ? '12px 16px' : '1.25rem 1.5rem',
                     borderBottom: '1px solid var(--color-border-light)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     background: 'var(--color-surface)'
                   }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)' }}>
+                    <h3 style={{ margin: 0, fontSize: isMobile ? '0.9375rem' : '1.1rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)' }}>
                       {t('Quy trình & Đề xuất vận hành')}
                     </h3>
                     <button className="hover-lift" onClick={() => {
@@ -1877,45 +1877,42 @@ export default function Approvals() {
                     }} style={{
                       background: 'var(--color-bg)',
                       border: '1px solid var(--color-border)',
-                      padding: '6px',
+                      padding: isMobile ? '4px' : '6px',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       color: 'var(--color-text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      height: '32px',
-                      width: '32px'
+                      height: isMobile ? '28px' : '32px',
+                      width: isMobile ? '28px' : '32px'
                     }}>
-                      <X size={16} />
+                      <X size={isMobile ? 14 : 16} />
                     </button>
                   </div>
 
                   {/* Body - Grouped list like Menu điều hướng nhanh */}
                   <div className="custom-scrollbar" style={{
                     flex: 1,
-                    padding: '1.5rem 2rem 2.5rem 2rem',
+                    padding: isMobile ? '16px 16px 24px 16px' : '1.5rem 2rem 2.5rem 2rem',
                     overflowY: 'auto',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '2rem',
+                    gap: isMobile ? '1.5rem' : '2rem',
                     background: 'var(--color-surface)'
                   }}>
-                    
-                    
-
 
                     {/* Category: TÀI CHÍNH & KẾ TOÁN */}
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: isMobile ? '10px' : '1.25rem', paddingLeft: '4px' }}>
                         <div style={{ width: '4px', height: '14px', background: 'var(--color-primary, #a31422)', borderRadius: '2px' }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: isMobile ? '0.75rem' : '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Tài chính & Kế toán')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px 24px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: isMobile ? '8px' : '12px 24px' }}>
                         {workflowList.filter(w => w.category === 'finance').map(item => {
                           const IconComp = item.icon;
                           const colors = getWorkflowColor(item.color);
@@ -1931,9 +1928,9 @@ export default function Approvals() {
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '12px',
-                                padding: '8px 12px',
-                                borderRadius: '12px',
+                                gap: isMobile ? '12px' : '12px',
+                                padding: isMobile ? '10px 12px' : '8px 12px',
+                                borderRadius: isMobile ? '10px' : '12px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 border: 'none',
@@ -1959,8 +1956,8 @@ export default function Approvals() {
                               <div 
                                 className="workflow-icon-circle"
                                 style={{
-                                  width: '34px',
-                                  height: '34px',
+                                  width: isMobile ? '32px' : '34px',
+                                  height: isMobile ? '32px' : '34px',
                                   borderRadius: '50%',
                                   background: colors.bg,
                                   display: 'flex',
@@ -1971,12 +1968,17 @@ export default function Approvals() {
                                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                                 }}
                               >
-                                <IconComp size={16} color={colors.color} strokeWidth={2.5} />
+                                <IconComp size={isMobile ? 15 : 16} color={colors.color} strokeWidth={2.5} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                                <span style={{ fontSize: isMobile ? '0.875rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                {!isMobile && (
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                                )}
                               </div>
+                              {isMobile && (
+                                <ChevronRight size={15} color="var(--color-text-muted)" style={{ opacity: 0.45, marginLeft: 'auto', flexShrink: 0 }} />
+                              )}
                             </div>
                           );
                         })}
@@ -1985,15 +1987,15 @@ export default function Approvals() {
 
                     {/* Category: NHÂN SỰ & QUY TRÌNH */}
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: isMobile ? '10px' : '1.25rem', paddingLeft: '4px' }}>
                         <div style={{ width: '4px', height: '14px', background: 'var(--color-primary, #a31422)', borderRadius: '2px' }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: isMobile ? '0.75rem' : '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Nhân sự & Quy trình')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px 24px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: isMobile ? '8px' : '12px 24px' }}>
                         {workflowList.filter(w => w.category === 'hr').map(item => {
                           const IconComp = item.icon;
                           const colors = getWorkflowColor(item.color);
@@ -2014,9 +2016,9 @@ export default function Approvals() {
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '12px',
-                                padding: '8px 12px',
-                                borderRadius: '12px',
+                                gap: isMobile ? '12px' : '12px',
+                                padding: isMobile ? '10px 12px' : '8px 12px',
+                                borderRadius: isMobile ? '10px' : '12px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 border: 'none',
@@ -2042,8 +2044,8 @@ export default function Approvals() {
                               <div 
                                 className="workflow-icon-circle"
                                 style={{
-                                  width: '34px',
-                                  height: '34px',
+                                  width: isMobile ? '32px' : '34px',
+                                  height: isMobile ? '32px' : '34px',
                                   borderRadius: '50%',
                                   background: colors.bg,
                                   display: 'flex',
@@ -2054,12 +2056,17 @@ export default function Approvals() {
                                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                                 }}
                               >
-                                <IconComp size={16} color={colors.color} strokeWidth={2.5} />
+                                <IconComp size={isMobile ? 15 : 16} color={colors.color} strokeWidth={2.5} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                                <span style={{ fontSize: isMobile ? '0.875rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                {!isMobile && (
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                                )}
                               </div>
+                              {isMobile && (
+                                <ChevronRight size={15} color="var(--color-text-muted)" style={{ opacity: 0.45, marginLeft: 'auto', flexShrink: 0 }} />
+                              )}
                             </div>
                           );
                         })}
@@ -2068,15 +2075,15 @@ export default function Approvals() {
 
                     {/* Category: HÀNH CHÍNH & TÀI SẢN */}
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem', paddingLeft: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: isMobile ? '10px' : '1.25rem', paddingLeft: '4px' }}>
                         <div style={{ width: '4px', height: '14px', background: 'var(--color-primary, #a31422)', borderRadius: '2px' }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: isMobile ? '0.75rem' : '0.75rem', fontWeight: 800, color: 'var(--color-text, #111827)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
                           {t('Hành chính & Thiết bị')}
                         </span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--color-border-light)' }} />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px 24px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: isMobile ? '8px' : '12px 24px' }}>
                         {workflowList.filter(w => w.category === 'admin').map(item => {
                           const IconComp = item.icon;
                           const colors = getWorkflowColor(item.color);
@@ -2092,9 +2099,9 @@ export default function Approvals() {
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '12px',
-                                padding: '8px 12px',
-                                borderRadius: '12px',
+                                gap: isMobile ? '12px' : '12px',
+                                padding: isMobile ? '10px 12px' : '8px 12px',
+                                borderRadius: isMobile ? '10px' : '12px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 border: 'none',
@@ -2120,8 +2127,8 @@ export default function Approvals() {
                               <div 
                                 className="workflow-icon-circle"
                                 style={{
-                                  width: '34px',
-                                  height: '34px',
+                                  width: isMobile ? '32px' : '34px',
+                                  height: isMobile ? '32px' : '34px',
                                   borderRadius: '50%',
                                   background: colors.bg,
                                   display: 'flex',
@@ -2132,12 +2139,17 @@ export default function Approvals() {
                                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                                 }}
                               >
-                                <IconComp size={16} color={colors.color} strokeWidth={2.5} />
+                                <IconComp size={isMobile ? 15 : 16} color={colors.color} strokeWidth={2.5} />
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                                <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                                <span style={{ fontSize: isMobile ? '0.875rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                {!isMobile && (
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                                )}
                               </div>
+                              {isMobile && (
+                                <ChevronRight size={15} color="var(--color-text-muted)" style={{ opacity: 0.45, marginLeft: 'auto', flexShrink: 0 }} />
+                              )}
                             </div>
                           );
                         })}

@@ -882,7 +882,9 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       });
     }
     
-    const weekDays = [t('Thứ 2'), t('Thứ 3'), t('Thứ 4'), t('Thứ 5'), t('Thứ 6'), t('Thứ 7'), t('CN')];
+    const weekDays = isMobile
+      ? [t('T2'), t('T3'), t('T4'), t('T5'), t('T6'), t('T7'), t('CN')]
+      : [t('Thứ 2'), t('Thứ 3'), t('Thứ 4'), t('Thứ 5'), t('Thứ 6'), t('Thứ 7'), t('CN')];
 
     const getCellData = (dateStr: string) => {
       if (!dateStr) return null;
@@ -895,18 +897,37 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     };
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-surface)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.75rem' : '1rem' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'var(--color-surface)',
+          padding: isMobile ? '10px 12px' : '12px 16px',
+          borderRadius: '12px',
+          border: '1px solid var(--color-border)',
+          gap: isMobile ? '10px' : '12px'
+        }}>
+          {/* Row 1: Month switcher + Actions */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: isMobile ? '6px' : '12px',
+            flexWrap: isMobile ? 'nowrap' : 'wrap',
+            width: '100%'
+          }}>
             {/* Unified month switcher */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               backgroundColor: 'var(--color-bg)',
               border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-md)',
-              padding: '2px 8px',
-              height: '38px',
+              padding: isMobile ? '2px 4px' : '2px 8px',
+              height: isMobile ? '34px' : '38px',
+              flex: isMobile ? 1 : 'none',
+              minWidth: 0,
               overflow: 'hidden'
             }}>
               <button
@@ -920,12 +941,12 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   }
                 }}
                 className="btn ghost sm"
-                style={{ padding: '0 8px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ padding: isMobile ? '0 4px' : '0 8px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={isMobile ? 14 : 16} />
               </button>
               
-              <span style={{ fontSize: '0.875rem', fontWeight: 700, padding: '0 12px', minWidth: '120px', textAlign: 'center', color: 'var(--color-text)' }}>
+              <span style={{ fontSize: isMobile ? '0.78rem' : '0.875rem', fontWeight: 700, padding: isMobile ? '0 4px' : '0 12px', minWidth: isMobile ? '0' : '120px', textAlign: 'center', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {t('Tháng {month} / {year}').replace('{month}', String(currentMonth)).replace('{year}', String(currentYear))}
               </span>
 
@@ -940,9 +961,9 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   }
                 }}
                 className="btn ghost sm"
-                style={{ padding: '0 8px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ padding: isMobile ? '0 4px' : '0 8px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={isMobile ? 14 : 16} />
               </button>
             </div>
 
@@ -955,11 +976,13 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-text)',
                 borderRadius: 'var(--radius-md)',
-                height: '38px',
-                padding: '0 16px',
+                height: isMobile ? '32px' : '36px',
+                padding: isMobile ? '0 10px' : '0 14px',
                 fontWeight: 600,
-                fontSize: '0.8125rem',
-                background: 'var(--color-surface)'
+                fontSize: isMobile ? '0.75rem' : '0.8125rem',
+                background: 'var(--color-surface)',
+                flexShrink: 0,
+                whiteSpace: 'nowrap'
               }}
             >
               {t('Hôm nay')}
@@ -971,28 +994,40 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               onClick={() => {
                 window.location.href = '/approvals?create=attendance_bulk';
               }}
-              className="btn primary hover-lift"
+              className="btn outline hover-lift"
               style={{
                 borderRadius: 'var(--radius-md)',
-                height: '38px',
-                padding: '0 16px',
+                height: isMobile ? '32px' : '36px',
+                padding: isMobile ? '0 10px' : '0 14px',
                 fontWeight: 700,
-                fontSize: '0.8125rem',
+                fontSize: isMobile ? '0.75rem' : '0.8125rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '4px',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+                backgroundColor: 'var(--color-primary-light)',
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
               }}
             >
-              <CheckSquare size={14} />
-              {t('Cập nhật công gộp')}
+              <CheckSquare size={13} />
+              {isMobile ? t('C.nhật công') : t('Cập nhật công gộp')}
             </button>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px', flexWrap: isMobile ? 'nowrap' : 'wrap', width: isMobile ? '100%' : 'auto' }}>
+          {/* Row 2: User Filter + Status Filter */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: canSelectUser ? (isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(180px, 1fr))') : '1fr',
+            gap: isMobile ? '6px' : '10px',
+            width: '100%',
+            alignItems: 'center'
+          }}>
             {/* User Select */}
             {canSelectUser && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: isMobile ? '1 1 0%' : 'none', minWidth: isMobile ? '0' : '180px' }}>
-                <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '2px' : 0 }}>{t('Nhân viên')}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
+                <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '1px' : 0 }}>{t('Nhân viên')}</label>
                 <CustomSelect
                   options={[
                     { value: 'all', label: t('Tất cả nhân viên') },
@@ -1012,8 +1047,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             )}
 
             {/* Status Select */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: isMobile ? '1 1 0%' : 'none', minWidth: isMobile ? '0' : '180px' }}>
-              <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '2px' : 0 }}>{t('Trạng thái duyệt')}</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
+              <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '1px' : 0 }}>{t('Trạng thái duyệt')}</label>
               <CustomSelect
                 options={[
                   { value: 'all', label: t('Tất cả trạng thái') },
@@ -1026,8 +1061,6 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 width="100%"
               />
             </div>
-
-
           </div>
         </div>
 
@@ -1038,14 +1071,14 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             gap: '1px',
             backgroundColor: 'var(--color-border-light)',
             overflow: 'hidden',
-            minWidth: isMobile ? '700px' : 'auto'
+            minWidth: isMobile ? '100%' : 'auto'
           }}>
           {weekDays.map((day, idx) => (
             <div key={idx} style={{
               backgroundColor: 'var(--color-surface)',
-              padding: '12px 4px',
+              padding: isMobile ? '8px 2px' : '12px 4px',
               textAlign: 'center',
-              fontSize: '0.75rem',
+              fontSize: isMobile ? '0.68rem' : '0.75rem',
               fontWeight: 800,
               color: idx === 6 ? 'var(--color-primary)' : 'var(--color-text-muted)',
               borderBottom: '2px solid var(--color-border-light)'
@@ -1083,8 +1116,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                       ? 'rgba(239, 68, 68, 0.07)'
                       : 'var(--color-surface)')
                     : 'rgba(142, 142, 147, 0.05)',
-                  minHeight: '96px',
-                  padding: '8px 10px',
+                  minHeight: isMobile ? '58px' : '96px',
+                  padding: isMobile ? '4px 3px' : '8px 10px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -1104,10 +1137,10 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{
-                    fontSize: '0.8125rem',
+                    fontSize: isMobile ? '0.7rem' : '0.8125rem',
                     fontWeight: 700,
-                    width: '24px',
-                    height: '24px',
+                    width: isMobile ? '18px' : '24px',
+                    height: isMobile ? '18px' : '24px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1118,8 +1151,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   }}>{cell.day}</span>
                   {isToday && (
                     <span style={{ 
-                      width: '6px', 
-                      height: '6px', 
+                      width: isMobile ? '4px' : '6px', 
+                      height: isMobile ? '4px' : '6px', 
                       borderRadius: '50%', 
                       backgroundColor: 'var(--color-primary)', 
                       display: 'inline-block' 
@@ -1127,7 +1160,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', marginTop: isMobile ? '2px' : '4px' }}>
                   {calendarLoading && cell.isCurrentMonth ? (
                     <div style={{ height: '4px', backgroundColor: 'var(--color-border-light)', borderRadius: '2px', animation: 'pulse 1.5s infinite' }} />
                   ) : cell.dateStr ? (
@@ -1136,7 +1169,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                       {dayCheckIns && dayCheckIns.length > 0 && (
                         filterUser === 'all' ? (
                           <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '4px', marginTop: '2px' }}>
-                            {dayCheckIns.slice(0, 5).map((c: any, index: number) => {
+                            {dayCheckIns.slice(0, isMobile ? 3 : 5).map((c: any, index: number) => {
                               const statusColor = 
                                 c.status === 'approved' ? 'var(--color-success)' :
                                 c.status === 'pending_approval' ? 'var(--color-warning)' :
@@ -1147,7 +1180,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                                   style={{ 
                                     position: 'relative', 
                                     display: 'inline-block',
-                                    marginLeft: index === 0 ? 0 : '-8px',
+                                    marginLeft: index === 0 ? 0 : (isMobile ? '-6px' : '-8px'),
                                     zIndex: 5 - index
                                   }} 
                                   className="calendar-avatar-item"
@@ -1156,15 +1189,15 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                                   <Avatar 
                                     src={resolveAttachmentUrl(c.user_avatar)} 
                                     name={c.user_name} 
-                                    size={24} 
+                                    size={isMobile ? 18 : 24} 
                                     style={{ border: '2px solid var(--color-surface)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
                                   />
                                   <span style={{
                                     position: 'absolute',
                                     bottom: '0px',
                                     right: '0px',
-                                    width: '8px',
-                                    height: '8px',
+                                    width: isMobile ? '6px' : '8px',
+                                    height: isMobile ? '6px' : '8px',
                                     borderRadius: '50%',
                                     backgroundColor: statusColor,
                                     border: '1px solid var(--color-surface)',
@@ -1172,24 +1205,24 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                                 </div>
                               );
                             })}
-                            {dayCheckIns.length > 5 && (
+                            {dayCheckIns.length > (isMobile ? 3 : 5) && (
                               <div style={{
-                                width: '24px',
-                                height: '24px',
+                                width: isMobile ? '18px' : '24px',
+                                height: isMobile ? '18px' : '24px',
                                 borderRadius: '50%',
                                 backgroundColor: 'var(--color-bg-light)',
                                 border: '2px solid var(--color-surface)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '0.65rem',
+                                fontSize: isMobile ? '0.55rem' : '0.65rem',
                                 fontWeight: 800,
                                 color: 'var(--color-text-muted)',
-                                marginLeft: '-8px',
+                                marginLeft: isMobile ? '-6px' : '-8px',
                                 zIndex: 1,
                                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                               }}>
-                                {dayCheckIns.length}
+                                +{dayCheckIns.length - (isMobile ? 3 : 5)}
                               </div>
                             )}
                           </div>
@@ -2806,207 +2839,214 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
       {!embedMode && (
-        <div className="page-header flex-col-mobile" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <div>
-            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {t('Quản lý Chấm công')}
+        <div className="page-header" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: isMobile ? '10px' : '12px',
+          marginBottom: isMobile ? '0.25rem' : '0.5rem'
+        }}>
+          {/* Top Row: Title + Leave Request Button */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <h1 className="page-title" style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.5rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {t('Quản lý Chấm công')}
+              </h1>
               <button
                 onClick={() => setShowInfoModal(true)}
                 style={{
-                  background: 'rgba(0, 0, 0, 0.02)',
+                  background: 'var(--color-bg-light)',
                   border: '1px solid var(--color-border)',
-                  padding: '3px 8px',
-                  borderRadius: '20px',
-                  display: 'flex',
+                  padding: isMobile ? '2px 6px' : '3px 8px',
+                  borderRadius: '16px',
+                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
                   cursor: 'pointer',
                   color: 'var(--color-text-muted)',
-                  transition: 'all 0.2s',
-                  height: '24px'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = 'var(--color-primary)';
-                  e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                  e.currentTarget.style.background = 'var(--color-primary-light)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'var(--color-text-muted)';
-                  e.currentTarget.style.borderColor = 'var(--color-border)';
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                  height: isMobile ? '20px' : '24px',
+                  flexShrink: 0
                 }}
                 title={t("Xem hướng dẫn cơ chế chấm công & khóa phân phối lead")}
               >
-                <Info size={12} style={{ marginTop: 1 }} />
-                <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>
+                <Info size={isMobile ? 10 : 12} />
+                <span style={{ fontSize: '0.68rem', fontWeight: 600, display: isMobile ? 'none' : 'inline' }}>{t("Giải thích cơ chế")}</span>
               </button>
-            </h1>
-            <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-              {t('Kiểm duyệt ảnh selfie chấm công hàng ngày và phê duyệt đi trễ của nhân viên.')}
-            </p>
-          </div>
-
-          {/* Header Action Row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {/* View Mode Switcher */}
-            <div style={{
-              display: 'flex',
-              backgroundColor: 'var(--color-border-light)',
-              border: '1px solid var(--color-border)',
-              padding: '2px',
-              borderRadius: '8px',
-              gap: '2px',
-              width: 'fit-content'
-            }}>
-              <button
-                onClick={() => setViewMode('list')}
-                style={{
-                  height: '30px',
-                  padding: '0 16px',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: viewMode === 'list' ? 'var(--color-surface)' : 'transparent',
-                  color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
-                  boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.2s',
-                  outline: 'none'
-                }}
-              >
-                <Clock size={14} />
-                {t('Danh sách')}
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                style={{
-                  height: '30px',
-                  padding: '0 16px',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: viewMode === 'calendar' ? 'var(--color-surface)' : 'transparent',
-                  color: viewMode === 'calendar' ? 'var(--color-text)' : 'var(--color-text-light)',
-                  boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.2s',
-                  outline: 'none'
-                }}
-              >
-                <Calendar size={14} />
-                {t('Lịch biểu')}
-              </button>
-              {canApproveShifts && (
-                <button
-                  onClick={() => setViewMode('registrations' as any)}
-                  style={{
-                    height: '30px',
-                    padding: '0 16px',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    backgroundColor: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
-                    color: (viewMode as string) === 'registrations' ? 'var(--color-text)' : 'var(--color-text-light)',
-                    boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                    transition: 'all 0.2s',
-                    outline: 'none'
-                  }}
-                >
-                  <Zap size={14} />
-                  {t('Duyệt đăng ký ca')}
-                </button>
-              )}
             </div>
 
             {/* Red Standalone Button for Leave/Attendance Requests */}
             <button
-              onClick={() => {
-                setShowMenuModal(true);
-              }}
+              onClick={() => setShowMenuModal(true)}
               className="btn danger hover-lift"
               style={{
                 borderRadius: '8px',
-                height: '34px',
-                padding: '0 16px',
+                height: isMobile ? '30px' : '34px',
+                padding: isMobile ? '0 10px' : '0 16px',
                 fontWeight: 700,
-                fontSize: '0.8125rem',
+                fontSize: isMobile ? '0.75rem' : '0.8125rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 backgroundColor: 'var(--color-danger, #ef4444)',
                 color: '#ffffff',
                 border: 'none',
                 cursor: 'pointer',
                 boxShadow: '0 2px 6px rgba(239, 68, 68, 0.25)',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                flexShrink: 0,
+                whiteSpace: 'nowrap'
               }}
             >
-              <FileText size={14} />
+              <FileText size={isMobile ? 12 : 14} />
               {t('Đơn xin phép')}
             </button>
+          </div>
+
+          {/* Subtitle (Desktop only) */}
+          {!isMobile && (
+            <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>
+              {t('Kiểm duyệt ảnh selfie chấm công hàng ngày và phê duyệt đi trễ của nhân viên.')}
+            </p>
+          )}
+
+          {/* View Mode Switcher Tabs */}
+          <div style={{
+            display: 'flex',
+            backgroundColor: 'var(--color-bg-light)',
+            border: '1px solid var(--color-border)',
+            padding: '3px',
+            borderRadius: '10px',
+            gap: '3px',
+            width: isMobile ? '100%' : 'fit-content'
+          }}>
+            <button
+              onClick={() => setViewMode('list')}
+              style={{
+                height: isMobile ? '30px' : '30px',
+                padding: isMobile ? '0 8px' : '0 16px',
+                fontSize: isMobile ? '0.78rem' : '0.85rem',
+                fontWeight: 700,
+                borderRadius: '7px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                flex: isMobile ? 1 : 'none',
+                backgroundColor: viewMode === 'list' ? 'var(--color-surface)' : 'transparent',
+                color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
+                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+            >
+              <Clock size={isMobile ? 12 : 14} />
+              {t('Danh sách')}
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              style={{
+                height: isMobile ? '30px' : '30px',
+                padding: isMobile ? '0 8px' : '0 16px',
+                fontSize: isMobile ? '0.78rem' : '0.85rem',
+                fontWeight: 700,
+                borderRadius: '7px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                flex: isMobile ? 1 : 'none',
+                backgroundColor: viewMode === 'calendar' ? 'var(--color-surface)' : 'transparent',
+                color: viewMode === 'calendar' ? 'var(--color-text)' : 'var(--color-text-light)',
+                boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+            >
+              <Calendar size={isMobile ? 12 : 14} />
+              {t('Lịch biểu')}
+            </button>
+            {canApproveShifts && (
+              <button
+                onClick={() => setViewMode('registrations' as any)}
+                style={{
+                  height: isMobile ? '30px' : '30px',
+                  padding: isMobile ? '0 8px' : '0 16px',
+                  fontSize: isMobile ? '0.78rem' : '0.85rem',
+                  fontWeight: 700,
+                  borderRadius: '7px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '5px',
+                  flex: isMobile ? 1 : 'none',
+                  backgroundColor: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
+                  color: (viewMode as string) === 'registrations' ? 'var(--color-text)' : 'var(--color-text-light)',
+                  boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+              >
+                <Zap size={isMobile ? 12 : 14} />
+                {isMobile ? t('Duyệt ca') : t('Duyệt đăng ký ca')}
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Stats row */}
-      <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+      {/* Stats row - Ultra-compact Micro-Cards */}
+      <div className="responsive-grid-4" style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+        gap: isMobile ? '6px' : '1rem'
+      }}>
         {/* Card 1: Approved / Valid */}
         <div className="stat-card hover-lift" style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
-          padding: '0.875rem 1.125rem',
-          borderRadius: '14px',
+          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
+          borderRadius: isMobile ? '8px' : '14px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
           position: 'relative',
           overflow: 'hidden',
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
-          <div className="decor-svg" style={{ color: '#10b981' }}>
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-              <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-              <path d="M30 50 L 45 65 L 75 35" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
+          {!isMobile && (
+            <div className="decor-svg" style={{ color: '#10b981' }}>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                <path d="M30 50 L 45 65 L 75 35" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="stat-label" style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              {t('ĐÃ DUYỆT / HỢP LỆ')}
+            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#10b981', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              {t('HỢP LỆ')}
             </span>
-            <div className="stat-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
-              <CheckCircle size={16} />
+            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
+              <CheckCircle size={isMobile ? 12 : 16} />
             </div>
           </div>
-          <div className="stat-value" style={{ fontSize: '1.625rem', fontWeight: 800, color: '#10b981', marginTop: '4px', lineHeight: 1.1 }}>
-            {approvedCount}
-          </div>
-          <div style={{
-            marginTop: '6px',
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '4px 12px',
-            fontSize: '0.75rem',
-            color: 'var(--color-text-muted)'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
-              <span>{t('Đang chờ duyệt')}: <strong style={{ color: '#f59e0b' }}>{pendingCount}</strong> {t('bản ghi')}</span>
-            </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
+            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
+              {approvedCount}
+            </div>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)' }}>
+              {t('Chờ')}: <strong style={{ color: '#f59e0b' }}>{pendingCount}</strong>
+            </div>
           </div>
         </div>
 
@@ -3014,46 +3054,38 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         <div className="stat-card hover-lift" style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
-          padding: '0.875rem 1.125rem',
-          borderRadius: '14px',
+          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
+          borderRadius: isMobile ? '8px' : '14px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
           position: 'relative',
           overflow: 'hidden',
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
-          <div className="decor-svg" style={{ color: '#ef4444' }}>
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-              <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-              <path d="M35 35 L 65 65 M 65 35 L 35 65" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-          </div>
+          {!isMobile && (
+            <div className="decor-svg" style={{ color: '#ef4444' }}>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                <path d="M35 35 L 65 65 M 65 35 L 35 65" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="stat-label" style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              {t('BỊ TỪ CHỐI')}
+            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#ef4444', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              {t('TỪ CHỐI')}
             </span>
-            <div className="stat-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', flexShrink: 0 }}>
-              <AlertCircle size={16} />
+            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', flexShrink: 0 }}>
+              <AlertCircle size={isMobile ? 12 : 16} />
             </div>
           </div>
-          <div className="stat-value" style={{ fontSize: '1.625rem', fontWeight: 800, color: '#ef4444', marginTop: '4px', lineHeight: 1.1 }}>
-            {rejectedCount}
-          </div>
-          <div style={{
-            marginTop: '6px',
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '4px 12px',
-            fontSize: '0.75rem',
-            color: 'var(--color-text-muted)'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block', flexShrink: 0 }} />
-              <span>{t('Không được phê duyệt')}</span>
-            </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
+            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: '#ef4444', lineHeight: 1.1 }}>
+              {rejectedCount}
+            </div>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)' }}>
+              {t('Không duyệt')}
+            </div>
           </div>
         </div>
 
@@ -3061,50 +3093,39 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         <div className="stat-card hover-lift" style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
-          padding: '0.875rem 1.125rem',
-          borderRadius: '14px',
+          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
+          borderRadius: isMobile ? '8px' : '14px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
           position: 'relative',
           overflow: 'hidden',
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
-          <div className="decor-svg" style={{ color: '#3b82f6' }}>
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-              <rect x="25" y="25" width="50" height="50" rx="6" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-              <path d="M25 40 H 75 M 40 20 V 30 M 60 20 V 30" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </div>
+          {!isMobile && (
+            <div className="decor-svg" style={{ color: '#3b82f6' }}>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <rect x="25" y="25" width="50" height="50" rx="6" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                <path d="M25 40 H 75 M 40 20 V 30 M 60 20 V 30" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="stat-label" style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              {t(`NGÀY CÔNG THÁNG ${currentMonth}`)}
+            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#3b82f6', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              {t(`CÔNG T${currentMonth}`)}
             </span>
-            <div className="stat-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', flexShrink: 0 }}>
-              <Calendar size={16} />
+            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', flexShrink: 0 }}>
+              <Calendar size={isMobile ? 12 : 16} />
             </div>
           </div>
-          <div className="stat-value" style={{ fontSize: '1.625rem', fontWeight: 800, color: 'var(--color-text)', marginTop: '4px', lineHeight: 1.1 }}>
-            {workDaysCount} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ngày')}</span>
-          </div>
-          <div style={{
-            marginTop: '6px',
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '4px 12px',
-            fontSize: '0.75rem',
-            color: 'var(--color-text-muted)'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block', flexShrink: 0 }} />
-              <span>{t('Đúng giờ')}: <strong style={{ color: '#10b981' }}>{onTimeDays}</strong> {t('ngày')}</span>
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
-              <span>{t('Đi trễ')}: <strong style={{ color: '#f59e0b' }}>{lateDays}</strong> {t('ngày')} ({totalLateMinutes} {t('phút')})</span>
-            </span>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
+            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
+              {workDaysCount} <span style={{ fontSize: isMobile ? '0.65rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ngày')}</span>
+            </div>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '4px' }}>
+              <span>{t('Đúng')}: <strong style={{ color: '#10b981' }}>{onTimeDays}</strong></span>
+              <span>{t('Trễ')}: <strong style={{ color: '#f59e0b' }}>{lateDays}</strong></span>
+            </div>
           </div>
         </div>
 
@@ -3112,55 +3133,38 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         <div className="stat-card hover-lift" style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
-          padding: '0.875rem 1.125rem',
-          borderRadius: '14px',
+          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
+          borderRadius: isMobile ? '8px' : '14px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
           position: 'relative',
           overflow: 'hidden',
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
-          <div className="decor-svg" style={{ color: '#8b5cf6' }}>
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-              <path d="M50 20 C 35 20, 25 32, 25 47 C 25 62, 35 74, 50 74 C 65 74, 75 62, 75 47 C 60 47, 50 37, 50 20 Z" stroke="currentColor" strokeWidth="2" opacity="0.3" fill="none" />
-            </svg>
-          </div>
+          {!isMobile && (
+            <div className="decor-svg" style={{ color: '#8b5cf6' }}>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <path d="M50 20 C 35 20, 25 32, 25 47 C 25 62, 35 74, 50 74 C 65 74, 75 62, 75 47 C 60 47, 50 37, 50 20 Z" stroke="currentColor" strokeWidth="2" opacity="0.3" fill="none" />
+              </svg>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="stat-label" style={{ fontSize: '0.7rem', color: '#8b5cf6', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              {t('TỔNG CA TRỰC')}
+            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#8b5cf6', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              {t('CA TRỰC')}
             </span>
-            <div className="stat-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', flexShrink: 0 }}>
-              <Moon size={16} />
+            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', flexShrink: 0 }}>
+              <Moon size={isMobile ? 12 : 16} />
             </div>
           </div>
-          <div className="stat-value" style={{ fontSize: '1.625rem', fontWeight: 800, color: 'var(--color-text)', marginTop: '4px', lineHeight: 1.1 }}>
-            {totalShiftsCount} <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ca')}</span>
-          </div>
-          <div style={{
-            marginTop: '6px',
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '4px 12px',
-            fontSize: '0.75rem',
-            color: 'var(--color-text-muted)'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#d97706', display: 'inline-block', flexShrink: 0 }} />
-              <span>{t('Trực đêm')}: <strong style={{ color: '#d97706' }}>{nightShiftsCount}</strong> {t('ca')}</span>
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', display: 'inline-block', flexShrink: 0 }} />
-              <span>{t('Cuối tuần')}: <strong style={{ color: 'var(--color-primary)' }}>{weekendShiftsCount}</strong> {t('ca')}</span>
-            </span>
-            {holidayShiftsCount > 0 && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444', display: 'inline-block', flexShrink: 0 }} />
-                <span>{t('Lễ tết')}: <strong style={{ color: '#ef4444' }}>{holidayShiftsCount}</strong> {t('ca')}</span>
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
+            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
+              {totalShiftsCount} <span style={{ fontSize: isMobile ? '0.65rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ca')}</span>
+            </div>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '4px' }}>
+              <span>{t('Đêm')}: <strong style={{ color: '#d97706' }}>{nightShiftsCount}</strong></span>
+              <span>{t('Tuần')}: <strong style={{ color: 'var(--color-primary)' }}>{weekendShiftsCount}</strong></span>
+            </div>
           </div>
         </div>
       </div>
@@ -3654,60 +3658,71 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             {/* Sub-tab headers */}
             <div style={{ 
               display: 'flex', 
-              borderBottom: '1px solid var(--color-border-light)', 
-              marginBottom: '1.25rem', 
-              gap: isMobile ? '0.25rem' : '1.5rem',
-              justifyContent: isMobile ? 'space-between' : 'flex-start'
+              backgroundColor: 'var(--color-bg-light)', 
+              border: '1px solid var(--color-border)',
+              padding: '3px',
+              borderRadius: '10px',
+              marginBottom: '1rem', 
+              gap: '3px',
+              width: '100%'
             }}>
               <button
+                type="button"
                 onClick={() => setModalTab('checkin')}
                 style={{
-                  padding: isMobile ? '8px 2px 10px 2px' : '8px 4px 12px 4px',
-                  fontSize: isMobile ? '0.72rem' : '0.875rem',
+                  padding: isMobile ? '6px 4px' : '6px 12px',
+                  fontSize: isMobile ? '0.75rem' : '0.8125rem',
                   fontWeight: 700,
                   color: modalTab === 'checkin' ? 'var(--color-primary)' : 'var(--color-text-light)',
                   border: 'none',
-                  background: 'transparent',
-                  borderBottom: modalTab === 'checkin' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  background: modalTab === 'checkin' ? 'var(--color-surface)' : 'transparent',
+                  borderRadius: '7px',
+                  boxShadow: modalTab === 'checkin' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: isMobile ? '3px' : '6px'
+                  justifyContent: 'center',
+                  flex: 1,
+                  gap: '4px'
                 }}
               >
-                <Clock size={isMobile ? 13 : 16} />
+                <Clock size={isMobile ? 12 : 14} />
                 {t('Nhật ký')}
                 <span style={{
                   fontSize: '0.625rem',
-                  padding: isMobile ? '1px 4px' : '2px 6px',
-                  borderRadius: '10px',
-                  background: modalTab === 'checkin' ? 'var(--color-primary-light)' : 'var(--color-bg)',
+                  padding: '1px 5px',
+                  borderRadius: '8px',
+                  background: modalTab === 'checkin' ? 'var(--color-primary-light)' : 'var(--color-border-light)',
                   color: modalTab === 'checkin' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                  fontWeight: 600
+                  fontWeight: 700
                 }}>
                   {calendarCheckIns.filter(c => c.check_in_date === selectedDateForDetail).length}
                 </span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setModalTab('fingerprint')}
                 style={{
-                  padding: isMobile ? '8px 2px 10px 2px' : '8px 4px 12px 4px',
-                  fontSize: isMobile ? '0.72rem' : '0.875rem',
+                  padding: isMobile ? '6px 4px' : '6px 12px',
+                  fontSize: isMobile ? '0.75rem' : '0.8125rem',
                   fontWeight: 700,
                   color: modalTab === 'fingerprint' ? 'var(--color-primary)' : 'var(--color-text-light)',
                   border: 'none',
-                  background: 'transparent',
-                  borderBottom: modalTab === 'fingerprint' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  background: modalTab === 'fingerprint' ? 'var(--color-surface)' : 'transparent',
+                  borderRadius: '7px',
+                  boxShadow: modalTab === 'fingerprint' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: isMobile ? '3px' : '6px'
+                  justifyContent: 'center',
+                  flex: 1,
+                  gap: '4px'
                 }}
               >
-                <FileText size={isMobile ? 13 : 16} />
+                <FileText size={isMobile ? 12 : 14} />
                 {(isSales && filterUser === String(user?.id)) ? t('Yêu cầu') : t('Bảng công')}
               </button>
 
@@ -3723,47 +3738,48 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                     type="button"
                     onClick={() => setModalTab('night_duty')}
                     style={{
-                      padding: isMobile ? '8px 2px 10px 2px' : '8px 4px 12px 4px',
-                      fontSize: isMobile ? '0.72rem' : '0.875rem',
+                      padding: isMobile ? '6px 4px' : '6px 12px',
+                      fontSize: isMobile ? '0.75rem' : '0.8125rem',
                       fontWeight: 700,
                       color: modalTab === 'night_duty' ? 'var(--color-primary)' : 'var(--color-text-light)',
                       border: 'none',
-                      background: 'transparent',
-                      borderBottom: modalTab === 'night_duty' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                      background: modalTab === 'night_duty' ? 'var(--color-surface)' : 'transparent',
+                      borderRadius: '7px',
+                      boxShadow: modalTab === 'night_duty' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: isMobile ? '3px' : '6px'
+                      justifyContent: 'center',
+                      flex: 1,
+                      gap: '4px'
                     }}
                   >
                     {activeShiftType === 'holiday' ? (
-                      <Zap size={isMobile ? 13 : 16} />
+                      <Zap size={isMobile ? 12 : 14} />
                     ) : activeShiftType === 'weekend' ? (
-                      <Calendar size={isMobile ? 13 : 16} />
+                      <Calendar size={isMobile ? 12 : 14} />
                     ) : (
-                      <Moon size={isMobile ? 13 : 16} />
+                      <Moon size={isMobile ? 12 : 14} />
                     )}
                     {activeShiftType === 'holiday'
                       ? t('Trực lễ')
                       : activeShiftType === 'weekend'
-                      ? t('Trực cuối tuần')
+                      ? t('Trực tuần')
                       : t('Trực đêm')}
                     <span style={{
                       fontSize: '0.625rem',
-                      padding: isMobile ? '1px 4px' : '2px 6px',
-                      borderRadius: '10px',
-                      background: modalTab === 'night_duty' ? 'var(--color-primary-light)' : 'var(--color-bg)',
+                      padding: '1px 5px',
+                      borderRadius: '8px',
+                      background: modalTab === 'night_duty' ? 'var(--color-primary-light)' : 'var(--color-border-light)',
                       color: modalTab === 'night_duty' ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      fontWeight: 600
+                      fontWeight: 700
                     }}>
                       {detailDayShifts.length}
                     </span>
                   </button>
                 );
               })()}
-
-
             </div>
 
             {/* Tab content body */}
