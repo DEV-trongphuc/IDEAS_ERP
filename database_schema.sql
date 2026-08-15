@@ -1,5 +1,5 @@
 -- Database Schema DDL Dump - IDEAS ERP (Staging)
--- Generated automatically on: 2026-08-10T04:09:58.432Z
+-- Generated automatically on: 2026-08-15T17:05:04+07:00
 -- Total Tables/Views: 112
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`vhvxoigh_mail_auto`@`localhost` SQL SECURITY DEFINER VIEW `accounts` AS select `users`.`id` AS `id`,`users`.`tenant_id` AS `tenant_id`,`users`.`username` AS `username`,`users`.`password_hash` AS `password_hash`,`users`.`password_hash` AS `password`,`users`.`full_name` AS `name`,`users`.`job_title` AS `job_title`,`users`.`email` AS `email`,`users`.`role` AS `role`,`users`.`status` AS `status`,`users`.`is_confirmed` AS `is_confirmed`,`users`.`confirm_token` AS `confirm_token`,`users`.`last_login_at` AS `last_login`,`users`.`avatar_url` AS `avatar`,`users`.`signature_url` AS `signature_url`,`users`.`zalo_chat_id` AS `zalo_chat_id`,`users`.`telegram_chat_id` AS `telegram_chat_id`,`users`.`created_at` AS `created_at`,`users`.`dob` AS `dob`,`users`.`gender` AS `gender`,`users`.`citizen_id` AS `citizen_id`,`users`.`address` AS `address`,`users`.`bank_name` AS `bank_name`,`users`.`bank_account` AS `bank_account`,`users`.`phone` AS `phone`,`users`.`is_active` AS `is_active`,`users`.`team_id` AS `team_id` from `users`;
@@ -75,7 +75,7 @@ CREATE TABLE `activities` (
   KEY `idx_activities_approver_id` (`approver_id`),
   CONSTRAINT `activities_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `activities_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=48307 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=48313 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `activity_comments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -97,7 +97,7 @@ CREATE TABLE `activity_comments` (
   CONSTRAINT `activity_comments_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `activity_comments_ibfk_2` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE,
   CONSTRAINT `activity_comments_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=346 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=368 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `activity_dependencies` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -198,7 +198,7 @@ CREATE TABLE `attendance_bulk_request_details` (
   KEY `request_id` (`request_id`),
   KEY `check_in_date` (`check_in_date`),
   CONSTRAINT `attendance_bulk_request_details_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `attendance_bulk_requests` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `attendance_bulk_requests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -214,7 +214,7 @@ CREATE TABLE `attendance_bulk_requests` (
   KEY `status` (`status`),
   KEY `idx_attendance_bulk_requests_manager_id` (`manager_id`),
   KEY `idx_attendance_bulk_requests_hr_id` (`hr_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=888803 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=888811 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `audit_logs` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -236,7 +236,7 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_logs_user_action` (`user_id`,`action`,`created_at`),
   KEY `idx_audit_logs_tenant_id` (`tenant_id`),
   CONSTRAINT `audit_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `batches` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -323,7 +323,7 @@ CREATE TABLE `check_ins` (
   KEY `idx_check_ins_perf` (`user_id`,`status`,`check_in_date`,`late_minutes`),
   KEY `idx_checkins_user_date` (`user_id`,`check_in_date`,`status`),
   CONSTRAINT `check_ins_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=1273 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1796 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cloud_files` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -446,7 +446,7 @@ CREATE TABLE `companies` (
   CONSTRAINT `companies_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `companies_ibfk_2` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `companies_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `consultant_leaves` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -458,7 +458,7 @@ CREATE TABLE `consultant_leaves` (
   UNIQUE KEY `consultant_leave_dates` (`consultant_id`,`start_date`,`end_date`),
   KEY `idx_consultant_leaves_user` (`consultant_id`,`start_date`,`end_date`),
   CONSTRAINT `consultant_leaves_ibfk_1` FOREIGN KEY (`consultant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`vhvxoigh_mail_auto`@`localhost` SQL SECURITY DEFINER VIEW `consultants` AS select `users`.`id` AS `id`,`users`.`tenant_id` AS `tenant_id`,`users`.`full_name` AS `name`,`users`.`job_title` AS `job_title`,`users`.`email` AS `email`,`users`.`role` AS `role`,`users`.`status` AS `status`,`users`.`leave_start` AS `leave_start`,`users`.`leave_end` AS `leave_end`,`users`.`work_start_time` AS `work_start_time`,`users`.`work_end_time` AS `work_end_time`,`users`.`work_schedule` AS `work_schedule`,`users`.`avatar_url` AS `avatar`,`users`.`signature_url` AS `signature_url`,`users`.`zalo_chat_id` AS `zalo_chat_id`,`users`.`telegram_chat_id` AS `telegram_chat_id`,`users`.`vacation_mode` AS `vacation_mode`,`users`.`overtime_mode` AS `overtime_mode`,`users`.`team_id` AS `team_id`,`users`.`dob` AS `dob`,`users`.`gender` AS `gender`,`users`.`citizen_id` AS `citizen_id`,`users`.`address` AS `address`,`users`.`bank_name` AS `bank_name`,`users`.`bank_account` AS `bank_account`,`users`.`extra_fields_json` AS `extra_fields_json`,`users`.`use_custom_work_hours` AS `use_custom_work_hours`,`users`.`created_at` AS `created_at`,`users`.`phone` AS `phone`,`users`.`is_active` AS `is_active` from `users`;
 
@@ -589,7 +589,7 @@ CREATE TABLE `contacts` (
   CONSTRAINT `contacts_ibfk_2` FOREIGN KEY (`person_id`) REFERENCES `persons` (`id`) ON DELETE SET NULL,
   CONSTRAINT `contacts_ibfk_3` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE SET NULL,
   CONSTRAINT `contacts_ibfk_4` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=1024352 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1024358 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `cooperation_slips` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -772,7 +772,7 @@ CREATE TABLE `deposit_milestones` (
   KEY `idx_dm_expected_pay` (`expected_pay_date`,`status`),
   CONSTRAINT `deposit_milestones_ibfk_1` FOREIGN KEY (`deposit_id`) REFERENCES `deposits` (`id`) ON DELETE CASCADE,
   CONSTRAINT `deposit_milestones_ibfk_2` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `deposits` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -808,7 +808,7 @@ CREATE TABLE `deposits` (
   CONSTRAINT `deposits_ibfk_1` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `deposits_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
   CONSTRAINT `deposits_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `distribution_logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1192,7 +1192,7 @@ CREATE TABLE `hrm_leave_requests` (
   KEY `idx_hrm_leave_requests_perf` (`user_id`,`status`,`leave_type`,`start_date`),
   KEY `idx_hrm_leaves_user_status` (`user_id`,`status`,`created_at`),
   KEY `idx_hrm_leave_requests_approver_id` (`approver_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=381 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=450 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `hrm_profiles` (
   `user_id` int(11) NOT NULL,
@@ -1240,7 +1240,7 @@ CREATE TABLE `hrm_salary_advances` (
   KEY `idx_hrm_salary_adv_user` (`user_id`,`status`,`request_date`),
   KEY `idx_hrm_salary_advances_deducted_payslip_id` (`deducted_payslip_id`),
   KEY `idx_hrm_salary_advances_approver_id` (`approver_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `import_jobs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1300,7 +1300,7 @@ CREATE TABLE `invoice_items` (
   KEY `product_id` (`product_id`),
   CONSTRAINT `invoice_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `invoice_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `invoices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1343,7 +1343,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`deal_id`) REFERENCES `deals` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoices_ibfk_3` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=105 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `lead_offers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1470,7 +1470,7 @@ CREATE TABLE `mail_queue` (
   KEY `idx_mail_queue_status_created` (`status`,`created_at`),
   KEY `idx_mail_queue_status` (`status`,`created_at`),
   CONSTRAINT `mail_queue_ibfk_1` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=293 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=325 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `marketing_campaigns` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1498,7 +1498,7 @@ CREATE TABLE `marketing_campaigns` (
   KEY `idx_mc_tenant_project` (`tenant_id`,`project_id`,`created_at`),
   KEY `idx_marketing_campaigns_created_by` (`created_by`),
   CONSTRAINT `fk_mc_project_id` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `monthly_payslips` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1531,7 +1531,7 @@ CREATE TABLE `monthly_payslips` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_month` (`user_id`,`month_year`),
   KEY `idx_payslips_user_month` (`user_id`,`month_year`)
-) ENGINE=InnoDB AUTO_INCREMENT=2791 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5143 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `night_shift_registrations` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1543,7 +1543,7 @@ CREATE TABLE `night_shift_registrations` (
   UNIQUE KEY `user_shift_date` (`user_id`,`shift_date`),
   KEY `idx_night_shift_user_date` (`user_id`,`shift_date`,`approved`),
   CONSTRAINT `night_shift_registrations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `note_mentions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1611,7 +1611,7 @@ CREATE TABLE `notifications` (
   KEY `idx_notifications_unread` (`user_id`,`tenant_id`,`is_read`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notifications_ibfk_2` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=643 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=889 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `persons` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1632,7 +1632,7 @@ CREATE TABLE `persons` (
   KEY `idx_persons_released_to_kho` (`released_to_kho_at`),
   KEY `idx_persons_deleted_from_db` (`deleted_from_databank`),
   KEY `idx_persons_is_blocked` (`is_blocked`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `pipeline_stages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1765,7 +1765,7 @@ CREATE TABLE `purchase_order_items` (
   KEY `idx_po_item_product` (`product_id`),
   CONSTRAINT `fk_po_item_po` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_po_item_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=155 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=164 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `purchase_orders` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1803,7 +1803,7 @@ CREATE TABLE `purchase_orders` (
   CONSTRAINT `fk_po_created` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_po_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
   CONSTRAINT `fk_po_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=257 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=272 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `quote_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1928,7 +1928,7 @@ CREATE TABLE `sales_order_items` (
   KEY `so_id` (`so_id`),
   KEY `product_id` (`product_id`),
   CONSTRAINT `sales_order_items_ibfk_1` FOREIGN KEY (`so_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `sales_orders` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1961,7 +1961,7 @@ CREATE TABLE `sales_orders` (
   KEY `created_by` (`created_by`),
   KEY `idx_so_tenant_status_date` (`tenant_id`,`status`,`order_date`),
   KEY `idx_so_deal_status` (`deal_id`,`status`,`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `schema_migrations` (
   `migration` varchar(255) NOT NULL,
@@ -2328,7 +2328,7 @@ CREATE TABLE `weekend_shift_registrations` (
   UNIQUE KEY `user_shift_date` (`user_id`,`shift_date`),
   KEY `idx_weekend_shift_user_date` (`user_id`,`shift_date`,`approved`),
   CONSTRAINT `weekend_shift_registrations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `workflow_task_templates` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

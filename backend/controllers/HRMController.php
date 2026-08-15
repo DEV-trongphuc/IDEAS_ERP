@@ -326,10 +326,63 @@ class HRMController {
                 $deductionLog = " [Khấu trừ thực tế: " . implode(', ', $parts) . "]";
                 $updReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?), unpaid_days = ? WHERE id = ?");
                 $updReason->execute([$deductionLog, $deductUnpaid, (int)$leaveRow['id']]);
+            } elseif ($type === 'special_paid') {
+                // Phân bổ nghỉ chế độ Hiếu/Hỉ theo Điều 115 BLLĐ 2019
+                $reasonText = mb_strtolower($leaveRow['reason'] ?? '');
+                $statutoryLimit = 3.0; // Mặc định 3 ngày (kết hôn, tứ thân phụ mẫu / vợ / chồng / con mất)
+                if (strpos($reasonText, 'con kết hôn') !== false || strpos($reasonText, 'con cưới') !== false) {
+                    $statutoryLimit = 1.0;
+                } elseif (strpos($reasonText, 'ông bà') !== false || strpos($reasonText, 'anh chị em') !== false || strpos($reasonText, 'anh ruột') !== false || strpos($reasonText, 'chị ruột') !== false || strpos($reasonText, 'em ruột') !== false) {
+                    $statutoryLimit = 1.0;
+                }
+
+                $statutoryPaidDays = min($days, $statutoryLimit);
+                $overQuotaDays = max(0.0, $days - $statutoryPaidDays);
+
+                $deductComp = 0.0;
+                $deductAnnual = 0.0;
+                $deductUnpaid = 0.0;
+
+                if ($overQuotaDays > 0) {
+                    $profStmt = $this->db->prepare("SELECT annual_leave_total, annual_leave_used, compensatory_leave_total, compensatory_leave_used FROM hrm_profiles WHERE user_id = ? LIMIT 1");
+                    $profStmt->execute([$userId]);
+                    $profile = $profStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    $remComp = 0.0;
+                    $remAnnual = 0.0;
+                    if ($profile) {
+                        $remComp = max(0.0, (float)$profile['compensatory_leave_total'] - (float)$profile['compensatory_leave_used']);
+                        $remAnnual = max(0.0, (float)$profile['annual_leave_total'] - (float)$profile['annual_leave_used']);
+                    }
+                    
+                    $deductComp = min($overQuotaDays, $remComp);
+                    $remOverAfterComp = $overQuotaDays - $deductComp;
+                    $deductAnnual = min($remOverAfterComp, $remAnnual);
+                    $deductUnpaid = max(0.0, $remOverAfterComp - $deductAnnual);
+                    
+                    if ($deductComp > 0) {
+                        $updStmt = $this->db->prepare("UPDATE hrm_profiles SET compensatory_leave_used = compensatory_leave_used + ? WHERE user_id = ?");
+                        $updStmt->execute([$deductComp, $userId]);
+                    }
+                    if ($deductAnnual > 0) {
+                        $updStmt = $this->db->prepare("UPDATE hrm_profiles SET annual_leave_used = annual_leave_used + ? WHERE user_id = ?");
+                        $updStmt->execute([$deductAnnual, $userId]);
+                    }
+                }
+
+                $parts = [];
+                $parts[] = "{$statutoryPaidDays} ngày chế độ luật (100% lương)";
+                if ($deductComp > 0) $parts[] = "-{$deductComp} ngày phép bù";
+                if ($deductAnnual > 0) $parts[] = "-{$deductAnnual} ngày phép năm";
+                if ($deductUnpaid > 0) $parts[] = "-{$deductUnpaid} ngày không lương";
+                
+                $deductionLog = " [Phân bổ ngày nghỉ: " . implode(', ', $parts) . "]";
+                $updReason = $this->db->prepare("UPDATE hrm_leave_requests SET reason = CONCAT(COALESCE(reason, ''), ?), unpaid_days = ? WHERE id = ?");
+                $updReason->execute([$deductionLog, $deductUnpaid, (int)$leaveRow['id']]);
             }
 
             // Sync to consultant_leaves so the lead assignment / check-in rotation excludes this user when on leave
-            if (in_array($type, ['annual', 'sick', 'compensatory', 'unpaid'])) {
+            if (in_array($type, ['annual', 'sick', 'compensatory', 'unpaid', 'special_paid'])) {
                 try {
                     $cLeaveStmt = $this->db->prepare("INSERT IGNORE INTO consultant_leaves (consultant_id, start_date, end_date) VALUES (?, ?, ?)");
                     $startDateOnly = explode('T', explode(' ', $leaveRow['start_date'])[0])[0];
@@ -634,7 +687,7 @@ class HRMController {
             $milestonesStmt->execute([$monthYear]);
             $milestonesList = $milestonesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $contactIds = array_unique(array_filter(array_column($milestonesList, 'contact_id')));
+            $contactIds = array_values(array_unique(array_filter(array_column($milestonesList, 'contact_id'))));
             if (!empty($contactIds)) {
                 $inContacts = implode(',', array_fill(0, count($contactIds), '?'));
                 $csStmt = $this->db->prepare("SELECT contact_id, shares_json FROM cooperation_slips WHERE contact_id IN ($inContacts)");
@@ -701,7 +754,7 @@ class HRMController {
                 $lvListStmt = $this->db->prepare("
                     SELECT DATE(start_date) as leave_date, SUM(total_days) as leave_days
                     FROM hrm_leave_requests
-                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid', 'remote_work')
+                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'unpaid', 'remote_work', 'special_paid')
                       AND start_date BETWEEN ? AND ?
                     GROUP BY DATE(start_date)
                 ");
@@ -721,14 +774,14 @@ class HRMController {
                 }
             }
 
-            // 2. Add approved leaves that are paid (leave_type = 'annual', 'sick', or 'compensatory')
+            // 2. Add approved leaves that are paid (leave_type = 'annual', 'sick', 'compensatory', 'remote_work', 'special_paid')
             if ($isSpecialPeriod) {
                 $paidLeaveDays = 0;
             } else {
                 $lvStmt = $this->db->prepare("
                     SELECT SUM(total_days - unpaid_days) as paid_days
                     FROM hrm_leave_requests
-                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'remote_work')
+                    WHERE user_id = ? AND status = 'approved' AND leave_type IN ('annual', 'sick', 'compensatory', 'remote_work', 'special_paid')
                       AND DATE_FORMAT(start_date, '%Y-%m') = ?
                 ");
                 $lvStmt->execute([$userId, $monthYear]);

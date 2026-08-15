@@ -221,7 +221,7 @@ class CheckInController {
         }
 
         // Fetch system settings for checkout & auto-approve requirements
-        $stmtSettings = $this->db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('require_checkin_weekend_lead', 'require_checkin_holiday_lead', 'holiday_schedules', 'require_checkout', 'auto_approve_checkin', 'global_work_start_time', 'global_work_end_time', 'office_latitude', 'office_longitude', 'office_allowed_radius')");
+        $stmtSettings = $this->db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('require_checkin_weekend_lead', 'require_checkin_holiday_lead', 'holiday_schedules', 'require_checkout', 'auto_approve_checkin', 'global_work_start_time', 'global_work_end_time', 'global_work_schedule', 'office_latitude', 'office_longitude', 'office_allowed_radius')");
         $stmtSettings->execute();
         $settingsMap = $stmtSettings->fetchAll(PDO::FETCH_KEY_PAIR);
 
@@ -230,11 +230,91 @@ class CheckInController {
         $reqWeekend = isset($settingsMap['require_checkin_weekend_lead']) ? (int)$settingsMap['require_checkin_weekend_lead'] : 0;
         $reqHoliday = isset($settingsMap['require_checkin_holiday_lead']) ? (int)$settingsMap['require_checkin_holiday_lead'] : 0;
 
-        // Check if user is on leave for that date
-        $stmtLeave = $this->db->prepare("SELECT 1 FROM consultant_leaves WHERE consultant_id = ? AND ? BETWEEN start_date AND end_date LIMIT 1");
-        $stmtLeave->execute([$auth['user_id'], $today]);
-        if ($stmtLeave->fetch()) {
-            respond(400, null, 'Bạn đang trong thời gian nghỉ phép, không cần và không thể check-in vào ngày này.', false);
+        // Tự động kiểm tra và hoàn trả quỹ phép khi nhân viên đi làm lại và check-in (Chỉ áp dụng khi Chấm công Vào ca, không áp dụng khi Ra ca)
+        if ($action !== 'checkout') {
+            try {
+                $stmtActiveLeave = $this->db->prepare("
+                    SELECT id, leave_type, start_date, end_date, total_days, unpaid_days, reason
+                    FROM hrm_leave_requests
+                    WHERE user_id = ? AND status = 'approved'
+                      AND ? BETWEEN DATE(start_date) AND DATE(end_date)
+                      AND leave_type IN ('annual', 'compensatory', 'special_paid', 'unpaid', 'sick')
+                ");
+                $stmtActiveLeave->execute([$auth['user_id'], $today]);
+                $activeLeaves = $stmtActiveLeave->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($activeLeaves)) {
+                    foreach ($activeLeaves as $lv) {
+                        $startHour = (int)date('H', strtotime($lv['start_date']));
+                        $currentHour = (int)date('H', strtotime($currentTime));
+
+                        // Nếu nhân viên check-in sáng (< 12:00) nhưng đơn phép là nghỉ nửa buổi chiều (>= 12:00) -> Không hủy đơn chiều
+                        if ($currentHour < 12 && $startHour >= 12) {
+                            continue;
+                        }
+
+                        $lvId = (int)$lv['id'];
+                        $lvType = $lv['leave_type'];
+                        $lvTotalDays = (float)$lv['total_days'];
+                        $lvReason = $lv['reason'] ?? '';
+
+                        $refundDays = ($lvTotalDays <= 0.5) ? $lvTotalDays : 1.0;
+                        $refundComp = 0.0;
+                        $refundAnnual = 0.0;
+
+                        if ($lvType === 'compensatory') {
+                            $refundComp = $refundDays;
+                        } elseif ($lvType === 'annual') {
+                            $refundAnnual = $refundDays;
+                        } elseif ($lvType === 'special_paid') {
+                            if (preg_match('/-(\d+(?:\.\d+)?) ngày phép bù/', $lvReason, $mComp)) {
+                                $refundComp = min($refundDays, (float)$mComp[1]);
+                            }
+                            if (preg_match('/-(\d+(?:\.\d+)?) ngày phép năm/', $lvReason, $mAnn)) {
+                                $refundAnnual = min($refundDays - $refundComp, (float)$mAnn[1]);
+                            }
+                        }
+
+                        // 1. Hoàn trả số ngày phép/nghỉ bù đã trừ vào hrm_profiles
+                        if ($refundComp > 0 || $refundAnnual > 0) {
+                            $upProf = $this->db->prepare("
+                                UPDATE hrm_profiles 
+                                SET compensatory_leave_used = GREATEST(0.0, compensatory_leave_used - ?),
+                                    annual_leave_used = GREATEST(0.0, annual_leave_used - ?)
+                                WHERE user_id = ?
+                            ");
+                            $upProf->execute([$refundComp, $refundAnnual, $auth['user_id']]);
+                        }
+
+                        // 2. Cập nhật hoặc hủy đơn nghỉ phép
+                        if ($lvTotalDays <= 1.0) {
+                            $upLv = $this->db->prepare("
+                                UPDATE hrm_leave_requests 
+                                SET status = 'cancelled', 
+                                    reason = CONCAT(COALESCE(reason, ''), '\n[Tự động hủy đơn & hoàn trả ', ?, ' ngày phép do nhân viên đã đi làm và check-in ngày ', ?, ']')
+                                WHERE id = ?
+                            ");
+                            $upLv->execute([$refundDays, $today, $lvId]);
+                        } else {
+                            $newTotal = max(0.0, $lvTotalDays - $refundDays);
+                            $upLv = $this->db->prepare("
+                                UPDATE hrm_leave_requests 
+                                SET total_days = ?, 
+                                    reason = CONCAT(COALESCE(reason, ''), '\n[Tự động hoàn trả ', ?, ' ngày phép do nhân viên đã đi làm và check-in ngày ', ?, ']')
+                                WHERE id = ?
+                            ");
+                            $upLv->execute([$newTotal, $refundDays, $today, $lvId]);
+                        }
+
+                        // 3. Xóa consultant_leaves ngày hôm nay để khôi phục trạng thái làm việc
+                        try {
+                            $delCLeave = $this->db->prepare("DELETE FROM consultant_leaves WHERE consultant_id = ? AND start_date <= ? AND end_date >= ?");
+                            $delCLeave->execute([$auth['user_id'], $today, $today]);
+                            $this->db->prepare("UPDATE users SET leave_start = NULL, leave_end = NULL WHERE id = ? AND (leave_start = ? OR leave_end = ?)")->execute([$auth['user_id'], $today, $today]);
+                        } catch (\Throwable $e) {}
+                    }
+                }
+            } catch (\Throwable $e) {}
         }
 
         // Fetch existing check_in record for today
@@ -294,7 +374,7 @@ class CheckInController {
         }
 
         // ==================== FLOW A: CHECK-OUT (RA CA) ====================
-        if (($action === 'checkout' || ($reqCheckout === 1 && $existingRow && empty($existingRow['check_out_time']))) && !$isSupplementary) {
+        if ($action === 'checkout' || ($reqCheckout === 1 && $existingRow && empty($existingRow['check_out_time']) && !$isSupplementary)) {
             if (!$existingRow) {
                 respond(400, null, 'Bạn chưa thực hiện Chấm công Vào ca hôm nay, không thể chấm công Ra ca.', false);
             }
@@ -405,8 +485,8 @@ class CheckInController {
         // Check if checking in during afternoon session (i.e. after morningEnd)
         if ($currentHM > $morningEnd) {
             $afternoonStartHM = !empty($afternoonStart) ? $afternoonStart : '13:00';
-            // If afternoon session is not configured, compare with workStartHM
-            if (empty($todaySchedule['start_afternoon']) && empty($todaySchedule['end_afternoon'])) {
+            // If afternoon session is not configured specifically for single-session day (like morning-only Saturday)
+            if ($todaySchedule && empty($todaySchedule['start_afternoon']) && empty($todaySchedule['end_afternoon'])) {
                 $isLate = ($currentHM > $workStartHM);
                 if ($isLate) {
                     $lateMinutes = (int)ceil((strtotime($today . ' ' . $currentHM . ':00') - strtotime($today . ' ' . $workStartHM . ':00')) / 60);

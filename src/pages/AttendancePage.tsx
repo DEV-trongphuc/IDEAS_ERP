@@ -2259,6 +2259,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                     options={[
                       { value: 'annual', label: t('Nghỉ phép năm') },
                       { value: 'compensatory', label: t('Nghỉ bù') },
+                      { value: 'special_paid', label: t('Nghỉ chế độ Hiếu / Hỉ (100% lương theo Luật)') },
+                      { value: 'sick', label: t('Nghỉ ốm') },
                       { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') }
                     ]}
                     width="100%"
@@ -2281,6 +2283,34 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   />
                 </div>
               </div>
+
+              {leaveTypeField === 'special_paid' && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(139, 92, 246, 0.06)',
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  fontSize: '0.78rem',
+                  color: 'var(--color-text)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}>
+                  <div style={{ fontWeight: 700, color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Info size={14} />
+                    <span>{t('Định mức hưởng 100% lương theo Điều 115 Bộ luật Lao động 2019:')}</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: 1.45 }}>
+                    • {t('Bản thân kết hôn: 03 ngày')}<br />
+                    • {t('Con đẻ / con nuôi kết hôn: 01 ngày')}<br />
+                    • {t('Tứ thân phụ mẫu / Vợ / Chồng / Con mất: 03 ngày')}<br />
+                    • {t('Ông bà nội ngoại / Anh chị em ruột mất: 01 ngày')}<br />
+                    <span style={{ fontStyle: 'italic', color: '#8b5cf6' }}>
+                      *{t('Nếu nghỉ vượt định mức, hệ thống tự động bóc tách cấn trừ vào Nghỉ bù -> Phép năm -> Không lương.')}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (leaveSessionField === 'range' ? '1fr 1fr' : '1fr'), gap: '1rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

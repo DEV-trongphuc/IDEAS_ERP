@@ -2808,6 +2808,7 @@ export default function Approvals() {
                                   options={[
                                     { value: 'annual', label: t('Nghỉ phép năm') },
                                     { value: 'compensatory', label: t('Nghỉ bù') },
+                                    { value: 'special_paid', label: t('Nghỉ chế độ Hiếu / Hỉ (100% lương theo Luật)') },
                                     { value: 'sick', label: t('Nghỉ ốm / thai sản') },
                                     { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') }
                                   ]}
@@ -2968,6 +2969,14 @@ export default function Approvals() {
                                   deductComp = Math.min(requestedDays, remComp);
                                   deductAnnual = Math.min(Math.max(0, requestedDays - deductComp), remAnnual);
                                   deductUnpaid = Math.max(0, requestedDays - (deductComp + deductAnnual));
+                                } else if (leaveType === 'special_paid') {
+                                  const statutoryLimit = 3.0;
+                                  const overQuota = Math.max(0, requestedDays - statutoryLimit);
+                                  if (overQuota > 0) {
+                                    deductComp = Math.min(overQuota, remComp);
+                                    deductAnnual = Math.min(Math.max(0, overQuota - deductComp), remAnnual);
+                                    deductUnpaid = Math.max(0, overQuota - (deductComp + deductAnnual));
+                                  }
                                 }
                               }
 
@@ -2993,6 +3002,15 @@ export default function Approvals() {
                                         }
                                         if (leaveType === 'sick') {
                                           return t('Nghỉ ốm / thai sản (Không khấu trừ phép)');
+                                        }
+                                        if (leaveType === 'special_paid') {
+                                          const statutoryLimit = Math.min(requestedDays, 3.0);
+                                          const overParts = [
+                                            deductComp > 0 ? `-${Number(deductComp.toFixed(2))} ${t('phép bù')}` : null,
+                                            deductAnnual > 0 ? `-${Number(deductAnnual.toFixed(2))} ${t('phép năm')}` : null,
+                                            deductUnpaid > 0 ? `-${Number(deductUnpaid.toFixed(2))} ${t('không lương')}` : null
+                                          ].filter(Boolean);
+                                          return `${statutoryLimit} ngày chế độ luật (100% lương)${overParts.length > 0 ? ' + ' + overParts.join(', ') : ''}`;
                                         }
                                         if (isInsufficient) {
                                           return errorMsg;
@@ -5547,9 +5565,11 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
                     { value: 'annual', label: t('Nghỉ phép năm') },
                     { value: 'sick', label: t('Nghỉ ốm / thai sản') },
                     { value: 'compensatory', label: t('Nghỉ bù') },
+                    { value: 'special_paid', label: t('Nghỉ chế độ (Hiếu/Hỉ theo luật)') },
                     { value: 'late_early', label: t('Đi trễ/Về sớm') },
                     { value: 'unpaid', label: t('Nghỉ việc riêng (không lương)') },
-                    { value: 'overtime', label: t('Đăng ký tăng ca') }
+                    { value: 'overtime', label: t('Đăng ký tăng ca') },
+                    { value: 'remote_work', label: t('Làm việc từ xa') }
                   ]}
                   width="100%"
                 />

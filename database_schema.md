@@ -1,6 +1,6 @@
 # Database Schema - IDEAS ERP (Staging)
 
-*Generated automatically on: 2026-08-10T04:02:28.322Z*
+*Generated automatically on: 2026-08-15T17:05:04+07:00*
 *Total Tables: 112*
 
 ## Table of Contents
@@ -132,8 +132,8 @@
 | **name** | `varchar(200)` | NO |  | *NULL* |  |  |
 | **job_title** | `varchar(150)` | YES |  | `NULL` |  |  |
 | **email** | `varchar(255)` | NO |  | *NULL* |  |  |
-| **role** | `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin')` | YES |  | `'sales'` |  |  |
-| **status** | `enum('active','inactive','leave')` | YES |  | `'active'` |  |  |
+| **role** | `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin')` | YES |  | `sales` |  |  |
+| **status** | `enum('active','inactive','leave')` | YES |  | `active` |  |  |
 | **is_confirmed** | `tinyint(1)` | YES |  | `0` |  |  |
 | **confirm_token** | `varchar(64)` | YES |  | `NULL` |  |  |
 | **last_login** | `timestamp` | YES |  | `NULL` |  |  |
@@ -181,11 +181,11 @@
 | **tenant_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **user_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **created_by** | `int(11)` | YES | MUL | `NULL` |  |  |
-| **type** | `varchar(50)` | NO |  | `'task'` |  |  |
+| **type** | `varchar(50)` | NO |  | `task` |  |  |
 | **subject** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **body** | `text` | YES |  | `NULL` |  |  |
-| **status** | `enum('planned','done','cancelled')` | NO | MUL | `'planned'` |  |  |
-| **priority** | `enum('low','medium','high')` | NO |  | `'medium'` |  |  |
+| **status** | `enum('planned','done','cancelled')` | NO | MUL | `planned` |  |  |
+| **priority** | `enum('low','medium','high')` | NO |  | `medium` |  |  |
 | **start_date** | `datetime` | YES |  | `NULL` |  |  |
 | **due_date** | `datetime` | YES | MUL | `NULL` |  |  |
 | **done_at** | `datetime` | YES |  | `NULL` |  |  |
@@ -233,7 +233,7 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **activity_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **predecessor_id** | `int(11)` | NO | MUL | *NULL* |  |  |
-| **dependency_type** | `varchar(10)` | NO |  | `'FS'` |  |  |
+| **dependency_type** | `varchar(10)` | NO |  | `FS` |  |  |
 | **lag_days** | `int(11)` | NO |  | `0` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 
@@ -299,12 +299,12 @@
 | **source_type** | `enum('manual','web','file','folder')` | NO |  | *NULL* |  |  |
 | **parent_id** | `int(11)` | YES | MUL | `0` |  |  |
 | **is_active** | `tinyint(1)` | YES |  | `1` |  |  |
-| **status** | `varchar(50)` | YES |  | `'pending'` |  |  |
+| **status** | `varchar(50)` | YES |  | `pending` |  |  |
 | **file_path** | `varchar(500)` | YES |  | `NULL` |  |  |
 | **file_size** | `bigint(20) unsigned` | YES |  | `0` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
-| **created_by** | `varchar(255)` | YES | MUL | `'System'` |  |  |
+| **created_by** | `varchar(255)` | YES | MUL | `System` |  |  |
 | **version** | `int(11)` | YES |  | `1` |  |  |
 
 [Back to top](#table-of-contents)
@@ -347,7 +347,7 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **user_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **month_period** | `varchar(7)` | NO |  | *NULL* |  |  |
-| **status** | `enum('pending_manager','pending_hr','approved','rejected')` | YES | MUL | `'pending_manager'` |  |  |
+| **status** | `enum('pending_manager','pending_hr','approved','rejected')` | YES | MUL | `pending_manager` |  |  |
 | **manager_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **hr_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **admin_note** | `varchar(255)` | YES |  | `NULL` |  |  |
@@ -393,7 +393,7 @@
 | **initial_qty** | `int(11)` | NO |  | `0` |  |  |
 | **current_qty** | `int(11)` | NO |  | `0` |  |  |
 | **notes** | `text` | YES |  | `NULL` |  |  |
-| **status** | `enum('active','archived')` | YES |  | `'active'` |  |  |
+| **status** | `enum('active','archived')` | YES |  | `active` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 
 [Back to top](#table-of-contents)
@@ -445,7 +445,7 @@
 | **check_in_time** | `time` | NO |  | *NULL* |  |  |
 | **late_minutes** | `int(11)` | YES |  | `0` |  | Số phút đi trễ |
 | **selfie_url** | `varchar(255)` | YES |  | `NULL` |  |  |
-| **status** | `enum('approved','pending_approval','rejected')` | NO |  | `'approved'` |  |  |
+| **status** | `enum('approved','pending_approval','rejected')` | NO |  | `approved` |  |  |
 | **reason** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **sla_notified_at** | `datetime` | YES |  | `NULL` |  |  |
 | **admin_note** | `varchar(255)` | YES |  | `NULL` |  | Ghi chú phê duyệt từ Admin/Manager |
@@ -475,8 +475,8 @@
 | **file_path** | `varchar(500)` | NO |  | *NULL* |  |  |
 | **mime_type** | `varchar(100)` | YES |  | `NULL` |  |  |
 | **file_size** | `bigint(20) unsigned` | YES |  | `0` |  |  |
-| **category** | `varchar(100)` | YES |  | `'general'` |  |  |
-| **visibility** | `enum('shared','personal')` | NO | MUL | `'shared'` |  |  |
+| **category** | `varchar(100)` | YES |  | `general` |  |  |
+| **visibility** | `enum('shared','personal')` | NO | MUL | `shared` |  |  |
 | **is_public** | `tinyint(1)` | YES |  | `0` |  |  |
 | **project_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **contact_id** | `int(11)` | YES | MUL | `NULL` |  |  |
@@ -545,9 +545,9 @@
 | **ward** | `varchar(100)` | YES |  | `NULL` |  |  |
 | **city** | `varchar(100)` | YES |  | `NULL` |  |  |
 | **expected_revenue** | `decimal(15,2)` | YES |  | `0.00` |  |  |
-| **country** | `varchar(100)` | YES |  | `'Việt Nam'` |  |  |
+| **country** | `varchar(100)` | YES |  | `Việt Nam` |  |  |
 | **size** | `enum('1-10','11-50','51-200','201-500','500+')` | YES |  | `NULL` |  |  |
-| **status** | `enum('active','inactive','prospect')` | NO | MUL | `'prospect'` |  |  |
+| **status** | `enum('active','inactive','prospect')` | NO | MUL | `prospect` |  |  |
 | **legal_representative** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **erp_code** | `varchar(100)` | YES |  | `NULL` |  |  |
 | **tags** | `longtext` | YES |  | `NULL` |  |  |
@@ -555,12 +555,12 @@
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 | **deleted_at** | `timestamp` | YES |  | `NULL` |  |  |
-| **sla_level** | `varchar(50)` | NO |  | `'standard'` |  |  |
+| **sla_level** | `varchar(50)` | NO |  | `standard` |  |  |
 | **wholesale_price** | `tinyint(1)` | NO |  | `0` |  |  |
 | **vat_exempt** | `tinyint(1)` | NO |  | `0` |  |  |
 | **dedicated_rep_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **logo_url** | `varchar(255)` | YES |  | `NULL` |  |  |
-| **tier** | `varchar(50)` | YES |  | `'f1'` |  | Cấp đại lý: f1, f2, f3, ctv |
+| **tier** | `varchar(50)` | YES |  | `f1` |  | Cấp đại lý: f1, f2, f3, ctv |
 | **parent_id** | `int(11)` | YES | MUL | `NULL` |  | Đại lý cấp trên trực tiếp |
 | **commission_rate** | `decimal(5,2)` | YES |  | `0.00` |  | Tỷ lệ hoa hồng liên kết % |
 | **focus_markets** | `text` | YES |  | `NULL` |  | Phân khúc/Thị trường thế mạnh |
@@ -593,12 +593,12 @@
 | **name** | `varchar(200)` | NO |  | *NULL* |  |  |
 | **job_title** | `varchar(150)` | YES |  | `NULL` |  |  |
 | **email** | `varchar(255)` | NO |  | *NULL* |  |  |
-| **role** | `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin')` | YES |  | `'sales'` |  |  |
-| **status** | `enum('active','inactive','leave')` | YES |  | `'active'` |  |  |
+| **role** | `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin')` | YES |  | `sales` |  |  |
+| **status** | `enum('active','inactive','leave')` | YES |  | `active` |  |  |
 | **leave_start** | `date` | YES |  | `NULL` |  |  |
 | **leave_end** | `date` | YES |  | `NULL` |  |  |
-| **work_start_time** | `varchar(5)` | YES |  | `'08:00'` |  |  |
-| **work_end_time** | `varchar(5)` | YES |  | `'17:30'` |  |  |
+| **work_start_time** | `varchar(5)` | YES |  | `08:00` |  |  |
+| **work_end_time** | `varchar(5)` | YES |  | `17:30` |  |  |
 | **work_schedule** | `longtext` | YES |  | `NULL` |  |  |
 | **avatar** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **signature_url** | `longtext` | YES |  | `NULL` |  | Chữ ký mẫu cá nhân |
@@ -630,7 +630,7 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **contact_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **email** | `varchar(255)` | NO |  | *NULL* |  |  |
-| **type** | `enum('work','personal','other')` | YES |  | `'work'` |  |  |
+| **type** | `enum('work','personal','other')` | YES |  | `work` |  |  |
 | **is_primary** | `tinyint(1)` | YES |  | `0` |  |  |
 
 [Back to top](#table-of-contents)
@@ -644,7 +644,7 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **contact_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **phone** | `varchar(50)` | NO |  | *NULL* |  |  |
-| **type** | `enum('mobile','work','home','fax','other')` | YES |  | `'mobile'` |  |  |
+| **type** | `enum('mobile','work','home','fax','other')` | YES |  | `mobile` |  |  |
 | **is_primary** | `tinyint(1)` | YES |  | `0` |  |  |
 
 [Back to top](#table-of-contents)
@@ -673,11 +673,11 @@
 | **birthday** | `date` | YES |  | `NULL` |  |  |
 | **job_title** | `varchar(150)` | YES |  | `NULL` |  |  |
 | **department** | `varchar(150)` | YES |  | `NULL` |  |  |
-| **source** | `varchar(100)` | YES |  | `'other'` |  |  |
-| **status** | `enum('lead','qualified','customer','churned')` | NO | MUL | `'lead'` |  |  |
-| **pipeline_status** | `varchar(50)` | NO | MUL | `'chua_xac_dinh'` |  |  |
-| **temperature** | `enum('hot','warm','neutral','cool','cold')` | NO | MUL | `'neutral'` |  |  |
-| **suggested_temperature** | `enum('hot','warm','neutral','cool','cold')` | NO |  | `'neutral'` |  |  |
+| **source** | `varchar(100)` | YES |  | `other` |  |  |
+| **status** | `enum('lead','qualified','customer','churned')` | NO | MUL | `lead` |  |  |
+| **pipeline_status** | `varchar(50)` | NO | MUL | `chua_xac_dinh` |  |  |
+| **temperature** | `enum('hot','warm','neutral','cool','cold')` | NO | MUL | `neutral` |  |  |
+| **suggested_temperature** | `enum('hot','warm','neutral','cool','cold')` | NO |  | `neutral` |  |  |
 | **temperature_updated_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **tags** | `longtext` | YES |  | `NULL` |  |  |
 | **notes** | `text` | YES |  | `NULL` |  |  |
@@ -745,7 +745,7 @@
 | **total_percentage** | `int(11)` | NO |  | `100` |  |  |
 | **shares_json** | `longtext` | NO |  | *NULL* |  |  |
 | **signatures_json** | `longtext` | YES |  | `NULL` |  |  |
-| **status** | `enum('pending_signatures','pending_manager_approval','approved','rejected','disputed','approved_pending_signatures')` | NO | MUL | `'pending_signatures'` |  |  |
+| **status** | `enum('pending_signatures','pending_manager_approval','approved','rejected','disputed','approved_pending_signatures')` | NO | MUL | `pending_signatures` |  |  |
 | **dispute_details** | `text` | YES |  | `NULL` |  |  |
 | **created_by** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
@@ -753,10 +753,10 @@
 | **attachment_url** | `varchar(500)` | YES |  | `NULL` |  |  |
 | **dieu_chinh_tu_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **approved_by** | `int(11)` | YES |  | `NULL` |  |  |
-| **approved_at** | `timestamp` | NO |  | `'0000-00-00 00:00:00'` |  |  |
+| **approved_at** | `timestamp` | NO |  | `0000-00-00 00:00:00` |  |  |
 | **adjustment_request_user_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **adjustment_request_reason** | `text` | YES |  | `NULL` |  |  |
-| **adjustment_request_at** | `timestamp` | NO |  | `'0000-00-00 00:00:00'` |  |  |
+| **adjustment_request_at** | `timestamp` | NO |  | `0000-00-00 00:00:00` |  |  |
 | **adjustment_request_shares_json** | `text` | YES |  | `NULL` |  |  |
 | **adjustment_request_commission** | `bigint(20)` | YES |  | `NULL` |  |  |
 | **full_name** | `varchar(255)` | YES |  | `NULL` |  |  |
@@ -791,7 +791,7 @@
 | **entity_type** | `enum('contact','company','deal')` | NO |  | *NULL* |  |  |
 | **field_key** | `varchar(100)` | NO |  | *NULL* |  |  |
 | **label** | `varchar(200)` | NO |  | *NULL* |  |  |
-| **field_type** | `enum('text','number','date','dropdown','multiselect','checkbox','url','email','phone')` | NO |  | `'text'` |  |  |
+| **field_type** | `enum('text','number','date','dropdown','multiselect','checkbox','url','email','phone')` | NO |  | `text` |  |  |
 | **options** | `longtext` | YES |  | `NULL` |  |  |
 | **is_required** | `tinyint(1)` | YES |  | `0` |  |  |
 | **is_filterable** | `tinyint(1)` | YES |  | `1` |  |  |
@@ -811,7 +811,7 @@
 | **consultant_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **round_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **reason** | `varchar(255)` | YES |  | `NULL` |  |  |
-| **status** | `varchar(20)` | YES | MUL | `'pending'` |  |  |
+| **status** | `varchar(20)` | YES | MUL | `pending` |  |  |
 | **created_at** | `datetime` | YES | MUL | `current_timestamp()` |  |  |
 | **resolved_at** | `datetime` | YES |  | `NULL` |  |  |
 | **resolved_by** | `varchar(100)` | YES |  | `NULL` |  | Tên admin duyệt ticket |
@@ -850,9 +850,9 @@
 | **created_by** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **title** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **description** | `text` | YES |  | `NULL` |  |  |
-| **priority** | `enum('low','medium','high')` | NO |  | `'medium'` |  |  |
+| **priority** | `enum('low','medium','high')` | NO |  | `medium` |  |  |
 | **value** | `decimal(15,2)` | NO |  | `0.00` |  |  |
-| **currency** | `char(3)` | NO |  | `'VND'` |  |  |
+| **currency** | `char(3)` | NO |  | `VND` |  |  |
 | **probability** | `tinyint(3) unsigned` | NO |  | `50` |  |  |
 | **expected_close_date** | `date` | YES | MUL | `NULL` |  |  |
 | **actual_close_date** | `date` | YES |  | `NULL` |  |  |
@@ -881,7 +881,7 @@
 | **original_amount** | `decimal(15,2)` | YES |  | `NULL` |  |  |
 | **actual_amount** | `decimal(15,2)` | YES |  | `NULL` |  |  |
 | **unc_file_path** | `varchar(500)` | YES |  | `NULL` |  |  |
-| **status** | `enum('pending','paid','approved','failed')` | NO |  | `'pending'` |  |  |
+| **status** | `enum('pending','paid','approved','failed')` | NO |  | `pending` |  |  |
 | **approval_date** | `timestamp` | YES |  | `NULL` |  |  |
 | **approved_by** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
@@ -901,7 +901,7 @@
 | **unit_code** | `varchar(100)` | NO |  | *NULL* |  |  |
 | **price** | `decimal(15,2)` | NO |  | *NULL* |  |  |
 | **expected_commission** | `decimal(15,2)` | NO |  | `0.00` |  |  |
-| **status** | `enum('pending_admin','approved','cancelled')` | NO | MUL | `'pending_admin'` |  |  |
+| **status** | `enum('pending_admin','approved','cancelled')` | NO | MUL | `pending_admin` |  |  |
 | **cancelled_reason** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **created_by** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
@@ -911,7 +911,7 @@
 | **remind_at_hour** | `int(11)` | YES |  | `8` |  |  |
 | **remind_target** | `int(11)` | YES |  | `1` |  |  |
 | **notes** | `text` | YES |  | `NULL` |  |  |
-| **currency** | `varchar(10)` | YES |  | `'VND'` |  |  |
+| **currency** | `varchar(10)` | YES |  | `VND` |  |  |
 | **exchange_rate** | `decimal(15,4)` | YES |  | `1.0000` |  |  |
 | **accountant_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **participant_ids** | `varchar(255)` | YES |  | `NULL` |  |  |
@@ -979,7 +979,7 @@
 | **user_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **email** | `varchar(255)` | NO | MUL | *NULL* |  |  |
 | **otp_code** | `varchar(10)` | NO |  | *NULL* |  |  |
-| **type** | `varchar(50)` | NO |  | `'2fa'` |  |  |
+| **type** | `varchar(50)` | NO |  | `2fa` |  |  |
 | **expires_at** | `datetime` | NO |  | *NULL* |  |  |
 | **is_used** | `tinyint(1)` | NO |  | `0` |  |  |
 | **created_at** | `datetime` | YES |  | `current_timestamp()` |  |  |
@@ -1047,9 +1047,9 @@
 | **user_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **content** | `text` | NO |  | *NULL* |  |  |
 | **attachments_json** | `longtext` | YES |  | `NULL` |  | JSON array of media files (URLs, type: image/video/file) |
-| **visibility** | `varchar(50)` | YES |  | `'global'` |  |  |
+| **visibility** | `varchar(50)` | YES |  | `global` |  |  |
 | **team_id** | `int(11)` | YES | MUL | `NULL` |  |  |
-| **tags_json** | `varchar(255)` | YES |  | `'[]'` |  | JSON array of hashtags |
+| **tags_json** | `varchar(255)` | YES |  | `[]` |  | JSON array of hashtags |
 | **link_metadata_json** | `longtext` | YES |  | `NULL` |  | Parsed URL metadata (url, title, desc, image) |
 | **created_at** | `timestamp` | NO | MUL | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
@@ -1118,7 +1118,7 @@
 | **amount** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **vat_amount** | `decimal(15,2)` | YES |  | `0.00` |  |  |
 | **date** | `date` | NO |  | *NULL* |  |  |
-| **status** | `enum('pending','approved','rejected')` | NO | MUL | `'pending'` |  |  |
+| **status** | `enum('pending','approved','rejected')` | NO | MUL | `pending` |  |  |
 | **notes** | `text` | YES |  | `NULL` |  |  |
 | **has_vat_invoice** | `tinyint(1)` | NO |  | `0` |  |  |
 | **is_vat_inclusive** | `tinyint(1)` | NO |  | `0` |  |  |
@@ -1133,10 +1133,10 @@
 | **refunder_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **approver_id_2** | `int(11)` | YES |  | `NULL` |  |  |
 | **approver_id_3** | `int(11)` | YES |  | `NULL` |  |  |
-| **status_level_1** | `varchar(50)` | YES |  | `'pending'` |  |  |
-| **status_level_2** | `varchar(50)` | YES |  | `'pending'` |  |  |
-| **status_level_3** | `varchar(50)` | YES |  | `'pending'` |  |  |
-| **approval_status** | `varchar(50)` | YES |  | `'pending'` |  |  |
+| **status_level_1** | `varchar(50)` | YES |  | `pending` |  |  |
+| **status_level_2** | `varchar(50)` | YES |  | `pending` |  |  |
+| **status_level_3** | `varchar(50)` | YES |  | `pending` |  |  |
+| **approval_status** | `varchar(50)` | YES |  | `pending` |  |  |
 
 [Back to top](#table-of-contents)
 
@@ -1164,11 +1164,11 @@
 | **id** | `varchar(50)` | NO | PRI | *NULL* |  |  |
 | **tenant_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **label** | `varchar(100)` | NO |  | *NULL* |  |  |
-| **icon_type** | `varchar(50)` | YES |  | `'folder'` |  |  |
+| **icon_type** | `varchar(50)` | YES |  | `folder` |  |  |
 | **is_default** | `tinyint(1)` | YES |  | `0` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **created_by** | `int(11)` | YES | MUL | `NULL` |  |  |
-| **visibility** | `varchar(50)` | YES |  | `'shared'` |  |  |
+| **visibility** | `varchar(50)` | YES |  | `shared` |  |  |
 
 [Back to top](#table-of-contents)
 
@@ -1206,7 +1206,7 @@
 | **source_url** | `text` | YES |  | `NULL` |  |  |
 | **ip_address** | `varchar(45)` | YES |  | `NULL` |  |  |
 | **created_contact_id** | `int(11)` | YES | MUL | `NULL` |  |  |
-| **status** | `enum('new','processed','spam')` | YES | MUL | `'new'` |  |  |
+| **status** | `enum('new','processed','spam')` | YES | MUL | `new` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 
 [Back to top](#table-of-contents)
@@ -1258,7 +1258,7 @@
 | **given_date** | `date` | NO |  | *NULL* |  |  |
 | **returned_date** | `date` | YES |  | `NULL` |  |  |
 | **condition_note** | `text` | YES |  | `NULL` |  |  |
-| **status** | `varchar(20)` | YES |  | `'assigned'` |  |  |
+| **status** | `varchar(20)` | YES |  | `assigned` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 
@@ -1273,14 +1273,14 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **user_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **contract_code** | `varchar(50)` | NO |  | *NULL* |  |  |
-| **contract_type** | `varchar(30)` | YES |  | `'probation'` |  |  |
+| **contract_type** | `varchar(30)` | YES |  | `probation` |  |  |
 | **salary_base** | `decimal(15,2)` | YES |  | `0.00` |  |  |
 | **salary_deal** | `decimal(15,2)` | YES |  | `0.00` |  |  |
-| **salary_type** | `varchar(10)` | YES |  | `'net'` |  |  |
+| **salary_type** | `varchar(10)` | YES |  | `net` |  |  |
 | **probation_rate** | `decimal(5,2)` | YES |  | `85.00` |  |  |
 | **start_date** | `date` | NO |  | *NULL* |  |  |
 | **end_date** | `date` | YES |  | `NULL` |  |  |
-| **status** | `varchar(20)` | YES |  | `'active'` |  |  |
+| **status** | `varchar(20)` | YES |  | `active` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 
@@ -1294,21 +1294,21 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **user_id** | `int(11)` | NO | MUL | *NULL* |  |  |
-| **leave_type** | `varchar(30)` | YES |  | `'annual'` |  |  |
+| **leave_type** | `varchar(30)` | YES |  | `annual` |  |  |
 | **start_date** | `datetime` | NO |  | *NULL* |  |  |
 | **end_date** | `datetime` | NO |  | *NULL* |  |  |
 | **total_days** | `decimal(3,1)` | YES |  | `1.0` |  |  |
 | **unpaid_days** | `decimal(3,1)` | YES |  | `0.0` |  |  |
 | **reason** | `text` | YES |  | `NULL` |  |  |
-| **status** | `varchar(20)` | YES |  | `'pending'` |  |  |
+| **status** | `varchar(20)` | YES |  | `pending` |  |  |
 | **approved_by** | `int(11)` | YES |  | `NULL` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 | **approver_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **approver_id_2** | `int(11)` | YES |  | `NULL` |  |  |
 | **approved_by_2** | `int(11)` | YES |  | `NULL` |  |  |
-| **status_level_1** | `varchar(20)` | YES |  | `'pending'` |  |  |
-| **status_level_2** | `varchar(20)` | YES |  | `'pending'` |  |  |
+| **status_level_1** | `varchar(20)` | YES |  | `pending` |  |  |
+| **status_level_2** | `varchar(20)` | YES |  | `pending` |  |  |
 | **related_user_ids** | `text` | YES |  | `NULL` |  |  |
 
 [Back to top](#table-of-contents)
@@ -1353,15 +1353,15 @@
 | **amount** | `decimal(15,2)` | YES |  | `0.00` |  |  |
 | **request_date** | `date` | NO |  | *NULL* |  |  |
 | **reason** | `text` | YES |  | `NULL` |  |  |
-| **status** | `varchar(20)` | YES |  | `'pending'` |  |  |
+| **status** | `varchar(20)` | YES |  | `pending` |  |  |
 | **deducted_payslip_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 | **approver_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **approver_id_2** | `int(11)` | YES |  | `NULL` |  |  |
 | **approved_by_2** | `int(11)` | YES |  | `NULL` |  |  |
-| **status_level_1** | `varchar(20)` | YES |  | `'pending'` |  |  |
-| **status_level_2** | `varchar(20)` | YES |  | `'pending'` |  |  |
+| **status_level_1** | `varchar(20)` | YES |  | `pending` |  |  |
+| **status_level_2** | `varchar(20)` | YES |  | `pending` |  |  |
 | **related_user_ids** | `text` | YES |  | `NULL` |  |  |
 
 [Back to top](#table-of-contents)
@@ -1378,7 +1378,7 @@
 | **entity_type** | `enum('contact','company','deal')` | NO |  | *NULL* |  |  |
 | **file_name** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **mapping** | `longtext` | YES |  | `NULL` |  |  |
-| **status** | `enum('pending','processing','done','failed')` | YES |  | `'pending'` |  |  |
+| **status** | `enum('pending','processing','done','failed')` | YES |  | `pending` |  |  |
 | **total_rows** | `int(11)` | YES |  | `0` |  |  |
 | **imported** | `int(11)` | YES |  | `0` |  |  |
 | **duplicates** | `int(11)` | YES |  | `0` |  |  |
@@ -1438,7 +1438,7 @@
 | **created_by** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **invoice_number** | `varchar(50)` | NO |  | *NULL* |  |  |
 | **title** | `varchar(255)` | NO |  | *NULL* |  |  |
-| **status** | `enum('draft','pending','paid','overdue','cancelled')` | NO | MUL | `'draft'` |  |  |
+| **status** | `enum('draft','pending','paid','overdue','cancelled')` | NO | MUL | `draft` |  |  |
 | **issue_date** | `date` | NO |  | *NULL* |  |  |
 | **due_date** | `date` | NO |  | *NULL* |  |  |
 | **paid_at** | `datetime` | YES |  | `NULL` |  |  |
@@ -1468,7 +1468,7 @@
 | **round_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **offered_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **expires_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
-| **status** | `enum('pending','accepted','expired','rejected')` | NO | MUL | `'pending'` |  |  |
+| **status** | `enum('pending','accepted','expired','rejected')` | NO | MUL | `pending` |  |  |
 | **action_reason** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **responded_at** | `timestamp` | YES |  | `NULL` |  |  |
 
@@ -1497,22 +1497,22 @@
 | **target_round_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **is_accepted** | `tinyint(1)` | YES |  | `0` |  |  |
 | **accepted_at** | `datetime` | YES |  | `NULL` |  |  |
-| **status** | `varchar(50)` | YES | MUL | `'active'` |  |  |
-| **ai_screener_status** | `varchar(50)` | YES |  | `'not_screened'` |  |  |
+| **status** | `varchar(50)` | YES | MUL | `active` |  |  |
+| **ai_screener_status** | `varchar(50)` | YES |  | `not_screened` |  |  |
 | **ai_evaluation** | `text` | YES |  | `NULL` |  |  |
 | **ai_attempts** | `int(11)` | YES |  | `0` |  |  |
 | **connection_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **last_interaction_date** | `datetime` | YES | MUL | `NULL` |  |  |
 | **created_at** | `timestamp` | NO | MUL | `current_timestamp()` |  |  |
-| **zalo_notify_status** | `varchar(50)` | YES |  | `'none'` |  |  |
-| **email_notify_status** | `varchar(50)` | YES |  | `'none'` |  |  |
+| **zalo_notify_status** | `varchar(50)` | YES |  | `none` |  |  |
+| **email_notify_status** | `varchar(50)` | YES |  | `none` |  |  |
 | **zalo_notify_sent_at** | `datetime` | YES |  | `NULL` |  |  |
 | **email_notify_sent_at** | `datetime` | YES |  | `NULL` |  |  |
 | **ai_screening_started_at** | `datetime` | YES |  | `NULL` |  | Thời điểm bắt đầu gọi AI |
 | **ai_prompt_tokens** | `int(11)` | YES |  | `0` |  | Số token prompt AI sử dụng |
 | **ai_completion_tokens** | `int(11)` | YES |  | `0` |  | Số token completion AI sử dụng |
 | **ai_total_tokens** | `int(11)` | YES |  | `0` |  | Tổng số token AI sử dụng |
-| **telegram_notify_status** | `varchar(50)` | YES |  | `'none'` |  |  |
+| **telegram_notify_status** | `varchar(50)` | YES |  | `none` |  |  |
 | **telegram_notify_sent_at** | `datetime` | YES |  | `NULL` |  | Thời gian gửi thông báo Telegram thành công |
 | **phone2** | `varchar(50)` | YES |  | `NULL` |  | Số điện thoại 2 / phụ |
 | **gender** | `varchar(20)` | YES |  | `NULL` |  | Giới tính |
@@ -1564,7 +1564,7 @@
 | **cc_email** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **subject** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **body_html** | `longtext` | NO |  | *NULL* |  |  |
-| **status** | `enum('pending','processing','sent','failed')` | YES | MUL | `'pending'` |  |  |
+| **status** | `enum('pending','processing','sent','failed')` | YES | MUL | `pending` |  |  |
 | **created_at** | `datetime` | YES |  | `current_timestamp()` |  |  |
 | **sent_at** | `datetime` | YES |  | `NULL` |  |  |
 | **attempts** | `int(11)` | YES |  | `0` |  |  |
@@ -1588,7 +1588,7 @@
 | **subjects_json** | `longtext` | YES |  | `NULL` |  |  |
 | **thesis_milestones_json** | `longtext` | YES |  | `NULL` |  |  |
 | **reminders_json** | `longtext` | YES |  | `NULL` |  |  |
-| **status** | `varchar(50)` | YES |  | `'active'` |  |  |
+| **status** | `varchar(50)` | YES |  | `active` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 | **reference_url** | `varchar(500)` | YES |  | `NULL` |  |  |
@@ -1627,7 +1627,7 @@
 | **tax_pit** | `decimal(15,2)` | YES |  | `0.00` |  |  |
 | **advance_deduction** | `decimal(15,2)` | YES |  | `0.00` |  |  |
 | **net_salary** | `decimal(15,2)` | YES |  | `0.00` |  |  |
-| **status** | `varchar(20)` | YES |  | `'draft'` |  |  |
+| **status** | `varchar(20)` | YES |  | `draft` |  |  |
 | **signature_url** | `text` | YES |  | `NULL` |  |  |
 | **confirmed_at** | `datetime` | YES |  | `NULL` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
@@ -1678,7 +1678,7 @@
 | **entity_type** | `enum('contact','company','deal')` | NO | MUL | *NULL* |  |  |
 | **entity_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **body** | `text` | NO |  | *NULL* |  |  |
-| **type** | `enum('internal','public')` | NO |  | `'internal'` |  |  |
+| **type** | `enum('internal','public')` | NO |  | `internal` |  |  |
 | **is_pinned** | `tinyint(1)` | YES |  | `0` |  |  |
 | **created_at** | `timestamp` | NO | MUL | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
@@ -1707,7 +1707,7 @@
 | **tenant_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **title** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **body** | `text` | YES |  | `NULL` |  |  |
-| **type** | `varchar(50)` | YES |  | `'info'` |  |  |
+| **type** | `varchar(50)` | YES |  | `info` |  |  |
 | **is_read** | `tinyint(1)` | NO |  | `0` |  |  |
 | **link** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **created_at** | `timestamp` | NO | MUL | `current_timestamp()` |  |  |
@@ -1743,7 +1743,7 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **tenant_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **name** | `varchar(100)` | NO |  | *NULL* |  |  |
-| **color** | `varchar(20)` | YES |  | `'#6366f1'` |  |  |
+| **color** | `varchar(20)` | YES |  | `#6366f1` |  |  |
 | **order_index** | `smallint(6)` | NO |  | `0` |  |  |
 | **is_won** | `tinyint(1)` | NO |  | `0` |  |  |
 | **is_lost** | `tinyint(1)` | NO |  | `0` |  |  |
@@ -1784,8 +1784,8 @@
 | **description** | `text` | YES |  | `NULL` |  |  |
 | **price** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **cost** | `decimal(15,2)` | NO |  | `0.00` |  |  |
-| **currency** | `char(3)` | NO |  | `'VND'` |  |  |
-| **unit** | `varchar(50)` | YES |  | `'cái'` |  |  |
+| **currency** | `char(3)` | NO |  | `VND` |  |  |
+| **unit** | `varchar(50)` | YES |  | `cái` |  |  |
 | **stock_quantity** | `int(11)` | NO |  | `0` |  |  |
 | **min_stock_level** | `int(11)` | NO |  | `5` |  |  |
 | **is_active** | `tinyint(1)` | NO |  | `1` |  |  |
@@ -1837,14 +1837,14 @@
 | **name** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **code** | `varchar(100)` | NO | UNI | *NULL* |  |  |
 | **description** | `text` | YES |  | `NULL` |  |  |
-| **status** | `enum('active','completed','draft')` | YES |  | `'active'` |  |  |
+| **status** | `enum('active','completed','draft')` | YES |  | `active` |  |  |
 | **location** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **developer** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **document_ids** | `text` | YES |  | `NULL` |  |  |
 | **campaign_ids** | `text` | YES |  | `NULL` |  |  |
 | **progress_percent** | `int(11)` | YES |  | `0` |  |  |
-| **construction_status** | `varchar(100)` | YES |  | `'Chưa khởi công'` |  |  |
-| **legal_status** | `varchar(255)` | YES |  | `'Đang hoàn thiện pháp lý'` |  |  |
+| **construction_status** | `varchar(100)` | YES |  | `Chưa khởi công` |  |  |
+| **legal_status** | `varchar(255)` | YES |  | `Đang hoàn thiện pháp lý` |  |  |
 | **scale_block_count** | `int(11)` | YES |  | `1` |  |  |
 | **scale_unit_count** | `int(11)` | YES |  | `100` |  |  |
 | **handover_year** | `int(11)` | YES |  | `2026` |  |  |
@@ -1854,7 +1854,7 @@
 | **created_by** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
-| **campaign_sharing_mode** | `varchar(50)` | YES |  | `'independent'` |  |  |
+| **campaign_sharing_mode** | `varchar(50)` | YES |  | `independent` |  |  |
 
 [Back to top](#table-of-contents)
 
@@ -1886,24 +1886,24 @@
 | **created_by** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **po_number** | `varchar(50)` | NO |  | *NULL* |  |  |
 | **order_date** | `date` | NO |  | *NULL* |  |  |
-| **status** | `enum('draft','pending_approval','ordered','received','cancelled')` | NO |  | `'draft'` |  |  |
+| **status** | `enum('draft','pending_approval','ordered','received','cancelled')` | NO |  | `draft` |  |  |
 | **subtotal** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **tax** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **total** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **notes** | `text` | YES |  | `NULL` |  |  |
 | **approver_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **approver_id_2** | `int(11)` | YES |  | `NULL` |  |  |
-| **status_level_1** | `varchar(50)` | NO |  | `'pending'` |  |  |
-| **status_level_2** | `varchar(50)` | NO |  | `'pending'` |  |  |
+| **status_level_1** | `varchar(50)` | NO |  | `pending` |  |  |
+| **status_level_2** | `varchar(50)` | NO |  | `pending` |  |  |
 | **approved_by** | `int(11)` | YES |  | `NULL` |  |  |
 | **approved_by_2** | `int(11)` | YES |  | `NULL` |  |  |
-| **payment_status** | `enum('unpaid','partial','paid')` | NO |  | `'unpaid'` |  |  |
+| **payment_status** | `enum('unpaid','partial','paid')` | NO |  | `unpaid` |  |  |
 | **paid_amount** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
 | **approver_id_3** | `int(11)` | YES |  | `NULL` |  |  |
-| **status_level_3** | `varchar(50)` | NO |  | `'pending'` |  |  |
-| **approval_status** | `varchar(50)` | NO |  | `'pending'` |  |  |
+| **status_level_3** | `varchar(50)` | NO |  | `pending` |  |  |
+| **approval_status** | `varchar(50)` | NO |  | `pending` |  |  |
 
 [Back to top](#table-of-contents)
 
@@ -1939,7 +1939,7 @@
 | **created_by** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **quote_number** | `varchar(50)` | NO |  | *NULL* |  |  |
 | **title** | `varchar(255)` | NO |  | *NULL* |  |  |
-| **status** | `enum('draft','sent','accepted','rejected','expired')` | NO | MUL | `'draft'` |  |  |
+| **status** | `enum('draft','sent','accepted','rejected','expired')` | NO | MUL | `draft` |  |  |
 | **subtotal** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **discount** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **tax** | `decimal(15,2)` | NO |  | `0.00` |  |  |
@@ -2008,11 +2008,11 @@
 | **connection_id** | `varchar(255)` | YES | MUL | `NULL` |  |  |
 | **target_round_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **condition_column** | `varchar(100)` | NO |  | *NULL* |  |  |
-| **condition_operator** | `varchar(50)` | YES |  | `'contains'` |  |  |
+| **condition_operator** | `varchar(50)` | YES |  | `contains` |  |  |
 | **condition_value** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **priority** | `int(11)` | YES |  | `0` |  |  |
 | **conditions_json** | `longtext` | YES |  | `NULL` |  |  |
-| **logical_operator** | `varchar(10)` | YES |  | `'AND'` |  |  |
+| **logical_operator** | `varchar(10)` | YES |  | `AND` |  |  |
 
 [Back to top](#table-of-contents)
 
@@ -2051,8 +2051,8 @@
 | **so_number** | `varchar(50)` | NO |  | *NULL* |  |  |
 | **order_date** | `date` | NO |  | *NULL* |  |  |
 | **delivery_date** | `date` | YES |  | `NULL` |  |  |
-| **status** | `enum('draft','pending_approval','approved','processing','completed','cancelled')` | NO |  | `'draft'` |  |  |
-| **payment_status** | `enum('unpaid','partial','paid')` | NO |  | `'unpaid'` |  |  |
+| **status** | `enum('draft','pending_approval','approved','processing','completed','cancelled')` | NO |  | `draft` |  |  |
+| **payment_status** | `enum('unpaid','partial','paid')` | NO |  | `unpaid` |  |  |
 | **paid_amount** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **subtotal** | `decimal(15,2)` | NO |  | `0.00` |  |  |
 | **discount** | `decimal(15,2)` | NO |  | `0.00` |  |  |
@@ -2116,16 +2116,16 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **sheet_name** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **spreadsheet_id** | `varchar(255)` | YES | MUL | `NULL` |  |  |
-| **connection_type** | `varchar(20)` | YES |  | `'sheets'` |  |  |
+| **connection_type** | `varchar(20)` | YES |  | `sheets` |  |  |
 | **webhook_token** | `varchar(64)` | NO |  | *NULL* |  |  |
 | **is_active** | `tinyint(1)` | YES |  | `1` |  |  |
 | **sync_interval** | `int(11)` | YES |  | `5` |  |  |
 | **last_sync_at** | `datetime` | YES |  | `NULL` |  |  |
-| **sync_status** | `varchar(50)` | YES |  | `'idle'` |  |  |
+| **sync_status** | `varchar(50)` | YES |  | `idle` |  |  |
 | **email_template** | `mediumtext` | YES |  | `NULL` |  |  |
 | **created_at** | `datetime` | YES |  | `current_timestamp()` |  |  |
 | **require_both_contact** | `tinyint(1)` | YES |  | `0` |  |  |
-| **sync_mode** | `enum('all','new_only')` | YES |  | `'all'` |  |  |
+| **sync_mode** | `enum('all','new_only')` | YES |  | `all` |  |  |
 | **is_initialized** | `tinyint(1)` | YES |  | `0` |  |  |
 | **is_silent** | `tinyint(1)` | YES |  | `0` |  |  |
 | **sync_saleperson** | `tinyint(1)` | YES |  | `0` |  |  |
@@ -2176,7 +2176,7 @@
 | **typical_projects** | `text` | YES |  | `NULL` |  |  |
 | **focused_type** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **prestige_tier** | `varchar(50)` | YES |  | `NULL` |  |  |
-| **cooperation_status** | `varchar(50)` | YES |  | `'active'` |  |  |
+| **cooperation_status** | `varchar(50)` | YES |  | `active` |  |  |
 | **bank_account** | `varchar(255)` | YES |  | `NULL` |  |  |
 
 [Back to top](#table-of-contents)
@@ -2190,7 +2190,7 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **lead_id** | `int(11)` | YES | UNI | `NULL` |  |  |
 | **connection_id** | `int(11)` | YES | MUL | `NULL` |  |  |
-| **status** | `varchar(20)` | YES | MUL | `'pending'` |  |  |
+| **status** | `varchar(20)` | YES | MUL | `pending` |  |  |
 | **attempts** | `int(11)` | YES |  | `0` |  |  |
 | **next_retry_at** | `datetime` | YES |  | `NULL` |  |  |
 | **last_error** | `text` | YES |  | `NULL` |  |  |
@@ -2219,8 +2219,8 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **tenant_id** | `int(11)` | NO | MUL | *NULL* |  |  |
 | **name** | `varchar(100)` | NO |  | *NULL* |  |  |
-| **color** | `varchar(20)` | YES |  | `'#6366f1'` |  |  |
-| **entity_type** | `enum('contact','company','deal','all')` | YES |  | `'all'` |  |  |
+| **color** | `varchar(20)` | YES |  | `#6366f1` |  |  |
+| **entity_type** | `enum('contact','company','deal','all')` | YES |  | `all` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 
 [Back to top](#table-of-contents)
@@ -2297,7 +2297,7 @@
 | **bot_token** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **chat_id** | `varchar(255)` | NO | MUL | *NULL* |  |  |
 | **body_text** | `text` | NO |  | *NULL* |  |  |
-| **status** | `enum('pending','processing','sent','failed')` | YES | MUL | `'pending'` |  |  |
+| **status** | `enum('pending','processing','sent','failed')` | YES | MUL | `pending` |  |  |
 | **created_at** | `datetime` | YES |  | `current_timestamp()` |  |  |
 | **sent_at** | `datetime` | YES |  | `NULL` |  |  |
 | **attempts** | `int(11)` | YES |  | `0` |  |  |
@@ -2316,11 +2316,11 @@
 | **id** | `int(11)` | NO | PRI | *NULL* | auto_increment |  |
 | **name** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **slug** | `varchar(100)` | NO | UNI | *NULL* |  |  |
-| **plan** | `enum('free','pro','enterprise')` | NO |  | `'free'` |  |  |
+| **plan** | `enum('free','pro','enterprise')` | NO |  | `free` |  |  |
 | **logo_url** | `text` | YES |  | `NULL` |  |  |
-| **primary_color** | `varchar(20)` | YES |  | `'#BD1D2D'` |  |  |
-| **currency** | `char(3)` | YES |  | `'VND'` |  |  |
-| **timezone** | `varchar(50)` | YES |  | `'Asia/Ho_Chi_Minh'` |  |  |
+| **primary_color** | `varchar(20)` | YES |  | `#BD1D2D` |  |  |
+| **currency** | `char(3)` | YES |  | `VND` |  |  |
+| **timezone** | `varchar(50)` | YES |  | `Asia/Ho_Chi_Minh` |  |  |
 | **is_active** | `tinyint(1)` | NO |  | `1` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
 | **updated_at** | `timestamp` | NO |  | `current_timestamp()` | on update current_timestamp() |  |
@@ -2367,8 +2367,8 @@
 | **subject** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **customer_name** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **description** | `text` | YES |  | `NULL` |  |  |
-| **status** | `enum('open','in_progress','resolved','closed')` | NO | MUL | `'open'` |  |  |
-| **priority** | `enum('low','medium','high','urgent')` | NO |  | `'medium'` |  |  |
+| **status** | `enum('open','in_progress','resolved','closed')` | NO | MUL | `open` |  |  |
+| **priority** | `enum('low','medium','high','urgent')` | NO |  | `medium` |  |  |
 | **due_date** | `datetime` | YES |  | `NULL` |  |  |
 | **resolved_at** | `datetime` | YES |  | `NULL` |  |  |
 | **created_at** | `timestamp` | NO |  | `current_timestamp()` |  |  |
@@ -2416,18 +2416,18 @@
 | **phone** | `varchar(50)` | YES |  | `NULL` |  |  |
 | **avatar_url** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **signature_url** | `longtext` | YES |  | `NULL` |  | Chữ ký mẫu cá nhân |
-| **role** | `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin')` | YES |  | `'sales'` |  |  |
+| **role** | `enum('super_admin','admin','manager','assistant','sales','viewer','superadmin','director','hr','accountant','marketing','sale_admin','saleadmin')` | YES |  | `sales` |  |  |
 | **is_active** | `tinyint(1)` | NO |  | `1` |  |  |
 | **two_factor_enabled** | `tinyint(1)` | YES |  | `0` |  |  |
-| **two_factor_type** | `varchar(20)` | YES |  | `'email'` |  |  |
+| **two_factor_type** | `varchar(20)` | YES |  | `email` |  |  |
 | **two_factor_secret** | `varchar(255)` | YES |  | `NULL` |  |  |
 | **two_factor_backup_codes** | `text` | YES |  | `NULL` |  |  |
-| **status** | `enum('active','inactive','leave')` | YES |  | `'active'` |  |  |
+| **status** | `enum('active','inactive','leave')` | YES |  | `active` |  |  |
 | **vacation_mode** | `tinyint(1)` | YES |  | `0` |  |  |
 | **leave_start** | `date` | YES |  | `NULL` |  |  |
 | **leave_end** | `date` | YES |  | `NULL` |  |  |
-| **work_start_time** | `varchar(5)` | YES |  | `'08:00'` |  |  |
-| **work_end_time** | `varchar(5)` | YES |  | `'17:30'` |  |  |
+| **work_start_time** | `varchar(5)` | YES |  | `08:00` |  |  |
+| **work_end_time** | `varchar(5)` | YES |  | `17:30` |  |  |
 | **work_schedule** | `longtext` | YES |  | `NULL` |  |  |
 | **zalo_chat_id** | `varchar(255)` | YES | MUL | `NULL` |  |  |
 | **telegram_chat_id** | `varchar(255)` | YES | MUL | `NULL` |  |  |
@@ -2447,7 +2447,7 @@
 | **overtime_mode** | `tinyint(1)` | YES |  | `0` |  |  |
 | **permissions_json** | `longtext` | YES |  | `NULL` |  |  |
 | **extra_fields_json** | `longtext` | YES |  | `NULL` |  |  |
-| **manager_behavior_mode** | `varchar(50)` | NO |  | `'combined'` |  |  |
+| **manager_behavior_mode** | `varchar(50)` | NO |  | `combined` |  |  |
 | **use_custom_work_hours** | `tinyint(1)` | YES |  | `0` |  |  |
 
 [Back to top](#table-of-contents)
@@ -2478,7 +2478,7 @@
 | **team_id** | `int(11)` | YES | MUL | `NULL` |  |  |
 | **title** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **description** | `text` | YES |  | `NULL` |  |  |
-| **priority** | `enum('low','medium','high')` | NO |  | `'medium'` |  |  |
+| **priority** | `enum('low','medium','high')` | NO |  | `medium` |  |  |
 | **due_days_offset** | `int(11)` | NO |  | `1` |  |  |
 | **require_approval** | `tinyint(4)` | NO |  | `0` |  |  |
 | **is_active** | `tinyint(4)` | NO |  | `1` |  |  |
@@ -2516,7 +2516,7 @@
 | **bot_token** | `varchar(255)` | NO |  | *NULL* |  |  |
 | **chat_id** | `varchar(255)` | NO | MUL | *NULL* |  |  |
 | **body_text** | `text` | NO |  | *NULL* |  |  |
-| **status** | `enum('pending','processing','sent','failed')` | YES | MUL | `'pending'` |  |  |
+| **status** | `enum('pending','processing','sent','failed')` | YES | MUL | `pending` |  |  |
 | **created_at** | `datetime` | YES |  | `current_timestamp()` |  |  |
 | **sent_at** | `datetime` | YES |  | `NULL` |  |  |
 | **attempts** | `int(11)` | YES |  | `0` |  |  |

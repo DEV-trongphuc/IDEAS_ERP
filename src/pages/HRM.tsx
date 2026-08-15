@@ -1280,7 +1280,9 @@ export default function HRM() {
                         const leaveTypeText = req.leave_type === 'annual' ? t('Phép năm') : 
                                             req.leave_type === 'sick' ? t('Nghỉ ốm') : 
                                             req.leave_type === 'compensatory' ? t('Nghỉ bù') : 
+                                            req.leave_type === 'special_paid' ? t('Nghỉ chế độ (Hiếu/Hỉ)') :
                                             req.leave_type === 'overtime' ? t('Tăng ca') :
+                                            req.leave_type === 'remote_work' ? t('Làm từ xa (WFH)') :
                                             req.leave_type === 'late_early' ? t('Đi trễ/Về sớm') : t('Không lương');
 
                         return (
@@ -1300,8 +1302,8 @@ export default function HRM() {
                               <span style={{ 
                                 fontSize: '0.725rem', 
                                 fontWeight: 800, 
-                                backgroundColor: req.leave_type === 'overtime' ? 'rgba(139, 92, 246, 0.08)' : 'rgba(59, 130, 246, 0.08)',
-                                color: req.leave_type === 'overtime' ? '#8b5cf6' : '#3b82f6', 
+                                backgroundColor: req.leave_type === 'overtime' ? 'rgba(139, 92, 246, 0.08)' : req.leave_type === 'special_paid' ? 'rgba(236, 72, 153, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+                                color: req.leave_type === 'overtime' ? '#8b5cf6' : req.leave_type === 'special_paid' ? '#ec4899' : '#3b82f6', 
                                 padding: '2px 10px', 
                                 borderRadius: '20px', 
                                 textTransform: 'uppercase' 

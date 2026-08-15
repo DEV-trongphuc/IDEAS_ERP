@@ -111,6 +111,15 @@ require_once __DIR__ . '/test_ai_training_structure.php';
 echo "\n--- 29. CHAY TEST SUITE: WEBHOOK & REMINDERS TENANT ISOLATION ---\n";
 require_once __DIR__ . '/test_webhook_sync_tenant_isolation.php';
 
+echo "\n--- 30. CHAY TEST SUITE: MASTER OPERATIONS (NOTIFICATIONS, APPROVALS, PO/SO, WORKSPACE) ---\n";
+require_once __DIR__ . '/test_master_operations_audit.php';
+
+echo "\n--- 31. CHAY TEST SUITE: MASTER HRM & ATTENDANCE AUDIT ---\n";
+require_once __DIR__ . '/test_master_hrm_audit.php';
+
+echo "\n--- 32. CHAY TEST SUITE: 4-LAYER COMPREHENSIVE HRM VERIFICATION ---\n";
+require_once __DIR__ . '/test_comprehensive_hrm_verification.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 
