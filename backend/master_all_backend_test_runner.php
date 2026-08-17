@@ -120,6 +120,9 @@ require_once __DIR__ . '/test_master_hrm_audit.php';
 echo "\n--- 32. CHAY TEST SUITE: 4-LAYER COMPREHENSIVE HRM VERIFICATION ---\n";
 require_once __DIR__ . '/test_comprehensive_hrm_verification.php';
 
+echo "\n--- 33. CHAY TEST SUITE: DATA EXPORT & FILTER INTEGRITY ---\n";
+require_once __DIR__ . '/test_export_logic.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 

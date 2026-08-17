@@ -23,6 +23,7 @@ import { CopyButton } from '../components/ui/CopyButton';
 import { Tooltip } from '../components/ui/Tooltip';
 import api from '../api/axios';
 import { fetchAPI } from '../utils/api';
+import { downloadExportFile } from '../utils/exportHelper';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -773,38 +774,58 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
     });
   };
 
-  const bulkExport = () => {
-    const params = new URLSearchParams();
-    params.set('type', 'contact');
-    params.set('token', localStorage.getItem('token') || '');
-    if (debouncedSearch) params.set('search', debouncedSearch);
+  const bulkExport = async () => {
+    const params: Record<string, any> = {
+      type: 'contact',
+      search: debouncedSearch,
+      segment,
+    };
+    if (segment === 'customer') {
+      params.student_sub_tab = studentSubTab;
+    }
     if (activeFilters.status) {
       if (/^\d+$/.test(activeFilters.status)) {
-        params.set('stage_id', activeFilters.status);
+        params.stage_id = activeFilters.status;
       } else {
-        params.set('status', activeFilters.status);
+        params.status = activeFilters.status;
       }
     }
-    if (activeFilters.source) params.set('source', activeFilters.source);
-    if (activeFilters.ownerId) params.set('owner_id', activeFilters.ownerId);
-    if (activeFilters.projectId) params.set('project_id', activeFilters.projectId);
-    if (activeFilters.campaignId) params.set('campaign_id', activeFilters.campaignId);
-    if (activeFilters.tag) params.set('tag', activeFilters.tag);
-    if (activeFilters.dataType) params.set('data_type', activeFilters.dataType);
+    if (activeFilters.source) params.source = activeFilters.source;
+    if (activeFilters.ownerId) params.owner_id = activeFilters.ownerId;
+    if (activeFilters.projectId) params.project_id = activeFilters.projectId;
+    if (activeFilters.campaignId) params.campaign_id = activeFilters.campaignId;
+    if (activeFilters.tag) params.tag = activeFilters.tag;
+    if (activeFilters.dataType) params.data_type = activeFilters.dataType;
     if (activeFilters.dateActive) {
-      params.set('date_field', activeFilters.dateField);
-      params.set('date_type', activeFilters.dateType);
+      params.date_field = activeFilters.dateField;
+      params.date_type = activeFilters.dateType;
       if (activeFilters.dateType === 'range') {
-        if (activeFilters.fromDate) params.set('from', activeFilters.fromDate);
-        if (activeFilters.toDate) params.set('to', activeFilters.toDate);
+        if (activeFilters.fromDate) params.from = activeFilters.fromDate;
+        if (activeFilters.toDate) params.to = activeFilters.toDate;
       } else if (activeFilters.dateType === 'before') {
-        if (activeFilters.beforeDate) params.set('to', activeFilters.beforeDate);
+        if (activeFilters.beforeDate) params.to = activeFilters.beforeDate;
       } else if (activeFilters.dateType === 'after') {
-        if (activeFilters.afterDate) params.set('from', activeFilters.afterDate);
+        if (activeFilters.afterDate) params.from = activeFilters.afterDate;
       }
     }
-    window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
+    const teamId = getEffectiveTeamId();
+    if (teamId) {
+      params.team_id = teamId;
+    }
+
     addToast('Đang tải xuống dữ liệu Export...', 'info');
+    try {
+      await downloadExportFile({
+        endpoint: '/export',
+        params,
+        defaultFilename: `export_contacts_${Date.now()}.csv`,
+        onSuccess: () => {
+          addToast('Tải xuống danh sách liên hệ thành công!', 'success');
+        },
+      });
+    } catch (err: any) {
+      addToast(err?.message || 'Xuất danh sách thất bại. Vui lòng thử lại sau.', 'error');
+    }
   };
   const bulkTag    = () => addToast('Mở gán tag hàng loạt...', 'info');
   const bulkEmail  = () => addToast(`Soạn email cho ${selected.size} liên hệ...`, 'info');

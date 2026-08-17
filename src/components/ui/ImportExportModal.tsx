@@ -5,6 +5,7 @@ import { X, Upload, Download, FileText, AlertTriangle, CheckCircle, RefreshCw } 
 import { useUIStore } from '../../store/uiStore';
 import { CustomRadio } from './CustomRadio';
 import api from '../../api/axios';
+import { downloadExportFile } from '../../utils/exportHelper';
 
 interface ImportExportModalProps {
   isOpen: boolean;
@@ -76,9 +77,20 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, on
     }
   };
 
-  const handleDownloadTemplate = () => {
-    window.open(`${api.defaults.baseURL}/import/template?type=${type}&token=${localStorage.getItem('token')}`, '_blank');
-    addToast('Đang tải file mẫu...', 'success');
+  const handleDownloadTemplate = async () => {
+    addToast('Đang tải file mẫu...', 'info');
+    try {
+      await downloadExportFile({
+        endpoint: '/import/template',
+        params: { type },
+        defaultFilename: `template_${type}.csv`,
+        onSuccess: () => {
+          addToast('Tải file mẫu thành công!', 'success');
+        }
+      });
+    } catch (err: any) {
+      addToast(err?.message || 'Lỗi khi tải file mẫu', 'error');
+    }
   };
 
   return typeof document !== 'undefined' ? createPortal(

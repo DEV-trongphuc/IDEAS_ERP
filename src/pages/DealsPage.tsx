@@ -12,6 +12,7 @@ const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(
 const CompanyDrawer = lazy(() => import('./CompanyDrawer').then(module => ({ default: module.CompanyDrawer })));
 const DealDrawer = lazy(() => import('./DealDrawer').then(module => ({ default: module.DealDrawer })));
 import api from '../api/axios';
+import { downloadExportFile } from '../utils/exportHelper';
 import { useAuthStore } from '../store/authStore';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { CustomCheckbox } from '../components/ui/CustomCheckbox';
@@ -267,18 +268,30 @@ export const DealsPage: React.FC = () => {
     setSelected(new Set(getVisibleItems().map(v => v.id)));
   };
 
-  const bulkExport = () => {
-    const params = new URLSearchParams();
-    params.set('type', pipelineView === 'contacts' ? 'contact' : (pipelineView === 'companies' ? 'company' : 'deal'));
-    params.set('token', localStorage.getItem('token') || '');
-    if (debouncedSearch) params.set('search', debouncedSearch);
-    if (filterAssignee) params.set('owner_id', filterAssignee);
-    if (filterStage) params.set('stage_id', filterStage);
-    if (filterDateFrom) params.set('from', filterDateFrom);
-    if (filterDateTo) params.set('to', filterDateTo);
+  const bulkExport = async () => {
+    const type = pipelineView === 'contacts' ? 'contact' : (pipelineView === 'companies' ? 'company' : 'deal');
+    const params: Record<string, any> = {
+      type,
+      search: debouncedSearch,
+      owner_id: filterAssignee,
+      stage_id: filterStage,
+      from: filterDateFrom,
+      to: filterDateTo,
+    };
 
-    window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
     addToast('Đang tải xuống dữ liệu Export...', 'info');
+    try {
+      await downloadExportFile({
+        endpoint: '/export',
+        params,
+        defaultFilename: `export_${type}_${Date.now()}.csv`,
+        onSuccess: () => {
+          addToast('Tải xuống dữ liệu thành công!', 'success');
+        },
+      });
+    } catch (err: any) {
+      addToast(err?.message || 'Xuất dữ liệu thất bại', 'error');
+    }
   };
 
   const bulkMove = async () => {
@@ -868,16 +881,7 @@ export const DealsPage: React.FC = () => {
         onClose={() => setShowImportExport(false)} 
         entityName={pipelineView === 'deals' ? 'Cơ hội' : (pipelineView === 'contacts' ? 'Liên hệ' : 'Công ty')}
         onExport={() => {
-            const type = pipelineView === 'deals' ? 'deal' : (pipelineView === 'contacts' ? 'contact' : 'company');
-            const params = new URLSearchParams();
-            params.set('type', type);
-            params.set('token', localStorage.getItem('token') || '');
-            if (debouncedSearch) params.set('search', debouncedSearch);
-            if (filterAssignee) params.set('owner_id', filterAssignee);
-            if (filterStage) params.set('stage_id', filterStage);
-            if (filterDateFrom) params.set('from', filterDateFrom);
-            if (filterDateTo) params.set('to', filterDateTo);
-            window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
+            bulkExport();
         }}
       />
 

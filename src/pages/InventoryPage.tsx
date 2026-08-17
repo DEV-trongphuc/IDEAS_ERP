@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '../store/uiStore';
 import { PurchaseOrdersTab } from '../components/PurchaseOrdersTab';
 import api from '../api/axios';
+import { downloadExportFile } from '../utils/exportHelper';
 import { useLanguage } from '../contexts/LanguageContext';
 import { EmptyCard } from '../components/ui/EmptyCard';
 import { Avatar } from '../components/ui/Avatar';
@@ -268,14 +269,24 @@ export default function InventoryPage() {
     expiringSoon: batches.filter(b => b.expiry_date && new Date(b.expiry_date) <= new Date(now + 30 * 24 * 60 * 60 * 1000) && b.current_qty > 0).length
   };
 
-  const handleExport = () => {
-    const params = new URLSearchParams();
-    params.set('type', 'inventory');
-    params.set('token', localStorage.getItem('token') || '');
-    if (debouncedSearch) params.set('search', debouncedSearch);
-    if (statusFilter && statusFilter !== 'all') params.set('stock_status', statusFilter);
-    window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
-    addToast('Đang tải xuống danh sách sản phẩm theo bộ lọc hiện tại...', 'info');
+  const handleExport = async () => {
+    addToast('Đang tải xuống dữ liệu kho hàng theo bộ lọc...', 'info');
+    try {
+      await downloadExportFile({
+        endpoint: '/export',
+        params: {
+          type: 'inventory',
+          search: debouncedSearch,
+          stock_status: statusFilter !== 'all' ? statusFilter : undefined,
+        },
+        defaultFilename: `export_inventory_${Date.now()}.csv`,
+        onSuccess: () => {
+          addToast('Tải xuống dữ liệu kho hàng thành công!', 'success');
+        },
+      });
+    } catch (err: any) {
+      addToast(err?.message || 'Xuất dữ liệu kho hàng thất bại', 'error');
+    }
   };
 
   return (

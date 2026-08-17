@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Pagination } from '../components/ui/Pagination';
 import { ImportExportModal } from '../components/ui/ImportExportModal';
 import api from '../api/axios';
+import { downloadExportFile } from '../utils/exportHelper';
 import { PhoneLink } from '../components/ui/PhoneLink';
 import { useDebounce } from '../hooks/useDebounce';
 import { CustomSelect } from '../components/ui/CustomSelect';
@@ -657,15 +658,24 @@ export const CompaniesPage: React.FC = () => {
         isOpen={showImportExport} 
         onClose={() => setShowImportExport(false)} 
         entityName="Đối tác" 
-        onExport={(format) => {
-          const authRaw = localStorage.getItem('minth-auth');
-          const authToken = authRaw ? JSON.parse(authRaw)?.state?.accessToken : '';
-          const params = new URLSearchParams();
-          params.set('type', 'company');
-          params.set('token', authToken || localStorage.getItem('token') || '');
-          if (debouncedSearch) params.set('search', debouncedSearch);
-          if (statusFilter) params.set('status', statusFilter);
-          window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
+        onExport={async (format) => {
+          addToast('Đang tải xuống danh sách đối tác...', 'info');
+          try {
+            await downloadExportFile({
+              endpoint: '/export',
+              params: {
+                type: 'company',
+                search: debouncedSearch,
+                status: statusFilter || undefined,
+              },
+              defaultFilename: `export_companies_${Date.now()}.csv`,
+              onSuccess: () => {
+                addToast('Tải xuống danh sách đối tác thành công!', 'success');
+              },
+            });
+          } catch (err: any) {
+            addToast(err?.message || 'Xuất danh sách đối tác thất bại', 'error');
+          }
         }}
       />
     </div>

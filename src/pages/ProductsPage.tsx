@@ -5,6 +5,7 @@ import { Plus, Package, Pencil, Trash2, X, Loader2, Search, Layers, Download } f
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '../store/uiStore';
 import api from '../api/axios';
+import { downloadExportFile } from '../utils/exportHelper';
 import { useDebounce } from '../hooks/useDebounce';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { CustomCheckbox } from '../components/ui/CustomCheckbox';
@@ -111,13 +112,23 @@ export const ProductsPage: React.FC = () => {
     }
   };
 
-  const handleExport = () => {
-    const params = new URLSearchParams();
-    params.set('type', 'product');
-    params.set('token', localStorage.getItem('token') || '');
-    if (search) params.set('search', search);
-    window.open(`${api.defaults.baseURL}/export?${params.toString()}`, '_blank');
+  const handleExport = async () => {
     addToast('Đang xuất danh sách sản phẩm theo bộ lọc hiện tại...', 'info');
+    try {
+      await downloadExportFile({
+        endpoint: '/export',
+        params: {
+          type: 'product',
+          search,
+        },
+        defaultFilename: `export_products_${Date.now()}.csv`,
+        onSuccess: () => {
+          addToast('Tải xuống danh sách sản phẩm thành công!', 'success');
+        },
+      });
+    } catch (err: any) {
+      addToast(err?.message || 'Xuất danh sách sản phẩm thất bại', 'error');
+    }
   };
 
   return (
