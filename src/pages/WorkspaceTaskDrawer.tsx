@@ -769,6 +769,27 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     }
   }, [isOpen, task, erpMeta?.checklist]);
 
+  // Auto-scroll and pulse highlight comment from notification
+  useEffect(() => {
+    if (isOpen && comments.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const highlightCommentId = params.get('highlight_comment_id');
+      if (highlightCommentId) {
+        setActiveTab('comments');
+        setTimeout(() => {
+          const element = document.getElementById(`workspace-comment-${highlightCommentId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('comment-highlight-pulse');
+            setTimeout(() => {
+              element.classList.remove('comment-highlight-pulse');
+            }, 3000);
+          }
+        }, 350);
+      }
+    }
+  }, [isOpen, comments]);
+
   useEffect(() => {
     if (subtaskComments.length > 0) {
       const targetSubtaskId = searchParams.get('subtask_id');

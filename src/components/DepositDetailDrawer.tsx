@@ -61,6 +61,13 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
   const { t } = useLanguage();
   const { user } = useAuth();
   const { addToast, showConfirm } = useUIStore();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [activeDrawerTab, setActiveDrawerTab] = useState<'comments' | 'history'>('comments');
   
@@ -729,21 +736,21 @@ export const DepositDetailDrawer: React.FC<DepositDetailDrawerProps> = ({
               </div>
 
               {/* Drawer Body (Dual Pane) */}
-              <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
                 {/* Left Pane (Details & Milestones) */}
-                <div className="custom-scrollbar" style={{ flex: 1.3, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div className="custom-scrollbar" style={{ flex: isMobile ? 'none' : 1.3, padding: isMobile ? '1rem 1rem 40px 1rem' : '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '16px',
                     background: 'var(--color-surface)',
-                    padding: '20px',
+                    padding: isMobile ? '14px' : '20px',
                     borderRadius: '16px',
                     border: '1px solid var(--color-border-light)',
                     boxShadow: 'var(--shadow-sm)'
                   }}>
                     {/* Top Row: Customer & SKU */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.2fr 1fr', gap: isMobile ? '12px' : '20px' }}>
                       {/* Left: Customer Info */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <Avatar

@@ -1120,10 +1120,10 @@ export default function Approvals() {
         handleScanMissingDays(getPreviousMonthStr());
       }
       window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (openId && openType) {
+    } else if (openId) {
       setSelectedTimelineItem({
         id: Number(openId),
-        type: openType as any,
+        type: (openType || 'expense') as any,
         title: '',
         description: '',
         status: openStatus || 'pending',

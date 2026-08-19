@@ -417,7 +417,92 @@ export const Header = ({
     }
     setIsNotifModalOpen(false);
 
-    // Attendance Notification Check
+    // 1. Direct link resolution if link is already provided
+    if (notif.link) {
+      let targetLink = notif.link;
+
+      // Note link resolution: /notes/123 -> resolve target entity
+      const noteMatch = targetLink.match(/^\/notes\/(\d+)$/);
+      if (noteMatch) {
+        try {
+          const res = await fetchAPI(`notes/${noteMatch[1]}`);
+          if (res.success && res.data) {
+            const note = res.data;
+            if (note.entity_type === 'contact') {
+              targetLink = `/contacts?open_contact_id=${note.entity_id}&tab=timeline&highlight_note_id=${noteMatch[1]}`;
+            } else if (note.entity_type === 'deal') {
+              targetLink = `/deals?id=${note.entity_id}&highlight_note_id=${noteMatch[1]}`;
+            } else if (note.entity_type === 'company') {
+              targetLink = `/companies?id=${note.entity_id}`;
+            } else if (note.entity_type === 'project') {
+              targetLink = `/projects?id=${note.entity_id}`;
+            }
+          }
+        } catch (e) {
+          console.error("Error resolving note redirect link:", e);
+        }
+      }
+
+      // Activity link resolution: /activities/123 -> resolve related contact or task
+      const activityMatch = targetLink.match(/^\/activities\/(\d+)(?:\?.*)?$/) || targetLink.match(/\/activities\?(?:task_id|id)=(\d+)/);
+      if (activityMatch) {
+        try {
+          const res = await fetchAPI(`activities/${activityMatch[1]}`);
+          if (res.success && res.data) {
+            const act = res.data;
+            const actUrlObj = new URL(targetLink, window.location.origin);
+            const commentId = actUrlObj.searchParams.get('comment_id') || actUrlObj.searchParams.get('highlight_comment_id');
+            const commentQuery = commentId ? `&highlight_comment_id=${commentId}` : '';
+            if (act.contact_id) {
+              targetLink = `/contacts?open_contact_id=${act.contact_id}&tab=timeline&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
+            } else if (act.related_type === 'contact') {
+              targetLink = `/contacts?open_contact_id=${act.related_id}&tab=timeline&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
+            } else if (act.related_type === 'deal') {
+              targetLink = `/deals?id=${act.related_id}&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
+            } else {
+              targetLink = `/workspace?task_id=${activityMatch[1]}${commentQuery}`;
+            }
+          }
+        } catch (e) {
+          console.error("Error resolving activity redirect link:", e);
+        }
+      }
+
+      const urlObj = new URL(targetLink, window.location.origin);
+
+      // Contact matching
+      const contactMatch = targetLink.match(/^\/contacts\/(\d+)$/) || targetLink.match(/\/contacts\?(?:open_contact_id|id)=(\d+)/);
+      if (contactMatch) {
+        urlObj.searchParams.set('open_contact_id', contactMatch[1]);
+        targetLink = `/contacts?${urlObj.searchParams.toString()}`;
+      }
+
+      // Workspace Task matching
+      const fallbackActivityMatch = targetLink.match(/^\/activities\/(\d+)$/) || targetLink.match(/\/activities\?(?:task_id|id)=(\d+)/);
+      if (fallbackActivityMatch && !targetLink.includes('contacts')) {
+        urlObj.searchParams.set('task_id', fallbackActivityMatch[1]);
+        targetLink = `/workspace?${urlObj.searchParams.toString()}`;
+      }
+
+      // Project matching
+      const projectMatch = targetLink.match(/^\/projects\/(\d+)$/) || targetLink.match(/\/projects\?(?:id)=(\d+)/);
+      if (projectMatch) {
+        urlObj.searchParams.set('id', projectMatch[1]);
+        targetLink = `/projects?${urlObj.searchParams.toString()}`;
+      }
+
+      // Ticket matching
+      const ticketMatch = targetLink.match(/^\/tickets\/(\d+)$/) || targetLink.match(/\/tickets\?(?:id)=(\d+)/);
+      if (ticketMatch) {
+        urlObj.searchParams.set('id', ticketMatch[1]);
+        targetLink = `/support-tickets?${urlObj.searchParams.toString()}`;
+      }
+
+      navigate(targetLink);
+      return;
+    }
+
+    // 2. Attendance & Check-in fallback
     const isAttendance = 
       notif.type === 'attendance_update' || 
       notif.type === 'attendance' || 
@@ -436,12 +521,9 @@ export const Header = ({
       return;
     }
 
+    // 3. Contact ID from Reference fallback
     let contactIdFromRef: string | null = null;
-    if (notif.body && (
-      !notif.link || 
-      notif.link.includes('contact') || 
-      (notif.title && (notif.title.toLowerCase().includes('trùng số') || notif.title.toLowerCase().includes('rửa nguồn')))
-    )) {
+    if (notif.body) {
       const refMatch = notif.body.match(/Contact ID:\s*(\d+)/i) || notif.body.match(/ID:\s*(\d+)/i);
       if (refMatch) {
         contactIdFromRef = refMatch[1];
@@ -453,76 +535,8 @@ export const Header = ({
       return;
     }
 
-    if (notif.link) {
-      let targetLink = notif.link;
-      
-      const noteMatch = targetLink.match(/^\/notes\/(\d+)$/);
-      if (noteMatch) {
-        try {
-          const res = await fetchAPI(`notes/${noteMatch[1]}`);
-          if (res.success && res.data) {
-            const note = res.data;
-            if (note.entity_type === 'contact') {
-              targetLink = `/contacts?open_contact_id=${note.entity_id}&highlight_note_id=${noteMatch[1]}`;
-            } else if (note.entity_type === 'deal') {
-              targetLink = `/deals?id=${note.entity_id}&highlight_note_id=${noteMatch[1]}`;
-            } else if (note.entity_type === 'company') {
-              targetLink = `/companies?id=${note.entity_id}`;
-            } else if (note.entity_type === 'project') {
-              targetLink = `/projects?id=${note.entity_id}`;
-            }
-          }
-        } catch (e) {
-          console.error("Error resolving note redirect link:", e);
-        }
-      }
-
-      const activityMatch = targetLink.match(/^\/activities\/(\d+)(?:\?.*)?$/) || targetLink.match(/\/activities\?(?:task_id|id)=(\d+)/);
-      if (activityMatch) {
-        try {
-          const res = await fetchAPI(`activities/${activityMatch[1]}`);
-          if (res.success && res.data) {
-            const act = res.data;
-            const actUrlObj = new URL(targetLink, window.location.origin);
-            const commentId = actUrlObj.searchParams.get('comment_id') || actUrlObj.searchParams.get('highlight_comment_id');
-            const commentQuery = commentId ? `&highlight_comment_id=${commentId}` : '';
-            if (act.contact_id) {
-              targetLink = `/contacts?open_contact_id=${act.contact_id}&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
-            } else if (act.related_type === 'contact') {
-              targetLink = `/contacts?open_contact_id=${act.related_id}&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
-            } else if (act.related_type === 'deal') {
-              targetLink = `/deals?id=${act.related_id}&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
-            }
-          }
-        } catch (e) {
-          console.error("Error resolving activity redirect link:", e);
-        }
-      }
-
-      const urlObj = new URL(targetLink, window.location.origin);
-      const contactMatch = targetLink.match(/^\/contacts\/(\d+)$/) || targetLink.match(/\/contacts\?(?:open_contact_id|id)=(\d+)/);
-      if (contactMatch) {
-        urlObj.searchParams.set('open_contact_id', contactMatch[1]);
-        targetLink = `/contacts?${urlObj.searchParams.toString()}`;
-      } else {
-        const fallbackActivityMatch = targetLink.match(/^\/activities\/(\d+)$/) || targetLink.match(/\/activities\?(?:task_id|id)=(\d+)/);
-        if (fallbackActivityMatch) {
-          urlObj.searchParams.set('task_id', fallbackActivityMatch[1]);
-          targetLink = `/workspace?${urlObj.searchParams.toString()}`;
-        }
-        const projectMatch = targetLink.match(/^\/projects\/(\d+)$/) || targetLink.match(/\/projects\?(?:id)=(\d+)/);
-        if (projectMatch) {
-          urlObj.searchParams.set('id', projectMatch[1]);
-          targetLink = `/projects?${urlObj.searchParams.toString()}`;
-        }
-        const ticketMatch = targetLink.match(/^\/tickets\/(\d+)$/) || targetLink.match(/\/tickets\?(?:id)=(\d+)/);
-        if (ticketMatch) {
-          urlObj.searchParams.set('id', ticketMatch[1]);
-          targetLink = `/support-tickets?${urlObj.searchParams.toString()}`;
-        }
-      }
-      navigate(targetLink);
-    }
+    // Default fallback
+    navigate('/');
   };
 
   const handleLogout = () => {
@@ -949,6 +963,28 @@ export const Header = ({
           }}>
             <Command size={12} />K
           </span>
+        </button>
+
+        {/* Mobile Search Icon Button */}
+        <button 
+          onClick={handleOpenSearch}
+          style={{
+            width: 36,
+            height: 36,
+            display: isMobile ? 'flex' : 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--color-text-light)',
+            borderRadius: 8,
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            outline: 'none'
+          }}
+          title={t("Tìm kiếm toàn hệ thống")}
+        >
+          <Search size={20} />
         </button>
 
         {/* Keyboard Shortcuts Trigger Button */}
@@ -1648,11 +1684,14 @@ export const Header = ({
             // 1. Exact string matches
             if (lowercase === 'dashboard') return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
             if (lowercase === 'bàn làm việc') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
-            if (lowercase === 'chấm công') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
+            if (lowercase === 'chấm công' || lowercase === 'quản lý chấm công') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
             if (lowercase === 'báo cáo') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
+            if (lowercase === 'tiềm năng' || lowercase === 'khách hàng') return { bg: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' };
+            if (lowercase === 'pipeline') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
+            if (lowercase === 'nhật ký data') return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
             if (lowercase === 'thanh toán') return { bg: 'linear-gradient(135deg, #0d9488, #115e59)', color: '#ffffff' };
             if (lowercase === 'chi phí chi tiêu' || lowercase === 'purchase order') return { bg: 'linear-gradient(135deg, #10b981, #047857)', color: '#ffffff' };
-            if (lowercase === 'quy trình' || lowercase === 'quy trình phê duyệt') return { bg: 'linear-gradient(135deg, #dc2626, #991b1b)', color: '#ffffff' };
+            if (lowercase === 'quy trình' || lowercase === 'quy trình phê duyệt' || lowercase === 'phê duyệt') return { bg: 'linear-gradient(135deg, #dc2626, #991b1b)', color: '#ffffff' };
             if (lowercase === 'sales order') return { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff' };
             if (lowercase === 'nhà cung cấp') return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
             if (lowercase === 'đối tác kinh doanh' || lowercase === 'đối tác') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
@@ -1661,10 +1700,12 @@ export const Header = ({
             if (lowercase === 'chiến dịch') return { bg: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' };
             if (lowercase === 'tài khoản cá nhân') return { bg: 'linear-gradient(135deg, #64748b, #475569)', color: '#ffffff' };
             if (lowercase === 'phòng ban') return { bg: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff' };
-            if (lowercase === 'nhân sự công ty') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
+            if (lowercase === 'nhân sự công ty' || lowercase === 'nhân sự & lương') return { bg: 'linear-gradient(135deg, #8b5cf6, #5b21b6)', color: '#ffffff' };
             if (lowercase === 'lịch trình') return { bg: 'linear-gradient(135deg, #6366f1, #4338ca)', color: '#ffffff' };
             if (lowercase === 'phiếu lương cá nhân' || lowercase === 'phiếu lương') return { bg: 'linear-gradient(135deg, #ec4899, #be185d)', color: '#ffffff' };
             if (lowercase === 'ticket hỗ trợ' || lowercase === 'helpdesk') return { bg: 'linear-gradient(135deg, #ff7a00, #d05300)', color: '#ffffff' };
+            if (lowercase === 'cài đặt hệ thống') return { bg: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' };
+            if (lowercase === 'huấn luyện ai') return { bg: 'linear-gradient(135deg, #bd1d2d, #8b101b)', color: '#ffffff' };
 
             // 2. Keyword fallback checks (ordered from specific to general)
             if (lowercase.includes('dashboard')) return { bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' };
@@ -1822,22 +1863,206 @@ export const Header = ({
             : [];
 
           const RECENT_TARGETS_BY_ROLE: Record<string, string[]> = {
-            admin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            superadmin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            super_admin: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            director: ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Cài đặt hệ thống', 'Huấn luyện AI'],
-            sale: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Helpdesk', 'Lịch trình'],
-            sales: ['Quy trình', 'Bàn làm việc', 'Khách hàng', 'Pipeline', 'Chấm công', 'Phiếu lương', 'Tài liệu', 'Helpdesk', 'Lịch trình'],
-            accountant: ['Quy trình', 'Sales Order', 'Purchase Order', 'Phiếu lương', 'Nhà cung cấp', 'Đối tác', 'Bàn làm việc', 'Tài liệu', 'Lịch trình'],
-            hr: ['Quy trình', 'Nhân sự & Lương', 'Quản lý chấm công', 'Lịch trình', 'Bàn làm việc', 'Phòng ban', 'Tài liệu', 'Phiếu lương', 'Tài khoản cá nhân'],
-            marketing: ['Chiến dịch', 'AI Pre-screener', 'Tích hợp Data', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Tài liệu', 'Bàn làm việc']
+            admin: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Báo cáo',
+              'Tiềm năng',
+              'Pipeline',
+              'Nhật ký Data',
+              'Cài đặt hệ thống',
+              'Huấn luyện AI'
+            ],
+            superadmin: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Báo cáo',
+              'Tiềm năng',
+              'Pipeline',
+              'Nhật ký Data',
+              'Cài đặt hệ thống',
+              'Huấn luyện AI'
+            ],
+            super_admin: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Báo cáo',
+              'Tiềm năng',
+              'Pipeline',
+              'Nhật ký Data',
+              'Cài đặt hệ thống',
+              'Huấn luyện AI'
+            ],
+            director: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Báo cáo',
+              'Tiềm năng',
+              'Pipeline',
+              'Nhật ký Data',
+              'Cài đặt hệ thống',
+              'Nhân sự công ty'
+            ],
+            manager: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Tiềm năng',
+              'Pipeline',
+              'Báo cáo',
+              'Phiếu lương',
+              'Nhân sự công ty',
+              'Lịch trình'
+            ],
+            assistant: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Tiềm năng',
+              'Pipeline',
+              'Báo cáo',
+              'Phiếu lương',
+              'Nhân sự công ty'
+            ],
+            sale: [
+              'Quy trình',
+              'Chấm công',
+              'Bàn làm việc',
+              'Tiềm năng',
+              'Pipeline',
+              'Phiếu lương',
+              'Lịch trình',
+              'Tài liệu',
+              'Helpdesk',
+              'Học viên'
+            ],
+            sales: [
+              'Quy trình',
+              'Chấm công',
+              'Bàn làm việc',
+              'Tiềm năng',
+              'Pipeline',
+              'Phiếu lương',
+              'Lịch trình',
+              'Tài liệu',
+              'Helpdesk',
+              'Học viên'
+            ],
+            accountant: [
+              'Quy trình',
+              'Chấm công',
+              'Dashboard',
+              'Sales Order',
+              'Purchase Order',
+              'Phiếu lương',
+              'Nhà cung cấp',
+              'Đối tác',
+              'Bàn làm việc',
+              'Tài liệu'
+            ],
+            hr: [
+              'Quy trình',
+              'Quản lý chấm công',
+              'Nhân sự & Lương',
+              'Phiếu lương',
+              'Phòng ban',
+              'Nhân sự công ty',
+              'Lịch trình',
+              'Bàn làm việc',
+              'Tài khoản cá nhân'
+            ],
+            marketing: [
+              'Quy trình',
+              'Chấm công',
+              'Chiến dịch',
+              'Tiềm năng',
+              'Nhật ký Data',
+              'AI Pre-screener',
+              'Tích hợp Data',
+              'Bàn làm việc',
+              'Tài liệu'
+            ],
+            sale_admin: [
+              'Quy trình',
+              'Chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Tiềm năng',
+              'Pipeline',
+              'Phiếu lương',
+              'Lịch trình',
+              'Tài liệu'
+            ],
+            saleadmin: [
+              'Quy trình',
+              'Chấm công',
+              'Dashboard',
+              'Bàn làm việc',
+              'Tiềm năng',
+              'Pipeline',
+              'Phiếu lương',
+              'Lịch trình',
+              'Tài liệu'
+            ]
           };
 
-          const recentTargets = RECENT_TARGETS_BY_ROLE[role.toLowerCase()] || ['Quy trình', 'Dashboard', 'Bàn làm việc', 'Báo cáo', 'Khách hàng', 'Pipeline', 'Nhật ký Data', 'Lịch trình', 'Tài liệu'];
-          const recentItems = recentTargets
-            .map(name => allVisibleItems.find(item => item.name === name))
-            .filter(Boolean)
-            .slice(0, isMobile ? 9 : 7);
+          const defaultRecentTargets = [
+            'Quy trình',
+            'Chấm công',
+            'Quản lý chấm công',
+            'Dashboard',
+            'Bàn làm việc',
+            'Tiềm năng',
+            'Pipeline',
+            'Báo cáo',
+            'Phiếu lương',
+            'Lịch trình',
+            'Nhật ký Data',
+            'Tài liệu'
+          ];
+          const rawRole = (role || '').toLowerCase();
+          const targetList = RECENT_TARGETS_BY_ROLE[rawRole] || defaultRecentTargets;
+
+          const findItem = (name: string) => {
+            let found = allVisibleItems.find(item => item.name === name);
+            if (!found && (name === 'Chấm công' || name === 'Quản lý chấm công')) {
+              found = allVisibleItems.find(item => item.name === 'Chấm công' || item.name === 'Quản lý chấm công');
+            }
+            if (!found && (name === 'Khách hàng' || name === 'Tiềm năng')) {
+              found = allVisibleItems.find(item => item.name === 'Tiềm năng' || item.name === 'Khách hàng');
+            }
+            return found;
+          };
+
+          const recentItemsList: any[] = [];
+          for (const name of targetList) {
+            const item = findItem(name);
+            if (item && !recentItemsList.some(it => it.name === item.name || it.href === item.href)) {
+              recentItemsList.push(item);
+            }
+            if (recentItemsList.length >= (isMobile ? 9 : 9)) break;
+          }
+
+          if (recentItemsList.length < (isMobile ? 9 : 9)) {
+            for (const item of allVisibleItems) {
+              if (!recentItemsList.some(it => it.name === item.name || it.href === item.href)) {
+                recentItemsList.push(item);
+              }
+              if (recentItemsList.length >= (isMobile ? 9 : 9)) break;
+            }
+          }
+
+          const recentItems = recentItemsList.slice(0, isMobile ? 9 : 9);
 
           return (
             <div style={{ paddingRight: '4px' }}>

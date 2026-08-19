@@ -474,10 +474,10 @@ const ActivityComments: React.FC<{
             const element = document.getElementById(`comment-${highlightCommentId}`);
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              element.style.backgroundColor = '#fef08a'; // yellow-200
+              element.classList.add('comment-highlight-pulse');
               setTimeout(() => {
-                element.style.backgroundColor = 'transparent';
-              }, 2500);
+                element.classList.remove('comment-highlight-pulse');
+              }, 3000);
             }
           }, 300);
         } else {
@@ -1325,6 +1325,19 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
       setHasNavigated(true);
     }
   }, [activeTab]);
+
+  // Auto-activate requested tab from notification deep-link
+  useEffect(() => {
+    if (isOpen) {
+      const params = new URLSearchParams(window.location.search);
+      const targetTab = params.get('tab');
+      if (targetTab) {
+        setActiveTab(targetTab);
+      } else if (params.get('highlight_activity_id') || params.get('highlight_note_id') || params.get('highlight_comment_id')) {
+        setActiveTab('timeline');
+      }
+    }
+  }, [isOpen]);
   
   useEffect(() => {
     setTabRenderReady(true);
@@ -5284,11 +5297,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                 right: 0,
                 top: 0,
                 bottom: 0,
-                height: isMobileOrTablet ? '92dvh' : '100vh',
-                marginTop: isMobileOrTablet ? '8dvh' : 0,
-                borderRadius: isMobileOrTablet ? '24px 24px 0 0' : 0,
+                height: isMobileOrTablet ? '100dvh' : '100vh',
+                marginTop: 0,
+                borderRadius: 0,
                 overflow: 'hidden',
-                boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+                boxShadow: isMobileOrTablet ? 'none' : '-10px 0 30px rgba(0,0,0,0.15)',
                 zIndex: zIndex || 1000010,
                 display: 'flex',
                 flexDirection: 'column',
@@ -5296,9 +5309,6 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                 background: 'var(--color-surface)'
               }}
             >
-              {isMobileOrTablet && (
-                <div style={{ width: '36px', height: '5px', background: 'var(--color-border)', borderRadius: '999px', margin: '12px auto 2px', flexShrink: 0 }} />
-              )}
               <AnimatePresence>
                 {showAvatarModal && (
                   <div className="overlay-backdrop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000020 }}>
@@ -5608,10 +5618,32 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                   flexShrink: 0
                 }}>
                   <button 
-                    onClick={handleClose} 
-                    style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                    onClick={() => {
+                      if (activeTab) {
+                        setActiveTab('');
+                      } else {
+                        handleClose();
+                      }
+                    }} 
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--color-text)',
+                      cursor: 'pointer',
+                      padding: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '8px',
+                      flexShrink: 0
+                    }}
+                    title={activeTab ? "Quay lại danh sách" : "Đóng"}
                   >
-                    <LogOut size={20} style={{ transform: 'rotate(180deg)' }} />
+                    {activeTab ? (
+                      <ChevronLeft size={24} style={{ color: 'var(--color-text)' }} />
+                    ) : (
+                      <LogOut size={20} style={{ transform: 'rotate(180deg)', color: 'var(--color-text-muted)' }} />
+                    )}
                   </button>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '0 0.5rem', overflow: 'hidden' }}>
                     <Avatar 
@@ -5621,6 +5653,11 @@ export const CustomerProfileDrawer: React.FC<Props> = ({ isOpen, onClose, contac
                     />
                     <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center' }}>
                       {fullName}
+                      {activeTab && (
+                        <span style={{ fontWeight: 600, color: 'var(--color-text-muted)', marginLeft: '6px', fontSize: '0.78rem' }}>
+                          · {TABS.find(t => t.id === activeTab)?.label || ''}
+                        </span>
+                      )}
                       {((formData.dl_status || contact?.dl_status) === 'databank_claim' || (formData.source || contact?.source) === 'databank') ? (
                         <span title="Khách hàng từ Databank" style={{ display: 'inline-flex', marginLeft: '6px', color: 'var(--color-text-muted)', flexShrink: 0 }}>
                           <Layers size={13} />

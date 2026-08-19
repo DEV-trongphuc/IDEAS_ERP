@@ -1185,6 +1185,30 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
                 </div>
               </form>
             </div>
+
+            {/* Mobile Sticky Bottom Action Dock */}
+            {isMobile && (
+              <div className="mobile-sticky-dock" style={{ zIndex: baseZIndex + 20 }}>
+                <button
+                  type="button"
+                  className="btn outline"
+                  onClick={onClose}
+                  disabled={isSaving}
+                  style={{ flex: 1, height: '42px', fontWeight: 700 }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  form="create-deposit-form-drawer"
+                  className="btn primary"
+                  disabled={isSaving}
+                  style={{ flex: 2, height: '42px', fontWeight: 700 }}
+                >
+                  {isSaving ? 'Đang tạo...' : 'Tạo phiếu Thanh toán'}
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
       )}

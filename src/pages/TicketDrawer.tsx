@@ -136,14 +136,12 @@ export const TicketDrawer: React.FC<Props> = ({ isOpen, onClose, ticket, onUpdat
           const element = document.getElementById(`ticket-comment-${highlightCommentId}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            const bubble = element.querySelector('div > div > div:nth-child(2)') as HTMLElement;
+            const bubble = (element.querySelector('div > div > div:nth-child(2)') as HTMLElement) || element;
             if (bubble) {
-              const originalBg = bubble.style.background;
-              bubble.style.backgroundColor = '#fef08a';
-              bubble.style.transition = 'all 0.5s ease';
+              bubble.classList.add('comment-highlight-pulse');
               setTimeout(() => {
-                bubble.style.background = originalBg;
-              }, 2500);
+                bubble.classList.remove('comment-highlight-pulse');
+              }, 3000);
             }
             const newParams = new URLSearchParams(searchParams);
             newParams.delete('highlight_comment_id');

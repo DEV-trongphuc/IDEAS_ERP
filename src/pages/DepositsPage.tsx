@@ -243,6 +243,20 @@ export default function DepositsPage({ defaultTab = 'list' }: { defaultTab?: 'li
   // Manage Milestones State
   const [showManageModal, setShowManageModal] = useState(false);
   const [selectedDepForManage, setSelectedDepForManage] = useState<Deposit | null>(null);
+
+  // Auto-open deposit drawer from notification deep-link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get('open_id') || params.get('id');
+    if (openId && deposits.length > 0) {
+      const found = deposits.find((d: any) => String(d.id) === String(openId));
+      if (found) {
+        setSelectedDepForManage(found);
+        setShowManageModal(true);
+      }
+    }
+  }, [deposits]);
+
   const [tempMilestones, setTempMilestones] = useState<any[]>([]);
   const [isSavingMilestones, setIsSavingMilestones] = useState(false);
   const [actioningMilestoneId, setActioningMilestoneId] = useState<any>(null);

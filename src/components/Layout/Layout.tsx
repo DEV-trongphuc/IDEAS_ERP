@@ -137,13 +137,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     const roleLower = user?.role?.toLowerCase() || '';
     const isSalesRole = roleLower === 'sale' || roleLower === 'sales';
     const isAccountantRole = roleLower === 'accountant';
+    const totalApprovalsBadge = (pendingCoopsCount || 0) + (pendingExpensesCount || 0) + (salesPendingSignCount || 0);
 
     if (isSalesRole) {
       return [
-        { label: t('Quy trình'), href: '/approvals', icon: Clipboard },
+        { label: t('Quy trình'), href: '/approvals', icon: Clipboard, badge: totalApprovalsBadge },
         { label: t('Chấm công'), href: '/attendance', icon: Fingerprint },
         { label: t('Khách hàng'), href: '/contacts', icon: Users, isCenter: true },
-        { label: t('Bàn làm việc'), href: '/workspace', icon: CheckSquare },
+        { label: t('Bàn làm việc'), href: '/workspace', icon: CheckSquare, badge: supportTicketsCount },
         { label: t('Tôi'), href: '/account', icon: User }
       ];
     }
@@ -153,7 +154,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         { label: t('Dashboard'), href: '/', icon: Home },
         { label: t('Lịch trình'), href: '/calendar', icon: Calendar },
         { label: t('Khách hàng'), href: '/contacts', icon: Users, isCenter: true },
-        { label: t('Quy trình'), href: '/approvals', icon: Clipboard },
+        { label: t('Quy trình'), href: '/approvals', icon: Clipboard, badge: totalApprovalsBadge },
         { label: t('Tôi'), href: '/account', icon: User }
       ];
     }
@@ -161,9 +162,9 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     // Default for everyone else
     return [
       { label: t('Dashboard'), href: isSales ? '/sale-portal' : '/', icon: Home },
-      { label: t('Bàn làm việc'), href: '/workspace', icon: CheckSquare },
+      { label: t('Bàn làm việc'), href: '/workspace', icon: CheckSquare, badge: supportTicketsCount },
       { label: t('Khách hàng'), href: '/contacts', icon: Users, isCenter: true },
-      { label: t('Quy trình'), href: '/approvals', icon: Clipboard },
+      { label: t('Quy trình'), href: '/approvals', icon: Clipboard, badge: totalApprovalsBadge },
       { label: t('Tôi'), href: '/account', icon: User }
     ];
   };
@@ -2309,8 +2310,34 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
               key={idx}
               className={`mobile-bottom-nav-item ${isActive ? 'active' : ''}`}
               onClick={() => navigate(item.href)}
+              style={{ position: 'relative' }}
             >
-              <Icon size={20} />
+              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon size={20} />
+                {Boolean(item.badge && item.badge > 0) && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -8,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 3px',
+                    boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)',
+                    lineHeight: 1,
+                    zIndex: 10
+                  }}>
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
+              </div>
               <span className="mobile-bottom-nav-item-label">{item.label}</span>
             </button>
           );
