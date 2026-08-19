@@ -7,7 +7,7 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server, Home,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye, MessageSquare, Info
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye, MessageSquare, Info, Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -347,7 +347,13 @@ export default function Approvals() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showConfirm } = useUIStore();
-  const isMobile = window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 1024 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const isAdmin = ['admin', 'superadmin', 'super_admin', 'director', 'assistant', 'manager', 'hr'].includes(String(user?.role).toLowerCase());
   const [activeTab, setActiveTab] = useState<'pending' | 'my_requests'>(isAdmin ? 'pending' : 'my_requests');
@@ -649,7 +655,401 @@ export default function Approvals() {
   // CC list / related users state
   const [relatedUsers, setRelatedUsers] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [isDraggingAttachments, setIsDraggingAttachments] = useState(false);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleUploadFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+    setUploadingAttachments(true);
+    const toastId = toast.loading(`${t('Đang tải lên')} ${files.length} ${t('tệp tài liệu...')}`);
+    try {
+      const uploaded: any[] = [];
+      for (const file of files) {
+        if (file.size > 25 * 1024 * 1024) {
+          toast.error(`${t('Tệp')} ${file.name} ${t('vượt quá kích thước 25MB cho phép')}`);
+          continue;
+        }
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await api.post('/upload', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data && res.data.success && res.data.data?.url) {
+          uploaded.push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: res.data.data.url
+          });
+        } else {
+          throw new Error(res.data?.message || t('Tải lên thất bại'));
+        }
+      }
+      if (uploaded.length > 0) {
+        setAttachments(prev => [...prev, ...uploaded]);
+        toast.success(`${t('Đã thêm')} ${uploaded.length} ${t('tệp đính kèm thành công!')}`, { id: toastId });
+      } else {
+        toast.dismiss(toastId);
+      }
+    } catch (err: any) {
+      toast.error(t('Lỗi tải tệp lên: ') + (err?.message || ''), { id: toastId });
+    } finally {
+      setUploadingAttachments(false);
+    }
+  };
+
+  const handleCreateSubmit = async () => {
+    setSubmitting(true);
+    try {
+      if (editingItemId) {
+        if (editingItemType === 'leave') {
+          await fetchAPI(`hrm/leaves/${editingItemId}`, { method: 'DELETE' });
+        } else if (editingItemType === 'advance') {
+          await fetchAPI(`hrm/advances/${editingItemId}`, { method: 'DELETE' });
+        } else if (editingItemType === 'checkin') {
+          await api.delete(`/check-ins/${editingItemId}`);
+        } else if (editingItemType === 'expense') {
+          await api.delete(`/expenses/${editingItemId}`);
+        }
+      }
+      // Resolve the last active step in the approval chain as finalApproverId
+      let finalApproverId = 1003;
+      if (showStepDirector) {
+        finalApproverId = customApprover3?.id || users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()))?.id || 1003;
+      } else if (showStepAccountant) {
+        finalApproverId = customApprover2?.id || users.find(u => String(u.role).toLowerCase() === 'accountant')?.id || 1003;
+      } else if (showStepManager) {
+        finalApproverId = customApprover1?.id || users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()))?.id || 1003;
+      } else {
+        finalApproverId = proposerUser?.id || 1003;
+      }
+
+      if (selectedWorkflowDef?.id === 'print_stamp_send') {
+        finalApproverId = Number(pssExecutorId) || finalApproverId;
+      }
+
+      // Define 3 level approver IDs for multi-level expense approvals
+      const defaultApp1 = users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()));
+      const defaultAccountant = users.find(u => String(u.role).toLowerCase() === 'accountant');
+      const defaultDirector = users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
+
+      const appVal1 = showStepManager ? (customApprover1?.id || defaultApp1?.id || null) : null;
+      const appVal2 = showStepAccountant ? (customApprover2?.id || defaultAccountant?.id || null) : null;
+      const appVal3 = showStepDirector ? (customApprover3?.id || defaultDirector?.id || null) : null;
+
+      if (selectedWorkflowDef?.id === 'print_stamp_send') {
+        if (!pssReqEmployeeId) {
+          toast.error(t('Vui lòng chọn nhân viên yêu cầu.'));
+          setSubmitting(false);
+          return;
+        }
+        if (!pssExecutorId) {
+          toast.error(t('Vui lòng chọn người thực hiện.'));
+          setSubmitting(false);
+          return;
+        }
+        if (!pssRecipientName.trim()) {
+          toast.error(t('Vui lòng nhập tên người nhận.'));
+          setSubmitting(false);
+          return;
+        }
+        if (!pssRecipientAddress.trim()) {
+          toast.error(t('Vui lòng nhập địa chỉ người nhận.'));
+          setSubmitting(false);
+          return;
+        }
+        if (!pssRecipientPhone.trim()) {
+          toast.error(t('Vui lòng nhập số điện thoại người nhận.'));
+          setSubmitting(false);
+          return;
+        }
+        if (attachments.length === 0) {
+          toast.error(t('Vui lòng đính kèm hồ sơ cần đóng dấu.'));
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      if (formType === 'attendance_bulk') {
+        if (suggestedDays.length === 0) {
+          toast.error(t('Vui lòng quét và chọn ít nhất 1 ngày đề xuất bổ sung công.'));
+          setSubmitting(false);
+          return;
+        }
+        await api.post('/check-ins/bulk-request', {
+          month_period: bulkMonth,
+          details: suggestedDays,
+          approver_id: finalApproverId
+        });
+      } else if (formType === 'leave') {
+        let fromVal = leaveFrom;
+        let toVal = leaveTo;
+        let daysVal = 1.0;
+
+        if (leaveSession === 'full') {
+          const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+          fromVal = `${d}T08:00`;
+          toVal = `${d}T17:30`;
+          daysVal = 1.0;
+        } else if (leaveSession === 'morning') {
+          const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+          fromVal = `${d}T08:00`;
+          toVal = `${d}T12:00`;
+          daysVal = 0.5;
+        } else if (leaveSession === 'afternoon') {
+          const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+          fromVal = `${d}T13:30`;
+          toVal = `${d}T17:30`;
+          daysVal = 0.5;
+        } else if (leaveSession === 'intermittent') {
+          const validDates = intermittentDates.filter(item => item.date);
+          if (validDates.length === 0) {
+            toast.error(t('Vui lòng chọn ít nhất 1 ngày xin nghỉ.'));
+            setSubmitting(false);
+            return;
+          }
+          
+          const sortedDates = [...validDates].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const firstDate = sortedDates[0].date;
+          const lastDate = sortedDates[sortedDates.length - 1].date;
+          
+          fromVal = `${firstDate}T08:00`;
+          toVal = `${lastDate}T17:30`;
+          
+          daysVal = validDates.reduce((acc, item) => acc + (item.session === 'full' ? 1.0 : 0.5), 0);
+        } else {
+          if (leaveFrom && leaveTo && new Date(leaveTo) < new Date(leaveFrom)) {
+            toast.error(t('Ngày kết thúc không được nhỏ hơn ngày bắt đầu.'));
+            setSubmitting(false);
+            return;
+          }
+          daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
+        }
+
+        let leaveReasonStr = leaveReason;
+        if (leaveSession === 'intermittent') {
+          const datesLog = intermittentDates
+            .filter(item => item.date)
+            .map(item => `${item.date} (${item.session === 'full' ? t('Cả ngày') : item.session === 'morning' ? t('Sáng') : t('Chiều')})`)
+            .join(', ');
+          leaveReasonStr += ` [Ngày nghỉ chi tiết: ${datesLog}]`;
+        }
+
+        if (isRecurring) {
+          leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
+        }
+        await fetchAPI('hrm/leaves', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leave_type: leaveType,
+            reason: leaveReasonStr,
+            from_date: fromVal,
+            to_date: toVal,
+            total_days: daysVal,
+            approver_id: appVal1 || finalApproverId,
+            approver_id_2: appVal2
+          })
+        });
+      } else if (formType === 'late_early') {
+        if (lateEarlyMinutes > 180) {
+          toast.error(t('Thời gian đi muộn/về sớm không được quá 3 tiếng (180 phút). Vui lòng đăng ký nghỉ phép 1 buổi.'));
+          setSubmitting(false);
+          return;
+        }
+        const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+        const startTimeStr = `${d}T${otStart}`;
+        const fromDateObj = new Date(startTimeStr);
+        const toDateObj = new Date(fromDateObj.getTime() + lateEarlyMinutes * 60000);
+        const formattedFrom = startTimeStr;
+        const formattedTo = toDateObj.toISOString().replace('Z', '').substring(0, 16);
+
+        const descStr = `[${lateEarlyType === 'late' ? 'Đăng ký Đi muộn' : 'Đăng ký Về sớm'}] Thời gian: ${otStart} (${lateEarlyMinutes} phút). Lý do: ${leaveReason}`;
+
+        await fetchAPI('hrm/leaves', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leave_type: 'late_early',
+            reason: descStr,
+            from_date: formattedFrom,
+            to_date: formattedTo,
+            total_days: 0.0,
+            approver_id: finalApproverId
+          })
+        });
+      } else if (formType === 'overtime') {
+        const fromStr = `${otDate}T${otStart}`;
+        const toStr = `${otDate}T${otEnd}`;
+        const hours = diffHours(otStart, otEnd);
+        const daysVal = Number((hours / 8).toFixed(2));
+
+        const descStr = `[Đăng ký Tăng ca] Thời gian: ${otStart} - ${otEnd} (${hours} giờ = ${daysVal} ngày công OT). Lý do: ${leaveReason}`;
+
+        await fetchAPI('hrm/leaves', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leave_type: 'overtime',
+            reason: descStr,
+            from_date: fromStr,
+            to_date: toStr,
+            total_days: daysVal,
+            approver_id: finalApproverId
+          })
+        });
+      } else if (formType === 'remote_work') {
+        let fromVal = leaveFrom;
+        let toVal = leaveTo;
+        let daysVal = 1.0;
+
+        if (leaveSession === 'full') {
+          const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+          fromVal = `${d}T08:00`;
+          toVal = `${d}T17:30`;
+          daysVal = 1.0;
+        } else if (leaveSession === 'morning') {
+          const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+          fromVal = `${d}T08:00`;
+          toVal = `${d}T12:00`;
+          daysVal = 0.5;
+        } else if (leaveSession === 'afternoon') {
+          const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
+          fromVal = `${d}T13:30`;
+          toVal = `${d}T17:30`;
+          daysVal = 0.5;
+        } else {
+          daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
+        }
+
+        const descStr = `[Đăng ký làm việc từ xa] Lý do: ${leaveReason}`;
+
+        await fetchAPI('hrm/leaves', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leave_type: 'remote_work',
+            reason: descStr,
+            from_date: fromVal,
+            to_date: toVal,
+            total_days: daysVal,
+            approver_id: finalApproverId
+          })
+        });
+      } else if (formType === 'advance') {
+        let advReasonStr = leaveReason || 'Tạm ứng';
+        if (isRecurring) {
+          advReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
+        }
+        await fetchAPI('hrm/advances', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: Number(paymentDetails) || 0,
+            reason: advReasonStr,
+            approver_id: finalApproverId,
+            currency: currencyType
+          })
+        });
+      } else if (formType === 'general') {
+        let generalDesc = '';
+        if (selectedWorkflowDef?.id === 'stationery') {
+          generalDesc = `Đồ vật đề xuất: ${stationeryItem}\nSố lượng: ${stationeryQty}\n`;
+        } else if (selectedWorkflowDef?.id === 'print_stamp_send') {
+          const reqEmployee = users.find(u => String(u.id) === String(pssReqEmployeeId))?.full_name || pssReqEmployeeId;
+          const executor = users.find(u => String(u.id) === String(pssExecutorId))?.full_name || pssExecutorId;
+          const baseUrl = import.meta.env.VITE_API_URL || '/backend';
+          const attsStr = attachments.map(a => `${a.name} (${baseUrl}/${a.url})`).join(', ');
+          generalDesc = `Quy trình: In, đóng dấu và gửi hồ sơ\n` +
+            `Nhân viên yêu cầu: ${reqEmployee}\n` +
+            `Ngày yêu cầu: ${pssReqDate}\n` +
+            `Người thực hiện: ${executor}\n` +
+            `Hình thức gửi: ${pssSendMethod}\n` +
+            `Khung giờ gửi: ${pssSendTimeFrame}\n` +
+            `Tên người nhận: ${pssRecipientName}\n` +
+            `Địa chỉ người nhận: ${pssRecipientAddress}\n` +
+            `SĐT người nhận: ${pssRecipientPhone}\n` +
+            `Ngày cần gửi hồ sơ: ${pssRequiredSendDate}\n` +
+            `Hồ sơ đính kèm: ${attsStr}`;
+        }
+        
+        if (selectedWorkflowDef?.id !== 'print_stamp_send') {
+          generalDesc += `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
+          if (isRecurring) {
+            generalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
+          }
+          if (attachments.length > 0) {
+            const baseUrl = import.meta.env.VITE_API_URL || '/backend';
+            const attsStr = attachments.map(a => `• ${a.name} (${baseUrl}/${a.url})`).join('\n');
+            generalDesc += `\n[Tài liệu đính kèm (${attachments.length} tệp)]:\n${attsStr}`;
+          }
+        }
+
+        await api.post('/expenses', {
+          title: expenseTitle || selectedWorkflowDef.name,
+          description: generalDesc,
+          notes: generalDesc,
+          amount: 0,
+          status: 'pending',
+          approver_id: appVal1 || finalApproverId,
+          approver_id_2: appVal2,
+          approver_id_3: appVal3,
+          currency: currencyType,
+          image_url: attachments[0]?.url || null
+        });
+      } else {
+        const totalAmt = expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0);
+        if (!appVal1 && !finalApproverId) {
+          toast.error(t('Chi phí yêu cầu duyệt bắt buộc phải chọn người duyệt Cấp 1.'));
+          setSubmitting(false);
+          return;
+        }
+        if (totalAmt >= 5000000 && !appVal2) {
+          toast.error(t('Chi phí từ 5.000.000 đ trở lên bắt buộc phải phê duyệt 2 cấp, vui lòng chọn người duyệt Cấp 2.'));
+          setSubmitting(false);
+          return;
+        }
+
+        let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
+        if (isPhasedPayment) {
+          const instStr = installments.map(i => `${i.title}: ${formatApprovalCurrency(i.amount, currencyType)} (Hạn: ${i.dueDate || 'Chưa chọn'})`).join('; ');
+          finalDesc += `\n[Thanh toán theo đợt]: ${instStr}`;
+        }
+        if (isRecurring) {
+          finalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
+        }
+        if (attachments.length > 0) {
+          const baseUrl = import.meta.env.VITE_API_URL || '/backend';
+          const attsStr = attachments.map(a => `• ${a.name} (${baseUrl}/${a.url})`).join('\n');
+          finalDesc += `\n[Tài liệu đính kèm (${attachments.length} tệp)]:\n${attsStr}`;
+        }
+        await api.post('/expenses', {
+          title: expenseTitle || selectedWorkflowDef.name,
+          description: finalDesc,
+          notes: finalDesc,
+          amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
+          vat_amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (it.vat / 100), 0),
+          status: 'pending',
+          approver_id: appVal1 || finalApproverId,
+          approver_id_2: appVal2,
+          approver_id_3: appVal3,
+          currency: currencyType,
+          image_url: attachments[0]?.url || null
+        });
+      }
+      toast.success(t('Gửi đề xuất thành công!'));
+      setShowCreateModal(false);
+      setSelectedWorkflowDef(null);
+      setEditingItemId(null);
+      setEditingItemType(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err?.message || t('Lỗi gửi đề xuất'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Approval step visibility overrides (can be deleted/excluded by user)
   const [showStepManager, setShowStepManager] = useState(true);
@@ -1832,8 +2232,9 @@ export default function Approvals() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(15, 23, 42, 0.4)',
-                backdropFilter: 'blur(4px)',
+                background: 'rgba(0, 0, 0, 0.45)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -2178,7 +2579,10 @@ export default function Approvals() {
                   style={{
                     position: 'fixed',
                     inset: 0,
-                    zIndex: 10000000
+                    zIndex: 10000000,
+                    background: 'rgba(0, 0, 0, 0.45)',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)'
                   }}
                 />
 
@@ -2207,7 +2611,7 @@ export default function Approvals() {
                   
                   {/* Drawer Header styled EXACTLY like WorkspaceTaskDrawer */}
                   <div style={{
-                    padding: '1.25rem 1.5rem',
+                    padding: isMobile ? '10px 14px' : '1.25rem 1.5rem',
                     borderBottom: '1px solid var(--color-border-light)',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -2218,10 +2622,29 @@ export default function Approvals() {
                     top: 0,
                     flexShrink: 0
                   }}>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                      {isMobile && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedWorkflowDef(null)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '6px',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                        >
+                          <ArrowLeft size={18} />
+                        </button>
+                      )}
                       <div style={{
-                        width: '40px',
-                        height: '40px',
+                        width: isMobile ? '34px' : '40px',
+                        height: isMobile ? '34px' : '40px',
                         borderRadius: '10px',
                         display: 'flex',
                         alignItems: 'center',
@@ -2230,411 +2653,101 @@ export default function Approvals() {
                         color: 'var(--color-primary)',
                         flexShrink: 0
                       }}>
-                        <FileSignature size={20} />
+                        <FileSignature size={isMobile ? 18 : 20} />
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <h3 style={{ fontSize: isMobile ? '0.95rem' : '1.1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedWorkflowDef.name}</span>
                           <span className="badge warning" style={{ fontSize: '0.6rem', fontWeight: 800, padding: '1px 6px', borderRadius: '4px', textTransform: 'uppercase', flexShrink: 0 }}>
                             {t('MỚI')}
                           </span>
                         </h3>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                          <span>{t('Thiết lập quy trình đề xuất vận hành mới')}</span>
-                        </div>
+                        {!isMobile && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            <span>{t('Thiết lập quy trình đề xuất vận hành mới')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
-                      <button 
-                        type="button" 
-                        onClick={() => setSelectedWorkflowDef(null)}
-                        className="hover-lift"
-                        style={{
-                          background: 'var(--color-bg)',
-                          border: '1px solid var(--color-border)',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          color: 'var(--color-text-muted)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          height: '36px',
-                          fontSize: '0.85rem',
-                          fontWeight: 700
-                        }}
-                      >
-                        <ArrowLeft size={16} />
-                        <span>{t('Quay lại')}</span>
-                      </button>
+                    {!isMobile ? (
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedWorkflowDef(null)}
+                          className="hover-lift"
+                          style={{
+                            background: 'var(--color-bg)',
+                            border: '1px solid var(--color-border)',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            height: '36px',
+                            fontSize: '0.85rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          <ArrowLeft size={16} />
+                          <span>{t('Quay lại')}</span>
+                        </button>
 
-                      <button 
-                        type="button" 
-                        onClick={async () => {
-                          setSubmitting(true);
-                          try {
-                            if (editingItemId) {
-                              if (editingItemType === 'leave') {
-                                await fetchAPI(`hrm/leaves/${editingItemId}`, { method: 'DELETE' });
-                              } else if (editingItemType === 'advance') {
-                                await fetchAPI(`hrm/advances/${editingItemId}`, { method: 'DELETE' });
-                              } else if (editingItemType === 'checkin') {
-                                await api.delete(`/check-ins/${editingItemId}`);
-                              } else if (editingItemType === 'expense') {
-                                await api.delete(`/expenses/${editingItemId}`);
-                              }
-                            }
-                            // Resolve the last active step in the approval chain as finalApproverId
-                            let finalApproverId = 1003;
-                            if (showStepDirector) {
-                              finalApproverId = customApprover3?.id || users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()))?.id || 1003;
-                            } else if (showStepAccountant) {
-                              finalApproverId = customApprover2?.id || users.find(u => String(u.role).toLowerCase() === 'accountant')?.id || 1003;
-                            } else if (showStepManager) {
-                              finalApproverId = customApprover1?.id || users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()))?.id || 1003;
-                            } else {
-                              finalApproverId = proposerUser?.id || 1003;
-                            }
+                        <button 
+                          type="button" 
+                          onClick={handleCreateSubmit}
+                          disabled={submitting}
+                          className="btn primary"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            padding: '8px 18px',
+                            borderRadius: '8px',
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            height: '36px',
+                            background: 'var(--color-primary)',
+                            borderColor: 'var(--color-primary)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            boxShadow: 'var(--shadow-sm)',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <Save size={16} />
+                          <span>{submitting ? t('Đang gửi...') : t('Gửi đề xuất')}</span>
+                        </button>
 
-                            if (selectedWorkflowDef?.id === 'print_stamp_send') {
-                              finalApproverId = Number(pssExecutorId) || finalApproverId;
-                            }
-
-                            // Define 3 level approver IDs for multi-level expense approvals
-                            const defaultApp1 = users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()));
-                            const defaultAccountant = users.find(u => String(u.role).toLowerCase() === 'accountant');
-                            const defaultDirector = users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()));
-
-                            const appVal1 = showStepManager ? (customApprover1?.id || defaultApp1?.id || null) : null;
-                            const appVal2 = showStepAccountant ? (customApprover2?.id || defaultAccountant?.id || null) : null;
-                            const appVal3 = showStepDirector ? (customApprover3?.id || defaultDirector?.id || null) : null;
-
-                            if (selectedWorkflowDef?.id === 'print_stamp_send') {
-                              if (!pssReqEmployeeId) {
-                                toast.error(t('Vui lòng chọn nhân viên yêu cầu.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              if (!pssExecutorId) {
-                                toast.error(t('Vui lòng chọn người thực hiện.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              if (!pssRecipientName.trim()) {
-                                toast.error(t('Vui lòng nhập tên người nhận.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              if (!pssRecipientAddress.trim()) {
-                                toast.error(t('Vui lòng nhập địa chỉ người nhận.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              if (!pssRecipientPhone.trim()) {
-                                toast.error(t('Vui lòng nhập số điện thoại người nhận.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              if (attachments.length === 0) {
-                                toast.error(t('Vui lòng đính kèm hồ sơ cần đóng dấu.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                            }
-
-                            if (formType === 'attendance_bulk') {
-                              if (suggestedDays.length === 0) {
-                                toast.error(t('Vui lòng quét và chọn ít nhất 1 ngày đề xuất bổ sung công.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              await api.post('/check-ins/bulk-request', {
-                                month_period: bulkMonth,
-                                details: suggestedDays,
-                                approver_id: finalApproverId
-                              });
-                            } else if (formType === 'leave') {
-                              let fromVal = leaveFrom;
-                              let toVal = leaveTo;
-                              let daysVal = 1.0;
-
-                              if (leaveSession === 'full') {
-                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                                fromVal = `${d}T08:00`;
-                                toVal = `${d}T17:30`;
-                                daysVal = 1.0;
-                              } else if (leaveSession === 'morning') {
-                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                                fromVal = `${d}T08:00`;
-                                toVal = `${d}T12:00`;
-                                daysVal = 0.5;
-                              } else if (leaveSession === 'afternoon') {
-                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                                fromVal = `${d}T13:30`;
-                                toVal = `${d}T17:30`;
-                                daysVal = 0.5;
-                              } else if (leaveSession === 'intermittent') {
-                                const validDates = intermittentDates.filter(item => item.date);
-                                if (validDates.length === 0) {
-                                  toast.error(t('Vui lòng chọn ít nhất 1 ngày xin nghỉ.'));
-                                  setSubmitting(false);
-                                  return;
-                                }
-                                
-                                const sortedDates = [...validDates].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                                const firstDate = sortedDates[0].date;
-                                const lastDate = sortedDates[sortedDates.length - 1].date;
-                                
-                                fromVal = `${firstDate}T08:00`;
-                                toVal = `${lastDate}T17:30`;
-                                
-                                daysVal = validDates.reduce((acc, item) => acc + (item.session === 'full' ? 1.0 : 0.5), 0);
-                              } else {
-                                if (leaveFrom && leaveTo && new Date(leaveTo) < new Date(leaveFrom)) {
-                                  toast.error(t('Ngày kết thúc không được nhỏ hơn ngày bắt đầu.'));
-                                  setSubmitting(false);
-                                  return;
-                                }
-                                daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
-                              }
-
-                              let leaveReasonStr = leaveReason;
-                              if (leaveSession === 'intermittent') {
-                                const datesLog = intermittentDates
-                                  .filter(item => item.date)
-                                  .map(item => `${item.date} (${item.session === 'full' ? t('Cả ngày') : item.session === 'morning' ? t('Sáng') : t('Chiều')})`)
-                                  .join(', ');
-                                leaveReasonStr += ` [Ngày nghỉ chi tiết: ${datesLog}]`;
-                              }
-
-                              if (isRecurring) {
-                                leaveReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
-                              }
-                              await fetchAPI('hrm/leaves', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  leave_type: leaveType,
-                                  reason: leaveReasonStr,
-                                  from_date: fromVal,
-                                  to_date: toVal,
-                                  total_days: daysVal,
-                                  approver_id: appVal1 || finalApproverId,
-                                  approver_id_2: appVal2
-                                })
-                              });
-                            } else if (formType === 'late_early') {
-                              if (lateEarlyMinutes > 180) {
-                                toast.error(t('Thời gian đi muộn/về sớm không được quá 3 tiếng (180 phút). Vui lòng đăng ký nghỉ phép 1 buổi.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                              const startTimeStr = `${d}T${otStart}`;
-                              const fromDateObj = new Date(startTimeStr);
-                              const toDateObj = new Date(fromDateObj.getTime() + lateEarlyMinutes * 60000);
-                              const formattedFrom = startTimeStr;
-                              const formattedTo = toDateObj.toISOString().replace('Z', '').substring(0, 16);
-
-                              const descStr = `[${lateEarlyType === 'late' ? 'Đăng ký Đi muộn' : 'Đăng ký Về sớm'}] Thời gian: ${otStart} (${lateEarlyMinutes} phút). Lý do: ${leaveReason}`;
-
-                              await fetchAPI('hrm/leaves', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  leave_type: 'late_early',
-                                  reason: descStr,
-                                  from_date: formattedFrom,
-                                  to_date: formattedTo,
-                                  total_days: 0.0,
-                                  approver_id: finalApproverId
-                                })
-                              });
-                            } else if (formType === 'overtime') {
-                              const fromStr = `${otDate}T${otStart}`;
-                              const toStr = `${otDate}T${otEnd}`;
-                              const hours = diffHours(otStart, otEnd);
-                              const daysVal = Number((hours / 8).toFixed(2));
-
-                              const descStr = `[Đăng ký Tăng ca] Thời gian: ${otStart} - ${otEnd} (${hours} giờ = ${daysVal} ngày công OT). Lý do: ${leaveReason}`;
-
-                              await fetchAPI('hrm/leaves', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  leave_type: 'overtime',
-                                  reason: descStr,
-                                  from_date: fromStr,
-                                  to_date: toStr,
-                                  total_days: daysVal,
-                                  approver_id: finalApproverId
-                                })
-                              });
-                            } else if (formType === 'remote_work') {
-                              let fromVal = leaveFrom;
-                              let toVal = leaveTo;
-                              let daysVal = 1.0;
-
-                              if (leaveSession === 'full') {
-                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                                fromVal = `${d}T08:00`;
-                                toVal = `${d}T17:30`;
-                                daysVal = 1.0;
-                              } else if (leaveSession === 'morning') {
-                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                                fromVal = `${d}T08:00`;
-                                toVal = `${d}T12:00`;
-                                daysVal = 0.5;
-                              } else if (leaveSession === 'afternoon') {
-                                const d = leaveFrom ? leaveFrom.split('T')[0] : new Date().toISOString().split('T')[0];
-                                fromVal = `${d}T13:30`;
-                                toVal = `${d}T17:30`;
-                                daysVal = 0.5;
-                              } else {
-                                daysVal = calculateWorkingDays(leaveFrom, leaveTo, 'range');
-                              }
-
-                              const descStr = `[Đăng ký làm việc từ xa] Lý do: ${leaveReason}`;
-
-                              await fetchAPI('hrm/leaves', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  leave_type: 'remote_work',
-                                  reason: descStr,
-                                  from_date: fromVal,
-                                  to_date: toVal,
-                                  total_days: daysVal,
-                                  approver_id: finalApproverId
-                                })
-                              });
-                            } else if (formType === 'advance') {
-                              let advReasonStr = leaveReason || 'Tạm ứng';
-                              if (isRecurring) {
-                                advReasonStr += ` [Lặp lại định kỳ: ${recurringFrequency} - Hạn: ${recurringEndDate || 'Vô thời hạn'}]`;
-                              }
-                              await fetchAPI('hrm/advances', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  amount: Number(paymentDetails) || 0,
-                                  reason: advReasonStr,
-                                  approver_id: finalApproverId,
-                                  currency: currencyType
-                                })
-                              });
-                            } else if (formType === 'general') {
-                              let generalDesc = '';
-                              if (selectedWorkflowDef?.id === 'stationery') {
-                                generalDesc = `Đồ vật đề xuất: ${stationeryItem}\nSố lượng: ${stationeryQty}\n`;
-                              } else if (selectedWorkflowDef?.id === 'print_stamp_send') {
-                                const reqEmployee = users.find(u => String(u.id) === String(pssReqEmployeeId))?.full_name || pssReqEmployeeId;
-                                const executor = users.find(u => String(u.id) === String(pssExecutorId))?.full_name || pssExecutorId;
-                                const baseUrl = import.meta.env.VITE_API_URL || '/backend';
-                                const attsStr = attachments.map(a => `${a.name} (${baseUrl}/${a.url})`).join(', ');
-                                generalDesc = `Quy trình: In, đóng dấu và gửi hồ sơ\n` +
-                                  `Nhân viên yêu cầu: ${reqEmployee}\n` +
-                                  `Ngày yêu cầu: ${pssReqDate}\n` +
-                                  `Người thực hiện: ${executor}\n` +
-                                  `Hình thức gửi: ${pssSendMethod}\n` +
-                                  `Khung giờ gửi: ${pssSendTimeFrame}\n` +
-                                  `Tên người nhận: ${pssRecipientName}\n` +
-                                  `Địa chỉ người nhận: ${pssRecipientAddress}\n` +
-                                  `SĐT người nhận: ${pssRecipientPhone}\n` +
-                                  `Ngày cần gửi hồ sơ: ${pssRequiredSendDate}\n` +
-                                  `Hồ sơ đính kèm: ${attsStr}`;
-                              }
-                              
-                              if (selectedWorkflowDef?.id !== 'print_stamp_send') {
-                                generalDesc += `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nNội dung đề xuất: ${paymentDetails}\nLý do: ${leaveReason}`;
-                                if (isRecurring) {
-                                  generalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
-                                }
-                              }
-
-                              await api.post('/expenses', {
-                                title: expenseTitle || selectedWorkflowDef.name,
-                                description: generalDesc,
-                                notes: generalDesc,
-                                amount: 0,
-                                status: 'pending',
-                                approver_id: appVal1 || finalApproverId,
-                                approver_id_2: appVal2,
-                                approver_id_3: appVal3,
-                                currency: currencyType,
-                                image_url: attachments[0]?.url || null
-                              });
-                            } else {
-                              const totalAmt = expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0);
-                              if (!appVal1 && !finalApproverId) {
-                                toast.error(t('Chi phí yêu cầu duyệt bắt buộc phải chọn người duyệt Cấp 1.'));
-                                setSubmitting(false);
-                                return;
-                              }
-                              if (totalAmt >= 5000000 && !appVal2) {
-                                toast.error(t('Chi phí từ 5.000.000 đ trở lên bắt buộc phải phê duyệt 2 cấp, vui lòng chọn người duyệt Cấp 2.'));
-                                setSubmitting(false);
-                                return;
-                              }
-
-                              let finalDesc = `Vị trí: ${jobPosition}\nPhòng ban: ${departmentName}\nĐối tượng: ${paymentTarget}\nHình thức: ${paymentMethod}\nThông tin: ${paymentDestination}\nChi tiết: ${paymentDetails}`;
-                              if (isPhasedPayment) {
-                                const instStr = installments.map(i => `${i.title}: ${formatApprovalCurrency(i.amount, currencyType)} (Hạn: ${i.dueDate || 'Chưa chọn'})`).join('; ');
-                                finalDesc += `\n[Thanh toán theo đợt]: ${instStr}`;
-                              }
-                              if (isRecurring) {
-                                finalDesc += `\n[Lặp lại định kỳ]: Tần suất ${recurringFrequency} (Kết thúc: ${recurringEndDate || 'Vô thời hạn'})`;
-                              }
-                              await api.post('/expenses', {
-                                title: expenseTitle || selectedWorkflowDef.name,
-                                description: finalDesc,
-                                notes: finalDesc,
-                                amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (1 + it.vat / 100), 0),
-                                vat_amount: expenseItems.reduce((acc, it) => acc + (it.quantity * it.price) * (it.vat / 100), 0),
-                                status: 'pending',
-                                approver_id: appVal1 || finalApproverId,
-                                approver_id_2: appVal2,
-                                approver_id_3: appVal3,
-                                currency: currencyType
-                              });
-                            }
-                            toast.success(t('Gửi đề xuất thành công!'));
+                        <button 
+                          onClick={() => {
                             setShowCreateModal(false);
                             setSelectedWorkflowDef(null);
                             setEditingItemId(null);
                             setEditingItemType(null);
-                            loadData();
-                          } catch (err: any) {
-                            toast.error(err?.message || t('Lỗi gửi đề xuất'));
-                          } finally {
-                            setSubmitting(false);
-                          }
-                        }}
-                        disabled={submitting}
-                        className="btn primary"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          padding: '8px 18px',
-                          borderRadius: '8px',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          height: '36px',
-                          background: 'var(--color-primary)',
-                          borderColor: 'var(--color-primary)',
-                          color: 'white',
-                          cursor: 'pointer',
-                          boxShadow: 'var(--shadow-sm)',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <Save size={16} />
-                        <span>{t('Gửi đề xuất')}</span>
-                      </button>
-
+                          }} 
+                          className="hover-lift"
+                          style={{
+                            background: 'var(--color-bg)',
+                            border: '1px solid var(--color-border)',
+                            padding: '8px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '36px',
+                            width: '36px'
+                          }}
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
                       <button 
                         onClick={() => {
                           setShowCreateModal(false);
@@ -2642,38 +2755,34 @@ export default function Approvals() {
                           setEditingItemId(null);
                           setEditingItemType(null);
                         }} 
-                        className="hover-lift"
                         style={{
-                          background: 'var(--color-bg)',
-                          border: '1px solid var(--color-border)',
-                          padding: '8px',
-                          borderRadius: '8px',
+                          background: 'none',
+                          border: 'none',
+                          padding: '6px',
                           cursor: 'pointer',
                           color: 'var(--color-text-muted)',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '36px',
-                          width: '36px'
+                          justifyContent: 'center'
                         }}
                       >
-                        <X size={18} />
+                        <X size={20} />
                       </button>
-                    </div>
+                    )}
                   </div>
 
                   {/* Drawer Content */}
                   <div className="custom-scrollbar" style={{
                     flex: 1,
                     overflowY: 'auto',
-                    padding: '1.5rem',
+                    padding: isMobile ? '12px 10px 24px 10px' : '1.5rem',
                     display: 'flex',
                     flexDirection: isMobile ? 'column' : 'row',
-                    gap: '1.5rem'
+                    gap: isMobile ? '1rem' : '1.5rem'
                   }}>
                     
                     {/* LEFT COLUMN: Form Elements (70%) */}
-                    <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
+                    <div style={{ flex: isMobile ? 'none' : 7, display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.25rem', minWidth: 0, width: '100%' }}>
                       
 
                       {/* Card 2: Specialized fields details based on workflow type */}
@@ -2811,7 +2920,7 @@ export default function Approvals() {
                         ) : formType === 'leave' ? (
                           /* LEAVE FORM FIELDS */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại nghỉ phép')}</label>
                                 <CustomSelect
@@ -2912,7 +3021,7 @@ export default function Approvals() {
                                 </button>
                               </div>
                             ) : (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
                                     {leaveSession === 'range' ? t('Từ ngày') : t('Ngày xin nghỉ')}
@@ -3060,7 +3169,7 @@ export default function Approvals() {
                         ) : formType === 'late_early' ? (
                           /* LATE / EARLY REGISTRATION FORM */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Loại đăng ký')}</label>
                                 <CustomSelect
@@ -3122,7 +3231,7 @@ export default function Approvals() {
                               </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày đăng ký')}</label>
                                 <input
@@ -3166,7 +3275,7 @@ export default function Approvals() {
                         ) : formType === 'overtime' ? (
                           /* OVERTIME REGISTRATION FORM */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Ngày tăng ca')}</label>
                                 <input
@@ -3236,7 +3345,7 @@ export default function Approvals() {
                         ) : formType === 'remote_work' ? (
                           /* REMOTE WORK / WFH FORM */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Buổi đăng ký')}</label>
                                 <CustomSelect
@@ -3271,7 +3380,7 @@ export default function Approvals() {
                             </div>
 
                             {leaveSession === 'range' && (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Đến ngày')}</label>
                                   <input
@@ -3320,7 +3429,7 @@ export default function Approvals() {
                         ) : formType === 'advance' ? (
                           /* SALARY ADVANCE FORM FIELDS */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>{t('Số tiền tạm ứng')}</label>
                                 <input
@@ -4104,63 +4213,122 @@ export default function Approvals() {
                       {/* Card 4: Document Attachments dropzone */}
                       {selectedWorkflowDef?.id !== 'print_stamp_send' && (
                         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
-                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            {t('Tài liệu chứng từ đính kèm')}
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>{t('Tài liệu chứng từ đính kèm')}</span>
+                            {attachments.length > 0 && (
+                              <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 700 }}>
+                                {attachments.length} {t('tệp đã đính kèm')}
+                              </span>
+                            )}
                           </div>
-                          <div style={{
-                            border: '2px dashed var(--color-border)',
-                            borderRadius: '12px',
-                            padding: '1.5rem',
-                            textAlign: 'center',
-                            background: 'var(--color-bg-secondary)',
-                            cursor: 'pointer'
-                          }} onClick={() => {
-                            const fileEl = document.getElementById('drawer-file-upload');
-                            if (fileEl) fileEl.click();
-                          }}>
+                          <div
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsDraggingAttachments(true);
+                            }}
+                            onDragEnter={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsDraggingAttachments(true);
+                            }}
+                            onDragLeave={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsDraggingAttachments(false);
+                            }}
+                            onDrop={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsDraggingAttachments(false);
+                              const files = Array.from(e.dataTransfer.files || []);
+                              if (files.length > 0) {
+                                await handleUploadFiles(files);
+                              }
+                            }}
+                            style={{
+                              border: isDraggingAttachments ? '2px dashed var(--color-primary)' : '2px dashed var(--color-border)',
+                              borderRadius: '12px',
+                              padding: '1.5rem',
+                              textAlign: 'center',
+                              background: isDraggingAttachments ? 'rgba(163, 20, 34, 0.06)' : 'var(--color-bg-secondary)',
+                              cursor: uploadingAttachments ? 'wait' : 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onClick={() => {
+                              if (uploadingAttachments) return;
+                              const fileEl = document.getElementById('drawer-file-upload');
+                              if (fileEl) fileEl.click();
+                            }}
+                          >
                             <input
                               id="drawer-file-upload"
                               type="file"
                               multiple
                               style={{ display: 'none' }}
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const files = Array.from(e.target.files || []);
-                                setAttachments([...attachments, ...files.map(f => ({ name: f.name, size: f.size }))]);
-                                toast.success(t('Đã thêm tệp đính kèm!'));
+                                if (files.length > 0) {
+                                  await handleUploadFiles(files);
+                                }
+                                e.target.value = '';
                               }}
                             />
-                            <Paperclip size={24} style={{ color: 'var(--color-primary)', marginBottom: '8px' }} />
-                            <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '0 0 4px 0', fontWeight: 650 }}>
-                              {t('Nhấn để tải tệp lên hoặc kéo thả tệp vào đây')}
-                            </p>
-                            <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                              {t('Hỗ trợ PDF, PNG, JPG, XLSX kích thước tối đa 25MB')}
-                            </span>
+                            {uploadingAttachments ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <Loader2 size={24} className="spin" style={{ color: 'var(--color-primary)' }} />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: 0, fontWeight: 650 }}>
+                                  {t('Đang tải tệp lên hệ thống...')}
+                                </p>
+                              </div>
+                            ) : (
+                              <>
+                                <Paperclip size={24} style={{ color: 'var(--color-primary)', marginBottom: '8px' }} />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--color-text)', margin: '0 0 4px 0', fontWeight: 650 }}>
+                                  {t('Nhấn để tải nhiều tệp lên hoặc kéo thả tệp vào đây')}
+                                </p>
+                                <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
+                                  {t('Hỗ trợ gửi nhiều file cùng lúc: PDF, PNG, JPG, XLSX, DOCX (tối đa 25MB/tệp)')}
+                                </span>
+                              </>
+                            )}
                           </div>
 
                           {/* List of uploaded files */}
                           {attachments.length > 0 && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                              {attachments.map((att, index) => (
-                                <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                                    <Paperclip size={14} style={{ color: 'var(--color-text-muted)' }} />
-                                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {att.name}
-                                    </span>
-                                    <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)' }}>
-                                      ({(att.size / (1024 * 1024)).toFixed(2)} MB)
-                                    </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                              {attachments.map((att, index) => {
+                                const baseUrl = import.meta.env.VITE_API_URL || '/backend';
+                                const fileUrl = att.url ? (att.url.startsWith('http') ? att.url : `${baseUrl}/${att.url}`) : null;
+                                return (
+                                  <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-bg-secondary)', borderRadius: '8px', border: '1px solid var(--color-border-light)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                                      <Paperclip size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                                      {fileUrl ? (
+                                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline' }}>
+                                          {att.name}
+                                        </a>
+                                      ) : (
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          {att.name}
+                                        </span>
+                                      )}
+                                      {att.size && (
+                                        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
+                                          ({(att.size / (1024 * 1024)).toFixed(2)} MB)
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                                      style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, padding: '2px 6px', flexShrink: 0 }}
+                                    >
+                                      {t('Xóa')}
+                                    </button>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
-                                    style={{ border: 'none', background: 'transparent', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.85rem' }}
-                                  >
-                                    {t('Xóa')}
-                                  </button>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -4318,8 +4486,9 @@ export default function Approvals() {
                       flex: isMobile ? 'none' : 3,
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '1.25rem',
+                      gap: isMobile ? '1rem' : '1.25rem',
                       minWidth: 0,
+                      width: '100%',
                       position: isMobile ? 'static' : 'sticky',
                       top: '1.5rem',
                       height: 'fit-content'
@@ -4732,6 +4901,72 @@ export default function Approvals() {
 
                   </div>
 
+                  {/* Sticky Mobile Action Bar */}
+                  {isMobile && (
+                    <div style={{
+                      position: 'sticky',
+                      bottom: 0,
+                      padding: '12px 16px',
+                      background: 'var(--color-surface)',
+                      borderTop: '1px solid var(--color-border-light)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      zIndex: 100,
+                      boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)'
+                    }}>
+                      <button 
+                        type="button" 
+                        onClick={() => setSelectedWorkflowDef(null)}
+                        style={{
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          padding: '0 14px',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          color: 'var(--color-text)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          height: '42px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          flexShrink: 0
+                        }}
+                      >
+                        <ArrowLeft size={16} />
+                        <span>{t('Quay lại')}</span>
+                      </button>
+
+                      <button 
+                        type="button" 
+                        onClick={handleCreateSubmit}
+                        disabled={submitting}
+                        className="btn primary"
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          borderRadius: '10px',
+                          fontSize: '0.9rem',
+                          fontWeight: 700,
+                          height: '42px',
+                          background: 'var(--color-primary)',
+                          borderColor: 'var(--color-primary)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          boxShadow: 'var(--shadow-sm)'
+                        }}
+                      >
+                        <Save size={16} />
+                        <span>{submitting ? t('Đang gửi...') : t('Gửi đề xuất')}</span>
+                      </button>
+                    </div>
+                  )}
+
                 </motion.div>
               </>
             )}
@@ -4755,7 +4990,13 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
 }) {
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const isMobile = window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 1024 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const { user } = useAuth();
 
   const isMyTurnToApprove = () => {
@@ -5747,6 +5988,86 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
           </div>
         )}
 
+        {/* Card: Tài liệu chứng từ đính kèm trong chi tiết */}
+        {(() => {
+          const rawText = detail?.notes || detail?.description || item.description || '';
+          const baseUrl = import.meta.env.VITE_API_URL || '/backend';
+          const extractedFiles: { name: string; url: string }[] = [];
+          
+          if (detail?.image_url) {
+            extractedFiles.push({
+              name: detail.image_url.split('/').pop() || 'Tài liệu đính kèm',
+              url: detail.image_url.startsWith('http') ? detail.image_url : `${baseUrl}/${detail.image_url}`
+            });
+          }
+          
+          if (Array.isArray(detail?.attachments)) {
+            detail.attachments.forEach((a: any) => {
+              if (a.url && !extractedFiles.some(f => f.url === a.url)) {
+                extractedFiles.push({
+                  name: a.name || a.url.split('/').pop() || 'Tài liệu',
+                  url: a.url.startsWith('http') ? a.url : `${baseUrl}/${a.url}`
+                });
+              }
+            });
+          }
+
+          const matches = rawText.matchAll(/([^\n\r(•]+)\s*\((https?:\/\/[^\s)]+|\/backend\/[^\s)]+|uploads\/[^\s)]+)\)/gi);
+          for (const m of matches) {
+            const name = m[1].replace(/^[•\-\s]+/, '').trim();
+            const url = m[2].trim();
+            if (url && !extractedFiles.some(f => f.url === url || f.url.endsWith(url))) {
+              extractedFiles.push({
+                name: name || url.split('/').pop() || 'Tệp đính kèm',
+                url: url.startsWith('http') ? url : `${baseUrl}/${url.replace(/^\/?(backend\/)?/, '')}`
+              });
+            }
+          }
+
+          if (extractedFiles.length === 0) return null;
+
+          return (
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{t('Tài liệu chứng từ đính kèm')} ({extractedFiles.length})</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {extractedFiles.map((file, fIdx) => (
+                  <a
+                    key={fIdx}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      background: 'var(--color-bg-secondary)',
+                      borderRadius: '10px',
+                      border: '1px solid var(--color-border-light)',
+                      textDecoration: 'none',
+                      color: 'var(--color-text)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    className="hover-lift"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <Paperclip size={16} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {file.name}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, flexShrink: 0, marginLeft: '12px' }}>
+                      {t('Mở xem')} ↗
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Card 4: Cấu hình nâng cao (Chỉ hiện khi có thiết lập được bật) */}
         {((item.type === 'expense' && hasInstallments) || hasRecurring) && (
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
@@ -5913,7 +6234,14 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
-        style={{ zIndex: 10500 }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.45)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 10500
+        }}
       />
 
       {/* Drawer Sheet Container */}

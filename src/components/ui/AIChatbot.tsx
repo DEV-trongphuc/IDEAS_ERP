@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Send, X, Database, Sparkles, LayoutGrid, Search, ChevronRight, RefreshCw, ChevronLeft, FileText } from 'lucide-react';
@@ -40,6 +40,21 @@ export const AIChatbot: React.FC = () => {
       return `🎯 **Tôi đã sẵn sàng giải đáp về Chiến dịch ${entity.name}!**${docInfo}\n\nHãy đặt câu hỏi về ngân sách, mục tiêu, thời gian chạy hoặc tài liệu thuộc chiến dịch này!`;
     }
   };
+
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+  useEffect(() => {
+    let lastIsMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const handleResize = () => {
+      const next = window.innerWidth <= 768;
+      if (next !== lastIsMobile) {
+        lastIsMobile = next;
+        setIsMobile(next);
+      }
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -645,7 +660,7 @@ Bạn có thể gõ rõ từ khóa hoặc click vào các gợi ý bên dưới 
   };
 
   return (
-    <div className={`chatbot-parent ${isOpen ? 'is-open' : 'is-closed'}`} style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 10005 }}>
+    <div className={`chatbot-parent ${isOpen ? 'is-open' : 'is-closed'}`} style={{ position: 'fixed', bottom: isMobile ? 80 : 24, right: isMobile ? 14 : 24, zIndex: 10005 }}>
       {/* CSS Styles injection */}
       <style>{`
         :root {

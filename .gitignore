@@ -26,3 +26,6 @@ dist-ssr
 # Temporary deploy archives
 *.tar.gz
 *.zip
+
+# Scratch directory
+scratch/

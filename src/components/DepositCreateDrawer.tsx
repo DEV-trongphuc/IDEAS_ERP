@@ -420,10 +420,11 @@ export const DepositCreateDrawer: React.FC<DepositCreateDrawerProps> = ({
             exit={{ opacity: 0 }}
             onClick={onClose}
             style={{
-              position: 'absolute',
+              position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-              backdropFilter: 'blur(4px)',
+              background: 'rgba(0, 0, 0, 0.45)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
               zIndex: baseZIndex + 5
             }}
           />

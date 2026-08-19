@@ -123,11 +123,36 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+  useEffect(() => {
+    let lastIsMobile = typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+    const handleResize = () => {
+      const next = window.innerWidth <= 768;
+      if (next !== lastIsMobile) {
+        lastIsMobile = next;
+        setIsMobile(next);
+      }
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const totalDuration = mode === 'work' ? 25 * 60 : 5 * 60;
   const progressPercent = ((totalDuration - timeLeft) / totalDuration) * 100;
 
   return (
-    <div ref={widgetRef} style={{ position: 'fixed', top: '50%', right: '24px', transform: 'translateY(-50%)', zIndex: 9999 }}>
+    <div 
+      ref={widgetRef} 
+      style={{ 
+        position: 'fixed', 
+        top: isMobile ? 'auto' : '50%', 
+        bottom: isMobile ? '80px' : 'auto',
+        right: isMobile ? '12px' : '24px', 
+        transform: isMobile ? 'none' : 'translateY(-50%)', 
+        zIndex: 9999 
+      }}
+    >
       {/* Thêm CSS Keyframes cho hiệu ứng xoay tròn và nhấp nháy cực nét */}
       <style>{`
         @keyframes pomodoro-spin {
@@ -152,9 +177,9 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
       {isOpen && (
         <div style={{
           position: 'absolute',
-          bottom: '56px',
+          bottom: isMobile ? '50px' : '56px',
           right: 0,
-          width: '240px',
+          width: isMobile ? '230px' : '240px',
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
           borderRadius: '16px',

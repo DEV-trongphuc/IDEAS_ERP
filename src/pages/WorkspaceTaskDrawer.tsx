@@ -83,8 +83,15 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(window.innerWidth <= 1024);
 
   useEffect(() => {
-    const handleResize = () => setIsMobileOrTablet(window.innerWidth <= 1024);
-    window.addEventListener('resize', handleResize);
+    let lastIsMobile = typeof window !== 'undefined' ? window.innerWidth <= 1024 : false;
+    const handleResize = () => {
+      const next = window.innerWidth <= 1024;
+      if (next !== lastIsMobile) {
+        lastIsMobile = next;
+        setIsMobileOrTablet(next);
+      }
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -1763,18 +1770,11 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   }, [isOpen, task, embedMode]);
 
   const drawerMotionProps = embedMode ? {} : {
-    initial: isMobileOrTablet ? { y: '100%' } : { opacity: 0, x: '250px' },
+    initial: isMobileOrTablet ? { opacity: 0, y: '100%' } : { opacity: 0, x: '250px' },
     animate: { y: 0, x: 0, opacity: 1 },
-    exit: isMobileOrTablet ? { y: '100%' } : { opacity: 0, x: '250px' },
+    exit: isMobileOrTablet ? { opacity: 0, y: '100%' } : { opacity: 0, x: '250px' },
     transition: { type: 'spring' as const, damping: 30, stiffness: 250, mass: 0.8 },
-    drag: isMobileOrTablet ? ('y' as const) : false,
-    dragConstraints: { top: 0 },
-    dragElastic: { top: 0.05, bottom: 0.7 },
-    onDragEnd: (event: any, info: any) => {
-      if (isMobileOrTablet && (info.offset.y > 150 || info.velocity.y > 400)) {
-        handleCloseDrawer();
-      }
-    }
+    drag: false
   };
 
 
@@ -1953,11 +1953,12 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         right: 0,
         top: 0,
         bottom: 0,
-        height: isMobileOrTablet ? '92dvh' : '100vh',
-        marginTop: isMobileOrTablet ? '8dvh' : 0,
-        borderRadius: isMobileOrTablet ? '24px 24px 0 0' : 0,
+        width: isMobileOrTablet ? '100vw' : 'auto',
+        height: isMobileOrTablet ? '100dvh' : '100vh',
+        marginTop: 0,
+        borderRadius: 0,
         overflow: 'hidden',
-        boxShadow: '-10px 0 30px rgba(0,0,0,0.15)',
+        boxShadow: isMobileOrTablet ? 'none' : '-10px 0 30px rgba(0,0,0,0.15)',
         zIndex: zIndex || 1000200,
         display: 'flex',
         flexDirection: 'column',
@@ -1965,12 +1966,9 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
         background: 'var(--color-surface)'
       }}
     >
-      {isMobileOrTablet && !embedMode && (
-        <div style={{ width: '36px', height: '5px', background: 'var(--color-border)', borderRadius: '999px', margin: '12px auto 2px', flexShrink: 0 }} />
-      )}
         {/* Drawer Header */}
         <div style={{
-          padding: isMobileOrTablet ? '0.5rem 0.75rem' : (embedMode ? '0.75rem 0.5rem' : '1.25rem 1.5rem'),
+          padding: isMobileOrTablet ? '0.6rem 0.75rem' : (embedMode ? '0.75rem 0.5rem' : '1.25rem 1.5rem'),
           borderBottom: '1px solid var(--color-border-light)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -1979,9 +1977,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
           zIndex: 100,
           position: 'sticky',
           top: 0,
-          flexShrink: 0
+          flexShrink: 0,
+          gap: '8px'
         }}>
-          <div style={{ display: 'flex', gap: isMobileOrTablet ? '8px' : '12px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', gap: isMobileOrTablet ? '8px' : '12px', alignItems: 'center', minWidth: 0, flex: 1, overflow: 'hidden' }}>
             {!isMobileOrTablet && (
               <div style={{
                 width: '40px',
@@ -2009,34 +2008,38 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 {erpMeta.internal_type === 'announcement' ? <AlertCircle size={20} /> : <CheckSquare2 size={20} />}
               </div>
             )}
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <h3 style={{ fontSize: isMobileOrTablet ? '0.75rem' : '1.1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: isMobileOrTablet ? '4px' : '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+              <h3 style={{ fontSize: isMobileOrTablet ? '0.85rem' : '1.1rem', fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: isMobileOrTablet ? '4px' : '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <span 
                   style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   title={formData.subject || t("Chi tiết công việc")}
                 >
                   {formData.subject || t("Chi tiết công việc")}
                 </span>
-                <span className="badge" style={{
-                  background: 'rgba(107, 114, 128, 0.1)',
-                  color: 'var(--color-text-muted)',
-                  fontSize: isMobileOrTablet ? '0.55rem' : '0.6rem',
-                  fontWeight: 800,
-                  padding: isMobileOrTablet ? '1px 4px' : '1px 6px',
-                  borderRadius: '4px',
-                  textTransform: 'uppercase',
-                  flexShrink: 0
-                }}>#{formData.id}</span>
-                <span className={`badge ${formData.priority === 'high' ? 'danger' : formData.priority === 'low' ? 'info' : 'warning'}`} style={{
-                  fontSize: isMobileOrTablet ? '0.55rem' : '0.6rem',
-                  fontWeight: 800,
-                  padding: isMobileOrTablet ? '1px 4px' : '1px 6px',
-                  borderRadius: '4px',
-                  textTransform: 'uppercase',
-                  flexShrink: 0
-                }}>
-                  {formData.priority === 'high' ? t('Khẩn cấp') : formData.priority === 'low' ? t('Thấp') : t('Trung bình')}
-                </span>
+                {!isMobileOrTablet && (
+                  <>
+                    <span className="badge" style={{
+                      background: 'rgba(107, 114, 128, 0.1)',
+                      color: 'var(--color-text-muted)',
+                      fontSize: '0.6rem',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      textTransform: 'uppercase',
+                      flexShrink: 0
+                    }}>#{formData.id}</span>
+                    <span className={`badge ${formData.priority === 'high' ? 'danger' : formData.priority === 'low' ? 'info' : 'warning'}`} style={{
+                      fontSize: '0.6rem',
+                      fontWeight: 800,
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      textTransform: 'uppercase',
+                      flexShrink: 0
+                    }}>
+                      {formData.priority === 'high' ? t('Khẩn cấp') : formData.priority === 'low' ? t('Thấp') : t('Trung bình')}
+                    </span>
+                  </>
+                )}
               </h3>
               {!isMobileOrTablet && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
@@ -2093,7 +2096,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: isMobileOrTablet ? '4px' : '10px', alignItems: 'center', flexShrink: 0 }}>
             {/* Share Task Button */}
             {formData.id && formData.id !== 'new' && (
               <button
@@ -2104,19 +2107,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
+                  width: isMobileOrTablet ? '32px' : '36px',
+                  height: isMobileOrTablet ? '32px' : '36px',
                   borderRadius: '8px',
                   border: '1px solid var(--color-border)',
                   background: 'var(--color-surface)',
                   color: 'var(--color-text-muted)',
                   cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  padding: 0
                 }}
                 title={t("Chia sẻ liên kết công việc")}
               >
-                <Share2 size={18} />
+                <Share2 size={isMobileOrTablet ? 15 : 18} />
               </button>
             )}
 
@@ -2130,19 +2134,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '36px',
-                height: '36px',
+                width: isMobileOrTablet ? '32px' : '36px',
+                height: isMobileOrTablet ? '32px' : '36px',
                 borderRadius: '8px',
                 border: isMuted ? '1px solid var(--color-border)' : '1px solid rgba(189, 29, 45, 0.3)',
                 background: isMuted ? 'var(--color-bg)' : 'rgba(189, 29, 45, 0.08)',
                 color: isMuted ? 'var(--color-text-muted)' : '#BD1D2D',
                 cursor: 'pointer',
                 boxShadow: 'var(--shadow-sm)',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                padding: 0
               }}
               title={isMuted ? t("Thông báo đang tắt (Bấm để bật)") : t("Thông báo đang bật (Bấm để tắt)")}
             >
-              {isMuted ? <BellOff size={18} /> : <Bell size={18} />}
+              {isMuted ? <BellOff size={isMobileOrTablet ? 15 : 18} /> : <Bell size={isMobileOrTablet ? 15 : 18} />}
             </button>
 
             {/* Hide task eye button */}
@@ -2156,19 +2161,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
+                  width: isMobileOrTablet ? '32px' : '36px',
+                  height: isMobileOrTablet ? '32px' : '36px',
                   borderRadius: '8px',
                   border: isHidden ? '1.5px solid var(--color-danger)' : '1px solid var(--color-border)',
                   background: isHidden ? 'rgba(239, 68, 68, 0.08)' : 'var(--color-surface)',
                   color: isHidden ? 'var(--color-danger)' : 'var(--color-text-muted)',
                   cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  padding: 0
                 }}
                 title={isHidden ? t("Công việc đang ẩn (Bấm để hiển thị lại)") : t("Ẩn công việc khỏi bàn làm việc")}
               >
-                {isHidden ? <EyeOff size={18} style={{ color: 'var(--color-danger)' }} /> : <Eye size={18} />}
+                {isHidden ? <EyeOff size={isMobileOrTablet ? 15 : 18} style={{ color: 'var(--color-danger)' }} /> : <Eye size={isMobileOrTablet ? 15 : 18} />}
               </button>
             )}
 
@@ -2184,19 +2190,20 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
+                  width: isMobileOrTablet ? '32px' : '36px',
+                  height: isMobileOrTablet ? '32px' : '36px',
                   borderRadius: '8px',
                   border: '1px solid var(--color-border)',
                   background: 'var(--color-bg)',
                   color: 'var(--color-text-muted)',
                   cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  padding: 0
                 }}
                 title={t("Chế độ tập trung")}
               >
-                <Target size={18} />
+                <Target size={isMobileOrTablet ? 15 : 18} />
               </button>
             )}
 
@@ -2209,12 +2216,12 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: isMobileOrTablet ? '0' : '8px',
-                padding: isMobileOrTablet ? '6px' : '8px 20px',
-                width: isMobileOrTablet ? '36px' : undefined,
-                borderRadius: isMobileOrTablet ? '8px' : '10px',
+                padding: isMobileOrTablet ? '0' : '8px 20px',
+                width: isMobileOrTablet ? '32px' : undefined,
+                borderRadius: '8px',
                 fontSize: isMobileOrTablet ? '0.85rem' : '0.9rem',
                 fontWeight: 700,
-                height: isMobileOrTablet ? '36px' : '38px',
+                height: isMobileOrTablet ? '32px' : '38px',
                 background: 'var(--color-primary)',
                 borderColor: 'var(--color-primary)',
                 color: 'white',
@@ -2223,7 +2230,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 transition: 'all 0.2s'
               }}
             >
-              {isSaving ? <RefreshCw className="spin" size={14} /> : <Save size={16} />}
+              {isSaving ? <RefreshCw className="spin" size={14} /> : <Save size={isMobileOrTablet ? 15 : 16} />}
               {!isMobileOrTablet && <span>{t('Lưu thay đổi')}</span>}
             </button>
 
@@ -2233,18 +2240,18 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
               style={{
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',
-                padding: '8px',
+                padding: 0,
                 borderRadius: '8px',
                 cursor: 'pointer',
                 color: 'var(--color-text-muted)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: '36px',
-                width: '36px'
+                height: isMobileOrTablet ? '32px' : '36px',
+                width: isMobileOrTablet ? '32px' : '36px'
               }}
             >
-              <X size={18} />
+              <X size={isMobileOrTablet ? 16 : 18} />
             </button>
           </div>
         </div>

@@ -456,14 +456,18 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   const [portalVacationMode, setPortalVacationMode] = useState(false);
   const [pendingCoopsCount, setPendingCoopsCount] = useState(0);
   const [now, setNow] = useState(() => Date.now());
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 1024 : false);
 
   useEffect(() => {
+    let lastIsMobile = typeof window !== 'undefined' ? window.innerWidth <= 1024 : false;
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const next = window.innerWidth <= 1024;
+      if (next !== lastIsMobile) {
+        lastIsMobile = next;
+        setIsMobile(next);
+      }
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -4850,235 +4854,277 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: wsViewMode === 'focus' ? '0' : '1.25rem', 
-        paddingBottom: wsViewMode === 'focus' ? '0' : (isMobile ? '300px' : '200px'),
+        gap: wsViewMode === 'focus' ? '0' : '1rem', 
+        paddingBottom: wsViewMode === 'focus' ? '0' : (isMobile ? '120px' : '200px'),
         height: wsViewMode === 'focus' ? 'calc(100vh - 120px)' : 'auto',
-        overflow: wsViewMode === 'focus' ? 'hidden' : 'visible'
+        overflow: wsViewMode === 'focus' ? 'hidden' : 'visible',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box'
       }}>
         {wsViewMode !== 'focus' && (
           <>
             {/* Workspace Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h1 className="page-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {t("Bàn làm việc")}
-                <button
-                  onClick={() => setShowWorkspaceHelpModal(true)}
-                  style={{
-                    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                    border: '1px solid var(--color-border)',
-                    padding: '3px 8px',
-                    borderRadius: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    cursor: 'pointer',
-                    color: 'var(--color-text-muted)',
-                    transition: 'all 0.2s',
-                    height: '24px'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.color = 'var(--color-primary)';
-                    e.currentTarget.style.borderColor = 'var(--color-primary-light)';
-                    e.currentTarget.style.background = 'var(--color-primary-light)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.color = 'var(--color-text-muted)';
-                    e.currentTarget.style.borderColor = 'var(--color-border)';
-                    e.currentTarget.style.background = theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)';
-                  }}
-                  title={t("Xem hướng dẫn sử dụng Bàn làm việc")}
-                >
-                  <Info size={12} />
-                  <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>
-                </button>
-              </h1>
-              
-              {/* Completed Calls Count Pill */}
-              {isSaleUser && (
-                <div 
-                  onClick={handleOpenCallsModal}
-                  className="hover-lift"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    background: 'rgba(16, 185, 129, 0.08)',
-                    border: '1px solid rgba(16, 185, 129, 0.15)',
-                    padding: '4px 10px',
-                    borderRadius: '20px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: '#10b981',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    whiteSpace: 'nowrap',
-                    height: '24px'
-                  }}
-                >
-                  <Phone size={11} style={{ flexShrink: 0 }} />
-                  <span>
-                    {t('Đã gọi:')} <strong>{completedCallsCount}</strong>
-                  </span>
-                </div>
-              )}
-
-              {/* Show alerts toggler when hidden */}
-              {hideWorkspaceAlerts && (
-                (() => {
-                  const hasUncontacted = uncontactedCount > 0 && isSaleUser;
-                  const hasCoops = pendingCoopsCount > 0;
-                  const todayStr = new Date().toISOString().slice(0, 10);
-                  const uid = user?.id ? Number(user.id) : 0;
-                  const isMyTask = (t: any) => {
-                    if (!uid) return false;
-                    const assignee = Number(t.assignee_id || t.user_id || 0);
-                    return assignee === uid;
-                  };
-                  const myOverdueCount = (wsTasks || []).filter((t: any) => t.status !== 'done' && isMyTask(t) && t.due_date && t.due_date.slice(0, 10) < todayStr).length;
-                  const myDueTodayCount = (wsTasks || []).filter((t: any) => t.status !== 'done' && isMyTask(t) && t.due_date && t.due_date.slice(0, 10) === todayStr).length;
-                  const myHighPriorityTask = (wsTasks || []).find((t: any) => t.status !== 'done' && isMyTask(t) && (t.priority === 'high' || t.priority === 'urgent'));
-                  const totalOverdueCount = workspaceStats.overdue || 0;
-                  const totalDueTodayCount = workspaceStats.dueToday || 0;
-                  const teamHighPriorityTask = (wsTasks || []).find((t: any) => t.status !== 'done' && (t.priority === 'high' || t.priority === 'urgent'));
-
-                  let aiCount = 0;
-                  if (myOverdueCount > 0) aiCount = myOverdueCount;
-                  else if (myHighPriorityTask) aiCount = 1;
-                  else if (myDueTodayCount > 0) aiCount = myDueTodayCount;
-                  else if (totalOverdueCount > 0) aiCount = totalOverdueCount;
-                  else if (teamHighPriorityTask) aiCount = 1;
-                  else if (totalDueTodayCount > 0) aiCount = totalDueTodayCount;
-
-                  const meetingCount = upcomingMeetingsList.length;
-                  const hasAnyAlert = hasUncontacted || hasCoops || aiCount > 0 || meetingCount > 0;
-
-                  if (!hasAnyAlert) return null;
-                  return (
-                    <button
-                      onClick={() => setHideWorkspaceAlerts(false)}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              gap: '6px',
+              marginBottom: isMobile ? '2px' : '0.25rem',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              {/* Row 1: Title + Info Button + Completed Calls + Action Button */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                width: '100%',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                  <h1 className="page-title" style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {t("Bàn làm việc")}
+                  </h1>
+                  
+                  {/* Info Button */}
+                  <button
+                    onClick={() => setShowWorkspaceHelpModal(true)}
+                    style={{
+                      background: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      border: '1px solid var(--color-border)',
+                      padding: isMobile ? '0' : '2px 8px',
+                      width: isMobile ? '24px' : 'auto',
+                      height: '24px',
+                      borderRadius: isMobile ? '50%' : '20px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      color: 'var(--color-text-muted)',
+                      transition: 'all 0.2s',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = 'var(--color-primary)';
+                      e.currentTarget.style.borderColor = 'var(--color-primary-light)';
+                      e.currentTarget.style.background = 'var(--color-primary-light)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = 'var(--color-text-muted)';
+                      e.currentTarget.style.borderColor = 'var(--color-border)';
+                      e.currentTarget.style.background = theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+                    }}
+                    title={t("Xem hướng dẫn sử dụng Bàn làm việc")}
+                  >
+                    <Info size={12} />
+                    {!isMobile && <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t("Giải thích cơ chế")}</span>}
+                  </button>
+                  
+                  {/* Completed Calls Count Pill */}
+                  {isSaleUser && (
+                    <div 
+                      onClick={handleOpenCallsModal}
+                      className="hover-lift"
                       style={{
-                        background: 'rgba(189, 29, 45, 0.06)',
-                        border: '1px solid rgba(189, 29, 45, 0.2)',
-                        padding: '2px 10px',
-                        borderRadius: '12px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
-                        cursor: 'pointer',
-                        color: 'var(--color-primary)',
-                        fontSize: '0.725rem',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.15)',
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        fontSize: '0.7rem',
                         fontWeight: 700,
+                        color: '#10b981',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        whiteSpace: 'nowrap',
                         height: '24px',
-                        transition: 'all 0.15s'
+                        flexShrink: 0
                       }}
-                      className="hover-lift"
-                      title={t('Hiện lại gợi ý xử lý')}
                     >
-                      <Sparkles size={11} style={{ color: 'var(--color-primary)' }} />
-                      <span>{t('Gợi ý')}</span>
+                      <Phone size={10} style={{ flexShrink: 0 }} />
+                      <span>
+                        {t('Đã gọi:')} <strong>{completedCallsCount}</strong>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Show alerts toggler when hidden */}
+                  {hideWorkspaceAlerts && (
+                    (() => {
+                      const hasUncontacted = uncontactedCount > 0 && isSaleUser;
+                      const hasCoops = pendingCoopsCount > 0;
+                      const todayStr = new Date().toISOString().slice(0, 10);
+                      const uid = user?.id ? Number(user.id) : 0;
+                      const isMyTask = (t: any) => {
+                        if (!uid) return false;
+                        const assignee = Number(t.assignee_id || t.user_id || 0);
+                        return assignee === uid;
+                      };
+                      const myOverdueCount = (wsTasks || []).filter((t: any) => t.status !== 'done' && isMyTask(t) && t.due_date && t.due_date.slice(0, 10) < todayStr).length;
+                      const myDueTodayCount = (wsTasks || []).filter((t: any) => t.status !== 'done' && isMyTask(t) && t.due_date && t.due_date.slice(0, 10) === todayStr).length;
+                      const myHighPriorityTask = (wsTasks || []).find((t: any) => t.status !== 'done' && isMyTask(t) && (t.priority === 'high' || t.priority === 'urgent'));
+                      const totalOverdueCount = workspaceStats.overdue || 0;
+                      const totalDueTodayCount = workspaceStats.dueToday || 0;
+                      const teamHighPriorityTask = (wsTasks || []).find((t: any) => t.status !== 'done' && (t.priority === 'high' || t.priority === 'urgent'));
+
+                      let aiCount = 0;
+                      if (myOverdueCount > 0) aiCount = myOverdueCount;
+                      else if (myHighPriorityTask) aiCount = 1;
+                      else if (myDueTodayCount > 0) aiCount = myDueTodayCount;
+                      else if (totalOverdueCount > 0) aiCount = totalOverdueCount;
+                      else if (teamHighPriorityTask) aiCount = 1;
+                      else if (totalDueTodayCount > 0) aiCount = totalDueTodayCount;
+
+                      const meetingCount = upcomingMeetingsList.length;
+                      const hasAnyAlert = hasUncontacted || hasCoops || aiCount > 0 || meetingCount > 0;
+
+                      if (!hasAnyAlert) return null;
+                      return (
+                        <button
+                          onClick={() => setHideWorkspaceAlerts(false)}
+                          style={{
+                            background: 'rgba(189, 29, 45, 0.06)',
+                            border: '1px solid rgba(189, 29, 45, 0.2)',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer',
+                            color: 'var(--color-primary)',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            height: '24px',
+                            flexShrink: 0,
+                            transition: 'all 0.15s'
+                          }}
+                          className="hover-lift"
+                          title={t('Hiện lại gợi ý xử lý')}
+                        >
+                          <Sparkles size={11} style={{ color: 'var(--color-primary)' }} />
+                          <span>{t('Gợi ý')}</span>
+                        </button>
+                      );
+                    })()
+                  )}
+                </div>
+
+                {/* Top Right Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  {!isMobile && (
+                    <button
+                      className="btn secondary"
+                      onClick={handleStartFocusSession}
+                      style={{
+                        background: 'rgba(189, 29, 45, 0.06)',
+                        border: '1px solid rgba(189, 29, 45, 0.25)',
+                        color: 'var(--color-primary, #BD1D2D)',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        borderRadius: '10px',
+                        padding: '8px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(189, 29, 45, 0.12)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(189, 29, 45, 0.06)'; }}
+                    >
+                      <Play size={14} />
+                      <span>{t('Bắt đầu Phiên Làm Việc')}</span>
                     </button>
-                  );
-                })()
+                  )}
+
+                  <button 
+                    className="btn primary" 
+                    style={{ 
+                      background: 'var(--color-primary, #BD1D2D)', 
+                      borderColor: 'var(--color-primary, #BD1D2D)',
+                      height: '32px',
+                      padding: isMobile ? '0 10px' : '0 14px',
+                      borderRadius: '8px',
+                      fontSize: isMobile ? '0.78rem' : '0.85rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 2px 6px rgba(189, 29, 45, 0.2)'
+                    }}
+                    onClick={() => {
+                      setSelectedTaskForDetails({
+                        id: 'new',
+                        subject: '',
+                        priority: 'medium',
+                        due_date: new Date().toISOString().slice(0, 10),
+                        description: '',
+                        link: '',
+                        user_id: String(user?.id || ''),
+                        progress: 0,
+                        require_approval: 0,
+                        approver_id: '',
+                        tags: wsSubTab === 'personal' ? 'personal_task' : '',
+                        internal_type: wsSubTab === 'team' ? 'task' : '',
+                        scope: wsSubTab === 'team' ? 'team' : '',
+                        participant_ids: '',
+                        related_contact_ids: [],
+                        checklist: [],
+                        project_id: '',
+                        campaign_id: '',
+                        team_id: '',
+                        campaign_target: ''
+                      });
+                    }}
+                  >
+                    <Plus size={14} /> <span>{isMobile ? t('Tạo việc') : t('Tạo công việc')}</span>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Row 2: Subtitle or Group Breadcrumb */}
+              {((isAdminOrManager && wsTeamId && wsSubTab !== 'personal')) ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', boxSizing: 'border-box' }}>
+                  <button
+                    onClick={() => setWsTeamId('')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text-light)',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      transition: 'all 0.15s',
+                      flexShrink: 0
+                    }}
+                    className="hover-lift"
+                  >
+                    <ArrowLeft size={11} /> {t('Quay lại')}
+                  </button>
+                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span>{t('Đang xem nhóm:')}</span>
+                    <strong style={{ color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {wsTeamId === 'all_teams_bypass' ? t('Tất cả các Nhóm') : (teamsList.find(t => String(t.id) === wsTeamId)?.name || wsTeamId)}
+                    </strong>
+                  </span>
+                </div>
+              ) : (
+                !isMobile && (
+                  <p className="page-subtitle" style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                    {t("Quản lý toàn bộ công việc cần thực hiện, lọc chi tiết theo tiến độ và độ ưu tiên.")}
+                  </p>
+                )
               )}
             </div>
-            
-            {/* Subtitle or Group Breadcrumb */}
-            {((isAdminOrManager && wsTeamId && wsSubTab !== 'personal')) ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                <button
-                  onClick={() => setWsTeamId('')}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)',
-                    color: 'var(--color-text-light)',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    transition: 'all 0.15s'
-                  }}
-                  className="hover-lift"
-                >
-                  <ArrowLeft size={11} /> {t('Quay lại')}
-                </button>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>{t('Đang xem nhóm:')}</span>
-                  <strong style={{ color: 'var(--color-primary)' }}>
-                    {wsTeamId === 'all_teams_bypass' ? t('Tất cả các Nhóm') : (teamsList.find(t => String(t.id) === wsTeamId)?.name || wsTeamId)}
-                  </strong>
-                </span>
-              </div>
-            ) : (
-              <p className="page-subtitle" style={{ fontSize: '0.825rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-                {t("Quản lý toàn bộ công việc cần thực hiện, lọc chi tiết theo tiến độ và độ ưu tiên.")}
-              </p>
-            )}
-          </div>
-          {!isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                className="btn secondary"
-                onClick={handleStartFocusSession}
-                style={{
-                  background: 'rgba(189, 29, 45, 0.06)',
-                  border: '1px solid rgba(189, 29, 45, 0.25)',
-                  color: 'var(--color-primary, #BD1D2D)',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  borderRadius: '10px',
-                  padding: '8px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(189, 29, 45, 0.12)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(189, 29, 45, 0.06)'; }}
-              >
-                <Play size={14} />
-                <span>{t('Bắt đầu Phiên Làm Việc')}</span>
-              </button>
-
-              <button 
-                className="btn primary" 
-                style={{ background: 'var(--color-primary, #BD1D2D)', borderColor: 'var(--color-primary, #BD1D2D)' }}
-                onClick={() => {
-                  setSelectedTaskForDetails({
-                    id: 'new',
-                    subject: '',
-                    priority: 'medium',
-                    due_date: new Date().toISOString().slice(0, 10),
-                    description: '',
-                    link: '',
-                    user_id: String(user?.id || ''),
-                    progress: 0,
-                    require_approval: 0,
-                    approver_id: '',
-                    tags: wsSubTab === 'personal' ? 'personal_task' : '',
-                    internal_type: wsSubTab === 'team' ? 'task' : '',
-                    scope: wsSubTab === 'team' ? 'team' : '',
-                    participant_ids: '',
-                    related_contact_ids: [],
-                    checklist: [],
-                    project_id: '',
-                    campaign_id: '',
-                    team_id: '',
-                    campaign_target: ''
-                  });
-                }}
-              >
-                <Plus size={16} /> {t('Tạo công việc')}
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Pending Leads Section */}
         {(() => {
@@ -5239,57 +5285,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           );
         })()}
 
-        {/* Main Subtabs Selection - Removed in favor of 6 main status pills. Only keep mobile task creation button. */}
-        {isMobile && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'flex-end',
-            marginBottom: '1rem',
-            width: '100%'
-          }}>
-            <button 
-              className="btn primary sm" 
-              onClick={() => {
-                setSelectedTaskForDetails({
-                  id: 'new',
-                  subject: '',
-                  priority: 'medium',
-                  due_date: new Date().toISOString().slice(0, 10),
-                  description: '',
-                  link: '',
-                  user_id: String(user?.id || ''),
-                  progress: 0,
-                  require_approval: 0,
-                  approver_id: '',
-                  tags: '',
-                  internal_type: '',
-                  scope: '',
-                  participant_ids: '',
-                  related_contact_ids: [],
-                  checklist: [],
-                  project_id: '',
-                  campaign_id: '',
-                  team_id: '',
-                  campaign_target: ''
-                });
-              }}
-              style={{
-                height: '38px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                padding: '0 12px',
-                fontSize: '0.8rem',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                flexShrink: 0
-              }}
-            >
-              <Plus size={14} /> {t('Tạo công việc')}
-            </button>
-          </div>
-        )}
+
 
         {/* Unified Alert & Suggestion Center */}
         {(() => {
@@ -5424,15 +5420,15 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
               </div>
 
               {/* Alert Items Stack */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {/* 1. Uncontacted leads alert */}
                 {hasUncontacted && ['sale', 'sales'].includes(String(user?.role || displayUser?.role || '').toLowerCase()) && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap', padding: '4px 0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '4px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <AlertCircle size={15} />
                       </div>
-                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: isMobile ? '0.78rem' : '0.825rem', color: 'var(--color-text)', lineHeight: 1.35, wordBreak: 'break-word' }}>
                         {t('Yêu cầu liên hệ khách hàng mới: ')}
                         <strong style={{ color: '#ef4444', fontWeight: 800 }}>{uncontactedCount}</strong>
                         {t(' data chưa liên hệ.')}
@@ -5454,12 +5450,12 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
                 {/* 2. Cooperation slips alert */}
                 {hasCoops && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap', padding: '4px 0', borderTop: '1px dashed var(--color-border-light)', paddingTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '4px 0', borderTop: '1px dashed var(--color-border-light)', paddingTop: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Scale size={15} />
                       </div>
-                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: isMobile ? '0.78rem' : '0.825rem', color: 'var(--color-text)', lineHeight: 1.35, wordBreak: 'break-word' }}>
                         {t('Yêu cầu ký phiếu hợp tác: ')}
                         <strong style={{ color: '#10b981', fontWeight: 800 }}>{pendingCoopsCount}</strong>
                         {t(' phiếu đang chờ bạn ký.')}
@@ -5484,12 +5480,12 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
                 {/* 3. AI suggestion alert */}
                 {aiCount > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap', padding: '4px 0', borderTop: '1px dashed var(--color-border-light)', paddingTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '4px 0', borderTop: '1px dashed var(--color-border-light)', paddingTop: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(189, 29, 45, 0.08)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Sparkles size={14} />
                       </div>
-                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: isMobile ? '0.78rem' : '0.825rem', color: 'var(--color-text)', lineHeight: 1.35, wordBreak: 'break-word' }}>
                         {aiMessage}
                       </span>
                     </div>
@@ -5509,12 +5505,12 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
                 {/* 4. Upcoming meetings alert */}
                 {meetingCount > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap', padding: '4px 0', borderTop: '1px dashed var(--color-border-light)', paddingTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '4px 0', borderTop: '1px dashed var(--color-border-light)', paddingTop: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.08)', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <Calendar size={14} />
                       </div>
-                      <span style={{ fontSize: '0.825rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: isMobile ? '0.78rem' : '0.825rem', color: 'var(--color-text)', lineHeight: 1.35, wordBreak: 'break-word' }}>
                         {t('Lịch hẹn sắp diễn ra: ')}
                         <strong style={{ color: '#d97706', fontWeight: 800 }}>{meetingCount}</strong>
                         {t(' cuộc hẹn gặp khách hàng đã lên lịch.')}
@@ -6147,11 +6143,11 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
         {/* Task Grid */}
         {isAdminOrManager && !wsTeamId && wsSubTab !== 'personal' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: isMobile ? '100px' : '40px' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
               {t('Vui lòng chọn một Phòng ban để xem chi tiết công việc:')}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem' }}>
               {/* Card for "Tất cả các Nhóm" */}
               <div
                 onClick={() => setWsTeamId('all_teams_bypass')}
@@ -6329,7 +6325,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
           </div>
         ) : wsViewMode === 'grid' ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '100%' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', paddingBottom: isMobile ? '100px' : '40px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             {paginatedWsTasks.map(task => {
               const isOverdue = task.due_date && new Date(task.due_date) < new Date(new Date().setHours(0,0,0,0));
               const isToday = task.due_date && new Date(task.due_date).toDateString() === new Date().toDateString();
@@ -6361,6 +6357,13 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   description = task.body.replace(/Tài liệu\/Link đính kèm:\s*.*$/m, '').trim();
                 }
               }
+
+              const cleanDesc = description
+                ? stripHtml(description)
+                    .replace(/\[MISA_IMPORT\]/g, '')
+                    .replace(/Project:\s*ALL IN ONE\s*-\s*VẬN HÀNH/gi, '')
+                    .trim()
+                : '';
               
               const progressVal = task.progress || 0;
 
@@ -6381,19 +6384,26 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 <div 
                   key={task.id} 
                   style={{
-                    padding: isMobile ? '0.75rem 1rem' : '1rem 1.25rem',
+                    padding: isMobile ? '12px 14px' : '1rem 1.25rem',
                     background: cardBg,
                     border: cardBorder,
-                    borderRadius: 'var(--radius-lg)',
+                    borderRadius: '14px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: isMobile ? '0.5rem' : '0.75rem',
                     boxShadow: cardShadow,
-                    transition: 'all var(--transition-fluid)',
+                    transition: isMobile ? 'none' : 'all var(--transition-fluid)',
                     cursor: 'pointer',
-                    position: 'relative'
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden',
+                    contain: 'content',
+                    transform: 'translateZ(0)',
+                    contentVisibility: 'auto'
                   }}
-                  className="hover-lift active-press"
+                  className={isMobile ? 'active-press' : 'hover-lift active-press'}
                   onClick={() => {
                     const parsed = parseDescriptionAndChecklist(description);
                     const parsedTask = {
@@ -6498,6 +6508,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                           ? task.first_image_url 
                           : `${import.meta.env.VITE_API_URL || '/backend'}/${task.first_image_url}`} 
                         alt="Task Preview" 
+                        loading="lazy"
+                        decoding="async"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).parentElement!.style.display = 'none';
@@ -6507,23 +6519,23 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                   )}
 
                   {/* Title & Description */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <h3 style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)', margin: 0, lineHeight: 1.3 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <h3 style={{ fontWeight: 700, fontSize: isMobile ? '0.875rem' : '0.925rem', color: 'var(--color-text)', margin: 0, lineHeight: 1.35 }}>
                       {task.subject}
                     </h3>
-                    {description && (
+                    {cleanDesc && (
                       <p style={{
-                        fontSize: '0.75rem',
+                        fontSize: isMobile ? '0.725rem' : '0.75rem',
                         color: 'var(--color-text-muted)',
                         margin: 0,
                         lineHeight: 1.4,
                         display: '-webkit-box',
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: isMobile ? 2 : 3,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
                       }}>
-                        {stripHtml(description)}
+                        {cleanDesc}
                       </p>
                     )}
                   </div>
@@ -15873,8 +15885,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
         )}
 
         {/* Scrollable View Area */}
-        <main className={embedMode ? "" : "no-scrollbar responsive-main portal-main-content"} style={embedMode ? { width: '100%' } : { flex: 1, padding: '2rem 3rem', width: '100%', overflowY: 'auto' }}>
-          <div style={{ width: '100%' }}>
+        <main className={embedMode ? "" : "no-scrollbar responsive-main portal-main-content"} style={embedMode ? { width: '100%', maxWidth: '100%', boxSizing: 'border-box' } : { flex: 1, padding: isMobile ? '0' : '2rem 3rem', width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflowY: 'auto', overflowX: 'hidden' }}>
+          <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
 
             {/* Render views based on activeTab */}
