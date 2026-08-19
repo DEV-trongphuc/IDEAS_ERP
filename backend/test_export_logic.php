@@ -10,14 +10,19 @@ $ctrl = new ExportController($pdo);
 assertTest("Khởi tạo ExportController thành công", $ctrl instanceof ExportController);
 
 // 2. Test schema presence for contacts, companies, deals, products, batches
-assertDbField($conn, 'contacts', 'full_name');
-assertDbField($conn, 'contacts', 'phone');
-assertDbField($conn, 'contacts', 'status');
-assertDbField($conn, 'contacts', 'stage_id');
-assertDbField($conn, 'companies', 'name');
-assertDbField($conn, 'deals', 'title');
-assertDbField($conn, 'products', 'name');
-assertDbField($conn, 'batches', 'batch_code');
+$checkCol = function($table, $column) use ($conn) {
+    $res = $conn->query("SHOW COLUMNS FROM `{$table}` LIKE '{$column}'");
+    return assertTest("Cột {$table}.{$column} tồn tại trong CSDL", $res && $res->num_rows > 0);
+};
+
+$checkCol('contacts', 'full_name');
+$checkCol('contacts', 'phone');
+$checkCol('contacts', 'status');
+$checkCol('contacts', 'stage_id');
+$checkCol('companies', 'name');
+$checkCol('deals', 'title');
+$checkCol('products', 'name');
+$checkCol('batches', 'batch_code');
 
 // 3. Test query contacts count with customer segment
 $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM contacts WHERE tenant_id = 1 AND deleted_at IS NULL AND status = 'customer'");

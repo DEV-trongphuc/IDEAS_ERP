@@ -1452,76 +1452,127 @@ export default function Approvals() {
 
       
       {/* Header */}
-      <div className="page-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ 
+        marginBottom: isMobile ? '0.75rem' : '1.5rem',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        gap: isMobile ? '8px' : '16px'
+      }}>
         <div>
-          <h1 className="page-title">{t('Quy trình hệ thống')}</h1>
-          <p className="page-subtitle">{t('Quản lý tập trung các quy trình đề xuất nghỉ phép, tạm ứng lương, chi phí hành chính và giải trình đi trễ.')}</p>
+          <h1 className="page-title" style={{ margin: 0, fontSize: isMobile ? '1.25rem' : '1.5rem', fontWeight: 800 }}>
+            {t('Quy trình hệ thống')}
+          </h1>
+          <p className="page-subtitle" style={{ margin: '2px 0 0 0', fontSize: isMobile ? '0.75rem' : '0.875rem' }}>
+            {t('Quản lý tập trung các quy trình đề xuất nghỉ phép, tạm ứng lương, chi phí hành chính và giải trình đi trễ.')}
+          </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: isMobile ? '6px' : '10px',
+          width: isMobile ? 'auto' : 'auto',
+          flexWrap: 'nowrap'
+        }}>
           <PeriodFilter
             value={period}
             onChange={(p, r) => { setPeriod(p); setDateRange(r); }}
+            align={isMobile ? 'left' : 'right'}
+            buttonStyle={{
+              height: isMobile ? 32 : 38,
+              padding: isMobile ? '0 8px' : '0 1rem',
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              minWidth: isMobile ? 'unset' : '160px',
+              gap: isMobile ? '4px' : '8px'
+            }}
           />
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
-            className="btn primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', fontWeight: 700 }}
+            className="btn primary hover-lift"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              height: isMobile ? '32px' : '38px', 
+              padding: isMobile ? '0 10px' : '0 16px',
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              fontWeight: 700,
+              borderRadius: '8px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0
+            }}
           >
-            <Plus size={16} />
-            {t('Tạo đề xuất')}
+            <Plus size={isMobile ? 14 : 16} />
+            <span>{t('Tạo đề xuất')}</span>
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: 'var(--color-bg)', padding: '0.375rem', borderRadius: 'var(--radius-lg)', width: 'fit-content' }}>
+      <div style={{
+        display: 'flex',
+        gap: '4px',
+        marginBottom: isMobile ? '1rem' : '1.5rem',
+        background: 'var(--color-bg)',
+        padding: '3px',
+        borderRadius: '10px',
+        width: isMobile ? '100%' : 'fit-content'
+      }}>
         {isAdmin && (
           <button
+            type="button"
             onClick={() => setActiveTab('pending')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem 1.125rem',
-              borderRadius: '8px',
-              fontWeight: 600,
-              fontSize: '0.875rem',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: isMobile ? '6px 10px' : '0.5rem 1.125rem',
+              borderRadius: '7px',
+              fontWeight: activeTab === 'pending' ? 700 : 600,
+              fontSize: isMobile ? '0.78rem' : '0.875rem',
               background: activeTab === 'pending' ? 'var(--color-surface)' : 'transparent',
               color: activeTab === 'pending' ? 'var(--color-text)' : 'var(--color-text-light)',
-              boxShadow: activeTab === 'pending' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              boxShadow: activeTab === 'pending' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
               border: 'none',
               cursor: 'pointer',
+              flex: isMobile ? 1 : 'none',
               transition: 'all 0.2s'
             }}
           >
-            <Activity size={15} />
+            <Activity size={isMobile ? 13 : 15} />
             {t('Yêu cầu chờ duyệt')}
             {pendingList.length > 0 && (
-              <span style={{ fontSize: '0.725rem', background: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: 99, fontWeight: 700, marginLeft: 4 }}>
+              <span style={{ fontSize: '0.7rem', background: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: 99, fontWeight: 700, marginLeft: 2 }}>
                 {pendingList.length}
               </span>
             )}
           </button>
         )}
         <button
+          type="button"
           onClick={() => setActiveTab('my_requests')}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 1.125rem',
-            borderRadius: '8px',
-            fontWeight: 600,
-            fontSize: '0.875rem',
+            justifyContent: 'center',
+            gap: '6px',
+            padding: isMobile ? '6px 10px' : '0.5rem 1.125rem',
+            borderRadius: '7px',
+            fontWeight: activeTab === 'my_requests' ? 700 : 600,
+            fontSize: isMobile ? '0.78rem' : '0.875rem',
             background: activeTab === 'my_requests' ? 'var(--color-surface)' : 'transparent',
             color: activeTab === 'my_requests' ? 'var(--color-text)' : 'var(--color-text-light)',
-            boxShadow: activeTab === 'my_requests' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            boxShadow: activeTab === 'my_requests' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
             border: 'none',
             cursor: 'pointer',
+            flex: isMobile ? 1 : 'none',
             transition: 'all 0.2s'
           }}
         >
-          <User size={15} />
+          <User size={isMobile ? 13 : 15} />
           {t('Yêu cầu của tôi')}
         </button>
       </div>

@@ -141,15 +141,17 @@ export const WorkspaceStickyPomodoro: React.FC = () => {
   const totalDuration = mode === 'work' ? 25 * 60 : 5 * 60;
   const progressPercent = ((totalDuration - timeLeft) / totalDuration) * 100;
 
+  if (isMobile) return null;
+
   return (
     <div 
       ref={widgetRef} 
       style={{ 
         position: 'fixed', 
-        top: isMobile ? 'auto' : '50%', 
-        bottom: isMobile ? '80px' : 'auto',
-        right: isMobile ? '12px' : '24px', 
-        transform: isMobile ? 'none' : 'translateY(-50%)', 
+        top: '50%', 
+        bottom: 'auto',
+        right: '24px', 
+        transform: 'translateY(-50%)', 
         zIndex: 9999 
       }}
     >

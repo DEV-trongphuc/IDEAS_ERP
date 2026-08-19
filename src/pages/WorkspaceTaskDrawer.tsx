@@ -60,6 +60,19 @@ const getRoleDisplayName = (user: any) => {
   return roleMap[user.role?.toLowerCase()] || user.role || '';
 };
 
+// Module-level metadata cache to eliminate redundant network requests on every drawer open
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  key?: string;
+}
+
+let cachedProjects: CacheEntry<any[]> | null = null;
+let cachedCampaigns: CacheEntry<any[]> | null = null;
+let cachedTeams: CacheEntry<any[]> | null = null;
+let cachedContacts: CacheEntry<any[]> | null = null;
+const METADATA_CACHE_TTL = 3 * 60 * 1000; // 3 minutes cache
+
 export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({ 
   isOpen, 
   onClose, 
@@ -164,25 +177,29 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
 
   useEffect(() => {
     if (isOpen && task?.id && task.id !== 'new') {
+      const taskId = task.id;
       setLoadingMute(true);
-      api.get(`/activities/${task.id}/mute-status`)
-        .then(res => {
-          if (res.data && res.data.success) {
-            setIsMuted(!!res.data.is_muted);
-          }
-        })
-        .catch(err => console.error("Lỗi lấy trạng thái thông báo task:", err))
-        .finally(() => setLoadingMute(false));
-
-      api.get(`/activities/${task.id}/hide-status`)
-        .then(res => {
-          if (res.data && res.data.success) {
-            setIsHidden(!!res.data.is_hidden);
-          }
-        })
-        .catch(err => console.error("Lỗi lấy trạng thái ẩn task:", err));
       
-      loadSubtaskCommentCounts();
+      // Parallelize background status queries in a single batch
+      Promise.allSettled([
+        api.get(`/activities/${taskId}/mute-status`),
+        api.get(`/activities/${taskId}/hide-status`),
+        api.get(`/activities/${taskId}/subtasks-comment-counts`)
+      ]).then(([muteRes, hideRes, subtaskRes]) => {
+        if (muteRes.status === 'fulfilled' && muteRes.value.data?.success) {
+          setIsMuted(!!muteRes.value.data.is_muted);
+        }
+        if (hideRes.status === 'fulfilled' && hideRes.value.data?.success) {
+          setIsHidden(!!hideRes.value.data.is_hidden);
+        }
+        if (subtaskRes.status === 'fulfilled' && subtaskRes.value.data?.success) {
+          setSubtaskCommentCounts(subtaskRes.value.data.data || {});
+        }
+      }).catch(err => {
+        console.error("Lỗi lấy trạng thái hoạt động:", err);
+      }).finally(() => {
+        setLoadingMute(false);
+      });
     }
   }, [isOpen, task?.id]);
 
@@ -315,26 +332,50 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [showTeamDropdown, showParticipantDropdown, activeAssigneeDropdownId]);
 
+  // Load Projects, Campaigns, Teams with in-memory caching
   useEffect(() => {
-    if (isOpen) {
-      const isRosterRestricted = ['sale', 'sales', 'manager', 'director'].includes(currentUser?.role || '');
-      const projUrl = isRosterRestricted ? '/projects' : '/projects?bypass_roster=1';
-      const campUrl = isRosterRestricted ? '/campaigns' : '/campaigns?bypass_roster=1';
+    if (!isOpen) return;
+
+    const now = Date.now();
+    const isRosterRestricted = ['sale', 'sales', 'manager', 'director'].includes(currentUser?.role || '');
+    const projUrl = isRosterRestricted ? '/projects' : '/projects?bypass_roster=1';
+    const campUrl = isRosterRestricted ? '/campaigns' : '/campaigns?bypass_roster=1';
+
+    // 1. Projects
+    if (cachedProjects && (now - cachedProjects.timestamp < METADATA_CACHE_TTL) && cachedProjects.key === projUrl) {
+      setAllowedProjects(cachedProjects.data);
+    } else {
       api.get(projUrl).then(res => {
-        const d = res.data.data;
-        setAllowedProjects(Array.isArray(d) ? d : (d?.items || []));
-      }).catch(() => {});
-
-      api.get(campUrl).then(res => {
-        const d = res.data.data;
-        setAllowedCampaigns(Array.isArray(d) ? d : (d?.items || []));
-      }).catch(() => {});
-
-      api.get('/teams').then(res => {
-        setAllowedTeams(res.data.data || res.data || []);
+        const d = res.data?.data;
+        const list = Array.isArray(d) ? d : (d?.items || []);
+        cachedProjects = { data: list, timestamp: Date.now(), key: projUrl };
+        setAllowedProjects(list);
       }).catch(() => {});
     }
-  }, [isOpen, currentUser]);
+
+    // 2. Campaigns
+    if (cachedCampaigns && (now - cachedCampaigns.timestamp < METADATA_CACHE_TTL) && cachedCampaigns.key === campUrl) {
+      setAllowedCampaigns(cachedCampaigns.data);
+    } else {
+      api.get(campUrl).then(res => {
+        const d = res.data?.data;
+        const list = Array.isArray(d) ? d : (d?.items || []);
+        cachedCampaigns = { data: list, timestamp: Date.now(), key: campUrl };
+        setAllowedCampaigns(list);
+      }).catch(() => {});
+    }
+
+    // 3. Teams
+    if (cachedTeams && (now - cachedTeams.timestamp < METADATA_CACHE_TTL)) {
+      setAllowedTeams(cachedTeams.data);
+    } else {
+      api.get('/teams').then(res => {
+        const list = res.data?.data || res.data || [];
+        cachedTeams = { data: list, timestamp: Date.now() };
+        setAllowedTeams(list);
+      }).catch(() => {});
+    }
+  }, [isOpen, currentUser?.role]);
 
   useEffect(() => {
     if (isOpen && task && erpMeta) {
@@ -345,7 +386,9 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
           if (pObj && pObj.id) {
             setAllowedProjects(prev => {
               if (prev.some((p: any) => Number(p.id) === Number(pObj.id))) return prev;
-              return [pObj, ...prev];
+              const next = [pObj, ...prev];
+              if (cachedProjects) cachedProjects.data = next;
+              return next;
             });
           }
         }).catch(() => {});
@@ -358,13 +401,15 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
           if (cObj && cObj.id) {
             setAllowedCampaigns(prev => {
               if (prev.some((c: any) => Number(c.id) === Number(cObj.id))) return prev;
-              return [cObj, ...prev];
+              const next = [cObj, ...prev];
+              if (cachedCampaigns) cachedCampaigns.data = next;
+              return next;
             });
           }
         }).catch(() => {});
       }
     }
-  }, [isOpen, task, erpMeta?.project_id, erpMeta?.campaign_id, allowedProjects.length, allowedCampaigns.length]);
+  }, [isOpen, task?.id, erpMeta?.project_id, erpMeta?.campaign_id, allowedProjects.length, allowedCampaigns.length]);
 
   // Resource adding state
   const [showAddChecklist, setShowAddChecklist] = useState(false);
@@ -606,33 +651,47 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [originalHash, setOriginalHash] = useState<string>('');
 
+  // Load contacts with cache
   useEffect(() => {
-    if (isOpen) {
-      setLoadingContacts(true);
-      api.get('/contacts?limit=200').then(async res => {
-        if (res.data && res.data.success) {
-          let list = res.data.data.items || res.data.data || [];
-          const activeContactId = task?.contact_id || (task?.related_type === 'contact' ? task?.related_id : null);
-          if (activeContactId && !list.some((c: any) => Number(c.id) === Number(activeContactId))) {
-            try {
-              const singleRes = await api.get(`/contacts/${activeContactId}`);
-              const cObj = singleRes.data?.data || singleRes.data;
-              if (cObj && cObj.id) {
-                list = [cObj, ...list];
-              }
-            } catch (err) {
-              console.error("Lỗi tải contact chi tiết:", err);
-            }
+    if (!isOpen) return;
+
+    const now = Date.now();
+    const activeContactId = task?.contact_id || (task?.related_type === 'contact' ? task?.related_id : null);
+
+    const applyContacts = async (initialList: any[]) => {
+      let list = [...initialList];
+      if (activeContactId && !list.some((c: any) => Number(c.id) === Number(activeContactId))) {
+        try {
+          const singleRes = await api.get(`/contacts/${activeContactId}`);
+          const cObj = singleRes.data?.data || singleRes.data;
+          if (cObj && cObj.id) {
+            list = [cObj, ...list];
+            if (cachedContacts) cachedContacts.data = list;
           }
-          setContacts(list);
+        } catch (err) {
+          console.error("Lỗi tải contact chi tiết:", err);
+        }
+      }
+      setContacts(list);
+      setLoadingContacts(false);
+    };
+
+    if (cachedContacts && (now - cachedContacts.timestamp < METADATA_CACHE_TTL)) {
+      applyContacts(cachedContacts.data);
+    } else {
+      setLoadingContacts(true);
+      api.get('/contacts?limit=200').then(res => {
+        if (res.data && res.data.success) {
+          const list = res.data.data?.items || res.data.data || [];
+          cachedContacts = { data: list, timestamp: Date.now() };
+          applyContacts(list);
         }
       }).catch(err => {
         console.error("Lỗi tải danh sách khách hàng:", err);
-      }).finally(() => {
         setLoadingContacts(false);
       });
     }
-  }, [isOpen, task]);
+  }, [isOpen, task?.id, task?.contact_id, task?.related_id]);
 
   const loadComments = async (taskId: number) => {
     setLoadingComments(true);
@@ -1770,10 +1829,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   }, [isOpen, task, embedMode]);
 
   const drawerMotionProps = embedMode ? {} : {
-    initial: isMobileOrTablet ? { opacity: 0, y: '100%' } : { opacity: 0, x: '250px' },
+    initial: isMobileOrTablet ? { opacity: 0, y: '100%' } : { opacity: 0, x: '80px' },
     animate: { y: 0, x: 0, opacity: 1 },
-    exit: isMobileOrTablet ? { opacity: 0, y: '100%' } : { opacity: 0, x: '250px' },
-    transition: { type: 'spring' as const, damping: 30, stiffness: 250, mass: 0.8 },
+    exit: isMobileOrTablet ? { opacity: 0, y: '100%' } : { opacity: 0, x: '80px' },
+    transition: { type: 'spring' as const, damping: 28, stiffness: 380, mass: 0.5 },
     drag: false
   };
 
@@ -1798,8 +1857,13 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     letterSpacing: '0.05em'
   };
 
-  const participantIds = getParticipantIds(formData.participant_ids).map(Number);
-  const participants = users.filter(u => participantIds.includes(Number(u.id)));
+  const participantIds = React.useMemo(() => {
+    return getParticipantIds(formData.participant_ids).map(Number);
+  }, [formData.participant_ids]);
+
+  const participants = React.useMemo(() => {
+    return users.filter(u => participantIds.includes(Number(u.id)));
+  }, [users, participantIds]);
 
   const isSale = currentUser && ['sales', 'sale'].includes(currentUser.role?.toLowerCase());
 
@@ -1807,29 +1871,61 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     return (c.full_name || '').trim() || c.name || t('Khách hàng');
   };
 
-  const allowedContacts = contacts.filter(c => {
+  const allowedContacts = React.useMemo(() => {
     const activeContactId = formData.contact_id || (formData.related_type === 'contact' ? formData.related_id : null);
-    if (activeContactId && Number(c.id) === Number(activeContactId)) {
+    return contacts.filter(c => {
+      if (activeContactId && Number(c.id) === Number(activeContactId)) {
+        return true;
+      }
+      if (isSale) {
+        return Number(c.owner_id) === Number(currentUser?.id);
+      }
       return true;
-    }
-    if (isSale) {
-      return Number(c.owner_id) === Number(currentUser?.id);
-    }
-    return true;
-  });
+    });
+  }, [contacts, formData.contact_id, formData.related_type, formData.related_id, isSale, currentUser?.id]);
 
   const approverOptions = users;
 
-  const filteredUsersForParticipants = users
-    .filter(u => {
-      return (u.full_name || '').toLowerCase().includes(participantsSearch.toLowerCase()) ||
-             (u.role || '').toLowerCase().includes(participantsSearch.toLowerCase());
-    })
-    .sort((a, b) => {
-      const aChecked = participantIds.includes(Number(a.id)) ? 1 : 0;
-      const bChecked = participantIds.includes(Number(b.id)) ? 1 : 0;
-      return bChecked - aChecked;
-    });
+  const contactOptions = React.useMemo(() => {
+    return [
+      { value: '', label: t('Chọn khách hàng chính...') },
+      ...allowedContacts.map(c => ({
+        value: String(c.id),
+        label: `${getContactFullName(c)} ${c.phone ? `(${c.phone})` : ''}`,
+        avatar: c.avatar_url || c.avatar
+      }))
+    ];
+  }, [allowedContacts, t]);
+
+  const userSelectOptions = React.useMemo(() => {
+    return users.map(u => ({
+      value: String(u.id),
+      label: u.full_name || u.name,
+      avatar: u.avatar || u.avatar_url
+    }));
+  }, [users]);
+
+  const approverSelectOptions = React.useMemo(() => {
+    return approverOptions.map(u => ({
+      value: String(u.id),
+      label: `${u.full_name || u.name} (${getRoleDisplayName(u)})`,
+      avatar: u.avatar || u.avatar_url
+    }));
+  }, [approverOptions]);
+
+  const filteredUsersForParticipants = React.useMemo(() => {
+    const searchLower = (participantsSearch || '').toLowerCase();
+    return users
+      .filter(u => {
+        return (u.full_name || '').toLowerCase().includes(searchLower) ||
+               (u.role || '').toLowerCase().includes(searchLower);
+      })
+      .sort((a, b) => {
+        const aChecked = participantIds.includes(Number(a.id)) ? 1 : 0;
+        const bChecked = participantIds.includes(Number(b.id)) ? 1 : 0;
+        return bChecked - aChecked;
+      });
+  }, [users, participantsSearch, participantIds]);
 
   const currentHash = React.useMemo(() => {
     const cleanObj = (obj: any) => {
@@ -4326,14 +4422,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                     </div>
                     <CustomSelect
                       searchable
-                      options={[
-                        { value: '', label: t('Chọn khách hàng chính...') },
-                        ...allowedContacts.map(c => ({
-                          value: String(c.id),
-                          label: `${getContactFullName(c)} ${c.phone ? `(${c.phone})` : ''}`,
-                          avatar: c.avatar_url || c.avatar
-                        }))
-                      ]}
+                      options={contactOptions}
                       value={formData.contact_id ? String(formData.contact_id) : (formData.related_type === 'contact' && formData.related_id ? String(formData.related_id) : '')}
                       onChange={async val => {
                         const selected = allowedContacts.find(c => String(c.id) === String(val));
@@ -4599,11 +4688,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', borderTop: '1px solid var(--color-border-light)', paddingTop: '8px' }}>
                   <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{t('Người phê duyệt')}</label>
                   <CustomSelect
-                    options={approverOptions.map(u => ({
-                      value: String(u.id),
-                      label: `${u.full_name} (${getRoleDisplayName(u)})`,
-                      avatar: u.avatar || u.avatar_url
-                    }))}
+                    options={approverSelectOptions}
                     value={formData.approver_id ? String(formData.approver_id) : ''}
                     onChange={async val => {
                       const nextVal = val ? Number(val) : null;
@@ -4812,11 +4897,7 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                     {t('Người thực hiện chính')}
                   </label>
                   <CustomSelect
-                    options={users.map(u => ({
-                      value: String(u.id),
-                      label: u.full_name,
-                      avatar: u.avatar || u.avatar_url
-                    }))}
+                    options={userSelectOptions}
                     value={String(formData.user_id || '')}
                     onChange={val => {
                       handleUpdateField('user_id', Number(val));

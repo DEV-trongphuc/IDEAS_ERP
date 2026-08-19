@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { PeriodFilter, getDateRange } from '../components/ui/PeriodFilter';
 import { useUIStore } from '../store/uiStore';
 import type { Period, DateRange } from '../components/ui/PeriodFilter';
+import { motion } from 'framer-motion';
 
 const resolveAttachmentUrl = (path: string | null | undefined): string => {
   if (!path) return '';
@@ -1026,11 +1027,11 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           }}>
             {/* User Select */}
             {canSelectUser && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
-                <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '1px' : 0 }}>{t('Nhân viên')}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '3px', width: '100%', minWidth: 0 }}>
+                <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 0, textTransform: isMobile ? 'uppercase' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('Nhân viên')}</label>
                 <CustomSelect
                   options={[
-                    { value: 'all', label: t('Tất cả nhân viên') },
+                    { value: 'all', label: isMobile ? t('Tất cả NV') : t('Tất cả nhân viên') },
                     ...consultants.map(c => ({ 
                       value: String(c.id), 
                       label: c.name,
@@ -1040,6 +1041,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   value={filterUser}
                   onChange={(val) => setFilterUser(String(val))}
                   width="100%"
+                  size={isMobile ? 'xs' : 'sm'}
                   searchable={true}
                   showAvatars={true}
                 />
@@ -1047,17 +1049,18 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             )}
 
             {/* Status Select */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
-              <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '1px' : 0 }}>{t('Trạng thái duyệt')}</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '3px', width: '100%', minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 0, textTransform: isMobile ? 'uppercase' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('Trạng thái duyệt')}</label>
               <CustomSelect
                 options={[
-                  { value: 'all', label: t('Tất cả trạng thái') },
-                  { value: 'approved', label: t('Đã duyệt / Đúng giờ') },
-                  { value: 'pending_approval', label: t('Chờ duyệt đi trễ') },
-                  { value: 'rejected', label: t('Đã từ chối') }
+                  { value: 'all', label: isMobile ? t('Tất cả') : t('Tất cả trạng thái') },
+                  { value: 'approved', label: isMobile ? t('Đúng giờ/Duyệt') : t('Đã duyệt / Đúng giờ') },
+                  { value: 'pending_approval', label: isMobile ? t('Chờ duyệt') : t('Chờ duyệt đi trễ') },
+                  { value: 'rejected', label: isMobile ? t('Từ chối') : t('Đã từ chối') }
                 ]}
                 value={filterStatus}
                 onChange={(val) => setFilterStatus(String(val))}
+                size={isMobile ? 'xs' : 'sm'}
                 width="100%"
               />
             </div>
@@ -1559,17 +1562,24 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {/* Filters bar */}
         <div style={{
-          display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap',
-          background: 'var(--color-surface)', padding: '12px 16px', borderRadius: '12px',
-          border: '1px solid var(--color-border)'
+          display: isMobile ? 'grid' : 'flex',
+          gridTemplateColumns: isMobile ? '1fr 1fr auto' : undefined,
+          gap: isMobile ? '6px' : '12px', 
+          alignItems: 'flex-end', 
+          flexWrap: isMobile ? undefined : 'wrap',
+          background: 'var(--color-surface)', 
+          padding: isMobile ? '8px 10px' : '12px 16px', 
+          borderRadius: '12px',
+          border: '1px solid var(--color-border)',
+          width: '100%'
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
-            <label className="form-label" style={{ fontSize: '0.725rem', marginBottom: 0 }}>{t('Loại ca trực')}</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
+            <label className="form-label" style={{ fontSize: isMobile ? '0.625rem' : '0.725rem', fontWeight: 700, textTransform: isMobile ? 'uppercase' : 'none', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('Loại ca trực')}</label>
             <select
               className="form-select"
               value={filterRegType}
               onChange={e => setFilterRegType(e.target.value)}
-              style={{ height: '36px', fontSize: '0.8rem' }}
+              style={{ height: isMobile ? '34px' : '36px', fontSize: isMobile ? '0.75rem' : '0.8rem', padding: isMobile ? '0 6px' : undefined, width: '100%' }}
             >
               <option value="all">{t('Tất cả các ca')}</option>
               <option value="night">{t('Ca đêm')}</option>
@@ -1578,13 +1588,13 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-            <label className="form-label" style={{ fontSize: '0.725rem', marginBottom: 0 }}>{t('Trạng thái')}</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
+            <label className="form-label" style={{ fontSize: isMobile ? '0.625rem' : '0.725rem', fontWeight: 700, textTransform: isMobile ? 'uppercase' : 'none', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('Trạng thái')}</label>
             <select
               className="form-select"
               value={filterRegStatus}
               onChange={e => setFilterRegStatus(e.target.value)}
-              style={{ height: '36px', fontSize: '0.8rem' }}
+              style={{ height: isMobile ? '34px' : '36px', fontSize: isMobile ? '0.75rem' : '0.8rem', padding: isMobile ? '0 6px' : undefined, width: '100%' }}
             >
               <option value="all">{t('Tất cả trạng thái')}</option>
               <option value="pending">{t('Chờ duyệt')}</option>
@@ -1597,7 +1607,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             onClick={fetchRegistrations}
             className="btn outline icon-only"
             disabled={registrationsLoading}
-            style={{ height: '36px', width: '36px', marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}
+            style={{ height: isMobile ? '34px' : '36px', width: isMobile ? '34px' : '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', flexShrink: 0 }}
             title={t('Tải lại danh sách')}
           >
             <RefreshCw size={14} className={registrationsLoading ? 'spin' : ''} />
@@ -2914,93 +2924,80 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             </p>
           )}
 
-          {/* View Mode Switcher Tabs */}
+          {/* View Mode Switcher Tabs — White Background & Smooth Sliding Animation */}
           <div style={{
             display: 'flex',
-            backgroundColor: 'var(--color-bg-light)',
+            backgroundColor: 'var(--color-surface, #ffffff)',
             border: '1px solid var(--color-border)',
-            padding: '3px',
-            borderRadius: '10px',
-            gap: '3px',
-            width: isMobile ? '100%' : 'fit-content'
+            padding: '4px',
+            borderRadius: '12px',
+            gap: '4px',
+            width: isMobile ? '100%' : 'fit-content',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            marginTop: isMobile ? '8px' : '10px',
+            marginBottom: isMobile ? '8px' : '10px',
+            position: 'relative'
           }}>
-            <button
-              onClick={() => setViewMode('list')}
-              style={{
-                height: isMobile ? '30px' : '30px',
-                padding: isMobile ? '0 8px' : '0 16px',
-                fontSize: isMobile ? '0.78rem' : '0.85rem',
-                fontWeight: 700,
-                borderRadius: '7px',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '5px',
-                flex: isMobile ? 1 : 'none',
-                backgroundColor: viewMode === 'list' ? 'var(--color-surface)' : 'transparent',
-                color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-text-light)',
-                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-            >
-              <Clock size={isMobile ? 12 : 14} />
-              {t('Danh sách')}
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              style={{
-                height: isMobile ? '30px' : '30px',
-                padding: isMobile ? '0 8px' : '0 16px',
-                fontSize: isMobile ? '0.78rem' : '0.85rem',
-                fontWeight: 700,
-                borderRadius: '7px',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '5px',
-                flex: isMobile ? 1 : 'none',
-                backgroundColor: viewMode === 'calendar' ? 'var(--color-surface)' : 'transparent',
-                color: viewMode === 'calendar' ? 'var(--color-text)' : 'var(--color-text-light)',
-                boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-            >
-              <Calendar size={isMobile ? 12 : 14} />
-              {t('Lịch biểu')}
-            </button>
-            {canApproveShifts && (
-              <button
-                onClick={() => setViewMode('registrations' as any)}
-                style={{
-                  height: isMobile ? '30px' : '30px',
-                  padding: isMobile ? '0 8px' : '0 16px',
-                  fontSize: isMobile ? '0.78rem' : '0.85rem',
-                  fontWeight: 700,
-                  borderRadius: '7px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '5px',
-                  flex: isMobile ? 1 : 'none',
-                  backgroundColor: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
-                  color: (viewMode as string) === 'registrations' ? 'var(--color-text)' : 'var(--color-text-light)',
-                  boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.2s',
-                  outline: 'none'
-                }}
-              >
-                <Zap size={isMobile ? 12 : 14} />
-                {isMobile ? t('Duyệt ca') : t('Duyệt đăng ký ca')}
-              </button>
-            )}
+            {[
+              { id: 'list', label: t('Danh sách'), icon: Clock },
+              { id: 'calendar', label: t('Lịch biểu'), icon: Calendar },
+              ...(canApproveShifts ? [{ id: 'registrations', label: isMobile ? t('Duyệt ca') : t('Duyệt đăng ký ca'), icon: Zap }] : [])
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = (viewMode as string) === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setViewMode(tab.id as any)}
+                  style={{
+                    height: isMobile ? '32px' : '34px',
+                    padding: isMobile ? '0 10px' : '0 18px',
+                    fontSize: isMobile ? '0.8125rem' : '0.875rem',
+                    fontWeight: isActive ? 700 : 550,
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    flex: isMobile ? 1 : 'none',
+                    position: 'relative',
+                    background: 'transparent',
+                    color: isActive ? 'var(--color-primary)' : 'var(--color-text-light, #64748b)',
+                    outline: 'none',
+                    transition: 'color 0.2s ease',
+                    WebkitTapHighlightColor: 'transparent',
+                    userSelect: 'none'
+                  }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeAttendanceSubTabIndicator"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--color-primary-light, #eff6ff)',
+                        border: '1px solid var(--color-primary-glow, rgba(163, 20, 34, 0.15))',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                        zIndex: 1
+                      }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 420,
+                        damping: 32
+                      }}
+                    />
+                  )}
+                  <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                    <Icon size={isMobile ? 13 : 15} style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)', transition: 'color 0.2s' }} />
+                    <span>{tab.label}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -3171,11 +3168,30 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
 
       {/* Filter Bar */}
       {viewMode === 'list' && (
-        <div className="card" style={{ padding: '1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div 
+          className="card" 
+          style={{ 
+            padding: isMobile ? '8px 10px' : '1.25rem', 
+            background: 'var(--color-surface)', 
+            border: '1px solid var(--color-border)', 
+            borderRadius: isMobile ? '10px' : '12px', 
+            marginBottom: isMobile ? '0.625rem' : '1rem' 
+          }}
+        >
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: canSelectUser
+              ? (isMobile ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))')
+              : (isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))'),
+            gap: isMobile ? '6px' : '12px',
+            width: '100%',
+            alignItems: 'end'
+          }}>
             {/* Period Filter (List View only) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '220px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('Khoảng thời gian')}</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: isMobile ? 'uppercase' : 'none', letterSpacing: isMobile ? '0.02em' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {t('Khoảng thời gian')}
+              </label>
               <PeriodFilter
                 value={period}
                 onChange={(p, r) => {
@@ -3188,16 +3204,28 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 onCustomRange={(r) => {
                   setCustomRange(r);
                 }}
+                align={isMobile ? 'left' : 'right'}
+                style={{ width: '100%' }}
+                buttonStyle={{
+                  minWidth: 'unset',
+                  width: '100%',
+                  height: isMobile ? 34 : 38,
+                  padding: isMobile ? '0 6px' : '0 1rem',
+                  fontSize: isMobile ? '0.75rem' : '0.875rem',
+                  gap: isMobile ? '4px' : '10px'
+                }}
               />
             </div>
 
             {/* User Select */}
             {canSelectUser && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: isMobile ? '1 1 0%' : 'none', minWidth: isMobile ? '0' : '200px' }}>
-                <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '2px' : 0 }}>{t('Nhân viên')}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
+                <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: isMobile ? 'uppercase' : 'none', letterSpacing: isMobile ? '0.02em' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {t('Nhân viên')}
+                </label>
                 <CustomSelect
                   options={[
-                    { value: 'all', label: t('Tất cả nhân viên') },
+                    { value: 'all', label: isMobile ? t('Tất cả NV') : t('Tất cả nhân viên') },
                     ...consultants.map(c => ({ 
                       value: String(c.id), 
                       label: c.name,
@@ -3207,6 +3235,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   value={filterUser}
                   onChange={(val) => setFilterUser(String(val))}
                   width="100%"
+                  size={isMobile ? 'xs' : 'sm'}
                   searchable={true}
                   showAvatars={true}
                 />
@@ -3214,22 +3243,23 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             )}
 
             {/* Status Select */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
-              <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: isMobile ? '2px' : 0 }}>{t('Trạng thái duyệt')}</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
+              <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: isMobile ? 'uppercase' : 'none', letterSpacing: isMobile ? '0.02em' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {t('Trạng thái duyệt')}
+              </label>
               <CustomSelect
                 options={[
-                  { value: 'all', label: t('Tất cả trạng thái') },
-                  { value: 'approved', label: t('Đã duyệt / Đúng giờ') },
-                  { value: 'pending_approval', label: t('Chờ duyệt đi trễ') },
-                  { value: 'rejected', label: t('Đã từ chối') }
+                  { value: 'all', label: isMobile ? t('Tất cả') : t('Tất cả trạng thái') },
+                  { value: 'approved', label: isMobile ? t('Đúng giờ/Duyệt') : t('Đã duyệt / Đúng giờ') },
+                  { value: 'pending_approval', label: isMobile ? t('Chờ duyệt') : t('Chờ duyệt đi trễ') },
+                  { value: 'rejected', label: isMobile ? t('Từ chối') : t('Đã từ chối') }
                 ]}
                 value={filterStatus}
                 onChange={(val) => setFilterStatus(String(val))}
+                size={isMobile ? 'xs' : 'sm'}
                 width="100%"
               />
             </div>
-
-
           </div>
         </div>
       )}

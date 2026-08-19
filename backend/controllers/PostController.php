@@ -872,8 +872,19 @@ class PostController {
         $currentUserId = (int)$auth['user_id'];
         $authorName = $auth['full_name'] ?? 'Đồng nghiệp';
 
-        // 1. Parse @[Name_With_Underscores] or similar
         $mentions = [];
+
+        // 1. First, parse by data-user-id (HTML editor mentions)
+        if (preg_match_all('/data-user-id="(\d+)"/i', (string)$content, $matchesId)) {
+            $uids = array_filter(array_map('intval', $matchesId[1]));
+            foreach ($uids as $uid) {
+                if ($uid && (int)$uid !== $currentUserId) {
+                    $mentions[] = (int)$uid;
+                }
+            }
+        }
+
+        // 2. Fallback to @[Name_With_Underscores] or similar
         $matches = [];
         preg_match_all('/@([a-zA-Z0-9_\x{00C0}-\x{1EF9}()]+)/u', $content, $matches);
         $names = is_array($matches[1] ?? null) ? $matches[1] : [];
@@ -883,7 +894,7 @@ class PostController {
                 $stmt = $this->db->prepare("SELECT id FROM users WHERE tenant_id=? AND (full_name=? OR REPLACE(full_name, ' ', '_')=?)");
                 $stmt->execute([$tenantId, $fullName, $nameWithUnderscores]);
                 $uid = $stmt->fetchColumn();
-                if ($uid) $mentions[] = (int)$uid;
+                if ($uid && (int)$uid !== $currentUserId) $mentions[] = (int)$uid;
             }
         }
         $mentions = array_unique($mentions);

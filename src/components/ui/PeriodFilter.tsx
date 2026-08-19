@@ -16,6 +16,7 @@ export interface PeriodFilterProps {
   onCustomRange?: (range: DateRange) => void;
   style?: React.CSSProperties;
   buttonStyle?: React.CSSProperties;
+  align?: 'left' | 'right';
 }
 
 const PERIODS: { key: Period; label: string }[] = [
@@ -91,7 +92,7 @@ export function getDateRange(period: Period, custom?: DateRange): DateRange {
   }
 }
 
-export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange, customRange, onCustomRange, style, buttonStyle }) => {
+export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange, customRange, onCustomRange, style, buttonStyle, align = 'right' }) => {
   const currentLabel = PERIODS.find(p => p.key === value)?.label || 'Chọn kỳ';
   const [isOpen, setIsOpen] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
@@ -126,27 +127,35 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange, cus
     setIsOpen(false);
   };
 
+  const isCompact = (buttonStyle?.height && typeof buttonStyle.height === 'number' && buttonStyle.height <= 36) || 
+                    (buttonStyle?.fontSize && String(buttonStyle.fontSize).includes('0.75'));
+
   return (
-    <div style={{ position: 'relative', ...style }} ref={ref}>
+    <div style={{ position: 'relative', width: '100%', ...style }} ref={ref}>
       <button 
         className="btn secondary"
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         style={{ 
-          display: 'flex', alignItems: 'center', gap: '10px', minWidth: '180px', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', gap: '8px', minWidth: '180px', justifyContent: 'space-between',
           padding: '0 1rem', height: 38, fontSize: '0.875rem', borderRadius: 'var(--radius-md)',
           background: isOpen ? 'var(--color-bg)' : 'white',
           boxShadow: 'var(--shadow-sm)',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          maxWidth: '100%',
+          overflow: 'hidden',
           ...buttonStyle
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
-          <Calendar size={18} style={{ color: 'var(--color-text-muted)' }} />
-          {value === 'custom' && customRange 
-            ? `${customRange.from.slice(5)} → ${customRange.to.slice(5)}` 
-            : currentLabel}
+        <span style={{ display: 'flex', alignItems: 'center', gap: isCompact ? '4px' : '8px', fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <Calendar size={isCompact ? 13 : 16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {value === 'custom' && customRange 
+              ? `${customRange.from.slice(5)} → ${customRange.to.slice(5)}` 
+              : currentLabel}
+          </span>
         </span>
-        <ChevronDown size={18} style={{ color: 'var(--color-text-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        <ChevronDown size={isCompact ? 12 : 16} style={{ color: 'var(--color-text-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
       </button>
 
       {/* Period Dropdown */}
@@ -157,29 +166,32 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange, cus
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
             style={{
-              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              position: 'absolute', top: 'calc(100% + 6px)',
+              left: align === 'left' ? 0 : 'auto',
+              right: align === 'right' ? 0 : 'auto',
               background: 'var(--color-surface)', border: '1px solid var(--color-border-light)',
               borderRadius: 'var(--radius-xl)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-              zIndex: 500, padding: '0.75rem', minWidth: '220px',
+              zIndex: 500, padding: '0.75rem', minWidth: '200px', maxWidth: '90vw'
             }}
           >
             <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', padding: '0 0.5rem', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Chọn kỳ báo cáo</p>
             {PERIODS.map(p => (
               <button
                 key={p.key}
+                type="button"
                 className={`dropdown-item ${value === p.key ? 'active' : ''}`}
                 onClick={() => handlePeriod(p.key)}
                 style={{ 
-                  width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
-                  fontSize: '0.9375rem', borderRadius: '12px',
-                  display: 'flex', alignItems: 'center', gap: '10px',
+                  width: '100%', textAlign: 'left', padding: '0.625rem 0.875rem',
+                  fontSize: '0.875rem', borderRadius: '10px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
                   background: value === p.key ? 'var(--color-primary-light)' : 'transparent',
                   color: value === p.key ? 'var(--color-primary)' : 'var(--color-text)',
                   border: 'none', cursor: 'pointer', fontWeight: value === p.key ? 700 : 500,
                   transition: 'background 0.2s'
                 }}
               >
-                {p.key === 'custom' && <Calendar size={16} />}
+                {p.key === 'custom' && <Calendar size={15} />}
                 {p.label}
               </button>
             ))}
@@ -195,10 +207,12 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({ value, onChange, cus
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8 }}
             style={{
-              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              position: 'absolute', top: 'calc(100% + 6px)',
+              left: align === 'left' ? 0 : 'auto',
+              right: align === 'right' ? 0 : 'auto',
               background: 'var(--color-surface)', border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xl)',
-              zIndex: 500, padding: '1.25rem', minWidth: '280px',
+              zIndex: 500, padding: '1.25rem', minWidth: '280px', maxWidth: '90vw'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

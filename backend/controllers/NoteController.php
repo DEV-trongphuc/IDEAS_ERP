@@ -230,19 +230,31 @@ class NoteController {
             }
         }
 
-        // 1. Extract mentions from body text (@Full_Name_With_Underscores)
+        // 1. Extract mentions from body text (data-user-id or @Full_Name_With_Underscores)
+        $bodyText = (string)($b['body'] ?? '');
         $mentions = $b['mentions'] ?? [];
         if (empty($mentions)) {
+            // First parse data-user-id
+            if (preg_match_all('/data-user-id="(\d+)"/i', $bodyText, $matchesId)) {
+                $uids = array_filter(array_map('intval', $matchesId[1]));
+                foreach ($uids as $uid) {
+                    if ($uid && (int)$uid !== (int)$auth['user_id']) {
+                        $mentions[] = (int)$uid;
+                    }
+                }
+            }
+
+            // Fallback to @name
             $matches = [];
-            preg_match_all('/@([a-zA-Z0-9_\x{00C0}-\x{1EF9}()]+)/u', (string)($b['body'] ?? ''), $matches);
+            preg_match_all('/@([a-zA-Z0-9_\x{00C0}-\x{1EF9}()]+)/u', $bodyText, $matches);
             $names = is_array($matches[1] ?? null) ? $matches[1] : [];
             if (!empty($names)) {
                 foreach ($names as $nameWithUnderscores) {
                     $fullName = str_replace('_', ' ', $nameWithUnderscores);
-                    $stmt = $this->db->prepare("SELECT id FROM users WHERE tenant_id=? AND full_name=?");
-                    $stmt->execute([$auth['tenant_id'], $fullName]);
+                    $stmt = $this->db->prepare("SELECT id FROM users WHERE tenant_id=? AND (full_name=? OR REPLACE(full_name, ' ', '_')=?)");
+                    $stmt->execute([$auth['tenant_id'], $fullName, $nameWithUnderscores]);
                     $uid = $stmt->fetchColumn();
-                    if ($uid) $mentions[] = (int)$uid;
+                    if ($uid && (int)$uid !== (int)$auth['user_id']) $mentions[] = (int)$uid;
                 }
             }
         }

@@ -35,7 +35,7 @@ interface CustomSelectProps {
   direction?: 'up' | 'down';
   multiple?: boolean;
   align?: 'left' | 'right';
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   disabled?: boolean;
   onSearchChange?: (search: string) => void;
 }
@@ -292,15 +292,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden', flex: 1 }}>
           {showAvatars && (
             selectedOption.value === '' ? (
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', flexShrink: 0 }}>?</div>
+              <div style={{ width: size === 'xs' ? 18 : 24, height: size === 'xs' ? 18 : 24, borderRadius: '50%', background: 'var(--color-border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size === 'xs' ? '0.625rem' : '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', flexShrink: 0 }}>?</div>
             ) : (
-              <Avatar src={selectedOption.avatar} name={t(selectedOption.label)} size="sm" />
+              <Avatar src={selectedOption.avatar} name={t(selectedOption.label)} size={size === 'xs' ? 18 : "sm"} />
             )
           )}
           {!showAvatars && selectedOption.icon && <span style={{ display: 'flex' }}>{selectedOption.icon}</span>}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>{t(selectedOption.label)}</span>
-            {selectedOption.sublabel && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>({t(selectedOption.sublabel)})</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: size === 'xs' ? 4 : 6, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1, fontSize: size === 'xs' ? '0.75rem' : undefined }}>{t(selectedOption.label)}</span>
+            {selectedOption.sublabel && <span style={{ fontSize: size === 'xs' ? '0.65rem' : '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>({t(selectedOption.sublabel)})</span>}
           </span>
         </span>
         {selectedOption.badge && selectedOption.badge.count > 0 && (
@@ -308,10 +308,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             background: selectedOption.badge.color || 'var(--color-danger)',
             color: 'white',
             borderRadius: '10px',
-            padding: '2px 6px',
-            fontSize: '0.7rem',
+            padding: size === 'xs' ? '1px 4px' : '2px 6px',
+            fontSize: size === 'xs' ? '0.625rem' : '0.7rem',
             fontWeight: 700,
-            minWidth: '18px',
+            minWidth: size === 'xs' ? '14px' : '18px',
             textAlign: 'center',
             lineHeight: 1,
             marginLeft: 'auto'
@@ -339,25 +339,33 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           maxWidth: '100%',
           overflow: 'hidden',
           boxSizing: 'border-box',
-          ...(size === 'sm' ? {
+          ...(size === 'xs' ? {
+            minHeight: disabled ? 'auto' : '34px',
+            height: disabled ? 'auto' : (multiple ? 'auto' : '34px'),
+            padding: disabled ? '0' : (multiple ? '2px 6px' : '3px 8px'),
+            fontSize: '0.75rem',
+            borderRadius: 'var(--radius-md)'
+          } : size === 'sm' ? {
             minHeight: disabled ? 'auto' : '38px',
             height: disabled ? 'auto' : (multiple ? 'auto' : '38px'),
             padding: disabled ? '0' : (multiple ? '4px 12px' : '6px 12px'),
             fontSize: '0.875rem',
             borderRadius: 'var(--radius-md)'
           } : {}),
-          ...((size === 'sm' && isOpen) ? {
+          ...((size === 'xs' && isOpen) ? {
+            boxShadow: '0 0 0 2px rgba(163, 20, 34, 0.12)'
+          } : (size === 'sm' && isOpen) ? {
             boxShadow: '0 0 0 3px rgba(163, 20, 34, 0.1)'
           } : {})
         }}
       >
         <span 
           className={(multiple && Array.isArray(value) && value.length > 0) || selectedOption ? styles.selectedValue : styles.placeholder}
-          style={multiple ? { whiteSpace: 'normal', overflow: 'visible', display: 'block', width: '100%' } : {}}
+          style={multiple ? { whiteSpace: 'normal', overflow: 'visible', display: 'block', width: '100%' } : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           {renderTriggerContent()}
         </span>
-        {!disabled && <ChevronDown size={size === 'sm' ? 14 : 16} className={`${styles.icon} ${isOpen ? styles.iconOpen : ''}`} />}
+        {!disabled && <ChevronDown size={size === 'xs' ? 12 : (size === 'sm' ? 14 : 16)} className={`${styles.icon} ${isOpen ? styles.iconOpen : ''}`} />}
       </div>
 
       <AnimatePresence>

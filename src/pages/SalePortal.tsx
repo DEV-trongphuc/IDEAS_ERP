@@ -289,6 +289,12 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
         setSysSettings(res.data);
       }
     });
+
+    // Preload WorkspaceTaskDrawer on idle so opening task drawer is instant
+    const timer = setTimeout(() => {
+      import('./WorkspaceTaskDrawer');
+    }, 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   const [showDatabankSettingsModal, setShowDatabankSettingsModal] = useState(false);

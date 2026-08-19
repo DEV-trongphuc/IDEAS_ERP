@@ -123,9 +123,13 @@ require_once __DIR__ . '/test_comprehensive_hrm_verification.php';
 echo "\n--- 33. CHAY TEST SUITE: DATA EXPORT & FILTER INTEGRITY ---\n";
 require_once __DIR__ . '/test_export_logic.php';
 
+echo "\n--- 34. CHAY TEST SUITE: COMPREHENSIVE COMMENTS & MENTIONS ACROSS ALL MODULES ---\n";
+require_once __DIR__ . '/test_comprehensive_all_mentions.php';
+
 $masterEnd = microtime(true);
 $duration = round(($masterEnd - $masterStart) * 1000, 2);
 
 echo "\n====================================================\n";
 echo "🏆 MASTER TEST RUNNER HOAN THANH TRONG {$duration} ms\n";
 printTestSummary();
+
