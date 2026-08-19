@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 218;
+$targetVersion = 219;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1431,9 +1431,26 @@ try {
         $logMsg("Nâng cấp lên phiên bản 218 hoàn tất.", "success");
     }
 
+    // MIGRATION 219: Standardize all default user passwords to Ideas@812
+    if ($currentVersion < 219) {
+        $logMsg("Đang thực hiện nâng cấp CSDL lên phiên bản 219 (Đồng bộ mật khẩu người dùng mặc định: Ideas@812)...", "info");
+        try {
+            $defaultHash = password_hash('Ideas@812', PASSWORD_BCRYPT);
+            $stmt = $conn->prepare("UPDATE users SET password_hash = ?");
+            if ($stmt) {
+                $stmt->bind_param('s', $defaultHash);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 219: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 219 hoàn tất.", "success");
+    }
+
     // 25. Update DB version in system_settings
-    $targetVersion = 218;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '218') ON DUPLICATE KEY UPDATE setting_value = '218'");
+    $targetVersion = 219;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '219') ON DUPLICATE KEY UPDATE setting_value = '219'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 

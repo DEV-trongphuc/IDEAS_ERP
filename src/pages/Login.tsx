@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { LogIn, Lock, Mail, Share2, Bell, BarChart3, Sparkles, ShieldCheck, Zap, Bot, History, CheckCircle2, User, ArrowRight, Shield, KeyRound, Loader2, X } from 'lucide-react';
+import { LogIn, Lock, Mail, Share2, Bell, BarChart3, Sparkles, ShieldCheck, Zap, Bot, Shield, KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
 import { fetchAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { CustomModal } from '../components/ui/CustomModal';
@@ -10,8 +10,10 @@ import { DigitPinInput } from '../components/ui/DigitPinInput';
 
 export const Login = () => {
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('ideas_remembered_email') || '');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('ideas_remembered_email'));
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ export const Login = () => {
 
     if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 500));
-      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@Ideas.net', name: 'Admin Demo', role: 'admin' });
+      login('demo_token_12345', { id: 1, username: 'admin', email: 'admin@ideas.edu.vn', name: 'Admin Demo', role: 'admin' });
       navigate('/');
       setLoading(false);
       return;
@@ -97,8 +99,18 @@ export const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      setError(t('Vui lòng nhập đầy đủ Email và Mật khẩu'));
+      return;
+    }
     setLoading(true);
     setError('');
+
+    if (rememberMe) {
+      localStorage.setItem('ideas_remembered_email', email.trim());
+    } else {
+      localStorage.removeItem('ideas_remembered_email');
+    }
 
     if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -124,7 +136,7 @@ export const Login = () => {
     try {
       const res = await fetchAPI('auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: email.trim(), password })
       });
 
       if (res.success && res.data) {
@@ -141,7 +153,7 @@ export const Login = () => {
           navigate('/');
         }
       } else {
-        setError(t(res.message) || t('Đăng nhập thất bại'));
+        setError(t(res.message) || t('Email hoặc mật khẩu không chính xác'));
       }
     } catch (err: any) {
       setError(err.message || t('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.'));
@@ -187,7 +199,7 @@ export const Login = () => {
     try {
       const res = await fetchAPI('auth/forgot-password', {
         method: 'POST',
-        body: JSON.stringify({ email: forgotEmail })
+        body: JSON.stringify({ email: forgotEmail.trim() })
       });
       if (res.success) {
         toast.success(res.message || 'Đã gửi mã OTP đến email');
@@ -216,14 +228,15 @@ export const Login = () => {
       const res = await fetchAPI('auth/reset-password', {
         method: 'POST',
         body: JSON.stringify({
-          email: forgotEmail,
+          email: forgotEmail.trim(),
           otp_code: forgotOtp.trim(),
           new_password: forgotNewPassword
         })
       });
       if (res.success) {
         toast.success(res.message || 'Đặt lại mật khẩu thành công!');
-        setEmail(forgotEmail);
+        setEmail(forgotEmail.trim());
+        setPassword('');
         setShowForgotPasswordModal(false);
       } else {
         toast.error(res.message || 'Không thể đặt lại mật khẩu');
@@ -232,46 +245,6 @@ export const Login = () => {
       toast.error(err.message || 'Lỗi đặt lại mật khẩu');
     }
     setForgotLoading(false);
-  };
-
-  const handleQuickLogin = async (emailVal: string, passwordVal: string, roleName: string) => {
-    setLoading(true);
-    setError('');
-
-    if (localStorage.getItem('IDEAS_DEMO_MODE') === 'true') {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      let userRole = roleName.toLowerCase().replace(/\s+/g, '_');
-      if (userRole === 'sales') userRole = 'sale';
-      login(`demo_token_quick_${userRole}`, {
-        id: emailVal === 'haidang@Ideas.net' ? 1000 : 999,
-        username: emailVal.split('@')[0],
-        email: emailVal,
-        name: `Dev ${roleName}`,
-        role: userRole as any,
-        consultant_id: emailVal === 'haidang@Ideas.net' ? 1 : undefined
-      });
-      navigate('/');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || '/backend'}/api.php?action=login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailVal, password: passwordVal })
-      });
-      const json = await res.json();
-      if (json.success) {
-        login(json.token, json.user);
-        navigate('/');
-      } else {
-        setError(t(json.message) || `Đăng nhập ${roleName} thất bại`);
-      }
-    } catch (e: any) {
-      setError('Lỗi kết nối: ' + e.message);
-    }
-    setLoading(false);
   };
 
   const ALL_MODULES = [
@@ -354,268 +327,126 @@ export const Login = () => {
 
       {/* Right Side: Identity Check Card */}
       <div className="right-side">
-        <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Animated rotated logo container */}
             <div className="logo-box">
               <img src="/LOGO.webp" className="logo-img" style={{ objectFit: 'contain' }} alt="IDEAS Logo" />
             </div>
-            <div style={{ paddingTop: '8px' }}>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', letterSpacing: '-0.5px' }}>
-                {isDemoMode ? t('Trải nghiệm Demo') : t('Đăng Nhập')}
+            <div>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', letterSpacing: '-0.5px', margin: 0 }}>
+                {t('Đăng Nhập Hệ Thống')}
               </h2>
-              <p style={{ color: '#94a3b8', fontWeight: 500, fontSize: '0.875rem', marginTop: '6px' }}>
-                {isDemoMode
-                  ? t('Hãy chọn tài khoản demo để khởi động hệ thống')
-                  : t('Đăng nhập bằng tài khoản hoặc mã Google')}
+              <p style={{ color: '#94a3b8', fontWeight: 500, fontSize: '0.875rem', marginTop: '6px', marginBottom: 0 }}>
+                {t('Nhập thông tin tài khoản để truy cập hệ thống')}
               </p>
             </div>
           </div>
 
           {error && (
-            <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '16px', fontSize: '12px', fontWeight: 700, color: '#f87171', textAlign: 'center' }}>
+            <div style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '14px', fontSize: '13px', fontWeight: 600, color: '#f87171', textAlign: 'center', lineHeight: 1.4 }}>
               {error}
             </div>
           )}
 
-          <div className="login-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '2rem' }}>
-            <div style={{ textAlign: 'center', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-              QUICK LOGIN ACCOUNTS:
-            </div>
-            
-            {/* Admin */}
-            <button
-              onClick={() => handleQuickLogin('turniodev@gmail.com', 'pass123', 'Admin')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'var(--color-primary, #BD1D2D)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(189, 29, 45, 0.15)'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Admin: Dev Admin</>
-              )}
-            </button>
+          <div className="login-card">
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.125rem' }}>
+              {/* Email */}
+              <div>
+                <label className="form-label-custom">{t('Email doanh nghiệp')}</label>
+                <div className="input-wrapper" style={{ marginBottom: 0 }}>
+                  <input
+                    type="email"
+                    className="input-field"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="admin@ideas.edu.vn"
+                    required
+                    autoFocus
+                    autoComplete="username"
+                  />
+                  <Mail className="input-icon" size={18} />
+                </div>
+              </div>
 
-            {/* Kế toán */}
-            <button
-              onClick={() => handleQuickLogin('thaont@ideas.edu.vn', 'accountant123', 'Accountant')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(2, 132, 199, 0.15)'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Kế toán: Nguyễn Thu Thảo</>
-              )}
-            </button>
+              {/* Password */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label-custom" style={{ margin: 0 }}>{t('Mật khẩu')}</label>
+                </div>
+                <div className="input-wrapper" style={{ marginBottom: 0 }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="input-field"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="input-icon-btn"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
 
-            {/* Nhân sự */}
-            <button
-              onClick={() => handleQuickLogin('phuongntd@ideas.edu.vn', 'phuong123', 'HR')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(16, 185, 129, 0.15)'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Nhân sự: Nguyễn Thị Duy Phương</>
-              )}
-            </button>
+              {/* Options row: Remember Me & Forgot Password */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem', marginTop: '2px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    style={{ accentColor: 'var(--color-primary, #BD1D2D)', width: '15px', height: '15px', cursor: 'pointer', borderRadius: '4px' }}
+                  />
+                  <span>{t('Ghi nhớ tài khoản')}</span>
+                </label>
 
-            {/* Sale Admin */}
-            <button
-              onClick={() => handleQuickLogin('linhdk@ideas.edu.vn', 'linh123', 'Sale Admin')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(245, 158, 11, 0.15)'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Sale Admin: Đặng Khánh Linh</>
-              )}
-            </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotEmail(email || '');
+                    setForgotStep(1);
+                    setShowForgotPasswordModal(true);
+                  }}
+                  className="forgot-btn"
+                >
+                  {t('Quên mật khẩu?')}
+                </button>
+              </div>
 
-            {/* Director */}
-            <button
-              onClick={() => handleQuickLogin('numt@ideas.edu.vn', 'director123', 'Director')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(139, 92, 246, 0.15)'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Director: Mai Thị Nữ</>
-              )}
-            </button>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="submit-btn-custom"
+                disabled={loading}
+                style={{ marginTop: '0.5rem' }}
+              >
+                {loading ? (
+                  <><Loader2 className="animate-spin" size={18} /> {t('Đang xác thực...')}</>
+                ) : (
+                  <><LogIn size={18} /> {t('Đăng Nhập')}</>
+                )}
+              </button>
+            </form>
 
-            {/* Sales / TVV */}
-            <div style={{ borderTop: '1px solid var(--color-border-light)', margin: '0.5rem 0', paddingTop: '0.5rem' }} />
-            
-            <div style={{ textAlign: 'center', marginBottom: '0.25rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
-              TƯ VẤN VIÊN (SALE):
+            {/* Google Sign-in / Divider */}
+            <div className="divider-modern">
+              <span>{t('Hoặc đăng nhập với')}</span>
             </div>
 
-            {/* Nguyễn Thị Linh Đan */}
-            <button
-              onClick={() => handleQuickLogin('danntl@ideas.edu.vn', 'pass123', 'Sales')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #a31422 0%, #7f0f1b 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(163, 20, 34, 0.15)',
-                marginBottom: '0.5rem'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Sale: Nguyễn Thị Linh Đan</>
-              )}
-            </button>
+            <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: '44px', width: '100%' }} />
 
-            {/* Lê Đình Ý Nhi */}
-            <button
-              onClick={() => handleQuickLogin('nhildy@ideas.edu.vn', 'pass123', 'Sales')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(5, 150, 105, 0.15)',
-                marginBottom: '0.5rem'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Sale: Lê Đình Ý Nhi</>
-              )}
-            </button>
-
-            {/* Lưu Phan Hoàng Phúc */}
-            <button
-              onClick={() => handleQuickLogin('phuclph@ideas.edu.vn', 'pass123', 'Sales')}
-              className="submit-btn-custom"
-              disabled={loading}
-              style={{
-                height: '44px',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
-                border: 'none',
-                borderRadius: '10px',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 8px rgba(234, 88, 12, 0.15)',
-                marginBottom: '0.5rem'
-              }}
-            >
-              {loading ? (
-                <><Loader2 className="animate-spin" size={16} /> {t('Đang xác thực...')}</>
-              ) : (
-                <><LogIn size={16} /> Sale: Lưu Phan Hoàng Phúc</>
-              )}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '1.25rem', color: '#64748b', fontSize: '11px', fontWeight: 500 }}>
+              <ShieldCheck size={14} style={{ color: '#10b981' }} />
+              <span>{t('Bảo mật dữ liệu chuẩn doanh nghiệp SSL/TLS')}</span>
+            </div>
           </div>
         </div>
 
@@ -911,6 +742,58 @@ export const Login = () => {
           right: 14px;
           top: 13px;
           color: #64748b;
+          pointer-events: none;
+        }
+        .input-icon-btn {
+          position: absolute;
+          right: 14px;
+          top: 13px;
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.2s ease;
+        }
+        .input-icon-btn:hover {
+          color: #f87171;
+        }
+        .forgot-btn {
+          background: none;
+          border: none;
+          color: #f87171;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 0;
+          transition: color 0.2s;
+        }
+        .forgot-btn:hover {
+          color: #fca5a5;
+          text-decoration: underline;
+        }
+        .divider-modern {
+          display: flex;
+          align-items: center;
+          text-align: center;
+          margin: 1.25rem 0;
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .divider-modern::before,
+        .divider-modern::after {
+          content: '';
+          flex: 1;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .divider-modern span {
+          padding: 0 10px;
         }
         .input-field {
           width: 100%;
