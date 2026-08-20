@@ -271,15 +271,15 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
           let countSupport = 0;
           let countExpenses = 0;
 
-          if (resReports.success) {
+          if (resReports && resReports.success) {
             countReports = resReports.stats?.pending ?? (resReports.data ? resReports.data.filter((r: any) => r.status === 'pending').length : 0);
           }
 
-          if (resHeld.success) {
-            countHeld = resHeld.totalCount || resHeld.total || 0;
+          if (resHeld && resHeld.success) {
+            countHeld = resHeld.counts?.queue ?? resHeld.total_count ?? resHeld.totalCount ?? resHeld.total ?? 0;
           }
 
-          if (resCoop.success) {
+          if (resCoop && resCoop.success) {
             countCoop = (resCoop.data || []).filter((s: any) => s.status === 'pending_manager_approval').length;
           }
 
@@ -348,6 +348,8 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
     window.addEventListener('lead-accepted', fetchPending);
     window.addEventListener('uncontacted-count-changed', fetchPending);
     window.addEventListener('realtime-update-received', fetchPending);
+    window.addEventListener('held-lead-updated', fetchPending);
+    window.addEventListener('gatekeeper-updated', fetchPending);
     return () => {
       clearInterval(interval);
       window.removeEventListener('ticket-resolved', fetchPending);
@@ -355,6 +357,8 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileC
       window.removeEventListener('lead-accepted', fetchPending);
       window.removeEventListener('uncontacted-count-changed', fetchPending);
       window.removeEventListener('realtime-update-received', fetchPending);
+      window.removeEventListener('held-lead-updated', fetchPending);
+      window.removeEventListener('gatekeeper-updated', fetchPending);
     };
   }, [user]);
 

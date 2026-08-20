@@ -1695,90 +1695,75 @@ if ($eventName === 'user_send_text' || $eventName === 'message.text.received') {
                 $res = $stmtFind->get_result();
                 if ($res && $res->num_rows > 0) {
                     $uRow = $res->fetch_assoc();
-                    if ($uRow['role'] === 'sales') {
+                    $userRole = strtolower(trim($uRow['role'] ?? ''));
+                    $isSaleRole = ($userRole === 'sales' || $userRole === 'sale');
+                    
+                    // Check if user is registered in consultants table
+                    $isConsultant = false;
+                    $stmtC = $conn->prepare("SELECT id FROM consultants WHERE id = ? LIMIT 1");
+                    if ($stmtC) {
+                        $stmtC->bind_param("i", $uRow['id']);
+                        $stmtC->execute();
+                        $cRes = $stmtC->get_result();
+                        if ($cRes && $cRes->num_rows > 0) {
+                            $isConsultant = true;
+                        }
+                        $stmtC->close();
+                    }
+
+                    if ($isSaleRole || $isConsultant) {
                         $sale = $uRow;
                     } else {
-                        $admin = $uRow;
+                        // User is non-sale: kindly notify that lead notification is for Sales only
+                        $userName = $uRow['name'] ?? 'Bạn';
+                        $userEmail = $uRow['email'] ?? '';
+                        $msgNonSale = "[ THÔNG BÁO HỆ THỐNG ]\n\nXin chào {$userName},\nTính năng kết nối Zalo Bot nhận thông báo phân bổ Data chỉ áp dụng cho bộ phận Tư vấn viên (Sale).\n\nTài khoản của bạn ({$userEmail}) thuộc phòng ban khác nên không cần liên kết nhận Data.\n\nBáo cáo tổng hợp quản trị vẫn được duy trì gửi tự động về Nhóm Zalo Admin của hệ thống.";
+                        $sendReply($msgNonSale);
+                        exit;
                     }
                 }
             }
             if ($stmtFind)
                 $stmtFind->close();
 
-            // Xử lý trùng lặp Email giữa 2 tài khoản Sale và Admin khác nhau
-            if ($sale && $admin && $targetType === '') {
-                $errorMsg = "[ HỆ THỐNG IDEAS DATA ]\n\nEmail này đang được dùng cho cả 2 tài khoản Quản trị viên và Tư vấn viên khác nhau.\nĐể đảm bảo chính xác, vui lòng sử dụng Mã ID thay vì Email để xác thực:\n\n- Nếu bạn muốn liên kết Admin: Gửi A + Mã ID (Ví dụ: A" . $admin['id'] . ")\n- Nếu bạn muốn liên kết Tư vấn viên: Gửi Mã ID (Ví dụ: " . $sale['id'] . ")";
-                $sendReply($errorMsg);
-                exit;
-            }
-
-            if (!$sale && !$admin) {
+            if (!$sale) {
                 $info = $userId > 0 ? "ID: $userId" : "";
                 if (!empty($email)) {
                     $info .= ($info ? " hoặc " : "") . "Email: $email";
                 }
-                $errorMsg = "[ THÔNG BÁO LỖI ]\nKhông tìm thấy tài khoản (Sale/Admin) phù hợp với thông tin ($info) trong hệ thống. Vui lòng kiểm tra lại!";
+                $errorMsg = "[ THÔNG BÁO LỖI ]\nKhông tìm thấy tài khoản Tư vấn viên (Sale) phù hợp với thông tin ($info) trong hệ thống. Vui lòng kiểm tra lại!";
             } else {
                 // Xử lý liên kết cho Sale
-                if ($sale) {
-                    if (!empty($sale['zalo_chat_id'])) {
-                        if ($sale['zalo_chat_id'] === $chatId) {
-                            $successMessages[] = "Tư vấn viên: " . $sale['name'] . " (" . $sale['email'] . ") - Đã liên kết từ trước.";
-                            $linkedAny = true;
-                        } else {
-                            $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Sale này (" . $sale['name'] . " - " . $sale['email'] . ") đã được liên kết với một Zalo khác rồi. Vui lòng báo Admin hỗ trợ hủy liên kết cũ để thực hiện lại.\n\n";
-                        }
+                if (!empty($sale['zalo_chat_id'])) {
+                    if ($sale['zalo_chat_id'] === $chatId) {
+                        $successMessages[] = "Tư vấn viên: " . $sale['name'] . " (" . $sale['email'] . ") - Đã liên kết từ trước.";
+                        $linkedAny = true;
                     } else {
-                        // Kiểm tra xem Zalo này đã liên kết với ai chưa
-                        if ($existingSaleOwner) {
-                            $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Zalo này đã được liên kết với một Tư vấn viên khác trên hệ thống (" . $existingSaleOwner['name'] . " - " . $existingSaleOwner['email'] . "). Vui lòng báo Admin để hỗ trợ.\n\n";
-                        } else if ($existingAdminOwner) {
-                            $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Zalo này đã được liên kết với một Quản trị viên khác trên hệ thống (" . $existingAdminOwner['name'] . " - " . $existingAdminOwner['email'] . "). Vui lòng báo Admin để hỗ trợ.\n\n";
-                        } else {
-                            $stmtUpdate = $conn->prepare("UPDATE users SET zalo_chat_id = ? WHERE id = ?");
-                            if ($stmtUpdate) {
-                                $stmtUpdate->bind_param("si", $chatId, $sale['id']);
-                                if ($stmtUpdate->execute()) {
-                                    $linkedAny = true;
-                                    $successMessages[] = "Tư vấn viên: " . $sale['name'] . " - Email: " . $sale['email'];
-                                    $existingSaleOwner = $sale;
-                                } else {
-                                    $errorMsg .= "[ THÔNG BÁO LỖI ] Lỗi cập nhật CSDL: " . $stmtUpdate->error . "\n\n";
-                                }
-                                $stmtUpdate->close();
-                            }
-                        }
+                        $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Sale này (" . $sale['name'] . " - " . $sale['email'] . ") đã được liên kết với một Zalo khác rồi. Vui lòng báo Admin hỗ trợ hủy liên kết cũ để thực hiện lại.\n\n";
                     }
-                }
-
-                // Xử lý liên kết cho Admin
-                if ($admin) {
-                    if (!empty($admin['zalo_chat_id'])) {
-                        if ($admin['zalo_chat_id'] === $chatId) {
-                            $successMessages[] = "Quản trị viên: " . $admin['name'] . " (" . $admin['email'] . ") - Đã liên kết từ trước.";
-                            $linkedAny = true;
-                        } else {
-                            $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Admin này (" . $admin['name'] . " - " . $admin['email'] . ") đã được liên kết với một Zalo khác rồi. Vui lòng báo Admin hỗ trợ hủy liên kết cũ để thực hiện lại.\n\n";
-                        }
+                } else {
+                    // Kiểm tra xem Zalo này đã liên kết với ai chưa
+                    if ($existingSaleOwner) {
+                        $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Zalo này đã được liên kết với một Tư vấn viên khác trên hệ thống (" . $existingSaleOwner['name'] . " - " . $existingSaleOwner['email'] . "). Vui lòng báo Admin để hỗ trợ.\n\n";
                     } else {
-                        // Kiểm tra xem Zalo này đã liên kết với ai chưa
-                        if ($existingSaleOwner && (!$sale || $existingSaleOwner['id'] !== $sale['id'])) {
-                            $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Zalo này đã được liên kết với một Tư vấn viên khác trên hệ thống (" . $existingSaleOwner['name'] . " - " . $existingSaleOwner['email'] . "). Vui lòng báo Admin để hỗ trợ.\n\n";
-                        } else if ($existingAdminOwner && $existingAdminOwner['id'] !== $admin['id']) {
-                            $errorMsg .= "[ THÔNG BÁO LỖI ]\nTài khoản Zalo này đã được liên kết với một Quản trị viên khác trên hệ thống (" . $existingAdminOwner['name'] . " - " . $existingAdminOwner['email'] . "). Vui lòng báo Admin để hỗ trợ.\n\n";
-                        } else {
-                            $stmtUpdateAdmin = $conn->prepare("UPDATE users SET zalo_chat_id = ? WHERE id = ?");
-                            if ($stmtUpdateAdmin) {
-                                $stmtUpdateAdmin->bind_param("si", $chatId, $admin['id']);
-                                if ($stmtUpdateAdmin->execute()) {
-                                    $linkedAny = true;
-                                    $adminName = $admin['name'] ?: 'Quản trị viên';
-                                    $successMessages[] = "Quản trị viên: " . $adminName . " - Email: " . $admin['email'];
-                                } else {
-                                    $errorMsg .= "[ THÔNG BÁO LỖI ] Lỗi cập nhật CSDL: " . $stmtUpdateAdmin->error . "\n\n";
+                        $stmtUpdate = $conn->prepare("UPDATE users SET zalo_chat_id = ? WHERE id = ?");
+                        if ($stmtUpdate) {
+                            $stmtUpdate->bind_param("si", $chatId, $sale['id']);
+                            if ($stmtUpdate->execute()) {
+                                $linkedAny = true;
+                                $successMessages[] = "Tư vấn viên: " . $sale['name'] . " - Email: " . $sale['email'];
+                                $existingSaleOwner = $sale;
+                                // Đồng bộ sang bảng consultants
+                                $stmtUpdateCons = $conn->prepare("UPDATE consultants SET zalo_chat_id = ? WHERE id = ?");
+                                if ($stmtUpdateCons) {
+                                    $stmtUpdateCons->bind_param("si", $chatId, $sale['id']);
+                                    $stmtUpdateCons->execute();
+                                    $stmtUpdateCons->close();
                                 }
-                                $stmtUpdateAdmin->close();
+                            } else {
+                                $errorMsg .= "[ THÔNG BÁO LỖI ] Lỗi cập nhật CSDL: " . $stmtUpdate->error . "\n\n";
                             }
+                            $stmtUpdate->close();
                         }
                     }
                 }

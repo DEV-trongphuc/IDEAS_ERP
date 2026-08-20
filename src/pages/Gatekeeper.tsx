@@ -2569,7 +2569,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                                   style={{ background: 'var(--color-warning)', borderColor: 'var(--color-warning)', color: '#ffffff', boxShadow: 'none' }}
                                   title={t("Không duyệt và đánh dấu dưới chuẩn")}
                                 >
-                                  {t('Xác nhận dưới chuẩn')}
+                                  {t('Dưới chuẩn')}
                                 </button>
                                 <button
                                   onClick={() => handleOpenApproveHeldLead(l)}
@@ -4860,7 +4860,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                 disabled={!heldActionReason.trim() || actionLoading}
                 style={{ background: 'var(--color-warning)', borderColor: 'var(--color-warning)' }}
               >
-                {actionLoading ? t("Đang xử lý...") : t("Xác nhận dưới chuẩn")}
+                {actionLoading ? t("Đang xử lý...") : t("Dưới chuẩn")}
               </button>
             </div>
           </div>
@@ -5599,7 +5599,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                         style={{ width: '100%', height: 46, background: 'var(--color-warning)', borderColor: 'var(--color-warning)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '0.9rem', fontWeight: 700 }}
                       >
                         <XCircle size={18} />
-                        {t("Xác nhận dưới chuẩn")}
+                        {t("Dưới chuẩn")}
                       </button>
 
                       <div style={{
