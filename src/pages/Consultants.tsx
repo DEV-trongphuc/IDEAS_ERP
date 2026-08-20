@@ -1830,6 +1830,24 @@ const ConsultantsInner = () => {
               </div>
             ) : paginatedTeams.map((team) => {
                 const leader = allSystemUsers.find(u => Number(u.id) === Number(team.leader_id));
+                const getTeamTotalCount = () => {
+                  const leaderId = team.leader_id ? Number(team.leader_id) : null;
+                  const coLeaderIds = team.co_leader_ids ? (Array.isArray(team.co_leader_ids) ? team.co_leader_ids.map(Number) : (typeof team.co_leader_ids === 'string' && team.co_leader_ids.startsWith('[') ? JSON.parse(team.co_leader_ids).map(Number) : String(team.co_leader_ids).split(',').map((id: any) => Number(id.trim())).filter(Boolean))) : [];
+                  
+                  const memberSet = new Set<number>();
+                  if (leaderId) memberSet.add(leaderId);
+                  coLeaderIds.forEach((cid: number) => { if (cid) memberSet.add(cid); });
+                  
+                  allSystemUsers.forEach((u: any) => {
+                    if (String(u.team_id) === String(team.id)) {
+                      memberSet.add(Number(u.id));
+                    }
+                  });
+
+                  if (memberSet.size > 0) return memberSet.size;
+                  return Number(team.member_count) || (leaderId ? 1 : 0);
+                };
+                const totalMembers = getTeamTotalCount();
                 return (
                   <div 
                     key={team.id} 
@@ -1847,7 +1865,7 @@ const ConsultantsInner = () => {
                         background: (team.avatar_url || team.avatar) ? 'transparent' : '#ffffff', 
                         display: 'flex', 
                         alignItems: 'center', 
-                        justifyContent: 'center',
+                        justifyContent: 'center', 
                         color: '#ffffff',
                         fontWeight: 800,
                         fontSize: '1rem',
@@ -1865,7 +1883,7 @@ const ConsultantsInner = () => {
                         </h3>
                         <div style={{ display: 'flex', gap: '6px', marginTop: '2px', alignItems: 'center' }}>
                           <span className="badge info sm" style={{ fontWeight: 700, fontSize: '0.6875rem', padding: '2px 6px' }}>
-                            {team.member_count} {t('nhân viên')}
+                            {totalMembers} {t('nhân viên')}
                           </span>
                         </div>
                       </div>

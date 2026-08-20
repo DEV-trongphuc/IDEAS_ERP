@@ -22,7 +22,13 @@ class TeamController
         try {
             $stmt = $this->db->prepare("
                 SELECT t.*, u.full_name as leader_name, 
-                       (SELECT COUNT(*) FROM users WHERE team_id = t.id AND role = 'sales') as member_count 
+                       (SELECT COUNT(DISTINCT u2.id) 
+                        FROM users u2 
+                        WHERE (u2.team_id = t.id 
+                               OR u2.id = t.leader_id 
+                               OR (t.co_leader_ids IS NOT NULL AND t.co_leader_ids != '' AND FIND_IN_SET(u2.id, REPLACE(REPLACE(t.co_leader_ids, '[', ''), ']', '')) > 0))
+                          AND (u2.is_active = 1 OR u2.is_active IS NULL)
+                       ) as member_count 
                 FROM teams t 
                 LEFT JOIN users u ON t.leader_id = u.id 
                 $where
@@ -34,7 +40,11 @@ class TeamController
             $fallbackWhere = str_replace('COALESCE(t.co_leader_ids, t.leader_id)', 't.leader_id', $where);
             $stmt = $this->db->prepare("
                 SELECT t.*, u.full_name as leader_name, 
-                       (SELECT COUNT(*) FROM users WHERE team_id = t.id) as member_count 
+                       (SELECT COUNT(DISTINCT u2.id) 
+                        FROM users u2 
+                        WHERE (u2.team_id = t.id OR u2.id = t.leader_id)
+                          AND (u2.is_active = 1 OR u2.is_active IS NULL)
+                       ) as member_count 
                 FROM teams t 
                 LEFT JOIN users u ON t.leader_id = u.id 
                 $fallbackWhere
