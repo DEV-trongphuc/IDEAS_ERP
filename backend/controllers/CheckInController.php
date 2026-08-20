@@ -899,12 +899,24 @@ class CheckInController {
                 respond(400, null, "Bạn đã có phiếu đề xuất bổ sung công đang chờ duyệt trong tháng $month.", false);
             }
 
+            // Look up manager/leader
+            $approverId = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;
+            if (empty($approverId)) {
+                $stmtLeader = $this->db->prepare("SELECT t.leader_id FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ?");
+                $stmtLeader->execute([$userId]);
+                $leadId = $stmtLeader->fetchColumn();
+                if (!empty($leadId) && (int)$leadId !== (int)$userId) {
+                    $approverId = (int)$leadId;
+                }
+            }
+            $relatedUserIds = !empty($b['related_user_ids']) ? (is_array($b['related_user_ids']) ? json_encode($b['related_user_ids']) : $b['related_user_ids']) : null;
+
             // Create bulk request
             $stmt = $this->db->prepare("
-                INSERT INTO attendance_bulk_requests (user_id, month_period, status)
-                VALUES (?, ?, 'pending_manager')
+                INSERT INTO attendance_bulk_requests (user_id, month_period, status, manager_id, related_user_ids)
+                VALUES (?, ?, 'pending_manager', ?, ?)
             ");
-            $stmt->execute([$userId, $month]);
+            $stmt->execute([$userId, $month, $approverId, $relatedUserIds]);
             $requestId = (int)$this->db->lastInsertId();
 
             // Insert details
@@ -927,14 +939,32 @@ class CheckInController {
 
             $this->db->commit();
 
-            // Send notification to managers/admins (ATTENDANCE_UPDATE event type)
+            // Send notification to approver/manager (ATTENDANCE_UPDATE event type)
             try {
                 $userName = $auth['full_name'] ?? 'Nhân viên';
+                $targetUid = $approverId ?: $userId;
                 NotificationService::send($this->db, 1, 'ATTENDANCE_UPDATE', [
-                    'user_id' => $userId,
+                    'user_id' => $targetUid,
                     'user_name' => $userName,
                     'reason' => "Đề xuất bổ sung công tổng hợp tháng $month (" . count($details) . " ngày)"
                 ]);
+
+                // Notify related persons
+                if (!empty($b['related_user_ids'])) {
+                    $relList = is_array($b['related_user_ids']) ? $b['related_user_ids'] : json_decode($b['related_user_ids'], true);
+                    if (is_array($relList)) {
+                        foreach ($relList as $relUid) {
+                            $relUid = (int)$relUid;
+                            if ($relUid > 0 && $relUid !== (int)$userId && $relUid !== (int)$targetUid) {
+                                NotificationService::send($this->db, 1, 'ATTENDANCE_UPDATE', [
+                                    'user_id' => $relUid,
+                                    'user_name' => $userName,
+                                    'reason' => "Đề xuất bổ sung công tổng hợp tháng $month (" . count($details) . " ngày) (Bạn được gắn là Người liên quan)"
+                                ]);
+                            }
+                        }
+                    }
+                }
             } catch (\Throwable $ne) {
                 error_log("Failed to send bulk request notification: " . $ne->getMessage());
             }

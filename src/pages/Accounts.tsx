@@ -965,6 +965,7 @@ const AccountsInner = () => {
                     { value: 'hr', label: t('Nhân sự (HR)') },
                     { value: 'accountant', label: t('Kế toán (Accountant)') },
                     { value: 'marketing', label: t('Marketing') },
+                    { value: 'academic', label: t('Học vụ - Học thuật (Academic)') },
                     { value: 'viewer', label: t('Chỉ xem dữ liệu (Viewer)') }
                   ]}
                   value={formData.role}

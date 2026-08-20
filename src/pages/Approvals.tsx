@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import api from '../api/axios';
@@ -7,7 +7,8 @@ import {
   ArrowRight, ShieldCheck, User, Clipboard, DollarSign, Activity, FileSpreadsheet, Plus,
   Search, Trash2, Paperclip, Send, AlertTriangle, Users, CreditCard, ShoppingCart, Award,
   HelpCircle, HardDrive, FileSignature, Receipt, Package, Briefcase, ChevronRight, CheckSquare, Server, Home,
-  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye, MessageSquare, Info, Loader2
+  FileCheck, Settings, ArrowLeft, X, Save, GitBranch, Clock3, Copy, Bell, Edit, RefreshCw, Eye, MessageSquare, Info, Loader2,
+  UserPlus, Check
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -780,7 +781,8 @@ export default function Approvals() {
         await api.post('/check-ins/bulk-request', {
           month_period: bulkMonth,
           details: suggestedDays,
-          approver_id: finalApproverId
+          approver_id: finalApproverId,
+          related_user_ids: relatedUserIds
         });
       } else if (formType === 'leave') {
         let fromVal = leaveFrom;
@@ -849,7 +851,8 @@ export default function Approvals() {
             to_date: toVal,
             total_days: daysVal,
             approver_id: appVal1 || finalApproverId,
-            approver_id_2: appVal2
+            approver_id_2: appVal2,
+            related_user_ids: relatedUserIds
           })
         });
       } else if (formType === 'late_early') {
@@ -876,7 +879,8 @@ export default function Approvals() {
             from_date: formattedFrom,
             to_date: formattedTo,
             total_days: 0.0,
-            approver_id: finalApproverId
+            approver_id: appVal1 || finalApproverId,
+            related_user_ids: relatedUserIds
           })
         });
       } else if (formType === 'overtime') {
@@ -896,7 +900,8 @@ export default function Approvals() {
             from_date: fromStr,
             to_date: toStr,
             total_days: daysVal,
-            approver_id: finalApproverId
+            approver_id: appVal1 || finalApproverId,
+            related_user_ids: relatedUserIds
           })
         });
       } else if (formType === 'remote_work') {
@@ -934,7 +939,8 @@ export default function Approvals() {
             from_date: fromVal,
             to_date: toVal,
             total_days: daysVal,
-            approver_id: finalApproverId
+            approver_id: appVal1 || finalApproverId,
+            related_user_ids: relatedUserIds
           })
         });
       } else if (formType === 'advance') {
@@ -948,7 +954,9 @@ export default function Approvals() {
           body: JSON.stringify({
             amount: Number(paymentDetails) || 0,
             reason: advReasonStr,
-            approver_id: finalApproverId,
+            approver_id: appVal1 || finalApproverId,
+            approver_id_2: appVal2,
+            related_user_ids: relatedUserIds,
             currency: currencyType
           })
         });
@@ -995,6 +1003,7 @@ export default function Approvals() {
           approver_id: appVal1 || finalApproverId,
           approver_id_2: appVal2,
           approver_id_3: appVal3,
+          related_user_ids: relatedUserIds,
           currency: currencyType,
           image_url: attachments[0]?.url || null
         });
@@ -1034,6 +1043,7 @@ export default function Approvals() {
           approver_id: appVal1 || finalApproverId,
           approver_id_2: appVal2,
           approver_id_3: appVal3,
+          related_user_ids: relatedUserIds,
           currency: currencyType,
           image_url: attachments[0]?.url || null
         });
@@ -1043,6 +1053,10 @@ export default function Approvals() {
       setSelectedWorkflowDef(null);
       setEditingItemId(null);
       setEditingItemType(null);
+      setRelatedUserIds([]);
+      setCustomApprover1(null);
+      setCustomApprover2(null);
+      setCustomApprover3(null);
       loadData();
     } catch (err: any) {
       toast.error(err?.message || t('Lỗi gửi đề xuất'));
@@ -1062,6 +1076,57 @@ export default function Approvals() {
   const [customApprover3, setCustomApprover3] = useState<any>(null);
   const [activeSelectorStep, setActiveSelectorStep] = useState<string | null>(null);
   const [timelineSearchQuery, setTimelineSearchQuery] = useState('');
+
+  // Related persons (followers / watchers) states
+  const [relatedUserIds, setRelatedUserIds] = useState<number[]>([]);
+  const [showRelatedDropdown, setShowRelatedDropdown] = useState(false);
+  const [relatedSearch, setRelatedSearch] = useState('');
+  const relatedDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (showRelatedDropdown && relatedDropdownRef.current && !relatedDropdownRef.current.contains(target)) {
+        setShowRelatedDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showRelatedDropdown]);
+
+  // Helper to find default manager / team leader for proposer
+  const getDefaultManagerApprover = (proposer?: any) => {
+    const p = proposer || proposerUser || user;
+    if (!p) return null;
+    const teamId = p.team_id || (user as any)?.team_id;
+    const myTeam = teams.find(t => Number(t.id) === Number(teamId));
+    if (myTeam && myTeam.leader_id && Number(myTeam.leader_id) !== Number(p.id)) {
+      const leader = users.find(u => Number(u.id) === Number(myTeam.leader_id));
+      if (leader) return leader;
+    }
+    // Fallback: If user is leader themselves or team has no leader, pick Director or Admin
+    const director = users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()) && Number(u.id) !== Number(p.id));
+    if (director) return director;
+    return users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()) && Number(u.id) !== Number(p.id)) || null;
+  };
+
+  const defaultApp1 = useMemo(() => getDefaultManagerApprover(proposerUser || user), [teams, users, proposerUser, user]);
+  const defaultAccountant = useMemo(() => users.find(u => String(u.role).toLowerCase() === 'accountant'), [users]);
+  const defaultDirector = useMemo(() => users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase())), [users]);
+
+  const app1User = customApprover1 || defaultApp1;
+  const accountantUser = customApprover2 || defaultAccountant;
+  const directorUser = customApprover3 || defaultDirector;
+
+  // Auto-fill manager approver whenever proposer or teams change
+  useEffect(() => {
+    if (users.length > 0 && teams.length > 0) {
+      const leader = getDefaultManagerApprover(proposerUser || user);
+      if (leader && !customApprover1) {
+        setCustomApprover1(leader);
+      }
+    }
+  }, [users, teams, proposerUser]);
 
   // Initialize proposer user as current logged in user
   useEffect(() => {
@@ -4948,6 +5013,220 @@ export default function Approvals() {
                         </div>
                       </div>
 
+                      {/* Card 2: Người liên quan (Theo dõi) */}
+                      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {t('Người liên quan (Theo dõi)')} ({relatedUserIds.length})
+                          </div>
+                        </div>
+
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
+                          {/* Selected avatars */}
+                          {relatedUserIds.length > 0 && (
+                            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              {relatedUserIds.map((uid, idx) => {
+                                const u = users.find(x => Number(x.id) === Number(uid));
+                                if (!u) return null;
+                                return (
+                                  <div
+                                    key={u.id}
+                                    style={{
+                                      marginLeft: idx === 0 ? 0 : -8,
+                                      border: '1.5px solid var(--color-surface)',
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                      zIndex: 10 - idx,
+                                      boxShadow: 'var(--shadow-sm)',
+                                      display: 'flex'
+                                    }}
+                                    title={u.full_name || u.name}
+                                  >
+                                    <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={28} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Plus button */}
+                          <button
+                            type="button"
+                            onClick={() => setShowRelatedDropdown(!showRelatedDropdown)}
+                            style={{
+                              border: '1px dashed var(--color-primary)',
+                              background: 'rgba(163, 20, 34, 0.04)',
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0,
+                              transition: 'all 0.15s ease'
+                            }}
+                            className="hover-scale"
+                            title={t('Thêm người liên quan')}
+                          >
+                            <UserPlus size={14} color="var(--color-primary)" />
+                          </button>
+
+                          {/* Dropdown with SEARCH */}
+                          {showRelatedDropdown && (
+                            <div 
+                              ref={relatedDropdownRef}
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                marginTop: '6px',
+                                zIndex: 9999,
+                                background: 'var(--color-surface)',
+                                border: '1px solid var(--color-border-light)',
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                                minWidth: '240px',
+                                maxHeight: '280px',
+                                overflowY: 'auto',
+                                padding: '8px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px'
+                              }}
+                            >
+                              <div style={{ position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 10, paddingBottom: '4px' }}>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <Search size={13} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+                                  <input
+                                    type="text"
+                                    placeholder={t('Tìm người liên quan...')}
+                                    value={relatedSearch}
+                                    onChange={(e) => setRelatedSearch(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                      width: '100%',
+                                      padding: '6px 8px 6px 26px',
+                                      fontSize: '0.75rem',
+                                      borderRadius: '6px',
+                                      border: '1px solid var(--color-border)',
+                                      background: 'var(--color-bg)',
+                                      color: 'var(--color-text)',
+                                      outline: 'none',
+                                      boxSizing: 'border-box'
+                                    }}
+                                    autoFocus
+                                  />
+                                </div>
+                              </div>
+                              {users
+                                .filter((u: any) => {
+                                  if (!relatedSearch.trim()) return true;
+                                  const query = relatedSearch.toLowerCase();
+                                  return (
+                                    (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                                    (u.email || '').toLowerCase().includes(query) ||
+                                    (u.role || '').toLowerCase().includes(query)
+                                  );
+                                })
+                                .map((u: any) => {
+                                  const isSelected = relatedUserIds.includes(Number(u.id));
+                                  return (
+                                    <div
+                                      key={u.id}
+                                      onClick={() => {
+                                        const uid = Number(u.id);
+                                        if (isSelected) {
+                                          setRelatedUserIds(relatedUserIds.filter(id => id !== uid));
+                                        } else {
+                                          setRelatedUserIds([...relatedUserIds, uid]);
+                                        }
+                                      }}
+                                      style={{
+                                        padding: '6px 8px',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.75rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                                        color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                                        fontWeight: isSelected ? 600 : 400
+                                      }}
+                                      className="hover-bg-alt"
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                                        <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || u.name}</span>
+                                      </div>
+                                      {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} style={{ flexShrink: 0, marginLeft: '4px' }} />}
+                                    </div>
+                                  );
+                                })}
+                              {users.filter((u: any) => {
+                                if (!relatedSearch.trim()) return true;
+                                const query = relatedSearch.toLowerCase();
+                                return (
+                                  (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                                  (u.email || '').toLowerCase().includes(query) ||
+                                  (u.role || '').toLowerCase().includes(query)
+                                );
+                              }).length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '10px 4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                  {t('Không tìm thấy kết quả')}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Selected chips */}
+                        {relatedUserIds.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                            {relatedUserIds.map(uid => {
+                              const u = users.find(x => Number(x.id) === Number(uid));
+                              if (!u) return null;
+                              return (
+                                <span
+                                  key={u.id}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '3px 8px',
+                                    background: 'rgba(107, 114, 128, 0.08)',
+                                    color: 'var(--color-text)',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 600,
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(107, 114, 128, 0.16)'
+                                  }}
+                                >
+                                  <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={16} />
+                                  <span>{u.full_name || u.name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRelatedUserIds(relatedUserIds.filter(id => id !== Number(u.id)))}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: 'var(--color-danger)',
+                                      cursor: 'pointer',
+                                      padding: 0,
+                                      fontSize: '0.8rem',
+                                      lineHeight: 1
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
                     </div>
 
                   </div>
@@ -6493,6 +6772,40 @@ export function ApprovalDetailDrawer({ item, onClose, users, t, onApprove, onRej
                 {t('CÁC BƯỚC THỰC HIỆN')}
               </h3>
               {renderTimeline()}
+
+              {/* Related Persons in View Drawer */}
+              {(() => {
+                const relIdsRaw = detail?.related_user_ids || (item as any)?.related_user_ids;
+                if (!relIdsRaw) return null;
+                let relIds: number[] = [];
+                if (Array.isArray(relIdsRaw)) relIds = relIdsRaw.map(Number);
+                else if (typeof relIdsRaw === 'string') {
+                  try {
+                    const parsed = JSON.parse(relIdsRaw);
+                    if (Array.isArray(parsed)) relIds = parsed.map(Number);
+                    else relIds = relIdsRaw.split(',').map(s => Number(s.trim())).filter(Boolean);
+                  } catch {
+                    relIds = relIdsRaw.split(',').map(s => Number(s.trim())).filter(Boolean);
+                  }
+                }
+                const relUsers = users.filter(u => relIds.includes(Number(u.id)));
+                if (relUsers.length === 0) return null;
+                return (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border-light)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                      {t('NGƯỜI LIÊN QUAN (THEO DÕI)')} ({relUsers.length})
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {relUsers.map(u => (
+                        <div key={u.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: 'var(--color-bg-light)', border: '1px solid var(--color-border-light)', borderRadius: '12px' }}>
+                          <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
+                          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text)' }}>{u.full_name || u.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Unified Discussion & Activity Feed */}

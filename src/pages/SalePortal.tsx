@@ -535,6 +535,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   // Task participant modal states
   const [selectedTaskParticipants, setSelectedTaskParticipants] = useState<any[]>([]);
   const [participantsModalOpen, setParticipantsModalOpen] = useState(false);
+  const [taskParticipantsSearch, setTaskParticipantsSearch] = useState('');
 
   // Authentication states
   const [googleError, setGoogleError] = useState('');
@@ -1549,6 +1550,13 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       return () => clearTimeout(timer);
     }
   }, [profileActiveTab]);
+
+  useEffect(() => {
+    const isSale = ['sale', 'sales'].includes(String(user?.role || '').toLowerCase()) || ((user as any)?.team_id === 4);
+    if (!isSale && profileActiveTab === 'schedule') {
+      setProfileActiveTab('personal');
+    }
+  }, [user?.role, (user as any)?.team_id, profileActiveTab]);
 
   const [isMobileDateMenuOpen, setIsMobileDateMenuOpen] = useState(false);
   const mobileDateMenuRef = useRef<HTMLDivElement>(null);
@@ -11284,7 +11292,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                       flexDirection: 'column',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
                     }}>
-                      {['sale', 'manager'].includes(String(effectiveRole).toLowerCase()) && (
+                      {Boolean(['sale', 'sales'].includes(String(user?.role || '').toLowerCase()) || ((user as any)?.team_id === 4)) && (
                         <button
                           type="button"
                           onClick={() => setProfileActiveTab('schedule')}
@@ -11565,7 +11573,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                 ) : (
                   /* ── Desktop Tab Menu ── */
                   <>
-                    {['sale', 'manager'].includes(String(effectiveRole).toLowerCase()) && (
+                    {Boolean(['sale', 'sales'].includes(String(user?.role || '').toLowerCase()) || ((user as any)?.team_id === 4)) && (
                       <button
                         type="button"
                         className={`${styles.sidebarTabBtn} ${profileActiveTab === 'schedule' ? styles.sidebarTabActive : ''}`}
@@ -19071,24 +19079,67 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
       {participantsModalOpen && (
         <CustomModal
           isOpen={participantsModalOpen}
-          onClose={() => setParticipantsModalOpen(false)}
+          onClose={() => { setParticipantsModalOpen(false); setTaskParticipantsSearch(''); }}
           title={t('Người liên quan (Participants)')}
           width="400px"
         >
           <div style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                placeholder={t('Tìm kiếm người liên quan...')}
+                value={taskParticipantsSearch}
+                onChange={(e) => setTaskParticipantsSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px 8px 32px',
+                  fontSize: '0.8rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }} className="custom-scrollbar">
-              {selectedTaskParticipants.map((pUser) => (
-                <div key={pUser.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', borderRadius: '10px' }}>
-                  <Avatar src={pUser.avatar_url || pUser.avatar} name={pUser.full_name} size={28} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{pUser.full_name}</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{pUser.email}</span>
+              {selectedTaskParticipants
+                .filter((pUser) => {
+                  if (!taskParticipantsSearch.trim()) return true;
+                  const query = taskParticipantsSearch.toLowerCase();
+                  return (
+                    (pUser.full_name || pUser.name || '').toLowerCase().includes(query) ||
+                    (pUser.email || '').toLowerCase().includes(query) ||
+                    (pUser.role || '').toLowerCase().includes(query)
+                  );
+                })
+                .map((pUser) => (
+                  <div key={pUser.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', borderRadius: '10px' }}>
+                    <Avatar src={pUser.avatar_url || pUser.avatar} name={pUser.full_name} size={28} />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)' }}>{pUser.full_name}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{pUser.email}</span>
+                    </div>
                   </div>
+                ))}
+              {selectedTaskParticipants.filter((pUser) => {
+                if (!taskParticipantsSearch.trim()) return true;
+                const query = taskParticipantsSearch.toLowerCase();
+                return (
+                  (pUser.full_name || pUser.name || '').toLowerCase().includes(query) ||
+                  (pUser.email || '').toLowerCase().includes(query) ||
+                  (pUser.role || '').toLowerCase().includes(query)
+                );
+              }).length === 0 && (
+                <div style={{ textAlign: 'center', padding: '12px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                  {t('Không tìm thấy người liên quan phù hợp')}
                 </div>
-              ))}
+              )}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-              <button className="btn primary" onClick={() => setParticipantsModalOpen(false)}>{t('Đóng')}</button>
+              <button className="btn primary" onClick={() => { setParticipantsModalOpen(false); setTaskParticipantsSearch(''); }}>{t('Đóng')}</button>
             </div>
           </div>
         </CustomModal>

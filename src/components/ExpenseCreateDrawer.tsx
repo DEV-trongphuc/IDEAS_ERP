@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft, FileText, Plus } from 'lucide-react';
+import { X, Wallet, Upload, Loader2, Truck, Coffee, Home, Briefcase, CreditCard, Tag, CheckCircle2, Building2, ChevronDown, ChevronLeft, FileText, Plus, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import { useUIStore } from '../store/uiStore';
@@ -77,6 +77,7 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
   const [companies, setCompanies] = useState<any[]>([]);
   const [allocationType, setAllocationType] = useState<'contact' | 'company'>('contact');
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
+  const [participantSearch, setParticipantSearch] = useState('');
 
   // Combine and filter suppliers and companies/partners for vendor search
   const filteredVendors = useMemo(() => {
@@ -1331,19 +1332,49 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                           border: '1px solid var(--color-border-light)',
                           borderRadius: '12px',
                           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                          minWidth: '220px',
-                          maxHeight: '230px',
+                          minWidth: '240px',
+                          maxHeight: '260px',
                           overflowY: 'auto',
                           padding: '6px',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '2px'
+                          gap: '4px'
                         }}>
-                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
-                            CHỌN NGƯỜI LIÊN QUAN
+                          <div style={{ position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 10, paddingBottom: '4px' }}>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <Search size={13} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+                              <input
+                                type="text"
+                                placeholder="Tìm người liên quan..."
+                                value={participantSearch}
+                                onChange={(e) => setParticipantSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 8px 6px 26px',
+                                  fontSize: '0.75rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--color-border)',
+                                  background: 'var(--color-bg)',
+                                  color: 'var(--color-text)',
+                                  outline: 'none',
+                                  boxSizing: 'border-box'
+                                }}
+                                autoFocus
+                              />
+                            </div>
                           </div>
                           {users
                             .filter((u: any) => u.id !== form.approver_id)
+                            .filter((u: any) => {
+                              if (!participantSearch.trim()) return true;
+                              const q = participantSearch.toLowerCase();
+                              return (
+                                (u.full_name || u.name || '').toLowerCase().includes(q) ||
+                                (u.email || '').toLowerCase().includes(q) ||
+                                (u.role || '').toLowerCase().includes(q)
+                              );
+                            })
                             .map((u: any) => {
                               const isSelected = form.related_user_ids.includes(u.id);
                               return (
@@ -1362,15 +1393,19 @@ export const ExpenseCreateDrawer: React.FC<ExpenseCreateDrawerProps> = ({
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px',
+                                    justifyContent: 'space-between',
                                     background: isSelected ? 'rgba(163, 20, 34, 0.06)' : 'transparent',
                                     color: isSelected ? 'var(--color-primary)' : 'var(--color-text)'
                                   }}
+                                  className="hover-bg-alt"
                                 >
-                                  <Avatar src={u.avatar_url || u.avatar} name={u.full_name || u.name} size="sm" />
-                                  <span style={{ fontSize: '0.75rem', fontWeight: isSelected ? 700 : 500 }}>
-                                    {u.full_name || u.name}
-                                  </span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                                    <Avatar src={u.avatar_url || u.avatar} name={u.full_name || u.name} size="sm" />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: isSelected ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {u.full_name || u.name}
+                                    </span>
+                                  </div>
+                                  {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} style={{ flexShrink: 0 }} />}
                                 </div>
                               );
                             })}

@@ -3627,31 +3627,44 @@ switch ($action) {
         if (isset($decodedUser['role']) && $decodedUser['role'] === 'sale') {
             $extraCondition .= " AND dl.assigned_to = " . (int)($currentSaleConsultantId ?? 0);
         } elseif (isset($decodedUser['role']) && $decodedUser['role'] === 'manager') {
-            $teamMemberIds = [];
-            $stmtTeam = $conn->prepare("SELECT id FROM consultants WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)");
-            $stmtTeam->bind_param("i", $decodedUser['user_id']);
-            $stmtTeam->execute();
-            $resTeam = $stmtTeam->get_result();
-            while ($tRow = $resTeam->fetch_assoc()) {
-                $teamMemberIds[] = (int)$tRow['id'];
-            }
-            $stmtTeam->close();
-
-            // Also include the manager's own consultant ID
-            $stmtSelf = $conn->prepare("SELECT id FROM consultants WHERE email = ? LIMIT 1");
-            $stmtSelf->bind_param("s", $decodedUser['email']);
-            $stmtSelf->execute();
-            $selfRow = $stmtSelf->get_result()->fetch_assoc();
-            $stmtSelf->close();
-            if ($selfRow) {
-                $teamMemberIds[] = (int)$selfRow['id'];
+            // Check if this manager is leading a sales team or non-sales team (e.g. Marketing)
+            $isMktOrNonSale = false;
+            $mgrTeamRes = $conn->query("SELECT u.team_id, t.name as team_name, u.job_title FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = " . (int)$decodedUser['user_id']);
+            if ($mgrTeamRes && $uInfo = $mgrTeamRes->fetch_assoc()) {
+                $tName = mb_strtolower($uInfo['team_name'] ?? '');
+                $jTitle = mb_strtolower($uInfo['job_title'] ?? '');
+                if ((int)$uInfo['team_id'] === 3 || strpos($tName, 'marketing') !== false || strpos($jTitle, 'marketing') !== false) {
+                    $isMktOrNonSale = true;
+                }
             }
 
-            $teamMemberIds = array_unique(array_filter($teamMemberIds));
-            if (!empty($teamMemberIds)) {
-                $extraCondition .= " AND dl.assigned_to IN (" . implode(',', $teamMemberIds) . ")";
-            } else {
-                $extraCondition .= " AND dl.assigned_to = " . (int)($selfRow ? $selfRow['id'] : 0);
+            if (!$isMktOrNonSale) {
+                $teamMemberIds = [];
+                $stmtTeam = $conn->prepare("SELECT id FROM consultants WHERE team_id IN (SELECT id FROM teams WHERE leader_id = ?)");
+                $stmtTeam->bind_param("i", $decodedUser['user_id']);
+                $stmtTeam->execute();
+                $resTeam = $stmtTeam->get_result();
+                while ($tRow = $resTeam->fetch_assoc()) {
+                    $teamMemberIds[] = (int)$tRow['id'];
+                }
+                $stmtTeam->close();
+
+                // Also include the manager's own consultant ID
+                $stmtSelf = $conn->prepare("SELECT id FROM consultants WHERE email = ? LIMIT 1");
+                $stmtSelf->bind_param("s", $decodedUser['email']);
+                $stmtSelf->execute();
+                $selfRow = $stmtSelf->get_result()->fetch_assoc();
+                $stmtSelf->close();
+                if ($selfRow) {
+                    $teamMemberIds[] = (int)$selfRow['id'];
+                }
+
+                $teamMemberIds = array_unique(array_filter($teamMemberIds));
+                if (!empty($teamMemberIds)) {
+                    $extraCondition .= " AND dl.assigned_to IN (" . implode(',', $teamMemberIds) . ")";
+                } else if ($selfRow) {
+                    $extraCondition .= " AND dl.assigned_to = " . (int)$selfRow['id'];
+                }
             }
         }
 
@@ -14567,30 +14580,58 @@ switch ($action) {
                     $managerFilterLeads .= " AND 1=0 ";
                 }
             } else if ($isManager) {
-                $mgrTeamRes = $conn->query("SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id']);
+                // Check if this manager is leading a sales team or non-sales team (e.g. Marketing, Academic, HR, Accountant)
+                $mgrTeamRes = $conn->query("SELECT id, name FROM teams WHERE leader_id = " . (int)$decodedUser['user_id']);
                 $mgrTeamIds = [];
+                $isSalesTeamLead = false;
                 if ($mgrTeamRes) {
                     while ($tr = $mgrTeamRes->fetch_assoc()) {
                         $mgrTeamIds[] = (int)$tr['id'];
-                    }
-                }
-                if (!empty($mgrTeamIds)) {
-                    $mgrUserRes = $conn->query("SELECT id FROM users WHERE team_id IN (" . implode(',', $mgrTeamIds) . ")");
-                    if ($mgrUserRes) {
-                        while ($ur = $mgrUserRes->fetch_assoc()) {
-                            $managerUserIds[] = (int)$ur['id'];
+                        $tName = mb_strtolower($tr['name'] ?? '');
+                        if (strpos($tName, 'tư vấn') !== false || strpos($tName, 'tuyển sinh') !== false || strpos($tName, 'sale') !== false) {
+                            $isSalesTeamLead = true;
                         }
                     }
                 }
-                $managerUserIds[] = (int)$decodedUser['user_id'];
-                $idsList = implode(',', $managerUserIds);
 
-                $managerFilter = " AND assigned_to IN ($idsList) ";
-                $managerFilterDl = " AND dl.assigned_to IN ($idsList) ";
-                $managerFilterDlNoAlias = " AND assigned_to IN ($idsList) ";
-                $managerFilterLeads = " AND l.assigned_to IN ($idsList) ";
-                $managerFilterReports = " AND consultant_id IN ($idsList) ";
-                $consultantFilter = " AND (email IN (SELECT email FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id'] . ")) OR email = '" . $conn->real_escape_string($decodedUser['email']) . "')";
+                // If the user is from Marketing (team_id 3 or Marketing in name/title), or not a sales team leader, they oversee all lead distribution
+                $isMarketingUser = false;
+                $userTeamRes = $conn->query("SELECT u.team_id, t.name as team_name, u.job_title FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = " . (int)$decodedUser['user_id']);
+                if ($userTeamRes && $uInfo = $userTeamRes->fetch_assoc()) {
+                    $tName = mb_strtolower($uInfo['team_name'] ?? '');
+                    $jTitle = mb_strtolower($uInfo['job_title'] ?? '');
+                    if ((int)$uInfo['team_id'] === 3 || strpos($tName, 'marketing') !== false || strpos($jTitle, 'marketing') !== false) {
+                        $isMarketingUser = true;
+                    }
+                }
+
+                if ($isMarketingUser || !$isSalesTeamLead) {
+                    // Marketing / Operations Managers see ALL data distribution stats across the entire company
+                    $managerFilter = "";
+                    $managerFilterDl = "";
+                    $managerFilterDlNoAlias = "";
+                    $managerFilterLeads = "";
+                    $managerFilterReports = "";
+                    $consultantFilter = "";
+                } else {
+                    if (!empty($mgrTeamIds)) {
+                        $mgrUserRes = $conn->query("SELECT id FROM users WHERE team_id IN (" . implode(',', $mgrTeamIds) . ")");
+                        if ($mgrUserRes) {
+                            while ($ur = $mgrUserRes->fetch_assoc()) {
+                                $managerUserIds[] = (int)$ur['id'];
+                            }
+                        }
+                    }
+                    $managerUserIds[] = (int)$decodedUser['user_id'];
+                    $idsList = implode(',', $managerUserIds);
+
+                    $managerFilter = " AND assigned_to IN ($idsList) ";
+                    $managerFilterDl = " AND dl.assigned_to IN ($idsList) ";
+                    $managerFilterDlNoAlias = " AND assigned_to IN ($idsList) ";
+                    $managerFilterLeads = " AND l.assigned_to IN ($idsList) ";
+                    $managerFilterReports = " AND consultant_id IN ($idsList) ";
+                    $consultantFilter = " AND (email IN (SELECT email FROM users WHERE team_id IN (SELECT id FROM teams WHERE leader_id = " . (int)$decodedUser['user_id'] . ")) OR email = '" . $conn->real_escape_string($decodedUser['email']) . "')";
+                }
             }
             $dbVer = 0;
             $vStmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'db_version' LIMIT 1");
@@ -15433,7 +15474,7 @@ switch ($action) {
             $leadSourceResRaw = $conn->query($leadSourceSql);
             $leadSourceStats = [];
             if ($leadSourceResRaw) {
-                $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
+                $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#14b8a6', '#f97316'];
                 $i = 0;
                 while ($row = $leadSourceResRaw->fetch_assoc()) {
                     $leadSourceStats[] = [
@@ -15442,6 +15483,22 @@ switch ($action) {
                         'color' => $colors[$i % count($colors)]
                     ];
                     $i++;
+                }
+            }
+            if (empty($leadSourceStats)) {
+                $directSourceSql = "SELECT COALESCE(NULLIF(TRIM(source), ''), 'Không xác định') as source, COUNT(id) as count FROM leads WHERE source IS NOT NULL AND source != '' GROUP BY COALESCE(NULLIF(TRIM(source), ''), 'Không xác định') ORDER BY count DESC LIMIT 8";
+                $directRes = $conn->query($directSourceSql);
+                if ($directRes) {
+                    $colors = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#14b8a6', '#f97316'];
+                    $i = 0;
+                    while ($row = $directRes->fetch_assoc()) {
+                        $leadSourceStats[] = [
+                            'name' => $row['source'] ?: 'Không xác định',
+                            'value' => (int) $row['count'],
+                            'color' => $colors[$i % count($colors)]
+                        ];
+                        $i++;
+                    }
                 }
             }
 

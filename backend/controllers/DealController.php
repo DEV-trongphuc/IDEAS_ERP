@@ -636,8 +636,24 @@ class DealController {
             $permissionsJson = json_decode($resQ['permissions_json'], true);
         }
 
-        if (in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin', 'marketing'], true)) {
-            if (strtolower($auth['role'] ?? '') === 'marketing' && $action === 'delete') {
+        $isMarketing = false;
+        if (strtolower($auth['role'] ?? '') === 'marketing') {
+            $isMarketing = true;
+        } else {
+            $stmtM = $this->db->prepare("SELECT u.team_id, t.name as team_name, u.job_title FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ? LIMIT 1");
+            $stmtM->execute([$auth['user_id']]);
+            $uInfo = $stmtM->fetch(PDO::FETCH_ASSOC);
+            if ($uInfo) {
+                $tName = mb_strtolower($uInfo['team_name'] ?? '');
+                $jTitle = mb_strtolower($uInfo['job_title'] ?? '');
+                if ((int)$uInfo['team_id'] === 3 || strpos($tName, 'marketing') !== false || strpos($jTitle, 'marketing') !== false) {
+                    $isMarketing = true;
+                }
+            }
+        }
+
+        if (in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin', 'marketing'], true) || $isMarketing) {
+            if (($isMarketing || strtolower($auth['role'] ?? '') === 'marketing') && $action === 'delete') {
                 return 'none';
             }
             return 'all';

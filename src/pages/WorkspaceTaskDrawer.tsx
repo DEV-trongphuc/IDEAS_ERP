@@ -300,6 +300,8 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
   const [activeAssigneeDropdownId, setActiveAssigneeDropdownId] = useState<string | null>(null);
   const [deleteSubtaskTarget, setDeleteSubtaskTarget] = useState<{ id: string; title: string } | null>(null);
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
+  const [participantSearch, setParticipantSearch] = useState('');
+  const [participantModalSearch, setParticipantModalSearch] = useState('');
   const [showTeamDropdown, setShowTeamDropdown] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
   const [showHideConfirmModal, setShowHideConfirmModal] = useState(false);
@@ -4998,45 +5000,89 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                         border: '1px solid var(--color-border-light)',
                         borderRadius: '12px',
                         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
-                        minWidth: '220px',
-                        maxHeight: '230px',
+                        minWidth: '240px',
+                        maxHeight: '280px',
                         overflowY: 'auto',
-                        padding: '6px',
+                        padding: '8px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '2px'
+                        gap: '4px'
                       }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', padding: '4px 8px' }}>
-                          {t('Chọn người liên quan:')}
-                        </div>
-                        {users.map((u: any) => {
-                          const isSelected = participantIds.includes(Number(u.id));
-                          return (
-                            <div
-                              key={u.id}
-                              onClick={() => handleToggleParticipant(Number(u.id))}
+                        <div style={{ position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 10, paddingBottom: '4px' }}>
+                          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <Search size={13} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+                            <input
+                              type="text"
+                              placeholder={t('Tìm người liên quan...')}
+                              value={participantSearch}
+                              onChange={(e) => setParticipantSearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
                               style={{
-                                padding: '6px 8px',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
+                                width: '100%',
+                                padding: '6px 8px 6px 26px',
                                 fontSize: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                background: isSelected ? 'var(--color-primary-light)' : 'transparent',
-                                color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
-                                fontWeight: isSelected ? 600 : 400
+                                borderRadius: '6px',
+                                border: '1px solid var(--color-border)',
+                                background: 'var(--color-bg)',
+                                color: 'var(--color-text)',
+                                outline: 'none',
+                                boxSizing: 'border-box'
                               }}
-                              className="hover-bg-alt"
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
-                                <span>{u.full_name || u.name}</span>
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        {users
+                          .filter((u: any) => {
+                            if (!participantSearch.trim()) return true;
+                            const query = participantSearch.toLowerCase();
+                            return (
+                              (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                              (u.email || '').toLowerCase().includes(query) ||
+                              (u.role || '').toLowerCase().includes(query)
+                            );
+                          })
+                          .map((u: any) => {
+                            const isSelected = participantIds.includes(Number(u.id));
+                            return (
+                              <div
+                                key={u.id}
+                                onClick={() => handleToggleParticipant(Number(u.id))}
+                                style={{
+                                  padding: '6px 8px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                                  color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                                  fontWeight: isSelected ? 600 : 400
+                                }}
+                                className="hover-bg-alt"
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                                  <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || u.name}</span>
+                                </div>
+                                {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} style={{ flexShrink: 0, marginLeft: '4px' }} />}
                               </div>
-                              {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} />}
-                            </div>
+                            );
+                          })}
+                        {users.filter((u: any) => {
+                          if (!participantSearch.trim()) return true;
+                          const query = participantSearch.toLowerCase();
+                          return (
+                            (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                            (u.email || '').toLowerCase().includes(query) ||
+                            (u.role || '').toLowerCase().includes(query)
                           );
-                        })}
+                        }).length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '10px 4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            {t('Không tìm thấy kết quả')}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -5577,13 +5623,44 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
                               </button>
                             </div>
 
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: '2px 0 6px 0' }}>
+                              <Search size={13} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+                              <input
+                                type="text"
+                                placeholder={t('Tìm thành viên chưa liên quan...')}
+                                value={participantModalSearch}
+                                onChange={(e) => setParticipantModalSearch(e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 8px 6px 26px',
+                                  fontSize: '0.75rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--color-border)',
+                                  background: 'var(--color-bg)',
+                                  color: 'var(--color-text)',
+                                  outline: 'none',
+                                  boxSizing: 'border-box'
+                                }}
+                              />
+                            </div>
+
                             {nonRelatedUsers.length === 0 ? (
                               <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontStyle: 'italic' }}>
                                 {t('Tất cả nhân sự đều đã được thêm làm người liên quan')}
                               </div>
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }} className="custom-scrollbar">
-                                {nonRelatedUsers.map((u: any) => (
+                                {nonRelatedUsers
+                                  .filter((u: any) => {
+                                    if (!participantModalSearch.trim()) return true;
+                                    const query = participantModalSearch.toLowerCase();
+                                    return (
+                                      (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                                      (u.email || '').toLowerCase().includes(query) ||
+                                      (u.role || '').toLowerCase().includes(query)
+                                    );
+                                  })
+                                  .map((u: any) => (
                                   <div
                                     key={u.id}
                                     style={{

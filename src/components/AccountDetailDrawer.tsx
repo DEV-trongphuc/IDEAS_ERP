@@ -1532,17 +1532,19 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         {t('Cá nhân & Lịch trực')}
                       </div>
                       <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border-light)', borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('schedule')}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--color-border-light)', width: '100%', cursor: 'pointer', textAlign: 'left' }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--color-text)' }}>
-                            {renderColoredIcon(Calendar, '#f09a37')}
-                            <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{t('Lịch trực nhận data')}</span>
-                          </div>
-                          <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
-                        </button>
+                        {Boolean(['sale', 'sales'].includes(String(role || account?.role || '').toLowerCase()) || (account?.team_id === 4)) && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('schedule')}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--color-border-light)', width: '100%', cursor: 'pointer', textAlign: 'left' }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--color-text)' }}>
+                              {renderColoredIcon(Calendar, '#f09a37')}
+                              <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{t('Lịch trực nhận data')}</span>
+                            </div>
+                            <ChevronRight size={14} style={{ color: 'var(--color-text-muted)' }} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setActiveTab('personal')}
@@ -1697,15 +1699,17 @@ export const AccountDetailDrawer: React.FC<Props> = ({ isOpen, onClose, account,
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        className={`${styles.sidebarTabBtn} ${activeTab === 'schedule' ? styles.sidebarTabActive : ''}`}
-                        onClick={() => setActiveTab('schedule')}
-                        style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'schedule' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'schedule' ? 700 : 500 }}
-                      >
-                        {renderColoredIcon(Calendar, '#f09a37')}
-                        <span style={{ whiteSpace: 'nowrap' }}>{t('Lịch trực nhận data')}</span>
-                      </button>
+                      {Boolean(['sale', 'sales'].includes(String(role || account?.role || '').toLowerCase()) || (account?.team_id === 4)) && (
+                        <button
+                          type="button"
+                          className={`${styles.sidebarTabBtn} ${activeTab === 'schedule' ? styles.sidebarTabActive : ''}`}
+                          onClick={() => setActiveTab('schedule')}
+                          style={{ padding: '8px 0.75rem', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '12px', width: '100%', border: 'none', background: activeTab === 'schedule' ? 'var(--color-bg-light)' : 'transparent', borderRadius: '8px', cursor: 'pointer', textAlign: 'left', fontWeight: activeTab === 'schedule' ? 700 : 500 }}
+                        >
+                          {renderColoredIcon(Calendar, '#f09a37')}
+                          <span style={{ whiteSpace: 'nowrap' }}>{t('Lịch trực nhận data')}</span>
+                        </button>
+                      )}
                       {(isOwnProfile || isManagementOrAbove) && (
                         <button
                           type="button"

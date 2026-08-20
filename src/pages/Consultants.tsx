@@ -1598,28 +1598,52 @@ const ConsultantsInner = () => {
                             </span>
                             <CopyButton text={u.zalo_chat_id} />
                           </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 6,
-                              padding: '4px 10px', borderRadius: 20,
-                              background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 500
-                            }}>
-                              {t('Chưa liên kết')}
-                            </span>
-                            {u.email && u.email.toLowerCase() === user?.email?.toLowerCase() ? (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleConnectZalo(); }}
-                                style={{
-                                  fontSize: '0.725rem', padding: '3px 8px', borderRadius: '6px',
-                                  background: '#0068ff', color: 'white', border: 'none',
-                                  display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, cursor: 'pointer'
-                                }}
-                              >
-                                {t('Liên kết')} <ExternalLink size={12} />
-                              </button>
-                            ) : (
-                              u.email && (
+                        ) : (() => {
+                          const isSelf = u.email && u.email.toLowerCase() === user?.email?.toLowerCase();
+                          const isSaleMember = ['sale', 'sales', 'consultant', 'counselor'].includes((u.role || '').toLowerCase()) || (u.team_branch && u.team_branch.toLowerCase().includes('sale'));
+
+                          if (isSelf) {
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  padding: '4px 10px', borderRadius: 20,
+                                  background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 500
+                                }}>
+                                  {t('Chưa liên kết')}
+                                </span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleConnectZalo(); }}
+                                  style={{
+                                    fontSize: '0.725rem', padding: '3px 8px', borderRadius: '6px',
+                                    background: '#0068ff', color: 'white', border: 'none',
+                                    display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700, cursor: 'pointer'
+                                  }}
+                                >
+                                  {t('Liên kết')} <ExternalLink size={12} />
+                                </button>
+                              </div>
+                            );
+                          }
+
+                          if (!isSaleMember) {
+                            return (
+                              <span style={{ color: 'var(--color-text-light, #94a3b8)', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                                {t('Không bắt buộc')}
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '4px 10px', borderRadius: 20,
+                                background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 500
+                              }}>
+                                {t('Chưa liên kết')}
+                              </span>
+                              {isWriteAuthorized && u.email && (
                                 zaloRemindedId === u.id ? (
                                   <span style={{ fontSize: '0.7rem', padding: '2px 6px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
                                     <Check size={12} /> {t('Đã nhắc')}
@@ -1629,33 +1653,37 @@ const ConsultantsInner = () => {
                                     {zaloRemindingId === u.id ? <RefreshCw size={12} className="spin" /> : <Send size={12} />} {zaloRemindingId === u.id ? t('Đang gửi...') : t('Nhắc')}
                                   </button>
                                 )
-                              )
-                            )}
-                          </div>
-                        )}
-                        </td>
-                        <td data-label={t('Telegram Bot')} onClick={e => e.stopPropagation()}>
-                          {u.telegram_chat_id ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                padding: '4px 10px', borderRadius: 20,
-                                background: '#e8f4fd', color: '#0088cc', fontSize: '0.75rem', fontWeight: 600
-                              }}>
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/3840px-Telegram_logo.svg.png" alt="Telegram" style={{ width: 14, height: 14, borderRadius: '50%' }} /> {t('Đã liên kết')}
-                              </span>
-                              <CopyButton text={u.telegram_chat_id} />
+                              )}
                             </div>
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                padding: '4px 10px', borderRadius: 20,
-                                background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 500
-                              }}>
-                                {t('Chưa liên kết')}
-                              </span>
-                              {u.email && u.email.toLowerCase() === user?.email?.toLowerCase() ? (
+                          );
+                        })()}
+                      </td>
+                      <td data-label={t('Telegram Bot')} onClick={e => e.stopPropagation()}>
+                        {u.telegram_chat_id ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 6,
+                              padding: '4px 10px', borderRadius: 20,
+                              background: '#e8f4fd', color: '#0088cc', fontSize: '0.75rem', fontWeight: 600
+                            }}>
+                              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/3840px-Telegram_logo.svg.png" alt="Telegram" style={{ width: 14, height: 14, borderRadius: '50%' }} /> {t('Đã liên kết')}
+                            </span>
+                            <CopyButton text={u.telegram_chat_id} />
+                          </div>
+                        ) : (() => {
+                          const isSelf = u.email && u.email.toLowerCase() === user?.email?.toLowerCase();
+                          const isSaleMember = ['sale', 'sales', 'consultant', 'counselor'].includes((u.role || '').toLowerCase()) || (u.team_branch && u.team_branch.toLowerCase().includes('sale'));
+
+                          if (isSelf) {
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                                  padding: '4px 10px', borderRadius: 20,
+                                  background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 500
+                                }}>
+                                  {t('Chưa liên kết')}
+                                </span>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleConnectTelegram(u.id); }}
                                   style={{
@@ -1666,22 +1694,42 @@ const ConsultantsInner = () => {
                                 >
                                   {t('Liên kết')} <ExternalLink size={12} />
                                 </button>
-                              ) : (
-                                u.email && (
-                                  tgRemindedId === u.id ? (
-                                    <span style={{ fontSize: '0.7rem', padding: '2px 6px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                                      <Check size={12} /> {t('Đã nhắc')}
-                                    </span>
-                                  ) : (
-                                    <button onClick={(e) => { e.stopPropagation(); handleResendTelegramVerify(u.id); }} className="btn ghost" style={{ fontSize: '0.7rem', padding: '2px 6px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }} title={t("Gửi email nhắc liên kết Telegram")} disabled={tgRemindingId === u.id}>
-                                      {tgRemindingId === u.id ? <RefreshCw size={12} className="spin" /> : <Send size={12} />} {tgRemindingId === u.id ? t('Đang gửi...') : t('Nhắc')}
-                                    </button>
-                                  )
+                              </div>
+                            );
+                          }
+
+                          if (!isSaleMember) {
+                            return (
+                              <span style={{ color: 'var(--color-text-light, #94a3b8)', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                                {t('Không bắt buộc')}
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                padding: '4px 10px', borderRadius: 20,
+                                background: 'var(--color-bg)', color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 500
+                              }}>
+                                {t('Chưa liên kết')}
+                              </span>
+                              {isWriteAuthorized && u.email && (
+                                tgRemindedId === u.id ? (
+                                  <span style={{ fontSize: '0.7rem', padding: '2px 6px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                                    <Check size={12} /> {t('Đã nhắc')}
+                                  </span>
+                                ) : (
+                                  <button onClick={(e) => { e.stopPropagation(); handleResendTelegramVerify(u.id); }} className="btn ghost" style={{ fontSize: '0.7rem', padding: '2px 6px', color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }} title={t("Gửi email nhắc liên kết Telegram")} disabled={tgRemindingId === u.id}>
+                                    {tgRemindingId === u.id ? <RefreshCw size={12} className="spin" /> : <Send size={12} />} {tgRemindingId === u.id ? t('Đang gửi...') : t('Nhắc')}
+                                  </button>
                                 )
                               )}
                             </div>
-                          )}
-                        </td>
+                          );
+                        })()}
+                      </td>
                       {isWriteAuthorized && (
                         <td data-label={t('Truy cập gần nhất')} onClick={e => e.stopPropagation()}>
                           {renderLastLogin(u.last_login)}

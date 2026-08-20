@@ -77,7 +77,11 @@ export const ReportsPage: React.FC = () => {
   }, [user]);
 
   const getEffectiveTeamId = () => {
-    if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin', 'marketing'].includes(user?.role || '')) {
+    const isMarketing = user?.role === 'marketing' || 
+      Number((user as any)?.team_id) === 3 || 
+      String((user as any)?.job_title || '').toLowerCase().includes('marketing') ||
+      String((user as any)?.team_name || '').toLowerCase().includes('marketing');
+    if (isMarketing || ['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin'].includes(user?.role || '')) {
       return null;
     }
     const me = users.find(u => Number(u.id) === Number(user?.id));

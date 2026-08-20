@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { withRouterFreezer } from '../components/RouterFreezer';
@@ -12,7 +12,7 @@ import { TableRowSkeleton } from '../components/ui/Skeleton';
 import { CustomSelect } from '../components/ui/CustomSelect';
 const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(module => ({ default: module.CustomerProfileDrawer })));
 import api from '../api/axios';
-import { Clock, Calendar, Check, X, Trash2, Eye, ShieldAlert, AlertCircle, CheckCircle, Info, Download, Lightbulb, Upload, ChevronLeft, ChevronRight, Camera, Image, FileText, Zap, RefreshCw, Moon, MapPin, CheckSquare, Users, Plus, Home, ArrowLeft } from 'lucide-react';
+import { Clock, Calendar, Check, X, Trash2, Eye, ShieldAlert, AlertCircle, CheckCircle, Info, Download, Lightbulb, Upload, ChevronLeft, ChevronRight, Camera, Image, FileText, Zap, RefreshCw, Moon, MapPin, CheckSquare, Users, Plus, Home, ArrowLeft, UserPlus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PeriodFilter, getDateRange } from '../components/ui/PeriodFilter';
 import { useUIStore } from '../store/uiStore';
@@ -124,6 +124,24 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const [approverIdField, setApproverIdField] = useState('');
   const [approverId2Field, setApproverId2Field] = useState('');
   
+  // Related persons (followers / watchers) states
+  const [relatedUserIds, setRelatedUserIds] = useState<number[]>([]);
+  const [showRelatedDropdown, setShowRelatedDropdown] = useState(false);
+  const [relatedSearch, setRelatedSearch] = useState('');
+  const relatedDropdownRef = useRef<HTMLDivElement>(null);
+  const [teamsList, setTeamsList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (showRelatedDropdown && relatedDropdownRef.current && !relatedDropdownRef.current.contains(target)) {
+        setShowRelatedDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showRelatedDropdown]);
+
   const [submittingLeave, setSubmittingLeave] = useState(false);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [leaveBalance, setLeaveBalance] = useState<any>(null);
@@ -165,24 +183,67 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     }
   };
 
+  const applyDefaultApprover = (list: any[], teamsData?: any[]) => {
+    const approvers = list.filter((u: any) => 
+      ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr', 'assistant'].includes(String(u.role).toLowerCase())
+    );
+    const userTeamId = (user as any)?.team_id;
+    const currentUserId = (user as any)?.id || (user as any)?.user_id;
+    const activeTeams = (teamsData && teamsData.length > 0) ? teamsData : teamsList;
+
+    // 1. First priority: Team Leader from teams table
+    let teamLeader = null;
+    if (userTeamId && activeTeams.length > 0) {
+      const myTeam = activeTeams.find((t: any) => Number(t.id) === Number(userTeamId));
+      if (myTeam && myTeam.leader_id && Number(myTeam.leader_id) !== Number(currentUserId)) {
+        teamLeader = list.find((u: any) => Number(u.id) === Number(myTeam.leader_id));
+      }
+    }
+
+    // 2. Fallback: Manager in same team from users list
+    const teamManager = teamLeader || list.find((u: any) => 
+      userTeamId && (Number(u.team_id) === Number(userTeamId) || String(u.team_id) === String(userTeamId)) &&
+      ['manager', 'leader', 'teamlead'].includes(String(u.role).toLowerCase()) &&
+      Number(u.id) !== Number(currentUserId)
+    ) || list.find((u: any) =>
+      userTeamId && (Number(u.team_id) === Number(userTeamId) || String(u.team_id) === String(userTeamId)) &&
+      (String(u.job_title || '').toLowerCase().includes('trưởng') || String(u.job_title || '').toLowerCase().includes('lead') || String(u.job_title || '').toLowerCase().includes('manager')) &&
+      Number(u.id) !== Number(currentUserId)
+    );
+
+    // 3. Fallback: Director or Admin if user is the leader or team has no leader
+    const directorOrAdmin = list.find((u: any) =>
+      ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()) &&
+      Number(u.id) !== Number(currentUserId)
+    ) || list.find((u: any) =>
+      ['admin'].includes(String(u.role).toLowerCase()) &&
+      Number(u.id) !== Number(currentUserId)
+    );
+
+    const defaultApprover = teamManager || directorOrAdmin || approvers[0];
+    if (defaultApprover) {
+      setApproverIdField(String(defaultApprover.id));
+    }
+    setApproverId2Field('');
+  };
+
   useEffect(() => {
     if (showCreateLeaveModal) {
       fetchLeaveBalance();
-      if (usersList.length === 0) {
-        fetchAPI('users?all=1').then(res => {
-          if (res && res.success && Array.isArray(res.data)) {
-            setUsersList(res.data);
-            const approvers = res.data.filter((u: any) => 
-              ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'hr', 'assistant'].includes(String(u.role).toLowerCase())
-            );
-            if (approvers.length > 0) {
-              setApproverIdField(String(approvers[0].id));
-            }
-          }
-        });
-      }
+      Promise.all([
+        usersList.length === 0 ? fetchAPI('users?all=1') : Promise.resolve({ data: usersList }),
+        teamsList.length === 0 ? fetchAPI('teams') : Promise.resolve({ data: teamsList })
+      ]).then(([usersRes, teamsRes]) => {
+        const uList = usersRes?.data || usersList;
+        const tList = teamsRes?.data || teamsList;
+        if (usersList.length === 0 && Array.isArray(uList)) setUsersList(uList);
+        if (teamsList.length === 0 && Array.isArray(tList)) setTeamsList(tList);
+        applyDefaultApprover(uList, tList);
+      }).catch(() => {
+        if (usersList.length > 0) applyDefaultApprover(usersList, teamsList);
+      });
     }
-  }, [showCreateLeaveModal, usersList]);
+  }, [showCreateLeaveModal, user]);
 
   const handleCreateLeaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +270,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           to_date: `${leaveToField}T17:30`,
           total_days: calculateWorkingDays(leaveFromField, leaveToField, leaveSessionField),
           approver_id: Number(approverIdField),
-          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null,
+          related_user_ids: relatedUserIds
         };
       } else if (createLeaveType === 'late_early') {
         const fromStr = `${lateEarlyDateField}T${lateEarlyTimeField}`;
@@ -225,7 +287,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           to_date: toStr,
           total_days: 0.0,
           approver_id: Number(approverIdField),
-          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null,
+          related_user_ids: relatedUserIds
         };
       } else if (createLeaveType === 'overtime') {
         const fromStr = `${otDateField}T${otStartField}`;
@@ -241,7 +304,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           to_date: toStr,
           total_days: daysVal,
           approver_id: Number(approverIdField),
-          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null,
+          related_user_ids: relatedUserIds
         };
       } else if (createLeaveType === 'remote_work') {
         let fromVal = `${leaveFromField}T08:00`;
@@ -269,7 +333,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           to_date: toVal,
           total_days: daysVal,
           approver_id: Number(approverIdField),
-          approver_id_2: approverId2Field ? Number(approverId2Field) : null
+          approver_id_2: approverId2Field ? Number(approverId2Field) : null,
+          related_user_ids: relatedUserIds
         };
       }
       
@@ -278,6 +343,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       if (res && res.data && res.data.success) {
         toast.success(t('Gửi đề xuất thành công!'));
         setShowCreateLeaveModal(false);
+        setRelatedUserIds([]);
       } else {
         toast.error(res?.data?.message || t('Có lỗi xảy ra khi gửi đề xuất!'));
       }
@@ -302,8 +368,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>(() => {
     return 'calendar';
   });
-  const [currentMonth, setCurrentMonth] = useState<number>(7); // July 2026 default
-  const [currentYear, setCurrentYear] = useState<number>(2026);
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
   const [calendarCheckIns, setCalendarCheckIns] = useState<any[]>([]);
   const [calendarShifts, setCalendarShifts] = useState<any[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -326,8 +392,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   // Filter states
   const [period, setPeriod] = useState<Period>('7d');
   const [customRange, setCustomRange] = useState<DateRange>(() => {
-    // Default range (last 7 days from July 1, 2026 for demo integrity)
-    return { from: '2026-06-25', to: '2026-07-01' };
+    return getDateRange('7d');
   });
   const [filterUser, setFilterUser] = useState<string>(isSales ? String(user?.id) : 'all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -533,8 +598,9 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   };
 
   const handleGoToToday = () => {
-    setCurrentMonth(7);
-    setCurrentYear(2026);
+    const now = new Date();
+    setCurrentMonth(now.getMonth() + 1);
+    setCurrentYear(now.getFullYear());
     toast.success(t('Đã chuyển về tháng hiện tại'));
   };
 
@@ -805,11 +871,13 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
     }
   };
 
-  // Stats calculation
-  const totalCount = checkIns.length;
-  const approvedCount = checkIns.filter(c => c.status === 'approved').length;
-  const pendingCount = checkIns.filter(c => c.status === 'pending_approval').length;
-  const rejectedCount = checkIns.filter(c => c.status === 'rejected').length;
+  // Stats calculation using unified active dataset
+  const activeCheckIns = viewMode === 'calendar' ? calendarCheckIns : checkIns;
+  const totalCount = activeCheckIns.length;
+  const approvedCheckIns = useMemo(() => activeCheckIns.filter(c => c.status === 'approved'), [activeCheckIns]);
+  const approvedCount = approvedCheckIns.length;
+  const pendingCount = useMemo(() => activeCheckIns.filter(c => c.status === 'pending_approval').length, [activeCheckIns]);
+  const rejectedCount = useMemo(() => activeCheckIns.filter(c => c.status === 'rejected').length, [activeCheckIns]);
 
   const getLateMinutes = (checkInTimeStr: string, workStartTimeStr: string = '08:00') => {
     if (!checkInTimeStr) return 0;
@@ -821,26 +889,26 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   };
 
   const workDaysCount = useMemo(() => {
-    const validCheckIns = checkIns.filter(c => c.status === 'approved');
-    const uniqueDates = new Set(validCheckIns.map(c => c.check_in_date));
+    const uniqueDates = new Set(approvedCheckIns.map(c => c.check_in_date));
     return uniqueDates.size || approvedCount;
-  }, [checkIns, approvedCount]);
+  }, [approvedCheckIns, approvedCount]);
 
   const lateCheckIns = useMemo(() => {
-    return checkIns.filter(c => {
+    return activeCheckIns.filter(c => {
       const isLate = c.check_in_time > (c.work_start_time || '08:00');
       return isLate || c.status === 'pending_approval';
     });
-  }, [checkIns]);
+  }, [activeCheckIns]);
 
   const lateDays = lateCheckIns.length;
-  const onTimeDays = Math.max(0, approvedCount - checkIns.filter(c => c.status === 'approved' && c.check_in_time > (c.work_start_time || '08:00')).length);
+  const onTimeDays = Math.max(0, approvedCount - activeCheckIns.filter(c => c.status === 'approved' && c.check_in_time > (c.work_start_time || '08:00')).length);
+  const onTimeRate = workDaysCount > 0 ? Math.round((onTimeDays / workDaysCount) * 100) : (lateDays === 0 ? 100 : 0);
 
   const totalLateMinutes = useMemo(() => {
-    return checkIns.reduce((acc, c) => {
+    return activeCheckIns.reduce((acc, c) => {
       return acc + getLateMinutes(c.check_in_time, c.work_start_time || '08:00');
     }, 0);
-  }, [checkIns]);
+  }, [activeCheckIns]);
 
   const shiftList = viewMode === 'calendar' ? calendarShifts : (registrations || []);
   const nightShiftsCount = useMemo(() => shiftList.filter((s: any) => s.shift_type === 'night').length, [shiftList]);
@@ -901,21 +969,22 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.75rem' : '1rem' }}>
         <div style={{
           display: 'flex',
-          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           backgroundColor: 'var(--color-surface)',
-          padding: isMobile ? '10px 12px' : '12px 16px',
+          padding: isMobile ? '8px 10px' : '10px 16px',
           borderRadius: '12px',
           border: '1px solid var(--color-border)',
-          gap: isMobile ? '10px' : '12px'
+          gap: isMobile ? '8px' : '12px',
+          flexWrap: 'wrap',
+          width: '100%'
         }}>
-          {/* Row 1: Month switcher + Actions */}
+          {/* Left group: Month Navigation + Today */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: isMobile ? '6px' : '12px',
-            flexWrap: isMobile ? 'nowrap' : 'wrap',
-            width: '100%'
+            gap: isMobile ? '6px' : '8px',
+            flexWrap: 'nowrap'
           }}>
             {/* Unified month switcher */}
             <div style={{
@@ -926,10 +995,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-md)',
               padding: isMobile ? '2px 4px' : '2px 8px',
-              height: isMobile ? '34px' : '38px',
-              flex: isMobile ? 1 : 'none',
-              minWidth: 0,
-              overflow: 'hidden'
+              height: isMobile ? '32px' : '36px',
+              minWidth: 0
             }}>
               <button
                 type="button"
@@ -942,12 +1009,12 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   }
                 }}
                 className="btn ghost sm"
-                style={{ padding: isMobile ? '0 4px' : '0 8px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ padding: isMobile ? '0 4px' : '0 6px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <ChevronLeft size={isMobile ? 14 : 16} />
               </button>
               
-              <span style={{ fontSize: isMobile ? '0.78rem' : '0.875rem', fontWeight: 700, padding: isMobile ? '0 4px' : '0 12px', minWidth: isMobile ? '0' : '120px', textAlign: 'center', color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: isMobile ? '0.78rem' : '0.875rem', fontWeight: 700, padding: isMobile ? '0 4px' : '0 10px', minWidth: isMobile ? '0' : '110px', textAlign: 'center', color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
                 {t('Tháng {month} / {year}').replace('{month}', String(currentMonth)).replace('{year}', String(currentYear))}
               </span>
 
@@ -962,7 +1029,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                   }
                 }}
                 className="btn ghost sm"
-                style={{ padding: isMobile ? '0 4px' : '0 8px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ padding: isMobile ? '0 4px' : '0 6px', height: '100%', borderRadius: '50%', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 <ChevronRight size={isMobile ? 14 : 16} />
               </button>
@@ -988,8 +1055,64 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             >
               {t('Hôm nay')}
             </button>
+          </div>
 
-            {/* Button Bổ sung công gộp next to Hôm nay */}
+          {/* Middle group: Filter selects (User & Status) */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flex: isMobile ? '1 1 100%' : 'none',
+            flexWrap: isMobile ? 'wrap' : 'nowrap'
+          }}>
+            {/* User Select */}
+            {canSelectUser && (
+              <div style={{ minWidth: isMobile ? '100%' : '170px', flex: isMobile ? 1 : 'none' }}>
+                <CustomSelect
+                  options={[
+                    { value: 'all', label: isMobile ? t('Tất cả NV') : t('Tất cả nhân viên') },
+                    ...consultants.map(c => ({ 
+                      value: String(c.id), 
+                      label: c.name,
+                      avatar: resolveAttachmentUrl(c.avatar_url || c.avatar)
+                    }))
+                  ]}
+                  value={filterUser}
+                  onChange={(val) => setFilterUser(String(val))}
+                  width="100%"
+                  size={isMobile ? 'xs' : 'sm'}
+                  searchable={true}
+                  showAvatars={true}
+                />
+              </div>
+            )}
+
+            {/* Status Select */}
+            <div style={{ minWidth: isMobile ? '100%' : '160px', flex: isMobile ? 1 : 'none' }}>
+              <CustomSelect
+                options={[
+                  { value: 'all', label: isMobile ? t('Tất cả') : t('Tất cả trạng thái') },
+                  { value: 'approved', label: isMobile ? t('Đúng giờ/Duyệt') : t('Đã duyệt / Đúng giờ') },
+                  { value: 'pending_approval', label: isMobile ? t('Chờ duyệt') : t('Chờ duyệt đi trễ') },
+                  { value: 'rejected', label: isMobile ? t('Từ chối') : t('Đã từ chối') }
+                ]}
+                value={filterStatus}
+                onChange={(val) => setFilterStatus(String(val))}
+                size={isMobile ? 'xs' : 'sm'}
+                width="100%"
+              />
+            </div>
+          </div>
+
+          {/* Right group: Cập nhật công gộp + View Switcher Icons */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginLeft: isMobile ? 0 : 'auto',
+            flexShrink: 0
+          }}>
+            {/* Button Bổ sung công gộp */}
             <button
               type="button"
               onClick={() => {
@@ -1015,54 +1138,83 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               <CheckSquare size={13} />
               {isMobile ? t('C.nhật công') : t('Cập nhật công gộp')}
             </button>
-          </div>
-          
-          {/* Row 2: User Filter + Status Filter */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: canSelectUser ? (isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(180px, 1fr))') : '1fr',
-            gap: isMobile ? '6px' : '10px',
-            width: '100%',
-            alignItems: 'center'
-          }}>
-            {/* User Select */}
-            {canSelectUser && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '3px', width: '100%', minWidth: 0 }}>
-                <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 0, textTransform: isMobile ? 'uppercase' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('Nhân viên')}</label>
-                <CustomSelect
-                  options={[
-                    { value: 'all', label: isMobile ? t('Tất cả NV') : t('Tất cả nhân viên') },
-                    ...consultants.map(c => ({ 
-                      value: String(c.id), 
-                      label: c.name,
-                      avatar: resolveAttachmentUrl(c.avatar_url || c.avatar)
-                    }))
-                  ]}
-                  value={filterUser}
-                  onChange={(val) => setFilterUser(String(val))}
-                  width="100%"
-                  size={isMobile ? 'xs' : 'sm'}
-                  searchable={true}
-                  showAvatars={true}
-                />
-              </div>
-            )}
 
-            {/* Status Select */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '3px', width: '100%', minWidth: 0 }}>
-              <label style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 0, textTransform: isMobile ? 'uppercase' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('Trạng thái duyệt')}</label>
-              <CustomSelect
-                options={[
-                  { value: 'all', label: isMobile ? t('Tất cả') : t('Tất cả trạng thái') },
-                  { value: 'approved', label: isMobile ? t('Đúng giờ/Duyệt') : t('Đã duyệt / Đúng giờ') },
-                  { value: 'pending_approval', label: isMobile ? t('Chờ duyệt') : t('Chờ duyệt đi trễ') },
-                  { value: 'rejected', label: isMobile ? t('Từ chối') : t('Đã từ chối') }
-                ]}
-                value={filterStatus}
-                onChange={(val) => setFilterStatus(String(val))}
-                size={isMobile ? 'xs' : 'sm'}
-                width="100%"
-              />
+            {/* View Mode Icon Switcher */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '2px',
+              gap: '2px',
+              height: isMobile ? '32px' : '36px'
+            }}>
+              <button
+                type="button"
+                title={t('Danh sách')}
+                onClick={() => setViewMode('list')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: isMobile ? 28 : 30,
+                  height: isMobile ? 28 : 30,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: viewMode === 'list' ? 'var(--color-surface)' : 'transparent',
+                  color: viewMode === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Clock size={isMobile ? 14 : 16} />
+              </button>
+              <button
+                type="button"
+                title={t('Lịch biểu')}
+                onClick={() => setViewMode('calendar')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: isMobile ? 28 : 30,
+                  height: isMobile ? 28 : 30,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: viewMode === 'calendar' ? 'var(--color-surface)' : 'transparent',
+                  color: viewMode === 'calendar' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  boxShadow: viewMode === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Calendar size={isMobile ? 14 : 16} />
+              </button>
+              {canApproveShifts && (
+                <button
+                  type="button"
+                  title={t('Duyệt đăng ký ca')}
+                  onClick={() => setViewMode('registrations' as any)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: isMobile ? 28 : 30,
+                    height: isMobile ? 28 : 30,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
+                    color: (viewMode as string) === 'registrations' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Zap size={isMobile ? 14 : 16} />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -2663,6 +2815,220 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             </div>
           </div>
 
+          {/* Người liên quan (Theo dõi) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px 14px', background: 'var(--color-bg-light)', borderRadius: '12px', border: '1px solid var(--color-border-light)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', margin: 0 }}>
+                {t('Người liên quan (Theo dõi)')} ({relatedUserIds.length})
+              </label>
+            </div>
+
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Avatars */}
+              {relatedUserIds.length > 0 && (
+                <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {relatedUserIds.map((uid, idx) => {
+                    const u = usersList.find(x => Number(x.id) === Number(uid));
+                    if (!u) return null;
+                    return (
+                      <div
+                        key={u.id}
+                        style={{
+                          marginLeft: idx === 0 ? 0 : -8,
+                          border: '1.5px solid var(--color-surface)',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          zIndex: 10 - idx,
+                          boxShadow: 'var(--shadow-sm)',
+                          display: 'flex'
+                        }}
+                        title={u.full_name || u.name}
+                      >
+                        <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={28} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Plus button */}
+              <button
+                type="button"
+                onClick={() => setShowRelatedDropdown(!showRelatedDropdown)}
+                style={{
+                  border: '1px dashed var(--color-primary)',
+                  background: 'rgba(163, 20, 34, 0.04)',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'all 0.15s ease'
+                }}
+                className="hover-scale"
+                title={t('Thêm người liên quan')}
+              >
+                <UserPlus size={14} color="var(--color-primary)" />
+              </button>
+
+              {/* Dropdown with SEARCH */}
+              {showRelatedDropdown && (
+                <div 
+                  ref={relatedDropdownRef}
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: '6px',
+                    zIndex: 9999,
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-light)',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.18)',
+                    minWidth: '240px',
+                    maxHeight: '280px',
+                    overflowY: 'auto',
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}
+                >
+                  <div style={{ position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 10, paddingBottom: '4px' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <Search size={13} style={{ position: 'absolute', left: '8px', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
+                      <input
+                        type="text"
+                        placeholder={t('Tìm người liên quan...')}
+                        value={relatedSearch}
+                        onChange={(e) => setRelatedSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px 6px 26px',
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid var(--color-border)',
+                          background: 'var(--color-bg)',
+                          color: 'var(--color-text)',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  {usersList
+                    .filter((u: any) => {
+                      if (!relatedSearch.trim()) return true;
+                      const query = relatedSearch.toLowerCase();
+                      return (
+                        (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                        (u.email || '').toLowerCase().includes(query) ||
+                        (u.role || '').toLowerCase().includes(query)
+                      );
+                    })
+                    .map((u: any) => {
+                      const isSelected = relatedUserIds.includes(Number(u.id));
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => {
+                            const uid = Number(u.id);
+                            if (isSelected) {
+                              setRelatedUserIds(relatedUserIds.filter(id => id !== uid));
+                            } else {
+                              setRelatedUserIds([...relatedUserIds, uid]);
+                            }
+                          }}
+                          style={{
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: isSelected ? 'var(--color-primary-light)' : 'transparent',
+                            color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+                            fontWeight: isSelected ? 600 : 400
+                          }}
+                          className="hover-bg-alt"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                            <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={20} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || u.name}</span>
+                          </div>
+                          {isSelected && <Check size={12} color="var(--color-primary)" strokeWidth={3} style={{ flexShrink: 0, marginLeft: '4px' }} />}
+                        </div>
+                      );
+                    })}
+                  {usersList.filter((u: any) => {
+                    if (!relatedSearch.trim()) return true;
+                    const query = relatedSearch.toLowerCase();
+                    return (
+                      (u.full_name || u.name || '').toLowerCase().includes(query) ||
+                      (u.email || '').toLowerCase().includes(query) ||
+                      (u.role || '').toLowerCase().includes(query)
+                    );
+                  }).length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '10px 4px', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      {t('Không tìm thấy kết quả')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Selected chips */}
+            {relatedUserIds.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
+                {relatedUserIds.map(uid => {
+                  const u = usersList.find(x => Number(x.id) === Number(uid));
+                  if (!u) return null;
+                  return (
+                    <span
+                      key={u.id}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '3px 8px',
+                        background: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        border: '1px solid var(--color-border-light)'
+                      }}
+                    >
+                      <Avatar src={u.avatar || u.avatar_url} name={u.full_name || u.name} size={16} />
+                      <span>{u.full_name || u.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRelatedUserIds(relatedUserIds.filter(id => id !== Number(u.id)))}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--color-danger)',
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: '0.8rem',
+                          lineHeight: 1
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Preview Banner */}
           {previewMessage && (
             <div style={{ 
@@ -2922,169 +3288,16 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         </div>
       )}
 
-      {/* View Mode Switcher Tabs — Left-aligned */}
-      {!embedMode && (
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'var(--color-surface, #ffffff)',
-          border: '1px solid var(--color-border)',
-          padding: '4px',
-          borderRadius: '12px',
-          gap: '4px',
-          width: isMobile ? '100%' : 'fit-content',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-          marginBottom: isMobile ? '0.75rem' : '1rem',
-          position: 'relative',
-          alignSelf: 'flex-start'
-        }}>
-          {[
-            { id: 'list', label: t('Danh sách'), icon: Clock },
-            { id: 'calendar', label: t('Lịch biểu'), icon: Calendar },
-            ...(canApproveShifts ? [{ id: 'registrations', label: isMobile ? t('Duyệt ca') : t('Duyệt đăng ký ca'), icon: Zap }] : [])
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = (viewMode as string) === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setViewMode(tab.id as any)}
-                style={{
-                  height: isMobile ? '32px' : '34px',
-                  padding: isMobile ? '0 10px' : '0 18px',
-                  fontSize: isMobile ? '0.8125rem' : '0.875rem',
-                  fontWeight: isActive ? 700 : 550,
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  flex: isMobile ? 1 : 'none',
-                  position: 'relative',
-                  background: 'transparent',
-                  color: isActive ? 'var(--color-primary)' : 'var(--color-text-light, #64748b)',
-                  outline: 'none',
-                  transition: 'color 0.2s ease',
-                  WebkitTapHighlightColor: 'transparent',
-                  userSelect: 'none'
-                }}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeAttendanceSubTabIndicator"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '8px',
-                      backgroundColor: 'var(--color-primary-light, #eff6ff)',
-                      border: '1px solid var(--color-primary-glow, rgba(163, 20, 34, 0.15))',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                      zIndex: 1
-                    }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 420,
-                      damping: 32
-                    }}
-                  />
-                )}
-                <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                  <Icon size={isMobile ? 13 : 15} style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)', transition: 'color 0.2s' }} />
-                  <span>{tab.label}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+
 
       {/* Stats row - Ultra-compact Micro-Cards */}
+      {/* Stats row - Ultra-compact Micro-Cards (Employee-Centric) */}
       <div className="responsive-grid-4" style={{
         display: 'grid',
         gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
         gap: isMobile ? '6px' : '1rem'
       }}>
-        {/* Card 1: Approved / Valid */}
-        <div className="stat-card hover-lift" style={{
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border-light)',
-          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
-          borderRadius: isMobile ? '8px' : '14px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}>
-          {!isMobile && (
-            <div className="decor-svg" style={{ color: '#10b981' }}>
-              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                <path d="M30 50 L 45 65 L 75 35" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#10b981', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
-              {t('HỢP LỆ')}
-            </span>
-            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
-              <CheckCircle size={isMobile ? 12 : 16} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
-            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
-              {approvedCount}
-            </div>
-            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)' }}>
-              {t('Chờ')}: <strong style={{ color: '#f59e0b' }}>{pendingCount}</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Rejected */}
-        <div className="stat-card hover-lift" style={{
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border-light)',
-          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
-          borderRadius: isMobile ? '8px' : '14px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}>
-          {!isMobile && (
-            <div className="decor-svg" style={{ color: '#ef4444' }}>
-              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                <path d="M35 35 L 65 65 M 65 35 L 35 65" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-              </svg>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#ef4444', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
-              {t('TỪ CHỐI')}
-            </span>
-            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', flexShrink: 0 }}>
-              <AlertCircle size={isMobile ? 12 : 16} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
-            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: '#ef4444', lineHeight: 1.1 }}>
-              {rejectedCount}
-            </div>
-            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)' }}>
-              {t('Không duyệt')}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Work Days (Month N) */}
+        {/* Card 1: Work Days & On-time performance */}
         <div className="stat-card hover-lift" style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
@@ -3107,7 +3320,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#3b82f6', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
-              {t(`CÔNG T${currentMonth}`)}
+              {viewMode === 'calendar' ? t(`CÔNG THÁNG ${currentMonth}`) : t('NGÀY CÔNG')}
             </span>
             <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', flexShrink: 0 }}>
               <Calendar size={isMobile ? 12 : 16} />
@@ -3117,14 +3330,94 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
               {workDaysCount} <span style={{ fontSize: isMobile ? '0.65rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ngày')}</span>
             </div>
-            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '4px' }}>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '6px' }}>
               <span>{t('Đúng')}: <strong style={{ color: '#10b981' }}>{onTimeDays}</strong></span>
-              <span>{t('Trễ')}: <strong style={{ color: '#f59e0b' }}>{lateDays}</strong></span>
+              <span>{t('Chuẩn')}: <strong style={{ color: onTimeRate >= 90 ? '#10b981' : onTimeRate >= 75 ? '#f59e0b' : '#ef4444' }}>{onTimeRate}%</strong></span>
             </div>
           </div>
         </div>
 
-        {/* Card 4: Total Shifts */}
+        {/* Card 2: Lateness & Delay Minutes */}
+        <div className="stat-card hover-lift" style={{
+          backgroundColor: 'var(--color-surface)',
+          border: '1px solid var(--color-border-light)',
+          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
+          borderRadius: isMobile ? '8px' : '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          {!isMobile && (
+            <div className="decor-svg" style={{ color: lateDays > 0 ? '#f59e0b' : '#10b981' }}>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                <path d="M50 28 V 50 L 64 58" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: lateDays > 0 ? '#f59e0b' : '#10b981', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              {t('ĐI MUỘN & PHÚT TRỄ')}
+            </span>
+            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: lateDays > 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: lateDays > 0 ? '#f59e0b' : '#10b981', flexShrink: 0 }}>
+              <Clock size={isMobile ? 12 : 16} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
+            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: lateDays > 0 ? '#f59e0b' : 'var(--color-text)', lineHeight: 1.1 }}>
+              {lateDays} <span style={{ fontSize: isMobile ? '0.65rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('lần')}</span>
+            </div>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '6px' }}>
+              <span>{t('Trễ')}: <strong style={{ color: totalLateMinutes > 0 ? '#ef4444' : '#10b981' }}>{totalLateMinutes}p</strong></span>
+              <span>{t('Chờ duyệt')}: <strong style={{ color: '#f59e0b' }}>{pendingCount}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Leave Requests & Status */}
+        <div className="stat-card hover-lift" style={{
+          backgroundColor: 'var(--color-surface)',
+          border: '1px solid var(--color-border-light)',
+          padding: isMobile ? '6px 10px' : '0.875rem 1.125rem',
+          borderRadius: isMobile ? '8px' : '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          {!isMobile && (
+            <div className="decor-svg" style={{ color: '#10b981' }}>
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                <circle cx="50" cy="50" r="35" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                <path d="M30 50 L 45 65 L 75 35" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#10b981', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+              {t('ĐƠN TỪ & DUYỆT')}
+            </span>
+            <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
+              <CheckCircle size={isMobile ? 12 : 16} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: isMobile ? '2px' : '4px' }}>
+            <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: '#10b981', lineHeight: 1.1 }}>
+              {approvedCount} <span style={{ fontSize: isMobile ? '0.65rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('hợp lệ')}</span>
+            </div>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '6px' }}>
+              <span>{t('Chờ')}: <strong style={{ color: '#f59e0b' }}>{pendingCount}</strong></span>
+              <span>{t('Từ chối')}: <strong style={{ color: '#ef4444' }}>{rejectedCount}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Shifts & Overtime */}
         <div className="stat-card hover-lift" style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border-light)',
@@ -3146,7 +3439,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: isMobile ? '0.625rem' : '0.7rem', color: '#8b5cf6', fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
-              {t('CA TRỰC')}
+              {t('CA TRỰC & TĂNG CA')}
             </span>
             <div style={{ width: isMobile ? '20px' : '32px', height: isMobile ? '20px' : '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', flexShrink: 0 }}>
               <Moon size={isMobile ? 12 : 16} />
@@ -3156,9 +3449,9 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             <div style={{ fontSize: isMobile ? '1.25rem' : '1.625rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.1 }}>
               {totalShiftsCount} <span style={{ fontSize: isMobile ? '0.65rem' : '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ca')}</span>
             </div>
-            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '4px' }}>
-              <span>{t('Đêm')}: <strong style={{ color: '#d97706' }}>{nightShiftsCount}</strong></span>
-              <span>{t('Tuần')}: <strong style={{ color: 'var(--color-primary)' }}>{weekendShiftsCount}</strong></span>
+            <div style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: '6px' }}>
+              <span>{t('Đêm')}: <strong style={{ color: '#8b5cf6' }}>{nightShiftsCount}</strong></span>
+              <span>{t('Tuần')}: <strong style={{ color: '#d97706' }}>{weekendShiftsCount}</strong></span>
             </div>
           </div>
         </div>
@@ -3169,27 +3462,29 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
         <div 
           className="card" 
           style={{ 
-            padding: isMobile ? '8px 10px' : '1.25rem', 
+            padding: isMobile ? '8px 10px' : '10px 16px', 
             background: 'var(--color-surface)', 
             border: '1px solid var(--color-border)', 
             borderRadius: isMobile ? '10px' : '12px', 
-            marginBottom: isMobile ? '0.625rem' : '1rem' 
+            marginBottom: isMobile ? '0.625rem' : '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: isMobile ? '8px' : '12px',
+            flexWrap: 'wrap',
+            width: '100%'
           }}
         >
+          {/* Left group: Period, User, Status */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: canSelectUser
-              ? (isMobile ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))')
-              : (isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))'),
-            gap: isMobile ? '6px' : '12px',
-            width: '100%',
-            alignItems: 'end'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flex: isMobile ? '1 1 100%' : 'none',
+            flexWrap: isMobile ? 'wrap' : 'nowrap'
           }}>
             {/* Period Filter (List View only) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
-              <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: isMobile ? 'uppercase' : 'none', letterSpacing: isMobile ? '0.02em' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {t('Khoảng thời gian')}
-              </label>
+            <div style={{ minWidth: isMobile ? '100%' : '180px', flex: isMobile ? 1 : 'none' }}>
               <PeriodFilter
                 value={period}
                 onChange={(p, r) => {
@@ -3207,20 +3502,17 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 buttonStyle={{
                   minWidth: 'unset',
                   width: '100%',
-                  height: isMobile ? 34 : 38,
-                  padding: isMobile ? '0 6px' : '0 1rem',
-                  fontSize: isMobile ? '0.75rem' : '0.875rem',
-                  gap: isMobile ? '4px' : '10px'
+                  height: isMobile ? 32 : 36,
+                  padding: isMobile ? '0 8px' : '0 1rem',
+                  fontSize: isMobile ? '0.75rem' : '0.8125rem',
+                  gap: isMobile ? '4px' : '8px'
                 }}
               />
             </div>
 
             {/* User Select */}
             {canSelectUser && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
-                <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: isMobile ? 'uppercase' : 'none', letterSpacing: isMobile ? '0.02em' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {t('Nhân viên')}
-                </label>
+              <div style={{ minWidth: isMobile ? '100%' : '170px', flex: isMobile ? 1 : 'none' }}>
                 <CustomSelect
                   options={[
                     { value: 'all', label: isMobile ? t('Tất cả NV') : t('Tất cả nhân viên') },
@@ -3241,10 +3533,7 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             )}
 
             {/* Status Select */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '2px' : '4px', width: '100%', minWidth: 0 }}>
-              <label style={{ fontSize: isMobile ? '0.625rem' : '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: isMobile ? 'uppercase' : 'none', letterSpacing: isMobile ? '0.02em' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {t('Trạng thái duyệt')}
-              </label>
+            <div style={{ minWidth: isMobile ? '100%' : '160px', flex: isMobile ? 1 : 'none' }}>
               <CustomSelect
                 options={[
                   { value: 'all', label: isMobile ? t('Tất cả') : t('Tất cả trạng thái') },
@@ -3257,6 +3546,120 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 size={isMobile ? 'xs' : 'sm'}
                 width="100%"
               />
+            </div>
+          </div>
+
+          {/* Right group: Cập nhật công gộp + View Switcher Icons */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginLeft: isMobile ? 0 : 'auto',
+            flexShrink: 0
+          }}>
+            {/* Button Bổ sung công gộp */}
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/approvals?create=attendance_bulk';
+              }}
+              className="btn outline hover-lift"
+              style={{
+                borderRadius: 'var(--radius-md)',
+                height: isMobile ? '32px' : '36px',
+                padding: isMobile ? '0 10px' : '0 14px',
+                fontWeight: 700,
+                fontSize: isMobile ? '0.75rem' : '0.8125rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+                backgroundColor: 'var(--color-primary-light)',
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)'
+              }}
+            >
+              <CheckSquare size={13} />
+              {isMobile ? t('C.nhật công') : t('Cập nhật công gộp')}
+            </button>
+
+            {/* View Mode Icon Switcher */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '2px',
+              gap: '2px',
+              height: isMobile ? '32px' : '36px'
+            }}>
+              <button
+                type="button"
+                title={t('Danh sách')}
+                onClick={() => setViewMode('list')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: isMobile ? 28 : 30,
+                  height: isMobile ? 28 : 30,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: (viewMode as string) === 'list' ? 'var(--color-surface)' : 'transparent',
+                  color: (viewMode as string) === 'list' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  boxShadow: (viewMode as string) === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Clock size={isMobile ? 14 : 16} />
+              </button>
+              <button
+                type="button"
+                title={t('Lịch biểu')}
+                onClick={() => setViewMode('calendar')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: isMobile ? 28 : 30,
+                  height: isMobile ? 28 : 30,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: (viewMode as string) === 'calendar' ? 'var(--color-surface)' : 'transparent',
+                  color: (viewMode as string) === 'calendar' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  boxShadow: (viewMode as string) === 'calendar' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Calendar size={isMobile ? 14 : 16} />
+              </button>
+              {canApproveShifts && (
+                <button
+                  type="button"
+                  title={t('Duyệt đăng ký ca')}
+                  onClick={() => setViewMode('registrations' as any)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: isMobile ? 28 : 30,
+                    height: isMobile ? 28 : 30,
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: (viewMode as string) === 'registrations' ? 'var(--color-surface)' : 'transparent',
+                    color: (viewMode as string) === 'registrations' ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    boxShadow: (viewMode as string) === 'registrations' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Zap size={isMobile ? 14 : 16} />
+                </button>
+              )}
             </div>
           </div>
         </div>

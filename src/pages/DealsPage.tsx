@@ -81,7 +81,11 @@ export const DealsPage: React.FC = () => {
   const getEffectiveTeamId = () => {
     const currentUser = useAuthStore.getState().user;
     if (!currentUser) return null;
-    if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin', 'marketing'].includes(currentUser.role || '')) {
+    const isMarketing = currentUser.role === 'marketing' || 
+      Number((currentUser as any).team_id) === 3 || 
+      String((currentUser as any).job_title || '').toLowerCase().includes('marketing') ||
+      String((currentUser as any).team_name || '').toLowerCase().includes('marketing');
+    if (isMarketing || ['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin'].includes(currentUser.role || '')) {
       return null;
     }
     if (currentUser.role === 'manager') {
@@ -412,9 +416,14 @@ export const DealsPage: React.FC = () => {
           let stageItems = res.data.data?.items || res.data.data || [];
           const stageTotal = res.data.data?.total !== undefined ? Number(res.data.data.total) : stageItems.length;
           
+          const isMarketing = currentUser?.role === 'marketing' || 
+            Number((currentUser as any)?.team_id) === 3 || 
+            String((currentUser as any)?.job_title || '').toLowerCase().includes('marketing') ||
+            String((currentUser as any)?.team_name || '').toLowerCase().includes('marketing');
+
           if (currentUser?.role === 'sale') {
             stageItems = stageItems.filter((c: any) => Number(c.owner_id) === Number(currentUser.id));
-          } else if (currentUser?.role === 'manager') {
+          } else if (currentUser?.role === 'manager' && !isMarketing) {
             const activeTeamId = getEffectiveTeamId();
             if (activeTeamId && allUsers.length > 0) {
               const teamMemberIds = allUsers.map((u: any) => u.id);
@@ -450,9 +459,14 @@ export const DealsPage: React.FC = () => {
         const r = await api.get(endpoint, { params: tableParams });
         let dataItems = r.data.data?.items || [];
 
+        const isMarketing = currentUser?.role === 'marketing' || 
+          Number((currentUser as any)?.team_id) === 3 || 
+          String((currentUser as any)?.job_title || '').toLowerCase().includes('marketing') ||
+          String((currentUser as any)?.team_name || '').toLowerCase().includes('marketing');
+
         if (currentUser?.role === 'sale') {
           dataItems = dataItems.filter((c: any) => Number(c.owner_id) === Number(currentUser.id));
-        } else if (currentUser?.role === 'manager') {
+        } else if (currentUser?.role === 'manager' && !isMarketing) {
           const activeTeamId = getEffectiveTeamId();
           if (activeTeamId && allUsers.length > 0) {
             const teamMemberIds = allUsers.map((u: any) => u.id);

@@ -2394,75 +2394,34 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       return num.toLocaleString();
     };
 
-    const fallbackCohort = [
-      { cohort_month: '02/2026', total_leads: 120, converted_1_month: 15, converted_2_months: 28, converted_3_months: 35 },
-      { cohort_month: '03/2026', total_leads: 150, converted_1_month: 18, converted_2_months: 35, converted_3_months: 45 },
-      { cohort_month: '04/2026', total_leads: 180, converted_1_month: 25, converted_2_months: 48, converted_3_months: 60 },
-      { cohort_month: '05/2026', total_leads: 160, converted_1_month: 20, converted_2_months: 40, converted_3_months: 52 },
-      { cohort_month: '06/2026', total_leads: 200, converted_1_month: 30, converted_2_months: 55, converted_3_months: 70 },
-      { cohort_month: '07/2026', total_leads: 140, converted_1_month: 12, converted_2_months: 22, converted_3_months: 28 }
-    ];
-
-    const fallbackLeadMonth = [
-      { month: '02/2026', total_leads: 120, customer_count: 35, conversion_rate: 29.2 },
-      { month: '03/2026', total_leads: 150, customer_count: 45, conversion_rate: 30.0 },
-      { month: '04/2026', total_leads: 180, customer_count: 60, conversion_rate: 33.3 },
-      { month: '05/2026', total_leads: 160, customer_count: 52, conversion_rate: 32.5 },
-      { month: '06/2026', total_leads: 200, customer_count: 70, conversion_rate: 35.0 },
-      { month: '07/2026', total_leads: 140, customer_count: 28, conversion_rate: 20.0 }
-    ];
-
-    const fallbackCloseMonth = [
-      { month: '02/2026', total_leads: 120, customer_count: 25, conversion_rate: 20.8 },
-      { month: '03/2026', total_leads: 150, customer_count: 38, conversion_rate: 25.3 },
-      { month: '04/2026', total_leads: 180, customer_count: 48, conversion_rate: 26.7 },
-      { month: '05/2026', total_leads: 160, customer_count: 50, conversion_rate: 31.3 },
-      { month: '06/2026', total_leads: 200, customer_count: 65, conversion_rate: 32.5 },
-      { month: '07/2026', total_leads: 140, customer_count: 64, conversion_rate: 45.7 }
-    ];
-
-    const fallbackRevenue = [
-      { month: '02/2026', realized_revenue: 125000000, projected_revenue: 15000000 },
-      { month: '03/2026', realized_revenue: 180000000, projected_revenue: 25000000 },
-      { month: '04/2026', realized_revenue: 210000000, projected_revenue: 40000000 },
-      { month: '05/2026', realized_revenue: 195000000, projected_revenue: 30000000 },
-      { month: '06/2026', realized_revenue: 260000000, projected_revenue: 55000000 },
-      { month: '07/2026', realized_revenue: 140000000, projected_revenue: 95000000 }
-    ];
-
-    const fallbackSources = [
-      { name: 'Meta Ads', value: 850, color: '#3b82f6' },
-      { name: 'Google Ads', value: 320, color: '#ef4444' },
-      { name: 'Zalo Ads', value: 180, color: '#10b981' },
-      { name: 'TikTok Ads', value: 100, color: '#f59e0b' }
-    ];
-
-    // Read metrics from API response
+    // Read metrics from API response (using 100% REAL DATA from backend)
     const cohortData = (stats?.mktCohortConversion && stats.mktCohortConversion.length > 0) 
       ? stats.mktCohortConversion 
-      : fallbackCohort;
+      : [];
 
     const conversionData = mktFilterType === 'close_date'
-      ? ((stats?.mktConversionByCloseMonth && stats.mktConversionByCloseMonth.length > 0) ? stats.mktConversionByCloseMonth : fallbackCloseMonth)
-      : ((stats?.mktConversionByLeadMonth && stats.mktConversionByLeadMonth.length > 0) ? stats.mktConversionByLeadMonth : fallbackLeadMonth);
+      ? ((stats?.mktConversionByCloseMonth && stats.mktConversionByCloseMonth.length > 0) ? stats.mktConversionByCloseMonth : [])
+      : ((stats?.mktConversionByLeadMonth && stats.mktConversionByLeadMonth.length > 0) ? stats.mktConversionByLeadMonth : []);
 
     const revenueData = (stats?.mktRevenueAndProjection && stats.mktRevenueAndProjection.length > 0)
       ? stats.mktRevenueAndProjection
-      : fallbackRevenue;
+      : [];
 
     const leadSourceData = (stats?.leadSourceStats && stats.leadSourceStats.length > 0)
       ? stats.leadSourceStats
-      : fallbackSources;
+      : (stats?.sourceStats && stats.sourceStats.length > 0 ? stats.sourceStats : []);
 
-    const totalLeadsSum = cohortData.reduce((acc: number, c: any) => acc + (c.total_leads || 0), 0);
+    const totalLeadsSum = cohortData.length > 0
+      ? cohortData.reduce((acc: number, c: any) => acc + (c.total_leads || 0), 0)
+      : (Number(stats?.total_today || 0) + Number(stats?.distributed_today || 0) || Number(stats?.contacts || 0) || 0);
     const totalWonSum = cohortData.reduce((acc: number, c: any) => acc + (c.converted_3_months || 0), 0);
-    const calculatedRate = totalLeadsSum > 0 ? ((totalWonSum / totalLeadsSum) * 100).toFixed(1) : '4.8';
+    const calculatedRate = totalLeadsSum > 0 ? ((totalWonSum / totalLeadsSum) * 100).toFixed(1) : '0.0';
 
     const mktStats = {
-      totalLeads: totalLeadsSum || stats?.contacts || 1450,
-      todayLeads: stats?.total_today || 38,
+      totalLeads: totalLeadsSum || (stats?.contacts || 0),
+      todayLeads: stats?.total_today || 0,
       conversionRate: calculatedRate,
-      activeCampaigns: campaignsList.length > 0 ? campaignsList.filter((c: any) => c.status === 'active').length : 6
+      activeCampaigns: campaignsList.length > 0 ? campaignsList.filter((c: any) => c.status === 'active').length : 0
     };
 
     const mktIssues = [
@@ -2506,18 +2465,25 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               </p>
             </div>
             <div style={{ height: 260 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cohortData} margin={{ left: -15, right: 5, top: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="cohort_month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="converted_1_month" name={t('Trong 1 tháng')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={16} />
-                  <Bar dataKey="converted_2_months" name={t('Trong 2 tháng')} fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={16} />
-                  <Bar dataKey="converted_3_months" name={t('Trong 3 tháng')} fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={16} />
-                </BarChart>
-              </ResponsiveContainer>
+              {cohortData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={cohortData} margin={{ left: -15, right: 5, top: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                    <XAxis dataKey="cohort_month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                    <Bar dataKey="converted_1_month" name={t('Trong 1 tháng')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                    <Bar dataKey="converted_2_months" name={t('Trong 2 tháng')} fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                    <Bar dataKey="converted_3_months" name={t('Trong 3 tháng')} fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', gap: 8 }}>
+                  <TrendingUp size={28} style={{ opacity: 0.3 }} />
+                  <span style={{ fontSize: '0.8125rem' }}>{t('Chưa có dữ liệu chuyển đổi deal theo cohort')}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2573,19 +2539,26 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
             </div>
 
             <div style={{ height: 260 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={conversionData} margin={{ left: -15, right: -10, top: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} unit="%" />
-                  <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
-                  <Bar yAxisId="left" dataKey="total_leads" name={t('Tổng Lead')} fill="#e2e8f0" radius={[3, 3, 0, 0]} maxBarSize={12} />
-                  <Bar yAxisId="left" dataKey="customer_count" name={t('Khách hàng chốt')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={12} />
-                  <Line yAxisId="right" type="monotone" dataKey="conversion_rate" name={t('Tỷ lệ Convert (%)')} stroke="#a31422" strokeWidth={2} dot={{ r: 3, stroke: '#a31422', strokeWidth: 1, fill: '#fff' }} activeDot={{ r: 5 }} />
-                </ComposedChart>
-              </ResponsiveContainer>
+              {conversionData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={conversionData} margin={{ left: -15, right: -10, top: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} unit="%" />
+                    <Tooltip contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                    <Bar yAxisId="left" dataKey="total_leads" name={t('Tổng Lead')} fill="#e2e8f0" radius={[3, 3, 0, 0]} maxBarSize={12} />
+                    <Bar yAxisId="left" dataKey="customer_count" name={t('Khách hàng chốt')} fill="#3b82f6" radius={[3, 3, 0, 0]} maxBarSize={12} />
+                    <Line yAxisId="right" type="monotone" dataKey="conversion_rate" name={t('Tỷ lệ Convert (%)')} stroke="#a31422" strokeWidth={2} dot={{ r: 3, stroke: '#a31422', strokeWidth: 1, fill: '#fff' }} activeDot={{ r: 5 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', gap: 8 }}>
+                  <Users size={28} style={{ opacity: 0.3 }} />
+                  <span style={{ fontSize: '0.8125rem' }}>{t('Chưa có dữ liệu khách hàng chốt')}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2604,17 +2577,24 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               </p>
             </div>
             <div style={{ height: 260 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={revenueData} margin={{ left: -10, right: 5, top: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={fmtVndCompact} tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(value) => [fmtVndCompact(Number(value)), '']} contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
-                  <Area type="monotone" dataKey="realized_revenue" name={t('Doanh thu thực tế')} fill="rgba(59, 130, 246, 0.08)" stroke="#3b82f6" strokeWidth={2} />
-                  <Bar dataKey="projected_revenue" name={t('Doanh thu dự kiến')} fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={18} />
-                </ComposedChart>
-              </ResponsiveContainer>
+              {revenueData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={revenueData} margin={{ left: -10, right: 5, top: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtVndCompact} tick={{ fontSize: 9, fill: 'var(--color-text-light)' }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(value) => [fmtVndCompact(Number(value)), '']} contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }} />
+                    <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                    <Area type="monotone" dataKey="realized_revenue" name={t('Doanh thu thực tế')} fill="rgba(59, 130, 246, 0.08)" stroke="#3b82f6" strokeWidth={2} />
+                    <Bar dataKey="projected_revenue" name={t('Doanh thu dự kiến')} fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={18} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', gap: 8 }}>
+                  <BarChart2 size={28} style={{ opacity: 0.3 }} />
+                  <span style={{ fontSize: '0.8125rem' }}>{t('Chưa có dữ liệu hóa đơn hoặc doanh thu thực tế')}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2629,27 +2609,36 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
               </p>
             </div>
             <div style={{ height: 260, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ height: 160 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={leadSourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} paddingAngle={2}>
-                      {leadSourceData.map((entry: any, idx: number) => (
-                        <Cell key={`cell-${idx}`} fill={entry.color || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][idx % 5]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.75rem', marginTop: '12px', padding: '0 8px' }}>
-                {leadSourceData.map((entry: any, idx: number) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][idx % 5] }} />
-                    <span style={{ fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
-                    <span style={{ color: 'var(--color-text-muted)' }}>({entry.value})</span>
+              {leadSourceData.length > 0 ? (
+                <>
+                  <div style={{ height: 160 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={leadSourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} paddingAngle={2}>
+                          {leadSourceData.map((entry: any, idx: number) => (
+                            <Cell key={`cell-${idx}`} fill={entry.color || ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'][idx % 6]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '0.75rem', marginTop: '12px', padding: '0 8px' }}>
+                    {leadSourceData.map((entry: any, idx: number) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: entry.color || ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'][idx % 6] }} />
+                        <span style={{ fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>({Number(entry.value).toLocaleString()})</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', gap: 8 }}>
+                  <BarChart2 size={28} style={{ opacity: 0.3 }} />
+                  <span style={{ fontSize: '0.8125rem' }}>{t('Chưa có dữ liệu nguồn lead')}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

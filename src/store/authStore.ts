@@ -121,14 +121,19 @@ export const getModulePermissionScope = (
     return 'own';
   }
 
-  if (role === 'marketing') {
+  const isMarketing = role === 'marketing' || 
+    Number(user.team_id) === 3 || 
+    String(user.job_title || '').toLowerCase().includes('marketing') || 
+    String(user.team_name || '').toLowerCase().includes('marketing');
+
+  if (isMarketing) {
     if (['leads', 'campaigns', 'projects', 'deals', 'tickets', 'gatekeeper', 'users', 'contacts', 'students', 'companies'].includes(module)) {
       return 'all';
     }
     if (module === 'settings') {
       return 'none';
     }
-    return 'own';
+    return role === 'manager' ? (action === 'delete' ? 'none' : 'team') : 'own';
   }
 
   if (role === 'manager') return action === 'delete' ? 'none' : 'team';

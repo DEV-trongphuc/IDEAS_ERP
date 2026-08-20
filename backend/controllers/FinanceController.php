@@ -915,7 +915,15 @@ class FinanceController
 
         if ($statusVal === 'pending') {
             if (empty($approver_id)) {
-                respond(422, null, 'Chi phí yêu cầu duyệt bắt buộc phải chọn người duyệt Cấp 1.', false);
+                $stmtLeader = $this->db->prepare("SELECT t.leader_id FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ?");
+                $stmtLeader->execute([$auth['user_id']]);
+                $leadId = $stmtLeader->fetchColumn();
+                if (!empty($leadId) && (int)$leadId !== (int)$auth['user_id']) {
+                    $approver_id = (int)$leadId;
+                } else {
+                    $stmtDir = $this->db->query("SELECT id FROM users WHERE LOWER(role) IN ('director', 'superadmin', 'super_admin') AND id != " . (int)$auth['user_id'] . " LIMIT 1");
+                    $approver_id = (int)($stmtDir->fetchColumn() ?: 1003);
+                }
             }
             if ($totalAmount >= $threshold) {
                 if (empty($approver_id_2)) {
@@ -923,6 +931,8 @@ class FinanceController
                 }
             }
         }
+
+        $relatedUserIds = !empty($data['related_user_ids']) ? (is_array($data['related_user_ids']) ? json_encode($data['related_user_ids']) : $data['related_user_ids']) : null;
 
         $status_level_1 = $approver_id ? 'pending' : 'none';
         $status_level_2 = $approver_id_2 ? 'pending' : 'none';
@@ -942,9 +952,9 @@ class FinanceController
                     tenant_id, created_by, title, category, amount, vat_amount, date, status, notes,
                     vendor_name, has_vat_invoice, is_vat_inclusive, image_url,
                     approver_id, approver_id_2, approver_id_3,
-                    status_level_1, status_level_2, status_level_3, approval_status
+                    status_level_1, status_level_2, status_level_3, approval_status, related_user_ids
                 )
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ");
             $stmt->execute([
                 $auth['tenant_id'],
@@ -966,7 +976,8 @@ class FinanceController
                 $status_level_1,
                 $status_level_2,
                 $status_level_3,
-                $approval_status
+                $approval_status,
+                $relatedUserIds
             ]);
             $expId = (int) $this->db->lastInsertId();
 
@@ -1020,12 +1031,33 @@ class FinanceController
             if ($statusVal === 'pending') {
                 require_once __DIR__ . '/../NotificationService.php';
                 NotificationService::send($this->db, $auth['tenant_id'], 'EXPENSE_REQUEST', [
+                    'user_id' => $approver_id,
                     'user_name' => $auth['full_name'],
                     'title' => $data['title'],
                     'amount' => $totalAmount,
                     'reason' => $data['notes'] ?? 'Không có',
                     'ref_id' => $expId
                 ]);
+
+                // Notify related persons
+                if (!empty($data['related_user_ids'])) {
+                    $relList = is_array($data['related_user_ids']) ? $data['related_user_ids'] : json_decode($data['related_user_ids'], true);
+                    if (is_array($relList)) {
+                        foreach ($relList as $relUid) {
+                            $relUid = (int)$relUid;
+                            if ($relUid > 0 && $relUid !== (int)$auth['user_id'] && $relUid !== (int)$approver_id) {
+                                NotificationService::send($this->db, $auth['tenant_id'], 'EXPENSE_REQUEST', [
+                                    'user_id' => $relUid,
+                                    'user_name' => $auth['full_name'],
+                                    'title' => $data['title'],
+                                    'amount' => $totalAmount,
+                                    'reason' => ($data['notes'] ?? 'Không có') . ' (Bạn được gắn là Người liên quan)',
+                                    'ref_id' => $expId
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
 
             $this->showExpense($auth, $expId);

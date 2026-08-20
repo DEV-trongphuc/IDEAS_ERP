@@ -154,8 +154,19 @@ class HRMController {
         }
 
         $approverId = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;
+        if (empty($approverId)) {
+            $stmtLeader = $this->db->prepare("SELECT t.leader_id FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ?");
+            $stmtLeader->execute([$auth['user_id']]);
+            $leadId = $stmtLeader->fetchColumn();
+            if (!empty($leadId) && (int)$leadId !== (int)$auth['user_id']) {
+                $approverId = (int)$leadId;
+            } else {
+                $stmtDir = $this->db->query("SELECT id FROM users WHERE LOWER(role) IN ('director', 'superadmin', 'super_admin') AND id != " . (int)$auth['user_id'] . " LIMIT 1");
+                $approverId = (int)($stmtDir->fetchColumn() ?: 1003);
+            }
+        }
         $approverId2 = !empty($b['approver_id_2']) ? (int)$b['approver_id_2'] : null;
-        $relatedUserIds = !empty($b['related_user_ids']) ? json_encode($b['related_user_ids']) : null;
+        $relatedUserIds = !empty($b['related_user_ids']) ? (is_array($b['related_user_ids']) ? json_encode($b['related_user_ids']) : $b['related_user_ids']) : null;
 
         $stmt = $this->db->prepare("
             INSERT INTO hrm_leave_requests (user_id, leave_type, start_date, end_date, total_days, reason, status, approver_id, approver_id_2, status_level_1, status_level_2, related_user_ids)
@@ -180,7 +191,7 @@ class HRMController {
             $stmtUser->execute([$auth['user_id']]);
             $userName = $stmtUser->fetchColumn() ?: 'Nhân viên';
 
-            $leaveTypeText = $b['leave_type'] === 'annual' ? 'Phép năm' : ($b['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($b['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($b['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : 'Không lương')));
+            $leaveTypeText = $b['leave_type'] === 'annual' ? 'Phép năm' : ($b['leave_type'] === 'sick' ? 'Nghỉ ốm' : ($b['leave_type'] === 'compensatory' ? 'Nghỉ bù' : ($b['leave_type'] === 'late_early' ? 'Đi trễ/Về sớm' : ($b['leave_type'] === 'overtime' ? 'Tăng ca OT' : ($b['leave_type'] === 'remote_work' ? 'Làm việc từ xa' : 'Không lương')))));
 
             require_once __DIR__ . '/../NotificationService.php';
             $targetUserId = $approverId ?: $auth['user_id'];
@@ -189,13 +200,36 @@ class HRMController {
                 'user_id' => $targetUserId,
                 'user_name' => $userName,
                 'leave_type_text' => $leaveTypeText,
-                'start_date' => $b['start_date'],
-                'end_date' => $b['end_date'],
+                'start_date' => $startDate,
+                'end_date' => $endDate,
                 'total_days' => (float)($b['total_days'] ?? 1.0),
                 'reason' => $b['reason'] ?? '',
                 'date' => date('Y-m-d'),
                 'ref_id' => $leaveId
             ]);
+
+            // Notify related persons
+            if (!empty($b['related_user_ids'])) {
+                $relList = is_array($b['related_user_ids']) ? $b['related_user_ids'] : json_decode($b['related_user_ids'], true);
+                if (is_array($relList)) {
+                    foreach ($relList as $relUid) {
+                        $relUid = (int)$relUid;
+                        if ($relUid > 0 && $relUid !== (int)$auth['user_id'] && $relUid !== (int)$targetUserId) {
+                            NotificationService::send($this->db, $auth['tenant_id'], 'HRM_LEAVE_REQUEST', [
+                                'user_id' => $relUid,
+                                'user_name' => $userName,
+                                'leave_type_text' => $leaveTypeText,
+                                'start_date' => $startDate,
+                                'end_date' => $endDate,
+                                'total_days' => (float)($b['total_days'] ?? 1.0),
+                                'reason' => ($b['reason'] ?? '') . ' (Bạn được gắn là Người liên quan)',
+                                'date' => date('Y-m-d'),
+                                'ref_id' => $leaveId
+                            ]);
+                        }
+                    }
+                }
+            }
         } catch (\Throwable $e) {}
 
         respond(200, ['success' => true]);
@@ -439,6 +473,31 @@ class HRMController {
                     'ref_id' => $id,
                     'status' => $nextStatus
                 ]);
+
+                // Notify related persons of outcome
+                if (!empty($leaveRow['related_user_ids'])) {
+                    $relList = is_array($leaveRow['related_user_ids']) ? $leaveRow['related_user_ids'] : json_decode($leaveRow['related_user_ids'], true);
+                    if (is_array($relList)) {
+                        foreach ($relList as $relUid) {
+                            $relUid = (int)$relUid;
+                            if ($relUid > 0 && $relUid !== (int)$leaveRow['user_id'] && $relUid !== (int)$auth['user_id']) {
+                                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_LEAVE_APPROVAL', [
+                                    'user_id' => $relUid,
+                                    'user_name' => $leaveRow['full_name'],
+                                    'leave_type_text' => $leaveTypeText,
+                                    'start_date' => $leaveRow['start_date'],
+                                    'end_date' => $leaveRow['end_date'],
+                                    'status_text' => $statusText,
+                                    'reason' => $approverNote . ' (Đơn bạn đang theo dõi đã có kết quả)',
+                                    'remaining_annual_leave' => $remainingAnnual,
+                                    'remaining_compensatory_leave' => $remainingComp,
+                                    'ref_id' => $id,
+                                    'status' => $nextStatus
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
         } catch (\Throwable $e) {}
 
@@ -477,8 +536,19 @@ class HRMController {
         }
 
         $approverId = !empty($b['approver_id']) ? (int)$b['approver_id'] : null;
+        if (empty($approverId)) {
+            $stmtLeader = $this->db->prepare("SELECT t.leader_id FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.id = ?");
+            $stmtLeader->execute([$auth['user_id']]);
+            $leadId = $stmtLeader->fetchColumn();
+            if (!empty($leadId) && (int)$leadId !== (int)$auth['user_id']) {
+                $approverId = (int)$leadId;
+            } else {
+                $stmtDir = $this->db->query("SELECT id FROM users WHERE LOWER(role) IN ('director', 'superadmin', 'super_admin') AND id != " . (int)$auth['user_id'] . " LIMIT 1");
+                $approverId = (int)($stmtDir->fetchColumn() ?: 1003);
+            }
+        }
         $approverId2 = !empty($b['approver_id_2']) ? (int)$b['approver_id_2'] : null;
-        $relatedUserIds = !empty($b['related_user_ids']) ? json_encode($b['related_user_ids']) : null;
+        $relatedUserIds = !empty($b['related_user_ids']) ? (is_array($b['related_user_ids']) ? json_encode($b['related_user_ids']) : $b['related_user_ids']) : null;
 
         $stmt = $this->db->prepare("
             INSERT INTO hrm_salary_advances (user_id, amount, request_date, reason, status, approver_id, approver_id_2, status_level_1, status_level_2, related_user_ids)
@@ -510,6 +580,26 @@ class HRMController {
                 'date' => date('Y-m-d'),
                 'ref_id' => $advId
             ]);
+
+            // Notify related persons
+            if (!empty($b['related_user_ids'])) {
+                $relList = is_array($b['related_user_ids']) ? $b['related_user_ids'] : json_decode($b['related_user_ids'], true);
+                if (is_array($relList)) {
+                    foreach ($relList as $relUid) {
+                        $relUid = (int)$relUid;
+                        if ($relUid > 0 && $relUid !== (int)$auth['user_id'] && $relUid !== (int)$targetUserId) {
+                            NotificationService::send($this->db, $auth['tenant_id'], 'HRM_ADVANCE_REQUEST', [
+                                'user_id' => $relUid,
+                                'user_name' => $userName,
+                                'amount' => (float)$b['amount'],
+                                'reason' => ($b['reason'] ?? '') . ' (Bạn được gắn là Người liên quan)',
+                                'date' => date('Y-m-d'),
+                                'ref_id' => $advId
+                            ]);
+                        }
+                    }
+                }
+            }
         } catch (\Throwable $e) {}
 
         respond(200, ['success' => true]);
@@ -619,6 +709,27 @@ class HRMController {
                     'ref_id' => $id,
                     'status' => $nextStatus
                 ]);
+
+                // Notify related persons of advance outcome
+                if (!empty($advRow['related_user_ids'])) {
+                    $relList = is_array($advRow['related_user_ids']) ? $advRow['related_user_ids'] : json_decode($advRow['related_user_ids'], true);
+                    if (is_array($relList)) {
+                        foreach ($relList as $relUid) {
+                            $relUid = (int)$relUid;
+                            if ($relUid > 0 && $relUid !== (int)$advRow['user_id'] && $relUid !== (int)$auth['user_id']) {
+                                NotificationService::send($this->db, $auth['tenant_id'], 'HRM_ADVANCE_APPROVAL', [
+                                    'user_id' => $relUid,
+                                    'user_name' => $advRow['full_name'],
+                                    'amount' => (float)$advRow['amount'],
+                                    'status_text' => $statusText,
+                                    'reason' => $approverNote . ' (Đơn bạn đang theo dõi đã có kết quả)',
+                                    'ref_id' => $id,
+                                    'status' => $nextStatus
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
         } catch (\Throwable $e) {}
 
@@ -1292,9 +1403,24 @@ class HRMController {
         $role = strtolower($auth['role']);
         $isGlobalAdmin = in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr']);
 
+        $ledTeamIds = [];
+        $managedUserIds = [];
+        if ($role === 'manager') {
+            $stmtL = $this->db->prepare("SELECT id FROM teams WHERE leader_id = ?");
+            $stmtL->execute([$userId]);
+            $ledTeamIds = array_map('intval', $stmtL->fetchAll(PDO::FETCH_COLUMN) ?: []);
+
+            if (!empty($ledTeamIds)) {
+                $placeholders = implode(',', array_fill(0, count($ledTeamIds), '?'));
+                $stmtM = $this->db->prepare("SELECT id FROM users WHERE team_id IN ($placeholders)");
+                $stmtM->execute($ledTeamIds);
+                $managedUserIds = array_map('intval', $stmtM->fetchAll(PDO::FETCH_COLUMN) ?: []);
+            }
+        }
+
         // 1. Pending Leaves
         $stmtLeaves = $this->db->prepare("
-            SELECT l.id, u.full_name as employee_name, l.leave_type, 
+            SELECT l.id, l.user_id, u.full_name as employee_name, l.leave_type, 
                    l.start_date, l.end_date, l.total_days, l.reason, l.status, l.created_at,
                    l.approver_id, l.approver_id_2, l.status_level_1, l.status_level_2
             FROM hrm_leave_requests l
@@ -1305,10 +1431,14 @@ class HRMController {
         $leaves = $stmtLeaves->fetchAll(PDO::FETCH_ASSOC);
         foreach ($leaves as $l) {
             $shouldShow = false;
-            if ($l['status_level_1'] === 'pending' && $l['approver_id'] == $userId) {
-                $shouldShow = true;
-            } else if ($l['status_level_1'] === 'approved' && $l['status_level_2'] === 'pending' && $l['approver_id_2'] == $userId) {
-                $shouldShow = true;
+            if ($l['status_level_1'] === 'pending') {
+                if ($l['approver_id'] == $userId || in_array((int)$l['user_id'], $managedUserIds, true) || (empty($l['approver_id']) && $isGlobalAdmin)) {
+                    $shouldShow = true;
+                }
+            } else if ($l['status_level_1'] === 'approved' && $l['status_level_2'] === 'pending') {
+                if ($l['approver_id_2'] == $userId || $isGlobalAdmin) {
+                    $shouldShow = true;
+                }
             }
 
             if ($shouldShow) {
@@ -1326,7 +1456,7 @@ class HRMController {
 
         // 2. Pending Advances
         $stmtAdvances = $this->db->prepare("
-            SELECT a.id, u.full_name as employee_name, a.amount, a.reason, a.status, a.created_at,
+            SELECT a.id, a.user_id, u.full_name as employee_name, a.amount, a.reason, a.status, a.created_at,
                    a.approver_id, a.approver_id_2, a.status_level_1, a.status_level_2
             FROM hrm_salary_advances a
             JOIN users u ON a.user_id = u.id
@@ -1336,10 +1466,14 @@ class HRMController {
         $advances = $stmtAdvances->fetchAll(PDO::FETCH_ASSOC);
         foreach ($advances as $a) {
             $shouldShow = false;
-            if ($a['status_level_1'] === 'pending' && $a['approver_id'] == $userId) {
-                $shouldShow = true;
-            } else if ($a['status_level_1'] === 'approved' && $a['status_level_2'] === 'pending' && $a['approver_id_2'] == $userId) {
-                $shouldShow = true;
+            if ($a['status_level_1'] === 'pending') {
+                if ($a['approver_id'] == $userId || in_array((int)$a['user_id'], $managedUserIds, true) || (empty($a['approver_id']) && $isGlobalAdmin)) {
+                    $shouldShow = true;
+                }
+            } else if ($a['status_level_1'] === 'approved' && $a['status_level_2'] === 'pending') {
+                if ($a['approver_id_2'] == $userId || $isGlobalAdmin) {
+                    $shouldShow = true;
+                }
             }
 
             if ($shouldShow) {
@@ -1357,7 +1491,7 @@ class HRMController {
 
         // 3. Pending Expenses
         $stmtExpenses = $this->db->prepare("
-            SELECT e.id, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at,
+            SELECT e.id, e.created_by, u.full_name as employee_name, e.title, e.amount, e.notes, e.status, e.created_at,
                    e.approver_id, e.approver_id_2, e.approver_id_3, e.status_level_1, e.status_level_2, e.status_level_3
             FROM expenses e
             JOIN users u ON e.created_by = u.id
@@ -1374,7 +1508,7 @@ class HRMController {
             $lvl3 = $e['status_level_3'] ?? 'none';
 
             if ($lvl1 === 'pending') {
-                if ($e['approver_id'] == $userId) {
+                if ($e['approver_id'] == $userId || in_array((int)$e['created_by'], $managedUserIds, true)) {
                     $shouldShow = true;
                     $levelText = ' - Cấp 1';
                 } elseif (empty($e['approver_id']) && in_array($role, ['admin', 'superadmin', 'super_admin', 'director'])) {
@@ -1382,12 +1516,12 @@ class HRMController {
                     $levelText = '';
                 }
             } elseif ($lvl1 === 'approved' && $lvl2 === 'pending') {
-                if ($e['approver_id_2'] == $userId) {
+                if ($e['approver_id_2'] == $userId || in_array($role, ['accountant', 'admin', 'superadmin', 'super_admin', 'director'])) {
                     $shouldShow = true;
                     $levelText = ' - Cấp 2';
                 }
             } elseif ($lvl1 === 'approved' && $lvl2 === 'approved' && $lvl3 === 'pending') {
-                if ($e['approver_id_3'] == $userId) {
+                if ($e['approver_id_3'] == $userId || in_array($role, ['director', 'superadmin', 'super_admin', 'admin'])) {
                     $shouldShow = true;
                     $levelText = ' - Cấp 3';
                 }
@@ -1406,14 +1540,19 @@ class HRMController {
         }
 
         // 4. Pending Checkins
-        if (in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr'])) {
-            $stmtCheckins = $this->db->prepare("
-                SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, CONCAT(c.check_in_date, ' ', c.check_in_time) as created_at
-                FROM check_ins c
-                JOIN users u ON c.user_id = u.id
-                WHERE u.tenant_id = ? AND c.status = 'pending_approval'
-            ");
-            $stmtCheckins->execute([$auth['tenant_id']]);
+        if (in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr']) || !empty($managedUserIds)) {
+            $sqlCheck = "SELECT c.id, u.full_name as employee_name, c.check_in_date, c.check_in_time, c.late_minutes, c.reason, c.status, CONCAT(c.check_in_date, ' ', c.check_in_time) as created_at
+                         FROM check_ins c
+                         JOIN users u ON c.user_id = u.id
+                         WHERE u.tenant_id = ? AND c.status = 'pending_approval'";
+            $pCheck = [$auth['tenant_id']];
+            if (!in_array($role, ['admin', 'superadmin', 'super_admin', 'director', 'hr'])) {
+                $placeholders = implode(',', array_fill(0, count($managedUserIds), '?'));
+                $sqlCheck .= " AND c.user_id IN ($placeholders)";
+                $pCheck = array_merge($pCheck, $managedUserIds);
+            }
+            $stmtCheckins = $this->db->prepare($sqlCheck);
+            $stmtCheckins->execute($pCheck);
             $checkins = $stmtCheckins->fetchAll(PDO::FETCH_ASSOC);
             foreach ($checkins as $c) {
                 $pending[] = [
@@ -1427,16 +1566,9 @@ class HRMController {
             }
         }
 
-        $ledTeamIds = [];
-        if ($role === 'manager') {
-            $stmtL = $this->db->prepare("SELECT id FROM teams WHERE leader_id = ?");
-            $stmtL->execute([$userId]);
-            $ledTeamIds = array_map('intval', $stmtL->fetchAll(PDO::FETCH_COLUMN) ?: []);
-        }
-
         // 5. Pending Bulk Attendance Requests
         $stmtBulks = $this->db->prepare("
-            SELECT r.id, u.full_name as employee_name, r.month_period, r.status, r.created_at, u.team_id
+            SELECT r.id, u.full_name as employee_name, r.month_period, r.status, r.created_at, u.team_id, r.manager_id
             FROM attendance_bulk_requests r
             JOIN users u ON r.user_id = u.id
             WHERE u.tenant_id = ? AND r.status IN ('pending_manager', 'pending_hr')
@@ -1450,7 +1582,7 @@ class HRMController {
                 $shouldShow = true;
             } else if ($b['status'] === 'pending_hr' && $role === 'hr') {
                 $shouldShow = true;
-            } else if ($b['status'] === 'pending_manager' && $role === 'manager' && in_array((int)$b['team_id'], $ledTeamIds, true)) {
+            } else if ($b['status'] === 'pending_manager' && $role === 'manager' && (in_array((int)$b['team_id'], $ledTeamIds, true) || (int)($b['manager_id'] ?? 0) === $userId)) {
                 $shouldShow = true;
             }
 
