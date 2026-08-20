@@ -12,13 +12,13 @@ if (!function_exists('getModulePermissionScope')) {
             return 'all';
         }
         if ($module === 'users' && $action === 'read') {
-            if (in_array($role, ['superadmin', 'admin', 'super_admin', 'hr', 'director', 'viewer', 'assistant', 'sale_admin', 'saleadmin'], true)) {
+            if (in_array($role, ['superadmin', 'admin', 'super_admin', 'hr', 'director', 'viewer', 'assistant', 'sale_admin', 'saleadmin', 'marketing'], true)) {
                 return 'all';
             }
             if ($role === 'manager') {
                 return 'team';
             }
-            if (in_array($role, ['accountant', 'marketing', 'sale', 'sales'], true)) {
+            if (in_array($role, ['accountant', 'sale', 'sales'], true)) {
                 return 'own';
             }
             return 'none';
@@ -54,11 +54,11 @@ if (!function_exists('getModulePermissionScope')) {
         }
 
         if ($role === 'marketing') {
-            if (in_array($module, ['leads', 'campaigns', 'projects'], true)) {
+            if (in_array($module, ['leads', 'campaigns', 'projects', 'deals', 'tickets', 'gatekeeper', 'users', 'contacts', 'students', 'companies'], true)) {
                 return 'all';
             }
             if ($module === 'settings') {
-                return 'none';
+                return $action === 'read' ? 'all' : 'none';
             }
             return 'own';
         }
@@ -145,9 +145,9 @@ if (!function_exists('getActionModuleAndType')) {
             }
         } else if (strpos($action, 'zalo') !== false) {
             $module = 'settings';
-        } else if (in_array($action, ['get_connections', 'add_connection', 'edit_connection', 'delete_connection', 'toggle_connection', 'toggle_require_both', 'toggle_notify_admin', 'add_mapping', 'edit_mapping', 'delete_mapping', 'force_sync', 'test_master_sync'])) {
+        } else if (in_array($action, ['get_connections', 'get_mappings', 'get_settings', 'add_connection', 'edit_connection', 'delete_connection', 'toggle_connection', 'toggle_require_both', 'toggle_notify_admin', 'add_mapping', 'edit_mapping', 'delete_mapping', 'force_sync', 'test_master_sync'])) {
             $module = 'settings';
-        } else if (in_array($action, ['get_ticket_settings', 'save_ticket_settings', 'ai_chat'])) {
+        } else if (in_array($action, ['get_ticket_settings', 'save_ticket_settings', 'ai_chat', 'custom_fields'])) {
             $module = 'settings';
         }
         

@@ -41,7 +41,7 @@ function getExpectedScope($role, $module, $action) {
     }
 
     if ($role === 'marketing') {
-        if (in_array($module, ['leads', 'campaigns', 'projects'], true)) {
+        if (in_array($module, ['leads', 'campaigns', 'projects', 'deals', 'tickets', 'gatekeeper', 'users', 'contacts', 'students', 'companies'], true)) {
             return 'all';
         }
         if ($module === 'settings') {

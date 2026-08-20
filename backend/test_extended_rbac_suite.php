@@ -78,6 +78,13 @@ assertTest("Accountant Scope: Cài đặt hệ thống (settings) -> 'none'", ge
 assertTest("Marketing Scope: Lead data (leads) -> 'all'", getModulePermissionScope($mktUser, 'leads', 'read') === 'all');
 assertTest("Marketing Scope: Chiến dịch (campaigns) -> 'all'", getModulePermissionScope($mktUser, 'campaigns', 'read') === 'all');
 assertTest("Marketing Scope: Dự án (projects) -> 'all'", getModulePermissionScope($mktUser, 'projects', 'read') === 'all');
+assertTest("Marketing Scope: Nhân viên & Phòng ban (users) -> 'all'", getModulePermissionScope($mktUser, 'users', 'read') === 'all');
+assertTest("Marketing Scope: Giao dịch / Pipeline (deals) -> 'all'", getModulePermissionScope($mktUser, 'deals', 'read') === 'all');
+assertTest("Marketing Scope: Ticket data lỗi (tickets) -> 'all'", getModulePermissionScope($mktUser, 'tickets', 'read') === 'all');
+assertTest("Marketing Scope: AI Pre-screener (gatekeeper) -> 'all'", getModulePermissionScope($mktUser, 'gatekeeper', 'read') === 'all');
+assertTest("Marketing Scope: Học viên (students) -> 'all'", getModulePermissionScope($mktUser, 'students', 'read') === 'all');
+assertTest("Marketing Scope: Tiềm năng (contacts) -> 'all'", getModulePermissionScope($mktUser, 'contacts', 'read') === 'all');
+assertTest("Marketing Scope: Đối tác (companies) -> 'all'", getModulePermissionScope($mktUser, 'companies', 'read') === 'all');
 assertTest("Marketing Scope: Cài đặt hệ thống (settings) -> 'none'", getModulePermissionScope($mktUser, 'settings', 'write') === 'none');
 
 // Dọn dẹp dữ liệu test

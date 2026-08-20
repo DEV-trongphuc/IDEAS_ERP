@@ -235,16 +235,16 @@ const SortableRuleItem = ({ rule, idx, connections, onEdit, onDelete, isDragDisa
         </div>
 
         {/* Actions */}
-        <div className="sortable-rule-actions" style={{ padding: '0 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderLeft: '1px dashed var(--color-border-light)' }}>
-          <button
-            onClick={() => onEdit(rule)}
-            className="btn ghost"
-            style={{ width: 40, height: 40, padding: 0, borderRadius: 10, color: 'var(--color-primary)' }}
-            title={isReadOnly ? t("Xem chi tiết") : t("Sửa quy tắc")}
-          >
-            {isReadOnly ? <Filter size={16} /> : <Edit2 size={16} />}
-          </button>
-          {!isReadOnly && (
+        {!isReadOnly && (
+          <div className="sortable-rule-actions" style={{ padding: '0 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderLeft: '1px dashed var(--color-border-light)' }}>
+            <button
+              onClick={() => onEdit(rule)}
+              className="btn ghost"
+              style={{ width: 40, height: 40, padding: 0, borderRadius: 10, color: 'var(--color-primary)' }}
+              title={t("Sửa quy tắc")}
+            >
+              <Edit2 size={16} />
+            </button>
             <button
               onClick={() => onDelete(rule.id)}
               className="btn ghost"
@@ -253,8 +253,8 @@ const SortableRuleItem = ({ rule, idx, connections, onEdit, onDelete, isDragDisa
             >
               <Trash2 size={16} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -728,7 +728,7 @@ const RuleSettingsInner = () => {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button className="btn outline" onClick={handleAIEvaluateRules} style={{ borderColor: '#a31422', color: '#a31422', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <img 
-              src="/LOGO.webp" 
+              src="https://crm-domation.vercel.app/LOGO.jpg" 
               alt="Gemini" 
               style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }} 
             /> {t("AI Đánh giá Quy tắc")}

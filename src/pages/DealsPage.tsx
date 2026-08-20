@@ -81,12 +81,14 @@ export const DealsPage: React.FC = () => {
   const getEffectiveTeamId = () => {
     const currentUser = useAuthStore.getState().user;
     if (!currentUser) return null;
-    if ((currentUser as any).team_id) return (currentUser as any).team_id;
+    if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin', 'marketing'].includes(currentUser.role || '')) {
+      return null;
+    }
     if (currentUser.role === 'manager') {
       const managedTeam = teams.find(t => Number(t.leader_id) === Number(currentUser.id));
-      return managedTeam?.id || null;
+      return managedTeam?.id || (currentUser as any)?.team_id || null;
     }
-    return null;
+    return (currentUser as any)?.team_id || null;
   };
 
   const effectiveTeamId = useMemo(() => {

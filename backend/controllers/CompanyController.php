@@ -14,7 +14,10 @@ class CompanyController {
             $permissionsJson = json_decode($resQ['permissions_json'], true);
         }
 
-        if (in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin'], true)) {
+        if (in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin', 'marketing'], true)) {
+            if (strtolower($auth['role'] ?? '') === 'marketing' && $action === 'delete') {
+                return 'none';
+            }
             return 'all';
         }
 
@@ -41,6 +44,9 @@ class CompanyController {
         }
         if ($role === 'accountant') {
             return $action === 'read' ? 'all' : 'none';
+        }
+        if ($role === 'marketing') {
+            return 'all';
         }
         return 'none';
     }

@@ -42,9 +42,10 @@ const TABS = [
 export const CompanyDrawer: React.FC<CompanyDrawerProps> = ({ isOpen, onClose, entity, onSave }) => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const isSale = currentUser && ['sales', 'sale'].includes((currentUser.role || '').toLowerCase());
-  const isViewer = currentUser?.role === 'viewer';
-  const disableEdit = isViewer || isSale;
+  const userRole = (currentUser?.role || '').toLowerCase();
+  const canEdit = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'assistant', 'sale_admin', 'saleadmin'].includes(userRole);
+  const isSale = ['sale', 'sales'].includes(userRole);
+  const disableEdit = !canEdit;
   const { addToast, showConfirm } = useUIStore();
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(window.innerWidth <= 1024);
 

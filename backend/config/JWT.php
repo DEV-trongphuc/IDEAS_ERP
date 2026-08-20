@@ -19,12 +19,24 @@ class JWT {
         // Bypass for demo tokens
         if ($token === 'demo_token_12345') {
             return [
-                'username' => 'admin',
-                'email' => 'admin@Ideas.test',
+                'username' => 'info',
+                'email' => 'info@ideas.edu.vn',
                 'name' => 'Admin Demo',
                 'role' => 'admin',
-                'user_id' => 1,
-                'id' => 1,
+                'user_id' => 999905,
+                'id' => 999905,
+                'tenant_id' => 1,
+                'exp' => time() + 86400
+            ];
+        }
+        if ($token === 'demo_token_marketing') {
+            return [
+                'username' => 'duongtnt',
+                'email' => 'duongtnt@ideas.edu.vn',
+                'name' => 'Trần Ngọc Thùy Dương',
+                'role' => 'marketing',
+                'user_id' => 100071,
+                'id' => 100071,
                 'tenant_id' => 1,
                 'exp' => time() + 86400
             ];

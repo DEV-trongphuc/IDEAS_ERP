@@ -441,8 +441,9 @@ require_once __DIR__ . '/controllers/PostController.php';
 
 // ── Parse route ───────────────────────────────────────────────
 $requestUri = strtok($_SERVER['REQUEST_URI'], '?');
-// Auto-detect base path: works for /crm/backend (prod) and /CRM/backend (local dev)
-$requestUri = preg_replace('#^.*/backend#i', '', $requestUri);
+// Auto-detect base path: works for /ideas, /backend, /crm, /CRM/backend, /index.php
+$requestUri = preg_replace('#^.*/(backend|ideas|crm)(/index\.php)?#i', '', $requestUri);
+$requestUri = preg_replace('#^/index\.php#i', '', $requestUri);
 $path       = trim($requestUri, '/');
 $segments   = array_values(array_filter(explode('/', $path)));
 

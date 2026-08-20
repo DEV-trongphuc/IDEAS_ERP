@@ -314,12 +314,14 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({ defaultSegment = 'ti
 
 
   const getEffectiveTeamId = () => {
-    if ((user as any)?.team_id) return (user as any).team_id;
+    if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin', 'marketing'].includes(user?.role || '')) {
+      return null;
+    }
     if (user?.role === 'manager') {
       const managedTeam = teams.find(t => Number(t.leader_id) === Number(user.id));
-      return managedTeam?.id || null;
+      return managedTeam?.id || (user as any)?.team_id || null;
     }
-    return null;
+    return (user as any)?.team_id || null;
   };
   const [activeFilters, setActiveFilters] = useState({
     status: '',

@@ -2851,18 +2851,14 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
       {!embedMode && (
         <div className="page-header" style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: isMobile ? '10px' : '12px',
-          marginBottom: isMobile ? '0.25rem' : '0.5rem'
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+          gap: isMobile ? '8px' : '1rem',
+          marginBottom: isMobile ? '0.75rem' : '1rem'
         }}>
-          {/* Top Row: Title + Leave Request Button */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            gap: '8px'
-          }}>
+          {/* Left: Title + Subtitle */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
               <h1 className="page-title" style={{ margin: 0, fontSize: isMobile ? '1.15rem' : '1.5rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {t('Quản lý Chấm công')}
@@ -2889,116 +2885,118 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
               </button>
             </div>
 
-            {/* Red Standalone Button for Leave/Attendance Requests */}
-            <button
-              onClick={() => setShowMenuModal(true)}
-              className="btn danger hover-lift"
-              style={{
-                borderRadius: '8px',
-                height: isMobile ? '30px' : '34px',
-                padding: isMobile ? '0 10px' : '0 16px',
-                fontWeight: 700,
-                fontSize: isMobile ? '0.75rem' : '0.8125rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                backgroundColor: 'var(--color-danger, #ef4444)',
-                color: '#ffffff',
-                border: 'none',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.25)',
-                transition: 'all 0.2s',
-                flexShrink: 0,
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <FileText size={isMobile ? 12 : 14} />
-              {t('Đơn xin phép')}
-            </button>
+            {/* Subtitle (Desktop only) */}
+            {!isMobile && (
+              <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0, textAlign: 'left' }}>
+                {t('Kiểm duyệt ảnh selfie chấm công hàng ngày và phê duyệt đi trễ của nhân viên.')}
+              </p>
+            )}
           </div>
 
-          {/* Subtitle (Desktop only) */}
-          {!isMobile && (
-            <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>
-              {t('Kiểm duyệt ảnh selfie chấm công hàng ngày và phê duyệt đi trễ của nhân viên.')}
-            </p>
-          )}
+          {/* Right: Red Standalone Button for Leave/Attendance Requests */}
+          <button
+            onClick={() => setShowMenuModal(true)}
+            className="btn danger hover-lift"
+            style={{
+              borderRadius: '8px',
+              height: isMobile ? '30px' : '34px',
+              padding: isMobile ? '0 10px' : '0 16px',
+              fontWeight: 700,
+              fontSize: isMobile ? '0.75rem' : '0.8125rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              backgroundColor: 'var(--color-danger, #ef4444)',
+              color: '#ffffff',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.25)',
+              transition: 'all 0.2s',
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <FileText size={isMobile ? 12 : 14} />
+            {t('Đơn xin phép')}
+          </button>
+        </div>
+      )}
 
-          {/* View Mode Switcher Tabs — White Background & Smooth Sliding Animation */}
-          <div style={{
-            display: 'flex',
-            backgroundColor: 'var(--color-surface, #ffffff)',
-            border: '1px solid var(--color-border)',
-            padding: '4px',
-            borderRadius: '12px',
-            gap: '4px',
-            width: isMobile ? '100%' : 'fit-content',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-            marginTop: isMobile ? '8px' : '10px',
-            marginBottom: isMobile ? '8px' : '10px',
-            position: 'relative'
-          }}>
-            {[
-              { id: 'list', label: t('Danh sách'), icon: Clock },
-              { id: 'calendar', label: t('Lịch biểu'), icon: Calendar },
-              ...(canApproveShifts ? [{ id: 'registrations', label: isMobile ? t('Duyệt ca') : t('Duyệt đăng ký ca'), icon: Zap }] : [])
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = (viewMode as string) === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setViewMode(tab.id as any)}
-                  style={{
-                    height: isMobile ? '32px' : '34px',
-                    padding: isMobile ? '0 10px' : '0 18px',
-                    fontSize: isMobile ? '0.8125rem' : '0.875rem',
-                    fontWeight: isActive ? 700 : 550,
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    flex: isMobile ? 1 : 'none',
-                    position: 'relative',
-                    background: 'transparent',
-                    color: isActive ? 'var(--color-primary)' : 'var(--color-text-light, #64748b)',
-                    outline: 'none',
-                    transition: 'color 0.2s ease',
-                    WebkitTapHighlightColor: 'transparent',
-                    userSelect: 'none'
-                  }}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeAttendanceSubTabIndicator"
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: '8px',
-                        backgroundColor: 'var(--color-primary-light, #eff6ff)',
-                        border: '1px solid var(--color-primary-glow, rgba(163, 20, 34, 0.15))',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                        zIndex: 1
-                      }}
-                      transition={{
-                        type: 'spring',
-                        stiffness: 420,
-                        damping: 32
-                      }}
-                    />
-                  )}
-                  <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                    <Icon size={isMobile ? 13 : 15} style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)', transition: 'color 0.2s' }} />
-                    <span>{tab.label}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+      {/* View Mode Switcher Tabs — Left-aligned */}
+      {!embedMode && (
+        <div style={{
+          display: 'flex',
+          backgroundColor: 'var(--color-surface, #ffffff)',
+          border: '1px solid var(--color-border)',
+          padding: '4px',
+          borderRadius: '12px',
+          gap: '4px',
+          width: isMobile ? '100%' : 'fit-content',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+          marginBottom: isMobile ? '0.75rem' : '1rem',
+          position: 'relative',
+          alignSelf: 'flex-start'
+        }}>
+          {[
+            { id: 'list', label: t('Danh sách'), icon: Clock },
+            { id: 'calendar', label: t('Lịch biểu'), icon: Calendar },
+            ...(canApproveShifts ? [{ id: 'registrations', label: isMobile ? t('Duyệt ca') : t('Duyệt đăng ký ca'), icon: Zap }] : [])
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = (viewMode as string) === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setViewMode(tab.id as any)}
+                style={{
+                  height: isMobile ? '32px' : '34px',
+                  padding: isMobile ? '0 10px' : '0 18px',
+                  fontSize: isMobile ? '0.8125rem' : '0.875rem',
+                  fontWeight: isActive ? 700 : 550,
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  flex: isMobile ? 1 : 'none',
+                  position: 'relative',
+                  background: 'transparent',
+                  color: isActive ? 'var(--color-primary)' : 'var(--color-text-light, #64748b)',
+                  outline: 'none',
+                  transition: 'color 0.2s ease',
+                  WebkitTapHighlightColor: 'transparent',
+                  userSelect: 'none'
+                }}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeAttendanceSubTabIndicator"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--color-primary-light, #eff6ff)',
+                      border: '1px solid var(--color-primary-glow, rgba(163, 20, 34, 0.15))',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      zIndex: 1
+                    }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 420,
+                      damping: 32
+                    }}
+                  />
+                )}
+                <span style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <Icon size={isMobile ? 13 : 15} style={{ color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)', transition: 'color 0.2s' }} />
+                  <span>{tab.label}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 

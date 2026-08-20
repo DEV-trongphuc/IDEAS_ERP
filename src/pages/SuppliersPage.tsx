@@ -35,7 +35,9 @@ const SUPPLIER_TABS = [
 
 export const SuppliersPage: React.FC = () => {
   const { user } = useAuth();
-  const isSale = user && ['sales', 'sale', 'viewer'].includes((user.role || '').toLowerCase());
+  const userRole = (user?.role || '').toLowerCase();
+  const canEdit = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'assistant', 'sale_admin', 'saleadmin'].includes(userRole);
+  const isSale = ['sale', 'sales'].includes(userRole);
   
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   useEffect(() => {
@@ -140,7 +142,7 @@ export const SuppliersPage: React.FC = () => {
       name: '', contact_name: '', email: '', phone: '', address: '', tax_code: '', notes: '',
       contact_position: '', website: '', scale_capital: '', typical_projects: '', focused_type: '', prestige_tier: 'A', cooperation_status: 'active', bank_account: ''
     });
-    setIsReadOnly(s ? readOnly : false);
+    setIsReadOnly(s ? (readOnly || !canEdit) : !canEdit);
     setActiveTab('info');
     setShowModal(true);
   };
@@ -217,7 +219,7 @@ export const SuppliersPage: React.FC = () => {
           <button className="btn outline" onClick={() => addToast('Tính năng đang phát triển', 'info')}>
             <Download size={18} /> Xuất Excel
           </button>
-          {!isSale && (
+          {canEdit && (
             <button className="btn primary" onClick={() => handleOpenModal()}>
               <Plus size={18} /> Thêm nhà cung cấp
             </button>
@@ -356,8 +358,8 @@ export const SuppliersPage: React.FC = () => {
             icon={<Truck size={48} />}
             title="Chưa có nhà cung cấp nào"
             description="Bắt đầu thêm các đối tác, nhà cung cấp để quản lý."
-            actionText={isSale ? undefined : "Thêm ngay"}
-            onAction={isSale ? undefined : () => handleOpenModal()}
+            actionText={canEdit ? "Thêm ngay" : undefined}
+            onAction={canEdit ? () => handleOpenModal() : undefined}
           />
         </div>
       ) : (
@@ -415,7 +417,7 @@ export const SuppliersPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    {!isSale && (
+                    {canEdit && (
                       <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button className="btn ghost sm" onClick={() => handleOpenModal(s)} style={{ padding: '4px', borderRadius: '4px', width: '24px', height: '24px' }}><Pencil size={12} /></button>
                         <button className="btn ghost sm text-danger" style={{ color: 'var(--color-danger)', padding: '4px', borderRadius: '4px', width: '24px', height: '24px' }} onClick={() => handleDelete(s.id)}><Trash2 size={12} /></button>
@@ -549,18 +551,18 @@ export const SuppliersPage: React.FC = () => {
                       </span>
                     )}
 
-                    {!isReadOnly ? (
-                      <button 
-                        type="button" 
-                        onClick={handleSubmit} 
-                        className="btn primary sm" 
-                        disabled={isSaving}
-                        style={{ height: '32px', fontSize: '0.8rem', padding: '0 14px', borderRadius: '8px' }}
-                      >
-                        {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                      </button>
-                    ) : (
-                      !isSale && (
+                    {canEdit && (
+                      !isReadOnly ? (
+                        <button 
+                          type="button" 
+                          onClick={handleSubmit} 
+                          className="btn primary sm" 
+                          disabled={isSaving}
+                          style={{ height: '32px', fontSize: '0.8rem', padding: '0 14px', borderRadius: '8px' }}
+                        >
+                          {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+                        </button>
+                      ) : (
                         <button 
                           type="button" 
                           onClick={() => setIsReadOnly(false)} 

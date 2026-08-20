@@ -122,7 +122,7 @@ export const getModulePermissionScope = (
   }
 
   if (role === 'marketing') {
-    if (['leads', 'campaigns', 'projects'].includes(module)) {
+    if (['leads', 'campaigns', 'projects', 'deals', 'tickets', 'gatekeeper', 'users', 'contacts', 'students', 'companies'].includes(module)) {
       return 'all';
     }
     if (module === 'settings') {

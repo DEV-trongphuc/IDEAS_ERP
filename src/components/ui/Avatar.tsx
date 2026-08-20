@@ -118,7 +118,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name, size = 'md', classNam
       <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
         {avatarEl}
         <img
-          src="/LOGO.jpg"
+          src="https://ideas-data.vercel.app/imgs/angry_icon.jpg"
           alt="AI Evaluation"
           style={{
             position: 'absolute',

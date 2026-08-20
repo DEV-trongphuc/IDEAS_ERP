@@ -636,11 +636,14 @@ class DealController {
             $permissionsJson = json_decode($resQ['permissions_json'], true);
         }
 
-        if (in_array($auth['role'], ['admin', 'superadmin', 'super_admin'], true)) {
+        if (in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin', 'marketing'], true)) {
+            if (strtolower($auth['role'] ?? '') === 'marketing' && $action === 'delete') {
+                return 'none';
+            }
             return 'all';
         }
 
-        if (in_array($auth['role'], ['sale', 'sales'], true) && $module === 'deals') {
+        if (in_array(strtolower($auth['role'] ?? ''), ['sale', 'sales'], true) && $module === 'deals') {
             return $action === 'delete' ? 'none' : 'own';
         }
 
@@ -676,6 +679,9 @@ class DealController {
         }
         if ($role === 'viewer') {
             return $action === 'read' ? 'all' : 'none';
+        }
+        if ($role === 'marketing') {
+            return 'all';
         }
 
         return 'none';

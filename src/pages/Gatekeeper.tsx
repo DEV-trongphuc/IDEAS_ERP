@@ -1960,8 +1960,8 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <img
-                  src="/LOGO.webp"
-                  alt="IDEAS AI Logo"
+                  src="https://crm-domation.vercel.app/LOGO.jpg"
+                  alt="AI Logo"
                   style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }}
                 />
                 <span style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -5626,7 +5626,7 @@ const GatekeeperInner = ({ isActive, searchParams, setSearchParams }: { isActive
                     {selectedLead.status === 'rejected' ? (
                       <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1.5px solid var(--color-primary)', boxShadow: 'var(--shadow-sm)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                          <Avatar src="/LOGO.webp" name="IDEAS AI - Evaluator" size={36} />
+                          <Avatar src="https://crm-domation.vercel.app/LOGO.jpg" name="IDEAS AI - Evaluator" size={36} />
                           <div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Đánh giá')}</div>
                             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI - Evaluator</div>

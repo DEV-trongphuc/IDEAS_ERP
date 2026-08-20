@@ -21,7 +21,9 @@ const PAGE_SIZE = 10;
 
 export const CompaniesPage: React.FC = () => {
   const { user } = useAuth();
-  const isSale = user && ['sales', 'sale'].includes((user.role || '').toLowerCase());
+  const userRole = (user?.role || '').toLowerCase();
+  const canEdit = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'assistant', 'sale_admin', 'saleadmin'].includes(userRole);
+  const isSale = ['sale', 'sales'].includes(userRole);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -170,7 +172,7 @@ export const CompaniesPage: React.FC = () => {
           <h1 className="page-title" style={{ fontSize: isMobile ? '1.45rem' : '1.75rem' }}>Đối tác</h1>
           <p className="page-subtitle" style={{ fontSize: '0.8rem' }}>{loading ? '...' : `${total} đối tác`}</p>
         </div>
-        {!isSale && (
+        {canEdit && (
           <button 
             className="btn primary" 
             onClick={openCreate} 
@@ -450,7 +452,7 @@ export const CompaniesPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      {!isSale && (
+                      {canEdit && (
                         <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                           <button className="btn ghost sm" onClick={() => openEdit(co)} style={{ padding: '4px', borderRadius: '4px', width: '24px', height: '24px' }}><Pencil size={12} /></button>
                           <button className="btn ghost sm text-danger" style={{ color: 'var(--color-danger)', padding: '4px', borderRadius: '4px', width: '24px', height: '24px' }} onClick={() => confirmDelete(co)}><Trash2 size={12} /></button>
@@ -517,8 +519,8 @@ export const CompaniesPage: React.FC = () => {
                 icon={<Building2 size={48} />}
                 title="Chưa có đối tác nào"
                 description="Thêm đối tác, giảng viên, chuyên gia, CTV, đối tác B2B liên kết đầu tiên."
-                actionText={isSale ? undefined : "Thêm Đối tác"}
-                onAction={isSale ? undefined : openCreate}
+                actionText={canEdit ? "Thêm Đối tác" : undefined}
+                onAction={canEdit ? openCreate : undefined}
               />
             </div>
           )}
@@ -600,7 +602,7 @@ export const CompaniesPage: React.FC = () => {
                         <span className={`badge ${ST_CLASS[co.status] || 'info'}`}>{ST_LABEL[co.status] || co.status}</span>
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                        {!isSale && (
+                        {canEdit && (
                           <div className="flex gap-1" style={{ justifyContent: 'flex-end' }}>
                             <button className="btn ghost sm" onClick={() => openEdit(co)}><Pencil size={13} /></button>
                             <button className="btn ghost sm" style={{ color: 'var(--color-danger)' }} onClick={() => confirmDelete(co)}><Trash2 size={13} /></button>
@@ -617,8 +619,8 @@ export const CompaniesPage: React.FC = () => {
                         icon={<Building2 size={48} />}
                         title="Chưa có đối tác nào"
                         description="Thêm đối tác, giảng viên, chuyên gia, CTV, đối tác B2B liên kết đầu tiên."
-                        actionText={isSale ? undefined : "Thêm Đối tác"}
-                        onAction={isSale ? undefined : openCreate}
+                        actionText={canEdit ? "Thêm Đối tác" : undefined}
+                        onAction={canEdit ? openCreate : undefined}
                       />
                     </td>
                   </tr>

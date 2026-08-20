@@ -3209,7 +3209,7 @@ const TicketsInner = ({ isActive, searchParams, setSearchParams }: { isActive: b
                 {selectedLead.ai_screener_status === 'passed' && selectedLead.ai_evaluation && (
                   <div style={{ background: 'var(--color-surface)', padding: '1.25rem', borderRadius: 12, border: '1.5px solid var(--color-primary)', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                      <Avatar src="/LOGO.webp" name="IDEAS AI" size={36} />
+                      <Avatar src="https://crm-domation.vercel.app/LOGO.jpg" name="IDEAS AI" size={36} />
                       <div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>{t('Đánh giá')}</div>
                         <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>IDEAS AI</div>

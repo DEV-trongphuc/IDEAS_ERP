@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { withRouterFreezer } from '../components/RouterFreezer';
 import { Webhook, Plus, Trash2, Copy, CheckCircle2, ChevronRight, ChevronLeft, Link2, Tag, Info, FileSpreadsheet, Zap, Clock, Target, RefreshCw, Edit2, ExternalLink, AlertCircle, Settings, Database } from 'lucide-react';
@@ -7,6 +7,7 @@ import { CustomModal } from '../components/ui/CustomModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { ToggleSwitch } from '../components/ui/ToggleSwitch';
+import { useAuthStore } from '../store/authStore';
 
 const SYSTEM_FIELDS = [
   // --- Thông tin Cá nhân & Liên hệ ---
@@ -343,6 +344,8 @@ function normalizePhone(phone) {
 
 const IntegrationsInner = () => {
   const { language, t } = useLanguage();
+  const user = useAuthStore(state => state.user);
+  const isReadOnly = !['admin', 'superadmin', 'super_admin', 'assistant'].includes(user?.role || '');
   const [connections, setConnections] = useState<Connection[]>([]);
   const [selected, setSelected] = useState<Connection | null>(null);
   const [mobileActiveView, setMobileActiveView] = useState<'list' | 'detail'>('list');
@@ -868,28 +871,30 @@ const IntegrationsInner = () => {
             <p className="page-subtitle" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{t('Quản lý các nguồn đổ Data')}</p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button 
-              onClick={() => setShowAddConn(true)} 
-              className="btn primary hover-lift" 
-              style={{ 
-                width: '100%', 
-                justifyContent: 'center', 
-                height: 40, 
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                border: 'none',
-                color: '#fff',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
-                fontWeight: 700
-              }}
-            >
-              <FileSpreadsheet size={16} /> {t('Thêm kết nối Sheets')}
-            </button>
-            <button onClick={() => setShowAddApi(true)} className="btn primary hover-lift" style={{ width: '100%', justifyContent: 'center', height: 40, borderRadius: 10 }}>
-              <Zap size={16} /> {t('Thêm API Landing Page')}
-            </button>
-          </div>
+          {!isReadOnly && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button 
+                onClick={() => setShowAddConn(true)} 
+                className="btn primary hover-lift" 
+                style={{ 
+                  width: '100%', 
+                  justifyContent: 'center', 
+                  height: 40, 
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: 'none',
+                  color: '#fff',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                  fontWeight: 700
+                }}
+              >
+                <FileSpreadsheet size={16} /> {t('Thêm kết nối Sheets')}
+              </button>
+              <button onClick={() => setShowAddApi(true)} className="btn primary hover-lift" style={{ width: '100%', justifyContent: 'center', height: 40, borderRadius: 10 }}>
+                <Zap size={16} /> {t('Thêm API Landing Page')}
+              </button>
+            </div>
+          )}
 
           <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingBottom: '1rem' }}>
             {/* Virtual Connection for Master Sync */}
@@ -1055,7 +1060,7 @@ const IntegrationsInner = () => {
                   </div>
                   <ToggleSwitch
                     checked={masterEnabled}
-                    onChange={(val) => setMasterEnabled(val)}
+                    onChange={(val) => !isReadOnly && setMasterEnabled(val)}
                   />
                 </div>
 
@@ -1072,36 +1077,39 @@ const IntegrationsInner = () => {
                           placeholder={t("https://script.google.com/macros/s/.../exec")}
                           value={masterUrl}
                           onChange={e => setMasterUrl(e.target.value)}
+                          disabled={isReadOnly}
                           style={{ flex: 1, background: 'var(--color-surface)', color: 'var(--color-text)' }}
                         />
-                        <button
-                          className="btn outline"
-                          style={{ height: 40, whiteSpace: 'nowrap', padding: '0 1rem', borderRadius: 10 }}
-                          disabled={isTestingMaster || !masterUrl.trim()}
-                          onClick={async () => {
-                            setIsTestingMaster(true);
-                            try {
-                              const res = await fetchAPI('test_master_sync', {
-                                method: 'POST',
-                                body: JSON.stringify({
-                                  google_script_url: masterUrl,
-                                  sheet_name: masterSheetName
-                                })
-                              });
-                              if (res.success) {
-                                toast.success(t('Kết nối thử nghiệm thành công! Hãy kiểm tra sheet của bạn.'));
-                              } else {
-                                toast.error(t('Kiểm thử thất bại: ') + (res.message || ''));
+                        {!isReadOnly && (
+                          <button
+                            className="btn outline"
+                            style={{ height: 40, whiteSpace: 'nowrap', padding: '0 1rem', borderRadius: 10 }}
+                            disabled={isTestingMaster || !masterUrl.trim()}
+                            onClick={async () => {
+                              setIsTestingMaster(true);
+                              try {
+                                const res = await fetchAPI('test_master_sync', {
+                                  method: 'POST',
+                                  body: JSON.stringify({
+                                    google_script_url: masterUrl,
+                                    sheet_name: masterSheetName
+                                  })
+                                });
+                                if (res.success) {
+                                  toast.success(t('Kết nối thử nghiệm thành công! Hãy kiểm tra sheet của bạn.'));
+                                } else {
+                                  toast.error(t('Kiểm thử thất bại: ') + (res.message || ''));
+                                }
+                              } catch (e: any) {
+                                toast.error(t('Lỗi kết nối thử nghiệm: ') + e.message);
+                              } finally {
+                                setIsTestingMaster(false);
                               }
-                            } catch (e: any) {
-                              toast.error(t('Lỗi kết nối thử nghiệm: ') + e.message);
-                            } finally {
-                              setIsTestingMaster(false);
-                            }
-                          }}
-                        >
-                          {isTestingMaster ? t('Đang kiểm tra...') : t('Kiểm thử')}
-                        </button>
+                            }}
+                          >
+                            {isTestingMaster ? t('Đang kiểm tra...') : t('Kiểm thử')}
+                          </button>
+                        )}
                       </div>
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                         {t('URL Web App Google Apps Script triển khai từ Sheet Tổng.')}
@@ -1118,45 +1126,48 @@ const IntegrationsInner = () => {
                         placeholder={t("e.g. Sheet1, để trống để dùng trang tính đầu tiên")}
                         value={masterSheetName}
                         onChange={e => setMasterSheetName(e.target.value)}
+                        disabled={isReadOnly}
                         style={{ background: 'var(--color-surface)', color: 'var(--color-text)' }}
                       />
                     </div>
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem' }}>
-                  <button
-                    className="btn primary"
-                    style={{ height: 38, padding: '0 1.5rem', background: 'var(--color-primary)', color: '#fff', borderRadius: 10, fontWeight: 600 }}
-                    disabled={isSavingMaster || (masterEnabled && !masterUrl.trim())}
-                    onClick={async () => {
-                      setIsSavingMaster(true);
-                      try {
-                        const res = await fetchAPI('save_settings', {
-                          method: 'POST',
-                          body: JSON.stringify({
-                            master_two_way_sync: masterEnabled ? '1' : '0',
-                            master_google_script_url: masterUrl,
-                            master_sheet_name: masterSheetName
-                          })
-                        });
-                        if (res.success) {
-                          toast.success(t('Đã lưu cấu hình Đồng bộ 2 chiều Tổng!'));
-                          // Refresh to update left list active label
-                          fetchData();
-                        } else {
-                          toast.error(t('Lưu thất bại: ') + (res.message || ''));
+                {!isReadOnly && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem' }}>
+                    <button
+                      className="btn primary"
+                      style={{ height: 38, padding: '0 1.5rem', background: 'var(--color-primary)', color: '#fff', borderRadius: 10, fontWeight: 600 }}
+                      disabled={isSavingMaster || (masterEnabled && !masterUrl.trim())}
+                      onClick={async () => {
+                        setIsSavingMaster(true);
+                        try {
+                          const res = await fetchAPI('save_settings', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              master_two_way_sync: masterEnabled ? '1' : '0',
+                              master_google_script_url: masterUrl,
+                              master_sheet_name: masterSheetName
+                            })
+                          });
+                          if (res.success) {
+                            toast.success(t('Đã lưu cấu hình Đồng bộ 2 chiều Tổng!'));
+                            // Refresh to update left list active label
+                            fetchData();
+                          } else {
+                            toast.error(t('Lưu thất bại: ') + (res.message || ''));
+                          }
+                        } catch (e: any) {
+                          toast.error(t('Lỗi kết nối: ') + e.message);
+                        } finally {
+                          setIsSavingMaster(false);
                         }
-                      } catch (e: any) {
-                        toast.error(t('Lỗi kết nối: ') + e.message);
-                      } finally {
-                        setIsSavingMaster(false);
-                      }
-                    }}
-                  >
-                    {isSavingMaster ? t('Đang lưu...') : t('Lưu cài đặt')}
-                  </button>
-                </div>
+                      }}
+                    >
+                      {isSavingMaster ? t('Đang lưu...') : t('Lưu cài đặt')}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Instructions & Code Block */}
@@ -1257,7 +1268,7 @@ const IntegrationsInner = () => {
                         {t('Lần cuối:')} {new Date(selected.last_sync_at).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US')}
                       </div>
                     )}
-                    {selected.connection_type !== 'landing_page' && (
+                    {!isReadOnly && selected.connection_type !== 'landing_page' && (
                       <button
                         className="btn outline"
                         style={{ padding: '6px 12px', fontSize: '0.8125rem', height: 32 }}
@@ -1282,56 +1293,62 @@ const IntegrationsInner = () => {
                       </button>
                     )}
 
-                    <button
-                      className="btn outline"
-                      style={{ padding: 8, borderRadius: 8, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
-                      title={t("Chỉnh sửa cấu hình đồng bộ & email")}
-                      onClick={() => {
-                        let preset: any = 'custom';
-                        let customVal = selected.sync_interval;
-                        if (customVal === 5) preset = '5p';
-                        else if (customVal === 15) preset = '15p';
-                        else if (customVal === 60) preset = '1h';
-                        else if (customVal === 1440) preset = '1d';
-                        
-                        setEditSyncPreset(preset);
-                        setEditCustomSyncMins(customVal || 15);
-                        setEditSyncMode((selected.sync_mode as 'all' | 'new_only') || 'all');
-                        setEditIsSilent(Boolean(Number(selected.is_silent)));
-                        setEditSyncSaleperson(Boolean(Number(selected.sync_saleperson)));
-                        setEditTwoWaySync(Boolean(Number(selected.two_way_sync)));
-                        setEditGoogleScriptUrl(selected.google_script_url || '');
-                        setEditLeadRecallMinutes(Number(selected.lead_recall_minutes) || 0);
-                        const existingTemplate = selected.email_template || '';
-                        setEditEmailTemplate(
-                          existingTemplate ||
-                          generateDefaultTemplate(
-                            (selected.mappings || []).map(m => ({
-                              sheet_col: m.sheet_column,
-                              sys_field: m.system_field,
-                              custom_label: m.custom_label
-                            })),
-                            t
-                          )
-                        );
-                        setShowEditConn(true);
-                      }}
-                    >
-                      <Settings size={16} />
-                    </button>
+                    {!isReadOnly && (
+                      <button
+                        className="btn outline"
+                        style={{ padding: 8, borderRadius: 8, height: 32, width: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', cursor: 'pointer' }}
+                        title={t("Chỉnh sửa cấu hình đồng bộ & email")}
+                        onClick={() => {
+                          let preset: any = 'custom';
+                          let customVal = selected.sync_interval;
+                          if (customVal === 5) preset = '5p';
+                          else if (customVal === 15) preset = '15p';
+                          else if (customVal === 60) preset = '1h';
+                          else if (customVal === 1440) preset = '1d';
+                          
+                          setEditSyncPreset(preset);
+                          setEditCustomSyncMins(customVal || 15);
+                          setEditSyncMode((selected.sync_mode as 'all' | 'new_only') || 'all');
+                          setEditIsSilent(Boolean(Number(selected.is_silent)));
+                          setEditSyncSaleperson(Boolean(Number(selected.sync_saleperson)));
+                          setEditTwoWaySync(Boolean(Number(selected.two_way_sync)));
+                          setEditGoogleScriptUrl(selected.google_script_url || '');
+                          setEditLeadRecallMinutes(Number(selected.lead_recall_minutes) || 0);
+                          const existingTemplate = selected.email_template || '';
+                          setEditEmailTemplate(
+                            existingTemplate ||
+                            generateDefaultTemplate(
+                              (selected.mappings || []).map(m => ({
+                                sheet_col: m.sheet_column,
+                                sys_field: m.system_field,
+                                custom_label: m.custom_label
+                              })),
+                              t
+                            )
+                          );
+                          setShowEditConn(true);
+                        }}
+                      >
+                        <Settings size={16} />
+                      </button>
+                    )}
 
-                    <ToggleSwitch
-                      checked={selected.is_active}
-                      onChange={() => handleToggleActive(selected)}
-                    />
-                    <button
-                      onClick={() => { setDeleteId(selected.id); setIsConfirmOpen(true); }}
-                      style={{ padding: 8, borderRadius: 8, color: 'var(--color-text-muted)', transition: 'all 0.2s', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, width: 32, cursor: 'pointer' }}
-                      onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-danger)'); (e.currentTarget.style.background = 'var(--color-danger-light)'); }}
-                      onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-text-muted)'); (e.currentTarget.style.background = 'transparent'); }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {!isReadOnly && (
+                      <ToggleSwitch
+                        checked={selected.is_active}
+                        onChange={() => handleToggleActive(selected)}
+                      />
+                    )}
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => { setDeleteId(selected.id); setIsConfirmOpen(true); }}
+                        style={{ padding: 8, borderRadius: 8, color: 'var(--color-text-muted)', transition: 'all 0.2s', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32, width: 32, cursor: 'pointer' }}
+                        onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-danger)'); (e.currentTarget.style.background = 'var(--color-danger-light)'); }}
+                        onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-text-muted)'); (e.currentTarget.style.background = 'transparent'); }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1491,9 +1508,9 @@ const IntegrationsInner = () => {
                     </p>
                   </div>
                   <div
-                    onClick={() => handleToggleRequireBoth(selected)}
+                    onClick={() => !isReadOnly && handleToggleRequireBoth(selected)}
                     style={{
-                      width: 44, height: 24, borderRadius: 24, cursor: 'pointer', position: 'relative',
+                      width: 44, height: 24, borderRadius: 24, cursor: isReadOnly ? 'default' : 'pointer', position: 'relative',
                       background: selected.require_both_contact ? 'var(--color-success)' : 'var(--color-border)',
                       transition: 'background 0.3s'
                     }}
@@ -1516,9 +1533,9 @@ const IntegrationsInner = () => {
                     </p>
                   </div>
                   <div
-                    onClick={() => handleToggleNotifyAdmin(selected)}
+                    onClick={() => !isReadOnly && handleToggleNotifyAdmin(selected)}
                     style={{
-                      width: 44, height: 24, borderRadius: 24, cursor: 'pointer', position: 'relative',
+                      width: 44, height: 24, borderRadius: 24, cursor: isReadOnly ? 'default' : 'pointer', position: 'relative',
                       background: selected.notify_admin ? 'var(--color-success)' : 'var(--color-border)',
                       transition: 'background 0.3s'
                     }}
@@ -1599,58 +1616,60 @@ fetch("${webhookUrl(selected.webhook_token)}", {
                   </div>
 
                   {/* Add Mapping Row at the TOP */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', background: 'var(--color-bg)', padding: '1rem', borderRadius: 'var(--radius-lg)', marginBottom: '1.25rem' }}>
-                    <div style={{ flex: '1 1 200px' }}>
-                      <label className="form-label" style={{ marginBottom: 6, display: 'block', fontWeight: 600 }}>{t('Tên cột trên Sheets')}</label>
-                      {isFetchingSelectedCols ? (
-                        <div style={{ padding: '10px 12px', background: 'var(--color-surface)', borderRadius: 8, fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--color-border)' }}>
-                          <RefreshCw size={14} className="spin" /> {t('Đang quét cột...')}
-                        </div>
-                      ) : selectedColumns.length > 0 ? (
+                  {!isReadOnly && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', background: 'var(--color-bg)', padding: '1rem', borderRadius: 'var(--radius-lg)', marginBottom: '1.25rem' }}>
+                      <div style={{ flex: '1 1 200px' }}>
+                        <label className="form-label" style={{ marginBottom: 6, display: 'block', fontWeight: 600 }}>{t('Tên cột trên Sheets')}</label>
+                        {isFetchingSelectedCols ? (
+                          <div style={{ padding: '10px 12px', background: 'var(--color-surface)', borderRadius: 8, fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--color-border)' }}>
+                            <RefreshCw size={14} className="spin" /> {t('Đang quét cột...')}
+                          </div>
+                        ) : selectedColumns.length > 0 ? (
+                          <CustomSelect
+                            options={selectedColumns.map(c => ({ value: c, label: c }))}
+                            value={newMappingCol}
+                            onChange={v => setNewMappingCol(String(v))}
+                          />
+                        ) : (
+                          <input
+                            className="form-input"
+                            placeholder={t("VD: Số Điện Thoại KH")}
+                            value={newMappingCol}
+                            onChange={e => setNewMappingCol(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveMapping()}
+                          />
+                        )}
+                      </div>
+                      <div style={{ flex: '1 1 180px' }}>
+                        <label className="form-label" style={{ marginBottom: 6, display: 'block', fontWeight: 600 }}>{t('Trường hệ thống')}</label>
                         <CustomSelect
-                          options={selectedColumns.map(c => ({ value: c, label: c }))}
-                          value={newMappingCol}
-                          onChange={v => setNewMappingCol(String(v))}
+                          options={getSelectFields()}
+                          value={newMappingField}
+                          onChange={(val) => setNewMappingField(String(val))}
                         />
-                      ) : (
+                      </div>
+                      <div style={{ flex: '1 1 220px' }}>
+                        <label className="form-label" style={{ marginBottom: 6, display: 'block', fontWeight: 600 }}>{t('Tên hiển thị trong Email (Tùy chọn)')}</label>
                         <input
                           className="form-input"
-                          placeholder={t("VD: Số Điện Thoại KH")}
-                          value={newMappingCol}
-                          onChange={e => setNewMappingCol(e.target.value)}
+                          placeholder={t("VD: Khung giờ tư vấn")}
+                          value={newMappingCustomLabel}
+                          onChange={e => setNewMappingCustomLabel(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleSaveMapping()}
                         />
-                      )}
-                    </div>
-                    <div style={{ flex: '1 1 180px' }}>
-                      <label className="form-label" style={{ marginBottom: 6, display: 'block', fontWeight: 600 }}>{t('Trường hệ thống')}</label>
-                      <CustomSelect
-                        options={getSelectFields()}
-                        value={newMappingField}
-                        onChange={(val) => setNewMappingField(String(val))}
-                      />
-                    </div>
-                    <div style={{ flex: '1 1 220px' }}>
-                      <label className="form-label" style={{ marginBottom: 6, display: 'block', fontWeight: 600 }}>{t('Tên hiển thị trong Email (Tùy chọn)')}</label>
-                      <input
-                        className="form-input"
-                        placeholder={t("VD: Khung giờ tư vấn")}
-                        value={newMappingCustomLabel}
-                        onChange={e => setNewMappingCustomLabel(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSaveMapping()}
-                      />
-                    </div>
-                    <div className="mapping-btn-container" style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                      <button className="btn primary" onClick={handleSaveMapping} disabled={isSavingMapping} style={{ flexShrink: 0, height: 42, background: editingMappingId ? 'var(--color-warning)' : 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
-                        {isSavingMapping ? t('Đang lưu...') : (editingMappingId ? t('Cập nhật') : <><Plus size={16} /> {t('Thêm')}</>)}
-                      </button>
-                      {editingMappingId && (
-                        <button className="btn outline" onClick={cancelEditMapping} style={{ flexShrink: 0, height: 42, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700, padding: '0 0.75rem' }}>
-                          {t('Hủy')}
+                      </div>
+                      <div className="mapping-btn-container" style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                        <button className="btn primary" onClick={handleSaveMapping} disabled={isSavingMapping} style={{ flexShrink: 0, height: 42, background: editingMappingId ? 'var(--color-warning)' : 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+                          {isSavingMapping ? t('Đang lưu...') : (editingMappingId ? t('Cập nhật') : <><Plus size={16} /> {t('Thêm')}</>)}
                         </button>
-                      )}
+                        {editingMappingId && (
+                          <button className="btn outline" onClick={cancelEditMapping} style={{ flexShrink: 0, height: 42, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700, padding: '0 0.75rem' }}>
+                            {t('Hủy')}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div style={{ padding: '12px 16px', background: 'var(--color-info-light)', border: '1px solid var(--color-border)', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: '1.25rem' }}>
                     <Info size={18} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
@@ -1663,17 +1682,17 @@ fetch("${webhookUrl(selected.webhook_token)}", {
                   <div className="responsive-table-wrap" style={{ marginBottom: '1rem' }}>
                     <table style={{ tableLayout: 'fixed', width: '100%', minWidth: 650 }}>
                       <colgroup>
-                        <col style={{ width: '45%' }} />
-                        <col style={{ width: '25%' }} />
-                        <col style={{ width: '22%' }} />
-                        <col style={{ width: '8%' }} />
+                        <col style={{ width: isReadOnly ? '45%' : '45%' }} />
+                        <col style={{ width: isReadOnly ? '30%' : '25%' }} />
+                        <col style={{ width: isReadOnly ? '25%' : '22%' }} />
+                        {!isReadOnly && <col style={{ width: '8%' }} />}
                       </colgroup>
                       <thead>
                         <tr>
                           <th>{t('Tên cột trên Google Sheets')}</th>
                           <th>{t('Trường hiển thị trong Email')}</th>
                           <th>{t('Trường hệ thống')}</th>
-                          <th style={{ width: 60 }}></th>
+                          {!isReadOnly && <th style={{ width: 60 }}></th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -1716,36 +1735,38 @@ fetch("${webhookUrl(selected.webhook_token)}", {
                                 {t(SYSTEM_FIELDS.find(f => f.value === m.system_field)?.label || m.system_field)}
                               </span>
                             </td>
-                            <td style={{ textAlign: 'center', display: 'flex', gap: 4, justifyContent: 'center' }}>
-                              <button
-                                onClick={() => {
-                                  setEditingMappingId(m.id);
-                                  setNewMappingCol(m.sheet_column);
-                                  setNewMappingField(m.system_field);
-                                  setNewMappingCustomLabel(m.custom_label || '');
-                                }}
-                                title={t("Chỉnh sửa mapping")}
-                                style={{ padding: 6, borderRadius: 8, color: 'var(--color-text-muted)', transition: 'all 0.2s', background: editingMappingId === m.id ? 'var(--color-warning-light)' : 'transparent' }}
-                                onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-warning)'); (e.currentTarget.style.background = 'var(--color-warning-light)'); }}
-                                onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-text-muted)'); (e.currentTarget.style.background = editingMappingId === m.id ? 'var(--color-warning-light)' : 'transparent'); }}
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteMapping(m.id)}
-                                title={t("Xóa mapping")}
-                                style={{ padding: 6, borderRadius: 8, color: 'var(--color-text-muted)', transition: 'all 0.2s' }}
-                                onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-danger)'); (e.currentTarget.style.background = 'var(--color-danger-light)'); }}
-                                onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-text-muted)'); (e.currentTarget.style.background = 'transparent'); }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
+                            {!isReadOnly && (
+                              <td style={{ textAlign: 'center', display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => {
+                                    setEditingMappingId(m.id);
+                                    setNewMappingCol(m.sheet_column);
+                                    setNewMappingField(m.system_field);
+                                    setNewMappingCustomLabel(m.custom_label || '');
+                                  }}
+                                  title={t("Chỉnh sửa mapping")}
+                                  style={{ padding: 6, borderRadius: 8, color: 'var(--color-text-muted)', transition: 'all 0.2s', background: editingMappingId === m.id ? 'var(--color-warning-light)' : 'transparent' }}
+                                  onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-warning)'); (e.currentTarget.style.background = 'var(--color-warning-light)'); }}
+                                  onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-text-muted)'); (e.currentTarget.style.background = editingMappingId === m.id ? 'var(--color-warning-light)' : 'transparent'); }}
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMapping(m.id)}
+                                  title={t("Xóa mapping")}
+                                  style={{ padding: 6, borderRadius: 8, color: 'var(--color-text-muted)', transition: 'all 0.2s' }}
+                                  onMouseEnter={e => { (e.currentTarget.style.color = 'var(--color-danger)'); (e.currentTarget.style.background = 'var(--color-danger-light)'); }}
+                                  onMouseLeave={e => { (e.currentTarget.style.color = 'var(--color-text-muted)'); (e.currentTarget.style.background = 'transparent'); }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                         {(selected.mappings || []).length === 0 && (
                           <tr>
-                            <td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>
+                            <td colSpan={isReadOnly ? 3 : 4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>
                               {t('Chưa có mapping nào. Hãy thêm cột ở trên.')}
                             </td>
                           </tr>

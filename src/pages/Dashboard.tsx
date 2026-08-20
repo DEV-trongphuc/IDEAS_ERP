@@ -5,7 +5,7 @@ import {
   GitBranch, UserPlus, Zap, Calendar, BarChart2, Scale,
   FileSpreadsheet, MessageCircle, Database, Server, ExternalLink, Clock, CheckCircle, Cpu,
   ShieldAlert, Filter, Ticket as TicketIcon,
-  FileText, CheckSquare, AlertCircle, CheckCircle2, Settings, DollarSign, Send, CreditCard, TrendingUp, Receipt, Award
+  FileText, CheckSquare, AlertCircle, CheckCircle2, Settings, DollarSign, Send, CreditCard, TrendingUp, Receipt, Award, ArrowRight
 } from 'lucide-react';
 import {
   Bar, XAxis, YAxis, CartesianGrid,
@@ -95,8 +95,6 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   const [healthModalTab, setHealthModalTab] = useState<'stats' | 'connections'>('stats');
   const [healthChartMetric, setHealthChartMetric] = useState<'zalo' | 'email' | 'telegram' | 'token'>('zalo');
   const [modalChartLoading, setModalChartLoading] = useState(false);
-  const [consultantPage, setConsultantPage] = useState(1);
-  const CONSULTANTS_PER_PAGE = 8;
 
   // Accountant Dashboard specific states
   const [poList, setPoList] = useState<any[]>([]);
@@ -1161,41 +1159,44 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   };
 
   const renderAdminWelcomeBanner = () => {
+    const isAdminOrManager = ['admin', 'superadmin', 'super_admin', 'director', 'manager', 'assistant'].includes(user?.role || '');
     const issues = [];
-    if (pendingTicketsCount > 0) {
-      issues.push({
-        type: 'ticket',
-        text: pendingTicketsCount + ' ' + t('ticket hỗ trợ đang chờ phản hồi hoặc xử lý.'),
-        action: () => navigate('/tickets')
-      });
-    }
-    if (heldLeadsCount > 0) {
-      issues.push({
-        type: 'gatekeeper',
-        text: heldLeadsCount + ' ' + t('lead đang bị tạm giữ tại Gatekeeper.'),
-        action: () => navigate('/gatekeeper')
-      });
-    }
-    if (pendingCheckInsCount > 0) {
-      issues.push({
-        type: 'checkin',
-        text: pendingCheckInsCount + ' ' + t('yêu cầu chấm công/đi trễ cần duyệt.'),
-        action: () => navigate('/attendance')
-      });
-    }
-    if (pendingCoopsCount > 0) {
-      issues.push({
-        type: 'coop',
-        text: pendingCoopsCount + ' ' + t('yêu cầu hợp tác cần duyệt.'),
-        action: () => navigate('/cooperation-slips?status=pending_me')
-      });
-    }
-    if (pendingExpensesCount > 0) {
-      issues.push({
-        type: 'expense',
-        text: pendingExpensesCount + ' ' + t('yêu cầu thanh toán chi phí cần duyệt.'),
-        action: () => navigate('/expenses?status=pending')
-      });
+    if (isAdminOrManager) {
+      if (pendingTicketsCount > 0) {
+        issues.push({
+          type: 'ticket',
+          text: pendingTicketsCount + ' ' + t('ticket hỗ trợ đang chờ phản hồi hoặc xử lý.'),
+          action: () => navigate('/tickets')
+        });
+      }
+      if (heldLeadsCount > 0) {
+        issues.push({
+          type: 'gatekeeper',
+          text: heldLeadsCount + ' ' + t('lead đang bị tạm giữ tại Gatekeeper.'),
+          action: () => navigate('/gatekeeper')
+        });
+      }
+      if (pendingCheckInsCount > 0) {
+        issues.push({
+          type: 'checkin',
+          text: pendingCheckInsCount + ' ' + t('yêu cầu chấm công/đi trễ cần duyệt.'),
+          action: () => navigate('/attendance')
+        });
+      }
+      if (pendingCoopsCount > 0) {
+        issues.push({
+          type: 'coop',
+          text: pendingCoopsCount + ' ' + t('yêu cầu hợp tác cần duyệt.'),
+          action: () => navigate('/cooperation-slips?status=pending_me')
+        });
+      }
+      if (pendingExpensesCount > 0) {
+        issues.push({
+          type: 'expense',
+          text: pendingExpensesCount + ' ' + t('yêu cầu thanh toán chi phí cần duyệt.'),
+          action: () => navigate('/expenses?status=pending')
+        });
+      }
     }
 
     const getRoleLabel = (role: string) => {
@@ -1203,6 +1204,13 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
       if (role === 'superadmin' || role === 'super_admin') return t('Giám đốc điều hành');
       if (role === 'director') return t('Giám đốc');
       if (role === 'manager') return t('Quản lý');
+      if (role === 'assistant') return t('Trợ lý');
+      if (role === 'sale_admin' || role === 'saleadmin') return t('Sale Admin');
+      if (role === 'marketing') return t('Marketing');
+      if (role === 'sales' || role === 'sale') return t('Tư vấn viên');
+      if (role === 'hr') return t('Nhân sự');
+      if (role === 'accountant') return t('Kế toán');
+      if (role === 'viewer') return t('Người xem');
       return role;
     };
 
@@ -1418,37 +1426,53 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
           <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : '520px', minWidth: isMobile ? '100%' : '320px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {t('Nhiệm vụ & Phê duyệt tồn đọng')}
+                {isAdminOrManager ? t('Nhiệm vụ & Phê duyệt tồn đọng') : t('Không gian làm việc')}
               </div>
-              {issues.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {issues.slice(0, 2).map((issue, index) => (
-                    <div key={index} className="welcome-task-row" onClick={issue.action}>
-                      {issue.type === 'ticket' && <AlertTriangle size={14} style={{ color: '#fbbf24' }} />}
-                      {issue.type === 'gatekeeper' && <Zap size={14} style={{ color: '#60a5fa' }} />}
-                      {issue.type === 'checkin' && <Clock size={14} style={{ color: '#ff8a8a' }} />}
-                      {issue.type === 'coop' && <Scale size={14} style={{ color: '#c084fc' }} />}
-                      {issue.type === 'expense' && <DollarSign size={14} style={{ color: '#34d399' }} />}
-                      <span style={{ flex: 1, fontSize: '0.78rem' }}>{issue.text}</span>
-                    </div>
-                  ))}
-                </div>
+              {isAdminOrManager ? (
+                issues.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {issues.slice(0, 2).map((issue, index) => (
+                      <div key={index} className="welcome-task-row" onClick={issue.action}>
+                        {issue.type === 'ticket' && <AlertTriangle size={14} style={{ color: '#fbbf24' }} />}
+                        {issue.type === 'gatekeeper' && <Zap size={14} style={{ color: '#60a5fa' }} />}
+                        {issue.type === 'checkin' && <Clock size={14} style={{ color: '#ff8a8a' }} />}
+                        {issue.type === 'coop' && <Scale size={14} style={{ color: '#c084fc' }} />}
+                        {issue.type === 'expense' && <DollarSign size={14} style={{ color: '#34d399' }} />}
+                        <span style={{ flex: 1, fontSize: '0.78rem' }}>{issue.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    padding: isMobile ? '8px 12px' : '10px 16px', 
+                    background: 'rgba(255, 255, 255, 0.03)', 
+                    border: '1px dashed rgba(255, 255, 255, 0.15)', 
+                    borderRadius: '12px', 
+                    color: '#cbd5e1',
+                    fontSize: '0.75rem'
+                  }}>
+                    <CheckCircle2 size={15} style={{ color: '#10b981', flexShrink: 0 }} />
+                    <span style={{ fontWeight: 650 }}>
+                      {t('Không có yêu cầu phê duyệt nào đang chờ xử lý. Chúc bạn 1 ngày làm việc năng lượng.')}
+                    </span>
+                  </div>
+                )
               ) : (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '10px', 
-                  padding: isMobile ? '8px 12px' : '10px 16px', 
-                  background: 'rgba(255, 255, 255, 0.03)', 
-                  border: '1px dashed rgba(255, 255, 255, 0.15)', 
-                  borderRadius: '12px', 
-                  color: '#cbd5e1',
-                  fontSize: '0.75rem'
-                }}>
-                  <CheckCircle2 size={15} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span style={{ fontWeight: 650 }}>
-                    {t('Không có yêu cầu phê duyệt nào đang chờ xử lý. Chúc bạn 1 ngày làm việc năng lượng.')}
-                  </span>
+                <div 
+                  className="welcome-task-row" 
+                  onClick={() => navigate('/workspace')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CheckSquare size={15} style={{ color: '#10b981' }} />
+                    <span style={{ fontSize: '0.78rem', fontWeight: 650 }}>
+                      {t('Bàn làm việc — Quản lý công việc & lịch trình cá nhân')}
+                    </span>
+                  </div>
+                  <ArrowRight size={14} style={{ opacity: 0.8, color: '#ffffff' }} />
                 </div>
               )}
             </div>
@@ -3616,205 +3640,6 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
       ) : (
         <>
-          {/* Lead Flow Distribution & Timeout analysis */}
-          <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: isMobile ? '0.95rem' : '1.125rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
-                <Zap size={18} color="var(--color-warning)" /> {t('Giám sát Dòng chảy Phân bổ & Tỷ lệ Tiếp nhận Lead')}
-              </h3>
-            </div>
-            
-            {(() => {
-              const consultantsList = stats?.topConsultants || [];
-              const totalConsultants = consultantsList.length;
-              const totalPages = Math.ceil(totalConsultants / CONSULTANTS_PER_PAGE);
-              const paginatedConsultants = consultantsList.slice((consultantPage - 1) * CONSULTANTS_PER_PAGE, consultantPage * CONSULTANTS_PER_PAGE);
-
-              return (
-                <>
-                  <div style={{ overflowX: 'auto', maxHeight: '360px', overflowY: 'auto', border: '1px solid var(--color-border-light)', borderRadius: '12px', background: 'var(--color-surface)' }} className="custom-scrollbar">
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
-                      <thead>
-                        <tr style={{ textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 700 }}>
-                          <th style={{ padding: '12px', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 2, borderBottom: '2px solid var(--color-border-light)' }}>{t('Nhân viên')}</th>
-                          <th style={{ padding: '12px', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 2, borderBottom: '2px solid var(--color-border-light)', textAlign: 'center' }}>{t('Lead nhận')}</th>
-                          <th style={{ padding: '12px', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 2, borderBottom: '2px solid var(--color-border-light)', textAlign: 'center' }}>{t('Tỷ lệ nhận')}</th>
-                          <th style={{ padding: '12px', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 2, borderBottom: '2px solid var(--color-border-light)', textAlign: 'center' }}>{t('Quá hạn/Thu hồi')}</th>
-                          <th style={{ padding: '12px', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 2, borderBottom: '2px solid var(--color-border-light)', textAlign: 'center' }}>{t('Chưa tương tác (Van ôm)')}</th>
-                          <th style={{ padding: '12px', position: 'sticky', top: 0, background: 'var(--color-surface)', zIndex: 2, borderBottom: '2px solid var(--color-border-light)' }}>{t('Dòng chảy (Flow)')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedConsultants.length > 0 ? paginatedConsultants.map((c: any, idx: number) => {
-                          const total = c.offered_count || c.data || 0;
-                          const accepted = c.data || 0;
-                          const recalled = c.recalled_count || 0;
-                          const uncontacted = c.uncontacted_count || 0;
-                          
-                          const acceptPct = (c.accepted_percent !== undefined && c.accepted_percent !== null) ? c.accepted_percent : (total > 0 ? Math.round((accepted / total) * 100) : 100);
-                          const recallPct = c.recalled_percent || 0;
-                          const flowPct = acceptPct > 0 ? acceptPct : (recalled === 0 && accepted > 0 ? 100 : 0);
-                          
-                          return (
-                            <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
-                              <td style={{ padding: '8px 12px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <Avatar src={c.avatar} name={c.name} size={24} />
-                                  <div>
-                                    <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{c.name}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{c.email}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600 }}>
-                                <div>{recalled > 0 ? `${accepted}/${total}` : accepted}</div>
-                                {recalled > 0 && (
-                                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 500, marginTop: '2px' }}>
-                                    (bỏ qua {recalled} cơ hội)
-                                  </div>
-                                )}
-                              </td>
-                              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontWeight: 700,
-                                  fontSize: '0.75rem',
-                                  background: flowPct >= 80 ? 'rgba(79, 70, 229, 0.08)' : flowPct >= 50 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                  color: flowPct >= 80 ? '#4F46E5' : flowPct >= 50 ? '#D97706' : '#DC2626'
-                                }}>
-                                  {flowPct}%
-                                </span>
-                              </td>
-                              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontWeight: 700,
-                                  fontSize: '0.75rem',
-                                  background: recalled > 0 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(163, 20, 34, 0.04)',
-                                  color: recalled > 0 ? '#DC2626' : 'var(--color-text-muted)'
-                                }}>
-                                  {recalled} ({recallPct}%)
-                                </span>
-                              </td>
-                              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontWeight: 700,
-                                  fontSize: '0.75rem',
-                                  background: uncontacted >= 5 ? 'rgba(220, 38, 38, 0.1)' : uncontacted >= 3 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(13, 148, 136, 0.08)',
-                                  color: uncontacted >= 5 ? '#DC2626' : uncontacted >= 3 ? '#D97706' : '#0D9488'
-                                }}>
-                                  {uncontacted}/5
-                                </span>
-                              </td>
-                              <td style={{ padding: '8px 12px', minWidth: '150px' }}>
-                                <div style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'var(--color-bg)' }}>
-                                  <div style={{ width: `${flowPct}%`, background: 'linear-gradient(90deg, #BD1D2D 0%, #F97316 100%)' }} title={`Đã nhận: ${flowPct}%`} />
-                                  <div style={{ width: `${recallPct}%`, background: 'var(--color-danger)' }} title={`Thu hồi: ${recallPct}%`} />
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        }) : (
-                          <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)' }}>
-                              {t('Chưa có dữ liệu phân bổ')}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {totalPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border-light)' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                        {t('Hiển thị')} <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{(consultantPage - 1) * CONSULTANTS_PER_PAGE + 1}</span> - <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{Math.min(consultantPage * CONSULTANTS_PER_PAGE, totalConsultants)}</span> {t('trên')} <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{totalConsultants}</span>
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button 
-                          onClick={() => setConsultantPage(prev => Math.max(prev - 1, 1))} 
-                          disabled={consultantPage === 1}
-                          style={{
-                            height: 28,
-                            minWidth: 28,
-                            padding: 0,
-                            borderRadius: '6px',
-                            border: '1px solid var(--color-border-light)',
-                            background: consultantPage === 1 ? 'rgba(0,0,0,0.02)' : 'var(--color-surface)',
-                            color: consultantPage === 1 ? 'var(--color-text-muted)' : 'var(--color-text)',
-                            cursor: consultantPage === 1 ? 'not-allowed' : 'pointer',
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          &lt;
-                        </button>
-                        {(() => {
-                          const maxVisible = 5;
-                          let start = Math.max(1, consultantPage - Math.floor(maxVisible / 2));
-                          let end = Math.min(totalPages, start + maxVisible - 1);
-                          if (end - start + 1 < maxVisible) {
-                            start = Math.max(1, end - maxVisible + 1);
-                          }
-                          const pageNumbers = [];
-                          for (let p = start; p <= end; p++) {
-                            pageNumbers.push(p);
-                          }
-                          return pageNumbers.map((pageNum) => (
-                            <button
-                              key={pageNum}
-                              onClick={() => setConsultantPage(pageNum)}
-                              style={{
-                                height: 28,
-                                minWidth: 28,
-                                padding: 0,
-                                borderRadius: '6px',
-                                fontWeight: 700,
-                                fontSize: '0.75rem',
-                                border: consultantPage === pageNum ? 'none' : '1px solid var(--color-border-light)',
-                                background: consultantPage === pageNum ? 'var(--color-primary)' : 'var(--color-surface)',
-                                color: consultantPage === pageNum ? 'white' : 'var(--color-text)',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {pageNum}
-                            </button>
-                          ));
-                        })()}
-                        <button 
-                          onClick={() => setConsultantPage(prev => Math.min(prev + 1, totalPages))} 
-                          disabled={consultantPage === totalPages}
-                          style={{
-                            height: 28,
-                            minWidth: 28,
-                            padding: 0,
-                            borderRadius: '6px',
-                            border: '1px solid var(--color-border-light)',
-                            background: consultantPage === totalPages ? 'rgba(0,0,0,0.02)' : 'var(--color-surface)',
-                            color: consultantPage === totalPages ? 'var(--color-text-muted)' : 'var(--color-text)',
-                            cursor: consultantPage === totalPages ? 'not-allowed' : 'pointer',
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          &gt;
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-
           <div key="source-quality-loaded" className="responsive-grid-1-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
             {/* Top Consultants */}
             <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column' }}>

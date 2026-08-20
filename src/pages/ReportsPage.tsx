@@ -77,9 +77,12 @@ export const ReportsPage: React.FC = () => {
   }, [user]);
 
   const getEffectiveTeamId = () => {
-    if ((user as any)?.team_id) return (user as any).team_id;
+    if (['admin', 'superadmin', 'super_admin', 'director', 'sale_admin', 'saleadmin', 'marketing'].includes(user?.role || '')) {
+      return null;
+    }
     const me = users.find(u => Number(u.id) === Number(user?.id));
     if (me?.team_id) return me.team_id;
+    if ((user as any)?.team_id) return (user as any).team_id;
     if (user?.role === 'manager') {
       const managedTeam = teams.find(t => Number(t.leader_id) === Number(user.id));
       return managedTeam?.id || null;

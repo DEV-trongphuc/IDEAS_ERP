@@ -105,7 +105,7 @@ const AppTabs = () => {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/consultants') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'hr', 'accountant', 'sale_admin', 'saleadmin', 'marketing'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'attendance')) {
       console.warn("[Router] Access denied for /consultants, role:", user?.role);
       return <Navigate to="/" replace />;
     }
@@ -144,7 +144,7 @@ const AppTabs = () => {
       return <Navigate to="/" replace />;
     }
   } else if (currentPath === '/tickets') {
-    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'ticket')) {
+    if (!['admin', 'superadmin', 'super_admin', 'manager', 'director', 'assistant', 'sale', 'sales', 'marketing'].includes(user?.role || '') && !hasModuleApprovalAccess(user, 'ticket')) {
       console.warn("[Router] Access denied for /tickets, role:", user?.role);
       return <Navigate to="/" replace />;
     }
@@ -167,7 +167,7 @@ const AppTabs = () => {
     if (!['admin', 'superadmin', 'super_admin', 'director', 'hr'].includes(user?.role || '')) {
       return <Navigate to="/" replace />;
     }
-  } else if (['/rounds', '/rules', '/integrations'].includes(currentPath)) {
+  } else if (['/rounds', '/rules', '/integrations', '/gatekeeper'].includes(currentPath)) {
     if (!['admin', 'superadmin', 'super_admin', 'director', 'marketing'].includes(user?.role || '')) {
       return <Navigate to="/" replace />;
     }

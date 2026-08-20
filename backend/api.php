@@ -171,11 +171,24 @@ function verify_jwt($jwt, $secret)
     // Bypass for dev/demo tokens
     if ($jwt === 'demo_token_12345') {
         return [
-            'username' => 'admin',
-            'email' => 'admin@Ideas.test',
+            'username' => 'info',
+            'email' => 'info@ideas.edu.vn',
             'name' => 'Admin Demo',
             'role' => 'admin',
-            'id' => 1
+            'id' => 999905,
+            'user_id' => 999905,
+            'tenant_id' => 1
+        ];
+    }
+    if ($jwt === 'demo_token_marketing') {
+        return [
+            'username' => 'duongtnt',
+            'email' => 'duongtnt@ideas.edu.vn',
+            'name' => 'Trần Ngọc Thùy Dương',
+            'role' => 'marketing',
+            'id' => 100071,
+            'user_id' => 100071,
+            'tenant_id' => 1
         ];
     }
     if ($jwt === 'demo_token_manager') {
@@ -246,13 +259,13 @@ function getModulePermissionScope($conn, $auth, $module, $action)
 
     // All roles can read departments and consultants
     if ($module === 'users' && $action === 'read') {
-        if (in_array($role, ['superadmin', 'admin', 'super_admin', 'hr', 'director', 'viewer', 'assistant', 'sale_admin', 'saleadmin'], true)) {
+        if (in_array($role, ['superadmin', 'admin', 'super_admin', 'hr', 'director', 'viewer', 'assistant', 'sale_admin', 'saleadmin', 'marketing'], true)) {
             return 'all';
         }
         if ($role === 'manager') {
             return 'team';
         }
-        if (in_array($role, ['accountant', 'marketing', 'sale', 'sales'], true)) {
+        if (in_array($role, ['accountant', 'sale', 'sales'], true)) {
             return 'own';
         }
         return 'none';
@@ -314,7 +327,7 @@ function getModulePermissionScope($conn, $auth, $module, $action)
         return 'own';
     }
     if ($role === 'marketing') {
-        if (in_array($module, ['leads', 'campaigns', 'projects'], true)) {
+        if (in_array($module, ['leads', 'campaigns', 'projects', 'deals', 'tickets', 'gatekeeper', 'users', 'contacts', 'students', 'companies'], true)) {
             return 'all';
         }
         if ($module === 'settings') {
@@ -792,6 +805,9 @@ if (!in_array($action, $publicActions)) {
         'register_holiday_shift',
         'register_weekly_shifts',
         'get_connections',
+        'get_mappings',
+        'get_settings',
+        'custom_fields',
         'get_sale_portal_data',
         'get_logs',
         'get_all_pending_counts'

@@ -1404,11 +1404,14 @@ class ContactController {
             $permissionsJson = json_decode($resQ['permissions_json'], true);
         }
 
-        if (in_array($auth['role'], ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin'], true)) {
+        if (in_array(strtolower($auth['role'] ?? ''), ['admin', 'superadmin', 'super_admin', 'sale_admin', 'saleadmin', 'marketing'], true)) {
+            if (strtolower($auth['role'] ?? '') === 'marketing' && $action === 'delete') {
+                return 'none';
+            }
             return 'all';
         }
 
-        if (in_array($auth['role'], ['sale', 'sales'], true) && ($module === 'deals' || $module === 'leads')) {
+        if (in_array(strtolower($auth['role'] ?? ''), ['sale', 'sales'], true) && ($module === 'deals' || $module === 'leads')) {
             return $action === 'delete' ? 'none' : 'own';
         }
 
@@ -1446,6 +1449,9 @@ class ContactController {
             return $action === 'read' ? 'all' : 'none';
         }
         if ($role === 'accountant') {
+            return 'all';
+        }
+        if ($role === 'marketing') {
             return 'all';
         }
 

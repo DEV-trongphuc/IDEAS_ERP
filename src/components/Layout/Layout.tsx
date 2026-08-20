@@ -979,8 +979,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <AlertToast />
       <QuickAddLeadModal />
 
-      {/* Workspace Sticky Pomodoro Timer */}
-      {(location.pathname === '/workspace' || location.pathname === '/') && (
+      {/* Workspace Sticky Pomodoro Timer - only on Bàn làm việc (/workspace, /portal) */}
+      {(location.pathname === '/workspace' || location.pathname === '/portal') && (
         <WorkspaceStickyPomodoro />
       )}
       {showPOS && (
