@@ -105,6 +105,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
 
   // Subtab and Marketing states
   const [activeSubTab, setActiveSubTab] = useState<'default' | 'hr' | 'accountant' | 'marketing'>('default');
+  const [mktActiveTab, setMktActiveTab] = useState<'leads' | 'ads'>('leads');
   const [campaignsList, setCampaignsList] = useState<any[]>([]);
   const [mktFilterType, setMktFilterType] = useState<'close_date' | 'lead_date'>('close_date');
   const [seedingLoading, setSeedingLoading] = useState(false);
@@ -1015,9 +1016,82 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
   };
 
   const renderSubTabs = () => {
-    if (!(user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin')) {
+    const isAdmin = (user?.role === 'admin' || user?.role === 'director' || user?.role === 'superadmin');
+    const isMarketingUser = (user?.role === 'marketing');
+
+    const renderMarketingToggle = () => {
+      const MKT_TABS = [
+        { key: 'leads', label: t('Phân bổ Data') },
+        { key: 'ads', label: t('Hiệu suất Chiến dịch Ads') }
+      ];
+      const activeIdx = MKT_TABS.findIndex(t => t.key === mktActiveTab);
+      const tabW = 160;
+      const g = 2;
+
+      return (
+        <div className="dashboard-subtab-container" style={{
+          display: 'inline-flex',
+          background: 'var(--color-border-light)',
+          border: '1px solid var(--color-border)',
+          padding: '2px',
+          borderRadius: '8px',
+          gap: `${g}px`,
+          width: 'fit-content',
+          position: 'relative',
+          marginLeft: '0',
+          marginBottom: '0.35rem'
+        }}>
+          {/* Sliding Pill Background Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '2px',
+            bottom: '2px',
+            left: '2px',
+            width: `${tabW}px`,
+            borderRadius: '6px',
+            background: 'var(--color-surface)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            transform: `translateX(${activeIdx * (tabW + g)}px)`,
+            zIndex: 1
+          }} />
+          {MKT_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setMktActiveTab(tab.key as any)}
+              style={{
+                width: `${tabW}px`,
+                height: '28px',
+                border: 'none',
+                outline: 'none',
+                boxShadow: 'none',
+                background: 'none',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                color: mktActiveTab === tab.key ? 'var(--color-text)' : 'var(--color-text-muted)',
+                position: 'relative',
+                zIndex: 2,
+                transition: 'color 0.2s',
+                padding: '0 8px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      );
+    };
+
+    if (isMarketingUser) {
+      return renderMarketingToggle();
+    }
+
+    if (!isAdmin) {
       return null;
     }
+
     const TABS = [
       { key: 'default', label: t('Vận hành') },
       { key: 'hr', label: t('Nhân sự') },
@@ -1029,56 +1103,59 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     const gap = 2;
 
     return (
-      <div className="dashboard-subtab-container" style={{
-        display: 'inline-flex',
-        background: 'var(--color-border-light)',
-        border: '1px solid var(--color-border)',
-        padding: '2px',
-        borderRadius: '8px',
-        gap: `${gap}px`,
-        width: 'fit-content',
-        position: 'relative',
-        marginLeft: '0',
-        marginBottom: '0.35rem'
-      }}>
-        {/* Sliding Pill Background Indicator */}
-        <div style={{
-          position: 'absolute',
-          top: '2px',
-          bottom: '2px',
-          left: '2px',
-          width: `${tabWidth}px`,
-          borderRadius: '6px',
-          background: 'var(--color-surface)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          transform: `translateX(${activeTabIndex * (tabWidth + gap)}px)`,
-          zIndex: 1
-        }} />
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveSubTab(t.key as any)}
-            style={{
-              width: `${tabWidth}px`,
-              height: '28px',
-              border: 'none',
-              outline: 'none',
-              boxShadow: 'none',
-              background: 'none',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: activeSubTab === t.key ? 'var(--color-text)' : 'var(--color-text-muted)',
-              position: 'relative',
-              zIndex: 2,
-              transition: 'color 0.2s',
-              padding: 0
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div className="dashboard-subtab-container" style={{
+          display: 'inline-flex',
+          background: 'var(--color-border-light)',
+          border: '1px solid var(--color-border)',
+          padding: '2px',
+          borderRadius: '8px',
+          gap: `${gap}px`,
+          width: 'fit-content',
+          position: 'relative',
+          marginLeft: '0',
+          marginBottom: '0.35rem'
+        }}>
+          {/* Sliding Pill Background Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '2px',
+            bottom: '2px',
+            left: '2px',
+            width: `${tabWidth}px`,
+            borderRadius: '6px',
+            background: 'var(--color-surface)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            transform: `translateX(${activeTabIndex * (tabWidth + gap)}px)`,
+            zIndex: 1
+          }} />
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveSubTab(t.key as any)}
+              style={{
+                width: `${tabWidth}px`,
+                height: '28px',
+                border: 'none',
+                outline: 'none',
+                boxShadow: 'none',
+                background: 'none',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                color: activeSubTab === t.key ? 'var(--color-text)' : 'var(--color-text-muted)',
+                position: 'relative',
+                zIndex: 2,
+                transition: 'color 0.2s',
+                padding: 0
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {activeSubTab === 'marketing' && renderMarketingToggle()}
       </div>
     );
   };
@@ -2258,7 +2335,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
     );
   }
 
-  if (currentViewRole === 'marketing') {
+  if (currentViewRole === 'marketing' && mktActiveTab === 'ads') {
     // Seeder handler
     const handleSeedDemo = async () => {
       if (seedingLoading) return;
