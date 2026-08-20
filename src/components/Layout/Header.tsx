@@ -2044,25 +2044,26 @@ export const Header = ({
             return found;
           };
 
+          const maxRecent = isMobile ? 9 : 7;
           const recentItemsList: any[] = [];
           for (const name of targetList) {
             const item = findItem(name);
             if (item && !recentItemsList.some(it => it.name === item.name || it.href === item.href)) {
               recentItemsList.push(item);
             }
-            if (recentItemsList.length >= (isMobile ? 9 : 9)) break;
+            if (recentItemsList.length >= maxRecent) break;
           }
 
-          if (recentItemsList.length < (isMobile ? 9 : 9)) {
+          if (recentItemsList.length < maxRecent) {
             for (const item of allVisibleItems) {
               if (!recentItemsList.some(it => it.name === item.name || it.href === item.href)) {
                 recentItemsList.push(item);
               }
-              if (recentItemsList.length >= (isMobile ? 9 : 9)) break;
+              if (recentItemsList.length >= maxRecent) break;
             }
           }
 
-          const recentItems = recentItemsList.slice(0, isMobile ? 9 : 9);
+          const recentItems = recentItemsList.slice(0, maxRecent);
 
           return (
             <div style={{ paddingRight: '4px' }}>
@@ -2141,7 +2142,7 @@ export const Header = ({
                       </span>
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(auto-fill, minmax(140px, 1fr))',
+                        gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(7, 1fr)',
                         gap: isMobile ? '8px' : '16px'
                       }}>
                         {recentItems.map(item => {
