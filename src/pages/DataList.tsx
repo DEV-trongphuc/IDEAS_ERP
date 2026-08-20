@@ -639,7 +639,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
     }
     setSearchParams((prev: any) => {
       const next = new URLSearchParams(prev);
-      if (value === 'all' || value === '') next.delete(key);
+      if (value === 'all' || value === '' || (key === 'view' && value === 'list')) next.delete(key);
       else next.set(key, value);
       if (key !== 'page') next.delete('page');
       return next;
@@ -926,19 +926,15 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
   // Calendar / Databank View Mode States
   const [localViewMode, setLocalViewMode] = useState<'list' | 'calendar' | 'databank'>('list');
   useEffect(() => {
-    if (location.pathname === '/calendar') {
+    const viewParam = searchParams.get('view');
+    if (viewParam === 'databank') {
+      setLocalViewMode('databank');
+    } else if (viewParam === 'calendar') {
       setLocalViewMode('calendar');
     } else {
-      const viewParam = searchParams.get('view');
-      if (viewParam === 'databank') {
-        setLocalViewMode('databank');
-      } else if (viewParam === 'calendar') {
-        setLocalViewMode('calendar');
-      } else {
-        setLocalViewMode('list');
-      }
+      setLocalViewMode('list');
     }
-  }, [location.pathname, searchParams]);
+  }, [searchParams]);
   const viewMode = localViewMode;
 
   const [publicLeads, setPublicLeads] = useState<any[]>([]);
@@ -1699,11 +1695,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                   className={`btn-toggle-view ${viewMode === 'list' ? 'active' : ''}`}
                   onClick={() => {
                     setLocalViewMode('list');
-                    setSearchParams((prev: any) => {
-                      const next = new URLSearchParams(prev);
-                      next.set('view', 'list');
-                      return next;
-                    });
+                    updateParams('view', 'list');
                   }}
                   style={{
                     display: 'flex',
@@ -1728,11 +1720,7 @@ const DataListInner = ({ isActive, searchParams, setSearchParams, location }: { 
                   className={`btn-toggle-view ${viewMode === 'calendar' ? 'active' : ''}`}
                   onClick={() => {
                     setLocalViewMode('calendar');
-                    setSearchParams((prev: any) => {
-                      const next = new URLSearchParams(prev);
-                      next.set('view', 'calendar');
-                      return next;
-                    });
+                    updateParams('view', 'calendar');
                   }}
                   style={{
                     display: 'flex',

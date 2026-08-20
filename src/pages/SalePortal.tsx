@@ -15995,7 +15995,7 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
                         {/* Card 3: Lịch gặp gỡ */}
                         <div className="stat-card hover-lift" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', minHeight: isMobile ? '105px' : '120px', borderRadius: '12px', border: '1px solid var(--color-border-light)', position: 'relative', overflow: 'hidden', background: 'var(--color-surface)', boxShadow: 'var(--shadow-sm)' }}>
-                          <div className="decor-svg" style={{ color: '#8b5cf6' }}>
+                          <div className="decor-svg" style={{ color: '#BD1D2D' }}>
                             <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
                               <path d="M50 20 L80 80 H20 Z" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
                             </svg>
@@ -16004,8 +16004,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? '6px' : '12px', position: 'relative', zIndex: 2 }}>
                             <span className="stat-label" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800, fontSize: isMobile ? '0.625rem' : '0.7rem', color: 'var(--color-text-muted)' }}>{t('Lịch gặp gỡ')}</span>
                             <div className="stat-icon" style={{
-                              color: '#8b5cf6',
-                              background: 'rgba(139, 92, 246, 0.08)',
+                              color: '#BD1D2D',
+                              background: 'rgba(189, 29, 45, 0.08)',
                               width: isMobile ? '28px' : '36px',
                               height: isMobile ? '28px' : '36px',
                               borderRadius: '50%',
