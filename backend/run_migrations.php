@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 220;
+$targetVersion = 222;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1487,9 +1487,48 @@ try {
         $logMsg("Nâng cấp lên phiên bản 220 hoàn tất.", "success");
     }
 
+    // MIGRATION 222: Update turniodev to Tunrio - Super admin (role superadmin) and remove 3 test accounts
+    if ($currentVersion < 222) {
+        $logMsg("Đang thực hiện nâng cấp CSDL lên phiên bản 222 (Cập nhật turniodev & dọn dẹp tài khoản test)...", "info");
+        try {
+            // 1. Update turniodev@gmail.com
+            $updateStmt = $conn->prepare("UPDATE users SET full_name = 'Tunrio - Super admin', role = 'superadmin' WHERE email = 'turniodev@gmail.com'");
+            if ($updateStmt) {
+                $updateStmt->execute();
+                $updateStmt->close();
+                $logMsg("Đã đổi tên thành 'Tunrio - Super admin' và nâng quyền superadmin cho turniodev@gmail.com", "success");
+            }
+
+            // 2. Remove 3 test accounts: dev_director@test.com, dev_manager@test.com, dev_sale@test.com
+            $testEmails = ['dev_director@test.com', 'dev_manager@test.com', 'dev_sale@test.com'];
+            foreach ($testEmails as $testEmail) {
+                // Find user id
+                $uStmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+                $uStmt->bind_param('s', $testEmail);
+                $uStmt->execute();
+                $res = $uStmt->get_result();
+                $uRow = $res ? $res->fetch_assoc() : null;
+                $uStmt->close();
+
+                if ($uRow) {
+                    $uId = (int)$uRow['id'];
+                    $conn->query("DELETE FROM login_attempts WHERE email = '$testEmail'");
+                    $conn->query("DELETE FROM notifications WHERE user_id = $uId");
+                    $conn->query("DELETE FROM email_otps WHERE user_id = $uId");
+                    $conn->query("DELETE FROM check_ins WHERE user_id = $uId");
+                    $conn->query("DELETE FROM users WHERE id = $uId");
+                    $logMsg("Đã xóa tài khoản test: $testEmail (ID: $uId)", "success");
+                }
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 222: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 222 hoàn tất.", "success");
+    }
+
     // 25. Update DB version in system_settings
-    $targetVersion = 220;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '220') ON DUPLICATE KEY UPDATE setting_value = '220'");
+    $targetVersion = 222;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '222') ON DUPLICATE KEY UPDATE setting_value = '222'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
