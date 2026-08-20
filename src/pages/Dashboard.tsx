@@ -2881,7 +2881,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                       style={{
                         width: `${aiPassedPercent}%`,
                         height: '100%',
-                        background: 'linear-gradient(90deg, var(--color-primary) 0%, #a78bfa 100%)',
+                        background: 'linear-gradient(90deg, var(--color-primary) 0%, #e05e6b 100%)',
                         transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
                       }}
                       title={`${t('Đạt chuẩn')}: ${aiPassedPercent}%`}
@@ -4004,8 +4004,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                       <Pie
                         data={[
                           { name: t('Ngoài giờ làm việc'), value: stats?.pending_work_hours_count || 0, color: '#f59e0b' },
-                          { name: t('Trong giờ làm việc'), value: Math.max(0, (stats?.total_today || 0) - (stats?.pending_work_hours_count || 0)), color: theme === 'dark' ? '#a78bfa' : '#a31422' }
-                        ].filter(item => item.value > 0 || (stats?.total_today === 0 && item.color === (theme === 'dark' ? '#a78bfa' : '#a31422')))}
+                          { name: t('Trong giờ làm việc'), value: Math.max(0, (stats?.total_today || 0) - (stats?.pending_work_hours_count || 0)), color: theme === 'dark' ? 'var(--color-primary)' : '#a31422' }
+                        ].filter(item => item.value > 0 || (stats?.total_today === 0 && item.color === (theme === 'dark' ? 'var(--color-primary)' : '#a31422')))}
                         cx="50%"
                         cy="50%"
                         innerRadius={54}
@@ -4015,8 +4015,8 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                       >
                         {([
                           { name: t('Ngoài giờ làm việc'), value: stats?.pending_work_hours_count || 0, color: '#f59e0b' },
-                          { name: t('Trong giờ làm việc'), value: Math.max(0, (stats?.total_today || 0) - (stats?.pending_work_hours_count || 0)), color: theme === 'dark' ? '#a78bfa' : '#a31422' }
-                        ].filter(item => item.value > 0 || (stats?.total_today === 0 && item.color === (theme === 'dark' ? '#a78bfa' : '#a31422')))).map((entry, index) => (
+                          { name: t('Trong giờ làm việc'), value: Math.max(0, (stats?.total_today || 0) - (stats?.pending_work_hours_count || 0)), color: theme === 'dark' ? 'var(--color-primary)' : '#a31422' }
+                        ].filter(item => item.value > 0 || (stats?.total_today === 0 && item.color === (theme === 'dark' ? 'var(--color-primary)' : '#a31422')))).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -4068,10 +4068,10 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                     fontSize: '0.8125rem'
                   }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-light)', fontWeight: 600 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: theme === 'dark' ? '#a78bfa' : '#a31422' }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: theme === 'dark' ? 'var(--color-primary)' : '#a31422' }} />
                       {t('Trong giờ')}
                     </span>
-                    <strong style={{ color: theme === 'dark' ? '#a78bfa' : '#a31422', fontWeight: 700 }}>
+                    <strong style={{ color: theme === 'dark' ? 'var(--color-primary)' : '#a31422', fontWeight: 700 }}>
                       {Math.max(0, (stats?.total_today || 0) - (stats?.pending_work_hours_count || 0))} lead ({(() => {
                         const ratio = parseFloat(stats?.out_of_hours_ratio || '0');
                         return (100 - ratio).toFixed(1) + '%';
@@ -4206,7 +4206,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                         const isEven = idx % 2 === 0;
                         const individualFairness = Math.max(85, Math.min(100, parseFloat(stats?.fair_share_equity || '96.5') + (isEven ? 1.5 : -2.0) - (idx * 0.5)));
 
-                        let trackColor = 'linear-gradient(90deg, #a78bfa 0%, #a31422 100%)'; // Purple gradient
+                        let trackColor = 'linear-gradient(90deg, var(--color-primary) 0%, #e05e6b 100%)';
                         let badgeBg = 'var(--color-primary-light)';
                         let badgeTextColor = 'var(--color-primary)';
 
