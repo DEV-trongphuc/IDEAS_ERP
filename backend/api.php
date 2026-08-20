@@ -15239,7 +15239,7 @@ switch ($action) {
             $acceptedRes = $conn->query("
             SELECT l.assigned_to, COUNT(*) as cnt 
             FROM leads l
-            WHERE l.is_accepted = 1 
+            WHERE (l.is_accepted = 1 OR (l.assigned_to IS NOT NULL AND l.assigned_to > 0))
               AND l.assigned_to IS NOT NULL 
               AND $dateConditionL $managerFilterLeads
             GROUP BY l.assigned_to
@@ -15257,8 +15257,8 @@ switch ($action) {
                 $uCount = $uncontactedMap[$cId] ?? 0;
                 $rCount = $recalledMap[$cId] ?? 0;
                 $offered = $data_count + $rCount;
-                $accCount = $acceptedMap[$cId] ?? 0;
-                $acceptedPercent = $offered > 0 ? round(($accCount / $offered) * 100, 1) : 0.0;
+                $accCount = $data_count > 0 ? $data_count : ($acceptedMap[$cId] ?? 0);
+                $acceptedPercent = $offered > 0 ? round(($accCount / $offered) * 100, 1) : 100.0;
                 $recalledPercent = $offered > 0 ? round(($rCount / $offered) * 100, 1) : 0.0;
 
                 $topConsultantsList[] = [

@@ -3574,8 +3574,9 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                           const recalled = c.recalled_count || 0;
                           const uncontacted = c.uncontacted_count || 0;
                           
-                          const acceptPct = c.accepted_percent || 0;
+                          const acceptPct = (c.accepted_percent !== undefined && c.accepted_percent !== null) ? c.accepted_percent : (total > 0 ? Math.round((accepted / total) * 100) : 100);
                           const recallPct = c.recalled_percent || 0;
+                          const flowPct = acceptPct > 0 ? acceptPct : (recalled === 0 && accepted > 0 ? 100 : 0);
                           
                           return (
                             <tr key={idx} style={{ borderBottom: '1px solid var(--color-border-light)', height: '48px' }}>
@@ -3589,7 +3590,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                                 </div>
                               </td>
                               <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600 }}>
-                                <div>{accepted}/{total}</div>
+                                <div>{recalled > 0 ? `${accepted}/${total}` : accepted}</div>
                                 {recalled > 0 && (
                                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontWeight: 500, marginTop: '2px' }}>
                                     (bỏ qua {recalled} cơ hội)
@@ -3602,10 +3603,10 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                                   borderRadius: '4px',
                                   fontWeight: 700,
                                   fontSize: '0.75rem',
-                                  background: acceptPct >= 80 ? 'rgba(79, 70, 229, 0.08)' : acceptPct >= 50 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                  color: acceptPct >= 80 ? '#4F46E5' : acceptPct >= 50 ? '#D97706' : '#DC2626'
+                                  background: flowPct >= 80 ? 'rgba(79, 70, 229, 0.08)' : flowPct >= 50 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                  color: flowPct >= 80 ? '#4F46E5' : flowPct >= 50 ? '#D97706' : '#DC2626'
                                 }}>
-                                  {acceptPct}%
+                                  {flowPct}%
                                 </span>
                               </td>
                               <td style={{ padding: '8px 12px', textAlign: 'center' }}>
@@ -3634,7 +3635,7 @@ const DashboardInner = ({ isActive }: { isActive: boolean }) => {
                               </td>
                               <td style={{ padding: '8px 12px', minWidth: '150px' }}>
                                 <div style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'var(--color-bg)' }}>
-                                  <div style={{ width: `${acceptPct}%`, background: 'linear-gradient(90deg, #BD1D2D 0%, #F97316 100%)' }} title={`Đã nhận: ${acceptPct}%`} />
+                                  <div style={{ width: `${flowPct}%`, background: 'linear-gradient(90deg, #BD1D2D 0%, #F97316 100%)' }} title={`Đã nhận: ${flowPct}%`} />
                                   <div style={{ width: `${recallPct}%`, background: 'var(--color-danger)' }} title={`Thu hồi: ${recallPct}%`} />
                                 </div>
                               </td>
