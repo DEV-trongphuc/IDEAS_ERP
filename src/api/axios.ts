@@ -173,16 +173,36 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const original = error.config;
-    // Don't intercept 401s from login or refresh endpoints themselves
+    const url = String(original?.url || '');
+    const action = String(original?.params?.action || '');
+    
+    // Comprehensive check for all auth endpoints
+    const isAuthEndpoint = 
+      url.includes('auth/login') ||
+      url.includes('auth/refresh') ||
+      url.includes('auth/verify-2fa') ||
+      url.includes('login_google') ||
+      url.includes('auth/forgot-password') ||
+      url.includes('auth/reset-password') ||
+      action.includes('auth/login') ||
+      action.includes('auth/refresh') ||
+      action.includes('auth/verify-2fa') ||
+      action.includes('login_google') ||
+      action.includes('auth/forgot-password') ||
+      action.includes('auth/reset-password');
+
+    // Don't intercept 401s from login or auth endpoints themselves
     if (
       error.response?.status === 401 &&
-      !original._retry &&
-      !original.url?.includes('/auth/login') &&
-      !original.url?.includes('auth/refresh')
+      !original?._retry &&
+      !isAuthEndpoint
     ) {
       original._retry = true;
       try {
         const refresh = localStorage.getItem('refresh_token');
+        if (!refresh) {
+          throw new Error('No refresh token');
+        }
         const { data } = await axios.post(`${BASE_URL}/api.php?action=auth/refresh`, { refresh_token: refresh });
         const { access_token, refresh_token } = data.data;
         localStorage.setItem('access_token', access_token);
@@ -192,14 +212,17 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${access_token}`;
         return api(original);
       } catch {
-        localStorage.clear();
-        window.location.href = '/login';
+        localStorage.removeItem('Ideas_token');
+        localStorage.removeItem('Ideas_user');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     if (error.response?.status === 500) {
       console.error('SERVER ERROR:', error.response.data);
-      // We don't have direct access to addToast here easily without a store or window property.
-      // But we can ensure the error is descriptive for the caller.
     }
     return Promise.reject(error);
   }

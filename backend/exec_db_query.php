@@ -5,6 +5,22 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db_connect.php';
 
+if (php_sapi_name() === 'cli' && isset($argv)) {
+    $cliArgs = array_slice($argv, 1);
+    for ($i = 0; $i < count($cliArgs); $i++) {
+        $arg = $cliArgs[$i];
+        if (strpos($arg, '--key=') === 0) {
+            $_REQUEST['key'] = substr($arg, 6);
+        } else if (strpos($arg, '--sql=') === 0) {
+            $_REQUEST['sql'] = substr(implode(' ', array_slice($cliArgs, $i)), 6);
+            break;
+        } else {
+            parse_str($arg, $parsed);
+            $_REQUEST = array_merge($_REQUEST, $parsed);
+        }
+    }
+}
+
 $secretKey = $_REQUEST['key'] ?? '';
 // Secret key bảo mật: key=Ideas2026
 if ($secretKey !== 'Ideas2026') {
@@ -13,7 +29,7 @@ if ($secretKey !== 'Ideas2026') {
     exit;
 }
 
-$sql = trim($_REQUEST['sql'] ?? '');
+$sql = trim(trim($_REQUEST['sql'] ?? ''), "\"'");
 if (isset($_REQUEST['read_file']) && $_REQUEST['read_file'] == '1') {
     $filePath = __DIR__ . '/controllers/HRMController.php';
     if (file_exists($filePath)) {

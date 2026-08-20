@@ -18,7 +18,7 @@ $apply = (isset($_GET['apply']) && $_GET['apply'] === 'true')
       || (isset($_POST['execute_migration']) && $_POST['execute_migration'] === '1')
       || ($isCli && in_array('--apply', $argv));
 
-$targetVersion = 219;
+$targetVersion = 220;
 $currentVersion = 186;
 
 // Query current DB version
@@ -1448,9 +1448,48 @@ try {
         $logMsg("Nâng cấp lên phiên bản 219 hoàn tất.", "success");
     }
 
+    // MIGRATION 220: Create or update account info@ideas.edu.vn with admin role, avatar, and password Ideas@812
+    if ($currentVersion < 220) {
+        $logMsg("Đang thực hiện nâng cấp CSDL lên phiên bản 220 (Tạo/Cập nhật tài khoản info@ideas.edu.vn)...", "info");
+        try {
+            $email = 'info@ideas.edu.vn';
+            $fullName = 'IDEAS Admin';
+            $avatarUrl = 'https://ideas.edu.vn/wp-content/uploads/2023/04/cropped-logofavicon-1.webp';
+            $role = 'admin';
+            $passwordHash = password_hash('Ideas@812', PASSWORD_BCRYPT);
+            
+            // Check if user exists
+            $checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $checkStmt->bind_param('s', $email);
+            $checkStmt->execute();
+            $res = $checkStmt->get_result();
+            $existing = $res ? $res->fetch_assoc() : null;
+            $checkStmt->close();
+
+            if ($existing) {
+                $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, avatar_url = ?, role = ?, password_hash = ?, is_active = 1, is_confirmed = 1, two_factor_enabled = 0 WHERE email = ?");
+                $updateStmt->bind_param('sssss', $fullName, $avatarUrl, $role, $passwordHash, $email);
+                $updateStmt->execute();
+                $updateStmt->close();
+                $logMsg("Đã cập nhật thông tin tài khoản $email.", "success");
+            } else {
+                $tenantId = 1;
+                $username = 'info';
+                $insertStmt = $conn->prepare("INSERT INTO users (tenant_id, username, email, full_name, role, password_hash, avatar_url, is_active, is_confirmed, two_factor_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 0)");
+                $insertStmt->bind_param('issssss', $tenantId, $username, $email, $fullName, $role, $passwordHash, $avatarUrl);
+                $insertStmt->execute();
+                $insertStmt->close();
+                $logMsg("Đã tạo mới tài khoản $email.", "success");
+            }
+        } catch (Throwable $e) {
+            $logMsg("Lỗi nâng cấp CSDL phiên bản 220: " . $e->getMessage(), "error");
+        }
+        $logMsg("Nâng cấp lên phiên bản 220 hoàn tất.", "success");
+    }
+
     // 25. Update DB version in system_settings
-    $targetVersion = 219;
-    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '219') ON DUPLICATE KEY UPDATE setting_value = '219'");
+    $targetVersion = 220;
+    $conn->query("INSERT INTO system_settings (setting_key, setting_value) VALUES ('db_version', '220') ON DUPLICATE KEY UPDATE setting_value = '220'");
     
     $logMsg("Hệ thống đã duy trì cấu trúc Cơ sở dữ liệu ở phiên bản mới nhất: " . $targetVersion, "success");
 
