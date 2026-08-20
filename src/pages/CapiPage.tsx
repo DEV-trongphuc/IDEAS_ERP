@@ -393,23 +393,23 @@ export default function CapiPage() {
       </div>
 
       {/* Payload Viewer Modal */}
-      {viewPayload && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0, 0, 0, 0.82)', backdropFilter: 'blur(4px)', padding: '1rem' }}>
-          <div className="card" style={{ maxWidth: '500px', width: '100%', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', animation: 'scaleUp 0.2s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Code size={20} /> Chi tiết payload JSON
-              </h2>
-              <button onClick={() => setViewPayload(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)', display: 'flex', alignItems: 'center' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <pre style={{ padding: '1rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', maxHeight: '380px', overflow: 'auto', fontSize: '0.75rem', color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-              {JSON.stringify(JSON.parse(viewPayload), null, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
+      <CustomModal
+        isOpen={Boolean(viewPayload)}
+        onClose={() => setViewPayload(null)}
+        title={
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Code size={20} /> Chi tiết payload JSON
+          </span>
+        }
+        width="550px"
+        zIndex={2000000}
+      >
+        {viewPayload && (
+          <pre style={{ padding: '1rem', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '8px', maxHeight: '380px', overflow: 'auto', fontSize: '0.75rem', color: 'var(--color-primary)', fontFamily: 'monospace', margin: 0 }}>
+            {JSON.stringify(JSON.parse(viewPayload), null, 2)}
+          </pre>
+        )}
+      </CustomModal>
       {/* Explanation of CAPI rules */}
       <CustomModal
         isOpen={showInfoModal}

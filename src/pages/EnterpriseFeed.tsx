@@ -1762,199 +1762,141 @@ export const EnterpriseFeed: React.FC = () => {
   </div>
 
   {/* Edit Honors Modal */}
-  <AnimatePresence>
-    {showEditHonors && (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(15, 23, 42, 0.6)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-        padding: '20px'
-      }}>
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.2 }}
+  <CustomModal
+    isOpen={showEditHonors}
+    onClose={() => setShowEditHonors(false)}
+    title={`🏆 ${t('Thiết lập vinh danh')}`}
+    width="500px"
+    zIndex={2000000}
+  >
+    <form onSubmit={handleSaveHonors} style={{ padding: '8px 4px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Employee Selection */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
+          {t('Chọn nhân viên')} <span style={{ color: 'var(--color-danger)' }}>*</span>
+        </label>
+        <CustomSelect
+          value={editHonorsUserId || ''}
+          onChange={val => {
+            const numVal = val ? parseInt(val) : null;
+            setEditHonorsUserId(numVal);
+            if (numVal && honorsData?.candidates) {
+              const cand = honorsData.candidates.find(c => c.id === numVal);
+              if (cand) {
+                const roleMap: Record<string, string> = {
+                  'admin': 'Quản trị viên',
+                  'superadmin': 'Quản trị viên cấp cao',
+                  'sales': 'Nhân viên kinh doanh (Sales)',
+                  'sale': 'Nhân viên kinh doanh (Sales)',
+                  'manager': 'Quản lý dự án (Manager)',
+                  'hr': 'Nhân viên nhân sự (HR)',
+                  'accountant': 'Kế toán viên'
+                };
+                setEditHonorsTitle(roleMap[cand.role] || cand.role || '');
+              }
+            }
+          }}
+          options={[
+            { value: '', label: t('Chọn nhân viên') },
+            ...(honorsData?.candidates?.map(c => ({
+              value: c.id,
+              label: c.full_name,
+              avatar: c.avatar_url || undefined,
+              sublabel: c.role
+            })) || [])
+          ]}
+          showAvatars={true}
+          searchable={true}
+          width="100%"
+          size="sm"
+        />
+      </div>
+
+      {/* Title Input */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
+          {t('Chức danh vinh danh')} <span style={{ color: 'var(--color-danger)' }}>*</span>
+        </label>
+        <input
+          type="text"
+          value={editHonorsTitle}
+          onChange={(e) => setEditHonorsTitle(e.target.value)}
+          placeholder={t('Ví dụ: Trưởng phòng Kinh doanh (Sale Manager)')}
+          className="form-input"
           style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border-light)',
-            borderRadius: '16px',
             width: '100%',
-            maxWidth: '480px',
-            boxShadow: 'var(--shadow-xl)',
-            overflow: 'hidden'
+            padding: '8px 12px',
+            fontSize: '0.85rem'
+          }}
+        />
+      </div>
+
+      {/* Badge/Award Title Input */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
+          {t('Danh hiệu / Giải thưởng')} <span style={{ color: 'var(--color-danger)' }}>*</span>
+        </label>
+        <input
+          type="text"
+          value={editHonorsBadge}
+          onChange={(e) => setEditHonorsBadge(e.target.value)}
+          placeholder={t('Ví dụ: Nhân viên xuất sắc của tháng')}
+          className="form-input"
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            fontSize: '0.85rem'
+          }}
+        />
+      </div>
+
+      {/* Reason Textarea */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
+          {t('Lời chúc / Ghi chú vinh danh')} <span style={{ color: 'var(--color-danger)' }}>*</span>
+        </label>
+        <textarea
+          value={editHonorsReason}
+          onChange={(e) => setEditHonorsReason(e.target.value)}
+          rows={4}
+          placeholder={t('Nhập mô tả thành tích vinh danh...')}
+          className="form-textarea"
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            fontSize: '0.85rem',
+            resize: 'none'
+          }}
+        />
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+        <button
+          type="button"
+          onClick={() => setShowEditHonors(false)}
+          className="btn secondary"
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.85rem'
           }}
         >
-          {/* Modal Header */}
-          <div style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--color-border-light)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-            color: '#ffffff'
-          }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>🏆 {t('Thiết lập vinh danh')}</h3>
-            <button
-              type="button"
-              onClick={() => setShowEditHonors(false)}
-              style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Modal Body */}
-          <form onSubmit={handleSaveHonors} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Employee Selection */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                {t('Chọn nhân viên')} <span style={{ color: 'var(--color-danger)' }}>*</span>
-              </label>
-              <CustomSelect
-                value={editHonorsUserId || ''}
-                onChange={val => {
-                  const numVal = val ? parseInt(val) : null;
-                  setEditHonorsUserId(numVal);
-                  if (numVal && honorsData?.candidates) {
-                    const cand = honorsData.candidates.find(c => c.id === numVal);
-                    if (cand) {
-                      const roleMap: Record<string, string> = {
-                        'admin': 'Quản trị viên',
-                        'superadmin': 'Quản trị viên cấp cao',
-                        'sales': 'Nhân viên kinh doanh (Sales)',
-                        'sale': 'Nhân viên kinh doanh (Sales)',
-                        'manager': 'Quản lý dự án (Manager)',
-                        'hr': 'Nhân viên nhân sự (HR)',
-                        'accountant': 'Kế toán viên'
-                      };
-                      setEditHonorsTitle(roleMap[cand.role] || cand.role || '');
-                    }
-                  }
-                }}
-                options={[
-                  { value: '', label: t('Chọn nhân viên') },
-                  ...(honorsData?.candidates?.map(c => ({
-                    value: c.id,
-                    label: c.full_name,
-                    avatar: c.avatar_url || undefined,
-                    sublabel: c.role
-                  })) || [])
-                ]}
-                showAvatars={true}
-                searchable={true}
-                width="100%"
-                size="sm"
-              />
-            </div>
-
-            {/* Title Input */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                {t('Chức danh vinh danh')} <span style={{ color: 'var(--color-danger)' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={editHonorsTitle}
-                onChange={(e) => setEditHonorsTitle(e.target.value)}
-                placeholder={t('Ví dụ: Trưởng phòng Kinh doanh (Sale Manager)')}
-                className="form-input"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '0.85rem'
-                }}
-              />
-            </div>
-
-            {/* Badge/Award Title Input */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                {t('Danh hiệu / Giải thưởng')} <span style={{ color: 'var(--color-danger)' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={editHonorsBadge}
-                onChange={(e) => setEditHonorsBadge(e.target.value)}
-                placeholder={t('Ví dụ: Nhân viên xuất sắc của tháng')}
-                className="form-input"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '0.85rem'
-                }}
-              />
-            </div>
-
-            {/* Reason Textarea */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text)' }}>
-                {t('Lời chúc / Ghi chú vinh danh')} <span style={{ color: 'var(--color-danger)' }}>*</span>
-              </label>
-              <textarea
-                value={editHonorsReason}
-                onChange={(e) => setEditHonorsReason(e.target.value)}
-                rows={4}
-                placeholder={t('Nhập mô tả thành tích vinh danh...')}
-                className="form-textarea"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '0.85rem',
-                  resize: 'none'
-                }}
-              />
-            </div>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setShowEditHonors(false)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--color-border)',
-                  background: 'transparent',
-                  color: 'var(--color-text)',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                {t('Hủy')}
-              </button>
-              <button
-                type="submit"
-                disabled={savingHonors}
-                style={{
-                  padding: '8px 20px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-                  color: '#ffffff',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                {savingHonors ? t('Đang lưu...') : t('Lưu thay đổi')}
-              </button>
-            </div>
-          </form>
-        </motion.div>
+          {t('Hủy')}
+        </button>
+        <button
+          type="submit"
+          disabled={savingHonors}
+          className="btn primary"
+          style={{
+            padding: '8px 20px',
+            fontSize: '0.85rem'
+          }}
+        >
+          {savingHonors ? t('Đang lưu...') : t('Lưu thay đổi')}
+        </button>
       </div>
-    )}
-  </AnimatePresence>
+    </form>
+  </CustomModal>
 
       {/* Reactions Detail Modal */}
       <CustomModal
