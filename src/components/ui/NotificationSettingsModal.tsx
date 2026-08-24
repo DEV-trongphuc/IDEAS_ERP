@@ -180,6 +180,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const currentUser = useAuthStore(state => state.user);
   const role = (currentUser?.role || '').toLowerCase();
   const isAdminOrManager = role === 'admin' || role === 'superadmin' || role === 'director' || role === 'manager' || role === 'leader' || role === 'head_of_department' || role === 'truongphong' || role === 'quanly' || role === 'giamdoc' || role.includes('admin') || role.includes('manager') || role.includes('leader') || role.includes('director') || role.includes('head');
+  const isSaleUser = ['sale', 'sales'].includes(role) || Boolean((currentUser as any)?.consultant_id && !isAdminOrManager);
 
   const visibleCategories = React.useMemo(() => {
     return EVENT_CATEGORIES.filter(cat => {
@@ -281,18 +282,19 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
 // Default Matrix Configurations:
 // - Email: ON (true) for all events
-// - Zalo & Telegram: ON (true) ONLY for important/urgent events
+// - Zalo: ON (true) ONLY for Lead Assignment (Dành cho Sale nhận Lead), OFF for all other events
+// - Telegram: ON (true) for urgent/important events
 // - Master Bell: ON (true) for all events
 const DEFAULT_EVENT_CONFIGS: Record<string, EventConfig> = {
-  // IMPORTANT EVENTS -> Zalo & Telegram = ON, Email = ON
+  // IMPORTANT EVENTS
   LEAD_ASSIGNMENT: { master: true, zalo: true, telegram: true, email: true },
-  SECURITY_DEADLINE_WARNING: { master: true, zalo: true, telegram: true, email: true },
-  MENTION_TAGGED: { master: true, zalo: true, telegram: true, email: true },
-  MY_DEPOSIT_UPDATE: { master: true, zalo: true, telegram: true, email: true },
-  CHECKIN_LATE: { master: true, zalo: true, telegram: true, email: true },
-  EXPENSE_REQUEST: { master: true, zalo: true, telegram: true, email: true },
-  COOPERATION_PENDING_APPROVAL: { master: true, zalo: true, telegram: true, email: true },
-  DEPOSIT_NEW: { master: true, zalo: true, telegram: true, email: true },
+  SECURITY_DEADLINE_WARNING: { master: true, zalo: false, telegram: true, email: true },
+  MENTION_TAGGED: { master: true, zalo: false, telegram: true, email: true },
+  MY_DEPOSIT_UPDATE: { master: true, zalo: false, telegram: true, email: true },
+  CHECKIN_LATE: { master: true, zalo: false, telegram: true, email: true },
+  EXPENSE_REQUEST: { master: true, zalo: false, telegram: true, email: true },
+  COOPERATION_PENDING_APPROVAL: { master: true, zalo: false, telegram: true, email: true },
+  DEPOSIT_NEW: { master: true, zalo: false, telegram: true, email: true },
 
   // ROUTINE / STANDARD EVENTS -> Zalo & Telegram = OFF, Email = ON
   CUSTOMER_UPDATE: { master: true, zalo: false, telegram: false, email: true },
@@ -303,7 +305,7 @@ const DEFAULT_EVENT_CONFIGS: Record<string, EventConfig> = {
   ATTENDANCE_UPDATE: { master: true, zalo: false, telegram: false, email: true },
   TICKET_NEW: { master: true, zalo: false, telegram: false, email: true },
   LEAVE_REQUEST: { master: true, zalo: false, telegram: false, email: true },
-  COOP_INVITATION: { master: true, zalo: true, telegram: true, email: true },
+  COOP_INVITATION: { master: true, zalo: false, telegram: true, email: true },
   PROJECT_ROSTER_UPDATE: { master: true, zalo: false, telegram: false, email: true },
   MONTHLY_ATTENDANCE_REPORT: { master: true, zalo: false, telegram: false, email: true },
   HOLIDAY_ROSTER_OPEN: { master: true, zalo: false, telegram: false, email: true },
@@ -560,13 +562,17 @@ const getDefaultConfig = (key: string): EventConfig => {
                   <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 22, height: 22, objectFit: 'contain' }} alt="Zalo" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#0f172a' }}>Zalo Bot</div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: userInfo.has_zalo ? '#16a34a' : '#d97706' }}>
-                    {userInfo.has_zalo ? "● Đã liên kết" : "○ Chưa liên kết"}
+                  <div style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#0f172a' }}>
+                    {isSaleUser ? "Zalo Bot (Nhận Lead)" : "Zalo Group Admin"}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isSaleUser ? (userInfo.has_zalo ? '#16a34a' : '#d97706') : '#16a34a' }}>
+                    {isSaleUser 
+                      ? (userInfo.has_zalo ? "● Đã liên kết" : "○ Chưa liên kết") 
+                      : "● Nhận tin qua Group Admin"}
                   </div>
                 </div>
               </div>
-              {!userInfo.has_zalo && (
+              {isSaleUser && !userInfo.has_zalo && (
                 <button
                   type="button"
                   onClick={handleConnectZalo}
@@ -756,36 +762,38 @@ const getDefaultConfig = (key: string): EventConfig => {
                       {cfg.master && (
                         <div style={{
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(3, 1fr)',
+                          gridTemplateColumns: (isSaleUser && evt.key === 'LEAD_ASSIGNMENT') ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
                           gap: '6px',
                           paddingTop: '8px',
                           borderTop: '1px dashed #e2e8f0'
                         }}>
-                          {/* Zalo Chip */}
-                          <button
-                            type="button"
-                            onClick={() => handleChannelToggle(evt.key, 'zalo')}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '5px',
-                              padding: '7px 6px',
-                              borderRadius: '10px',
-                              border: (cfg.zalo && userInfo.has_zalo) ? '1.5px solid #0068ff' : '1px solid #e2e8f0',
-                              background: (cfg.zalo && userInfo.has_zalo) ? '#eff6ff' : '#f8fafc',
-                              color: (cfg.zalo && userInfo.has_zalo) ? '#0068ff' : '#94a3b8',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              cursor: (!cfg.master || !userInfo.has_zalo) ? 'not-allowed' : 'pointer',
-                              opacity: (cfg.zalo && userInfo.has_zalo) ? 1 : 0.45,
-                              filter: (cfg.zalo && userInfo.has_zalo) ? 'none' : 'grayscale(60%)',
-                              transition: 'all 0.15s ease'
-                            }}
-                          >
-                            <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 14, height: 14, objectFit: 'contain' }} alt="Zalo" />
-                            <span>Zalo</span>
-                          </button>
+                          {/* Zalo Chip (Only for Sale and only for LEAD_ASSIGNMENT) */}
+                          {isSaleUser && evt.key === 'LEAD_ASSIGNMENT' && (
+                            <button
+                              type="button"
+                              onClick={() => handleChannelToggle(evt.key, 'zalo')}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                                padding: '7px 6px',
+                                borderRadius: '10px',
+                                border: (cfg.zalo && userInfo.has_zalo) ? '1.5px solid #0068ff' : '1px solid #e2e8f0',
+                                background: (cfg.zalo && userInfo.has_zalo) ? '#eff6ff' : '#f8fafc',
+                                color: (cfg.zalo && userInfo.has_zalo) ? '#0068ff' : '#94a3b8',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: (!cfg.master || !userInfo.has_zalo) ? 'not-allowed' : 'pointer',
+                                opacity: (cfg.zalo && userInfo.has_zalo) ? 1 : 0.45,
+                                filter: (cfg.zalo && userInfo.has_zalo) ? 'none' : 'grayscale(60%)',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 14, height: 14, objectFit: 'contain' }} alt="Zalo" />
+                              <span>Zalo</span>
+                            </button>
+                          )}
 
                           {/* Telegram Chip */}
                           <button
@@ -860,12 +868,14 @@ const getDefaultConfig = (key: string): EventConfig => {
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   <th style={{ padding: '14px 18px' }}>Sự Kiện Thông Báo Hệ Thống</th>
-                  <th style={{ padding: '14px 10px', textAlign: 'center', width: 110 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#0068ff' }}>
-                      <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain' }} alt="Zalo" />
-                      <span>Zalo</span>
-                    </div>
-                  </th>
+                  {isSaleUser && (
+                    <th style={{ padding: '14px 10px', textAlign: 'center', width: 110 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#0068ff' }}>
+                        <img src="https://stc-zpl.zdn.vn/favicon.ico" style={{ width: 16, height: 16, objectFit: 'contain' }} alt="Zalo" />
+                        <span>Zalo</span>
+                      </div>
+                    </th>
+                  )}
                   <th style={{ padding: '14px 10px', textAlign: 'center', width: 110 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#0284c7' }}>
                       <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/3840px-Telegram_logo.svg.png" style={{ width: 16, height: 16, objectFit: 'contain' }} alt="Telegram" />
@@ -886,7 +896,7 @@ const getDefaultConfig = (key: string): EventConfig => {
                   <React.Fragment key={cat.category}>
                     {/* Category Header Row */}
                     <tr style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
-                      <td colSpan={5} style={{ padding: '10px 18px' }}>
+                      <td colSpan={isSaleUser ? 5 : 4} style={{ padding: '10px 18px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{
                             fontSize: '0.6875rem',
@@ -931,45 +941,48 @@ const getDefaultConfig = (key: string): EventConfig => {
                             </div>
                           </td>
 
-                          {/* Zalo Checkbox */}
-                          <td style={{ padding: '14px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
-                            <label
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: (!cfg.master || !userInfo.has_zalo) ? 'not-allowed' : 'pointer',
-                                margin: '0 auto'
-                              }}
-                              title={!userInfo.has_zalo ? "Chưa liên kết Zalo" : (cfg.zalo ? "Tắt Zalo" : "Bật Zalo")}
-                            >
-                              <input
-                                type="checkbox"
-                                disabled={!cfg.master || !userInfo.has_zalo}
-                                checked={cfg.zalo && userInfo.has_zalo}
-                                onChange={() => handleChannelToggle(evt.key, 'zalo')}
-                                style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
-                              />
-                              <span
-                                style={{
-                                  width: 20,
-                                  height: 20,
-                                  borderRadius: '6px',
-                                  border: (cfg.zalo && userInfo.has_zalo) ? '2px solid #BD1D2D' : '2px solid #cbd5e1',
-                                  background: (cfg.zalo && userInfo.has_zalo) ? '#BD1D2D' : '#ffffff',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  color: '#ffffff',
-                                  transition: 'all 0.15s ease',
-                                  opacity: !cfg.master ? 0.4 : 1,
-                                  boxShadow: (cfg.zalo && userInfo.has_zalo) ? '0 2px 5px rgba(189, 29, 45, 0.25)' : 'none'
-                                }}
-                              >
-                                {(cfg.zalo && userInfo.has_zalo) && <Check size={14} strokeWidth={3.5} />}
-                              </span>
-                            </label>
-                          </td>
+                          {/* Zalo Checkbox (Only when isSaleUser) */}
+                          {isSaleUser && (
+                            <td style={{ padding: '14px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
+                              {evt.key === 'LEAD_ASSIGNMENT' ? (
+                                <label
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: (!cfg.master || !userInfo.has_zalo) ? 'not-allowed' : 'pointer',
+                                    margin: '0 auto'
+                                  }}
+                                  title={!userInfo.has_zalo ? "Chưa liên kết Zalo" : (cfg.zalo ? "Tắt Zalo" : "Bật Zalo")}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    disabled={!cfg.master || !userInfo.has_zalo}
+                                    checked={cfg.zalo && userInfo.has_zalo}
+                                    onChange={() => handleChannelToggle(evt.key, 'zalo')}
+                                    style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
+                                  />
+                                  <span
+                                    style={{
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: '6px',
+                                      border: (cfg.zalo && userInfo.has_zalo) ? '2px solid #BD1D2D' : '2px solid #cbd5e1',
+                                      background: (cfg.zalo && userInfo.has_zalo) ? '#BD1D2D' : '#ffffff',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                  >
+                                    {(cfg.zalo && userInfo.has_zalo) && <Check size={13} color="white" strokeWidth={3} />}
+                                  </span>
+                                </label>
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: 600 }} title="Zalo chỉ áp dụng thông báo Lead & Giao khách">-</span>
+                              )}
+                            </td>
+                          )}
 
                           {/* Telegram Checkbox */}
                           <td style={{ padding: '14px 10px', textAlign: 'center', verticalAlign: 'middle' }}>

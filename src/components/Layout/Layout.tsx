@@ -7,7 +7,7 @@ import { Header } from './Header';
 import { QuickAddLeadModal } from '../QuickAddLeadModal';
 import { ProfileModal } from '../ProfileModal';
 import { CustomModal } from '../ui/CustomModal';
-import { SmartCheckInModal } from '../ui/SmartCheckInModal';
+import { SmartCheckInModal, prewarmSmartCheckInGPS } from '../ui/SmartCheckInModal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { Avatar } from '../ui/Avatar';
 import { AIChatbot } from '../ui/AIChatbot';
@@ -117,13 +117,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   // Global Check-In State
   const [todayCheckIn, setTodayCheckIn] = useState<any>(null);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [checkInReason, setCheckInReason] = useState('');
-  const [checkInSubmitting, setCheckInSubmitting] = useState(false);
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState('');
-  const videoRef = React.useRef<HTMLVideoElement>(null);
   const [consultantProfile, setConsultantProfile] = useState<any>(null);
   const [dismissTelegramReminder, setDismissTelegramReminder] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
@@ -195,166 +188,17 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const startCamera = async () => {
-    setCapturedImage(null);
-    setCameraError('');
-    setIsCameraActive(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 480, height: 480 }
-      });
-      setCameraStream(stream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => {});
-      }
-    } catch (err: any) {
-      console.error(err);
-      setCameraError(t('Không thể truy cập camera. Vui lòng cấp quyền.'));
-      setIsCameraActive(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-    setIsCameraActive(false);
-  };
-
-  const capturePhoto = () => {
-    if (videoRef.current) {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        setCapturedImage(dataUrl);
-        stopCamera();
-      }
-    }
-  };
-
-  const checkIsLate = () => {
-    const now = new Date();
-    const curHM = now.toTimeString().substring(0, 5); 
-    
-    let dayOfWeek = now.getDay();
-    if (dayOfWeek === 0) dayOfWeek = 7;
-    
-    const dayConfig = consultantProfile?.work_schedule?.[String(dayOfWeek)] || 
-                      consultantProfile?.work_schedule?.[dayOfWeek];
-                      
-    if (dayConfig && !dayConfig.active) {
-      return false; 
-    }
-    
-    const workStart = dayConfig?.start || consultantProfile?.work_start_time || '08:00';
-    const morningEnd = dayConfig?.end || '12:00';
-    const afternoonStart = dayConfig?.start_afternoon || '13:00';
-    
-    if (curHM > morningEnd) {
-      if (!dayConfig?.start_afternoon && !dayConfig?.end_afternoon) {
-        return curHM > workStart;
-      }
-      return curHM > afternoonStart;
-    } else {
-      return curHM > workStart;
-    }
-  };
-
-  const isLate = checkIsLate();
-
-  const handleGlobalCheckIn = async () => {
-    if (checkInSubmitting) return;
-    setCheckInSubmitting(true);
-    let selfieUrl = '';
-    try {
-      if (capturedImage) {
-        const compressToWebP = (dataUrl: string): Promise<Blob> => {
-          return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.src = dataUrl;
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.width;
-              canvas.height = img.height;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0);
-                canvas.toBlob((b) => {
-                  if (b) resolve(b);
-                  else reject(new Error('WebP conversion failed'));
-                }, 'image/webp', 0.8);
-              } else {
-                reject(new Error('Canvas context error'));
-              }
-            };
-            img.onerror = () => reject(new Error('Image loading error'));
-          });
-        };
-
-        const webpBlob = await compressToWebP(capturedImage);
-        const file = new File([webpBlob], 'selfie.webp', { type: 'image/webp' });
-        const formData = new FormData();
-        formData.append('file', file);
-        const uploadRes = await fetchAPI('upload', {
-          method: 'POST',
-          body: formData
-        });
-        if (uploadRes.success && uploadRes.data?.url) {
-          selfieUrl = uploadRes.data.url;
-        } else {
-          toast.error(uploadRes.message || t('Lỗi tải ảnh lên'));
-          setCheckInSubmitting(false);
-          return;
-        }
-      } else {
-        toast.error(t('Vui lòng chụp hình selfie.'));
-        setCheckInSubmitting(false);
-        return;
-      }
-
-      if (isLate && !checkInReason.trim()) {
-        toast.error(t('Bạn đi trễ. Vui lòng điền lý do để quản lý duyệt.'));
-        setCheckInSubmitting(false);
-        return;
-      }
-
-      const res = await fetchAPI('check-ins', {
-        method: 'POST',
-        body: JSON.stringify({
-          selfie_url: selfieUrl,
-          reason: isLate ? checkInReason : null
-        })
-      });
-
-      if (res.success) {
-        toast.success(res.message || t('Check-in thành công!'));
-        stopCamera();
-        setCheckInModalOpen(false);
-        setCapturedImage(null);
-        setCheckInReason('');
-        loadCheckInStatus();
-        window.dispatchEvent(new CustomEvent('checkin-status-changed'));
-      } else {
-        toast.error(res.message || t('Check-in thất bại'));
-      }
-    } catch (err: any) {
-      toast.error(t('Lỗi check-in: ') + err.message);
-    }
-    setCheckInSubmitting(false);
-  };
-
   useEffect(() => {
     loadCheckInStatus();
     loadConsultantProfile();
+    if (shouldCheckIn) {
+      prewarmSmartCheckInGPS();
+    }
     const handleSync = () => loadCheckInStatus();
-    const handleTrigger = () => setCheckInModalOpen(true);
+    const handleTrigger = () => {
+      prewarmSmartCheckInGPS();
+      setCheckInModalOpen(true);
+    };
     window.addEventListener('checkin-status-changed', handleSync);
     window.addEventListener('trigger-checkin-modal', handleTrigger);
     return () => {
@@ -439,17 +283,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       };
     }
   }, [token]);
-
-  useEffect(() => {
-    if (checkInModalOpen) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-    return () => {
-      stopCamera();
-    };
-  }, [checkInModalOpen]);
 
   // Hover states for notification buttons
   const [isTicketViewHovered, setIsTicketViewHovered] = useState(false);

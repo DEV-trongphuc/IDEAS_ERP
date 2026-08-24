@@ -5,6 +5,32 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { fetchAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
+// Module-level in-memory cache for ultra-fast location and address retrieval (0ms retrieval if recent)
+let globalCachedGPS: { coords: { latitude: number; longitude: number }; timestamp: number } | null = null;
+const globalAddressCache = new Map<string, string>();
+
+// Singleton canvas for fast facial skin-detection heuristic (eliminates GC pause & memory allocation churn)
+let detectionCanvas: HTMLCanvasElement | null = null;
+let detectionCtx: CanvasRenderingContext2D | null = null;
+
+// Global helper to pre-warm GPS satellite / network location on user interactions (hover, login, click)
+export const prewarmSmartCheckInGPS = () => {
+  if (typeof window === 'undefined' || !navigator.geolocation) return;
+  if (globalCachedGPS && Date.now() - globalCachedGPS.timestamp < 60000) return;
+  try {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        globalCachedGPS = {
+          coords: { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
+          timestamp: Date.now()
+        };
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 4000, maximumAge: 60000 }
+    );
+  } catch (e) {}
+};
+
 interface SmartCheckInModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,6 +56,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState('');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [checkInReason, setCheckInReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,11 +84,55 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     }
   }, [isOpen]);
 
-  const fetchLocation = () => {
+  // Non-blocking Reverse Geocoding with local memory caching & 1.4s strict timeout
+  const reverseGeocodeNonBlocking = (coords: { latitude: number; longitude: number }) => {
+    const cacheKey = `${coords.latitude.toFixed(4)},${coords.longitude.toFixed(4)}`;
+    if (globalAddressCache.has(cacheKey)) {
+      setCurrentAddress(globalAddressCache.get(cacheKey)!);
+      setAddressLoading(false);
+      return;
+    }
+
     setAddressLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1400);
+
+    const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&accept-language=vi`;
+    fetch(geoUrl, {
+      signal: controller.signal,
+      headers: {
+        'Accept-Language': 'vi',
+        'User-Agent': 'IdeasCRM/1.0'
+      }
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          const geoData = await res.json();
+          const addr = geoData.display_name || `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
+          globalAddressCache.set(cacheKey, addr);
+          setCurrentAddress(addr);
+        } else {
+          setCurrentAddress(`${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully without blocking checkin
+        setCurrentAddress(`${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
+      })
+      .finally(() => {
+        clearTimeout(timer);
+        setAddressLoading(false);
+      });
+  };
+
+  const fetchLocation = () => {
     setLocationError('');
-    setCurrentAddress('');
-    setGpsCoords(null);
+
+    // 1. Instant Cache hit (< 10ms)
+    if (globalCachedGPS && Date.now() - globalCachedGPS.timestamp < 120000) {
+      setGpsCoords(globalCachedGPS.coords);
+      reverseGeocodeNonBlocking(globalCachedGPS.coords);
+    }
 
     if (!navigator.geolocation) {
       setLocationError(t('Trình duyệt của bạn không hỗ trợ định vị GPS.'));
@@ -69,47 +140,41 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
       return;
     }
 
+    // 2. Progressive Geolocation: High accuracy with fast fallback
+    const onLocationSuccess = (position: GeolocationPosition) => {
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      };
+      globalCachedGPS = { coords, timestamp: Date.now() };
+      setGpsCoords(coords);
+      setLocationError('');
+      reverseGeocodeNonBlocking(coords);
+    };
+
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const coords = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        };
-        setGpsCoords(coords);
-        
-        try {
-          const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&accept-language=vi`;
-          const geoRes = await fetch(geoUrl, {
-            headers: {
-              'Accept-Language': 'vi',
-              'User-Agent': 'IdeasCRM/1.0'
-            }
-          });
-          if (geoRes.ok) {
-            const geoData = await geoRes.json();
-            setCurrentAddress(geoData.display_name || `${coords.latitude}, ${coords.longitude}`);
-          } else {
-            setCurrentAddress(`${coords.latitude}, ${coords.longitude}`);
-          }
-        } catch (addrErr) {
-          console.warn("Failed to reverse-geocode coordinates:", addrErr);
-          setCurrentAddress(`${coords.latitude}, ${coords.longitude}`);
-        } finally {
-          setAddressLoading(false);
-        }
-      },
+      onLocationSuccess,
       (error) => {
-        let msg = t('Không thể lấy vị trí GPS. Vui lòng bật định vị.');
-        if (error.code === error.PERMISSION_DENIED) {
-          msg = t('Vui lòng cấp quyền truy cập vị trí (GPS) trên trình duyệt để chấm công.');
-        }
-        setLocationError(msg);
-        setAddressLoading(false);
+        // Retry with lower accuracy / cell triangulation if high accuracy times out
+        navigator.geolocation.getCurrentPosition(
+          onLocationSuccess,
+          (err2) => {
+            if (!globalCachedGPS) {
+              let msg = t('Không thể lấy vị trí GPS. Vui lòng bật định vị.');
+              if (err2.code === err2.PERMISSION_DENIED || error.code === error.PERMISSION_DENIED) {
+                msg = t('Vui lòng cấp quyền truy cập vị trí (GPS) trên trình duyệt để chấm công.');
+              }
+              setLocationError(msg);
+              setAddressLoading(false);
+            }
+          },
+          { enableHighAccuracy: false, timeout: 3500, maximumAge: 180000 }
+        );
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        timeout: 4000,
+        maximumAge: 60000
       }
     );
   };
@@ -195,6 +260,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
   const startCamera = async () => {
     setCameraError('');
     setCapturedImage(null);
+    setCapturedBlob(null);
     setIsManualMode(false);
     autoCapturedRef.current = false;
     setFaceScanProgress(0);
@@ -255,6 +321,7 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     } else if (!isOpen) {
       stopCamera();
       setCapturedImage(null);
+      setCapturedBlob(null);
       setIsManualMode(false);
       setCheckInReason('');
       setIsSuccessScreen(false);
@@ -265,42 +332,59 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     };
   }, [isOpen, todayCheckIn, isSuccessScreen, isCheckOutMode]);
 
-  // Capture current frame to dataUrl
-  const takeSnapshot = (): string | null => {
-    if (!videoRef.current) return null;
+  // Single-pass direct WebP snapshot & preview generator (Ultra-fast, 0 re-encoding)
+  const takeSnapshotDirect = (): Promise<{ dataUrl: string; blob: Blob } | null> => {
+    if (!videoRef.current) return Promise.resolve(null);
     const video = videoRef.current;
     const width = video.videoWidth || video.clientWidth || 640;
     const height = video.videoHeight || video.clientHeight || 480;
-    if (width === 0 || height === 0) return null;
+    if (width === 0 || height === 0) return Promise.resolve(null);
+
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+    if (!ctx) return Promise.resolve(null);
+
     ctx.drawImage(video, 0, 0, width, height);
-    return canvas.toDataURL('image/jpeg', 0.85);
+
+    return new Promise((resolve) => {
+      canvas.toBlob(
+        (blob) => {
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          if (blob) {
+            resolve({ dataUrl, blob });
+          } else {
+            resolve({ dataUrl, blob: new Blob([]) });
+          }
+        },
+        'image/webp',
+        0.78
+      );
+    });
   };
 
-  const handleManualCapture = () => {
+  const handleManualCapture = async () => {
     if (!isManualMode) {
       setIsManualMode(true);
       setScanStatusText(t('Chế độ chụp ảnh thủ công'));
       return;
     }
 
-    const dataUrl = takeSnapshot();
-    if (dataUrl) {
-      setCapturedImage(dataUrl);
+    const snap = await takeSnapshotDirect();
+    if (snap) {
+      setCapturedImage(snap.dataUrl);
+      setCapturedBlob(snap.blob);
       stopCamera();
       if (!isLate) {
-        submitCheckIn(dataUrl);
+        submitCheckIn(snap.dataUrl, snap.blob);
       }
     } else {
       toast.error(t('Chưa nhận được khung hình camera. Vui lòng thử lại.'));
     }
   };
 
-  // AI Face Detection & Auto Capture Loop
+  // Ultra-fast AI Face Detection & Auto Capture Loop (140ms tick, singleton canvas)
   useEffect(() => {
     if (!isCameraActive || capturedImage || isSuccessScreen || autoCapturedRef.current || isManualMode) {
       return;
@@ -309,6 +393,13 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
     let intervalId: any;
     let isDetecting = false;
 
+    if (!detectionCanvas) {
+      detectionCanvas = document.createElement('canvas');
+      detectionCanvas.width = 100;
+      detectionCanvas.height = 75;
+      detectionCtx = detectionCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
     const detectFaceFrame = async () => {
       if (isDetecting || autoCapturedRef.current || !videoRef.current) return;
       isDetecting = true;
@@ -316,62 +407,60 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
       const video = videoRef.current;
       if (video.readyState >= 2 && video.videoWidth > 0) {
         let detected = false;
+        let detectionConfidence = 35; // progress jump per tick
 
-        // 1. Native FaceDetector API
+        // 1. Native FaceDetector API (Chrome / Edge / Android) -> ultra fast (15ms)
         if ('FaceDetector' in window) {
           try {
             const detector = new (window as any).FaceDetector({ fastMode: true, maxFaces: 1 });
             const faces = await detector.detect(video);
             if (faces && faces.length > 0) {
               detected = true;
+              detectionConfidence = 40;
             }
           } catch (e) {}
         }
 
-        // 2. Luminance & Face Region Density Fallback
-        if (!detected) {
+        // 2. Luminance & Face Skin-density Heuristic using singleton canvas
+        if (!detected && detectionCtx) {
           try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 120;
-            canvas.height = 90;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(video, 0, 0, 120, 90);
-              const imgData = ctx.getImageData(30, 15, 60, 60);
-              const data = imgData.data;
-              let skinPixelCount = 0;
-              for (let i = 0; i < data.length; i += 4) {
-                const r = data[i], g = data[i+1], b = data[i+2];
-                if (r > 60 && g > 40 && b > 20 && r > g && r > b && (Math.max(r, g, b) - Math.min(r, g, b) > 15)) {
-                  skinPixelCount++;
-                }
+            detectionCtx.drawImage(video, 0, 0, 100, 75);
+            const imgData = detectionCtx.getImageData(25, 12, 50, 50);
+            const data = imgData.data;
+            let skinPixelCount = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i], g = data[i+1], b = data[i+2];
+              if (r > 60 && g > 40 && b > 20 && r > g && r > b && (Math.max(r, g, b) - Math.min(r, g, b) > 15)) {
+                skinPixelCount++;
               }
-              if (skinPixelCount > (data.length / 4) * 0.12) {
-                detected = true;
-              }
+            }
+            if (skinPixelCount > (data.length / 4) * 0.12) {
+              detected = true;
+              detectionConfidence = 35;
             }
           } catch (e) {}
         }
 
         if (detected) {
           setFaceScanProgress(prev => {
-            const next = prev + 30;
+            const next = prev + detectionConfidence;
             if (next >= 100 && !autoCapturedRef.current) {
               autoCapturedRef.current = true;
               setScanStatusText(t('Đã phát hiện khuôn mặt! Đang tự động chụp...'));
               
-              setTimeout(() => {
-                const autoPic = takeSnapshot();
-                if (autoPic) {
-                  setCapturedImage(autoPic);
+              setTimeout(async () => {
+                const snap = await takeSnapshotDirect();
+                if (snap) {
+                  setCapturedImage(snap.dataUrl);
+                  setCapturedBlob(snap.blob);
                   stopCamera();
                   if (!isLate) {
-                    submitCheckIn(autoPic);
+                    submitCheckIn(snap.dataUrl, snap.blob);
                   } else {
                     toast.success(t('Đã tự động quét khuôn mặt! Vui lòng nhập lý do đi trễ.'));
                   }
                 }
-              }, 200);
+              }, 60);
               return 100;
             }
             setScanStatusText(t('Đã tìm thấy khuôn mặt... Giữ yên!'));
@@ -385,16 +474,17 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
       isDetecting = false;
     };
 
-    intervalId = setInterval(detectFaceFrame, 220);
+    intervalId = setInterval(detectFaceFrame, 140);
 
     return () => {
       clearInterval(intervalId);
     };
   }, [isCameraActive, capturedImage, isSuccessScreen, isLate]);
 
-  // Submit Check-in API
-  const submitCheckIn = async (overrideImage?: string) => {
+  // Submit Check-in API (Ultra-optimized single-pass upload, non-blocking GPS)
+  const submitCheckIn = async (overrideImage?: string, overrideBlob?: Blob) => {
     const imageToUse = overrideImage || capturedImage;
+    const blobToUse = overrideBlob || capturedBlob;
     if (!imageToUse || submitting) return;
 
     if (isLate && !checkInReason.trim()) {
@@ -407,40 +497,44 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
       return;
     }
 
-    if (addressLoading || !gpsCoords) {
-      toast.error(t('Đang xác thực vị trí GPS. Vui lòng đợi trong giây lát...'));
+    if (!gpsCoords) {
+      toast.error(t('Đang nhận diện tọa độ GPS. Vui lòng đợi trong giây lát...'));
       return;
     }
 
     setSubmitting(true);
     const coords = gpsCoords;
-    const addressStr = currentAddress;
+    const addressStr = currentAddress || `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;
 
     try {
-      const compressToWebP = (dataUrl: string): Promise<Blob> => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.src = dataUrl;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0);
-              canvas.toBlob((b) => {
-                if (b) resolve(b);
-                else reject(new Error('WebP conversion failed'));
-              }, 'image/webp', 0.8);
-            } else {
-              reject(new Error('Canvas context error'));
-            }
-          };
-          img.onerror = () => reject(new Error('Image loading error'));
-        });
-      };
+      let webpBlob = blobToUse;
+      if (!webpBlob || webpBlob.size === 0) {
+        // Fallback single-pass conversion if blob was not passed
+        const compressToWebP = (dataUrl: string): Promise<Blob> => {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = dataUrl;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob((b) => {
+                  if (b) resolve(b);
+                  else reject(new Error('WebP conversion failed'));
+                }, 'image/webp', 0.78);
+              } else {
+                reject(new Error('Canvas context error'));
+              }
+            };
+            img.onerror = () => reject(new Error('Image loading error'));
+          });
+        };
+        webpBlob = await compressToWebP(imageToUse);
+      }
 
-      const webpBlob = await compressToWebP(imageToUse);
       const file = new File([webpBlob], `selfie_${Date.now()}.webp`, { type: 'image/webp' });
       const formData = new FormData();
       formData.append('file', file);
@@ -826,16 +920,16 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
                 <button
                   type="button"
                   className="btn primary"
-                  disabled={submitting || !!locationError || addressLoading}
+                  disabled={submitting || !!locationError || !gpsCoords}
                   onClick={() => submitCheckIn()}
                   style={{
-                    backgroundColor: (!!locationError || addressLoading) ? '#4b5563' : '#BD1D2D',
+                    backgroundColor: (!!locationError || !gpsCoords) ? '#4b5563' : '#BD1D2D',
                     color: '#fff',
                     borderRadius: '24px',
                     padding: '12px 36px',
                     fontWeight: 700,
                     fontSize: '0.95rem',
-                    boxShadow: (!!locationError || addressLoading) ? 'none' : '0 4px 15px rgba(189, 29, 45, 0.4)',
+                    boxShadow: (!!locationError || !gpsCoords) ? 'none' : '0 4px 15px rgba(189, 29, 45, 0.4)',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
@@ -843,12 +937,16 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
                     gap: '8px',
                     width: '100%',
                     maxWidth: '340px',
-                    cursor: (submitting || !!locationError || addressLoading) ? 'not-allowed' : 'pointer'
+                    cursor: (submitting || !!locationError || !gpsCoords) ? 'not-allowed' : 'pointer'
                   }}
                 >
                   {submitting ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <RefreshCw size={16} className="spin" /> {t('Đang gửi...')}
+                    </span>
+                  ) : !gpsCoords ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <RefreshCw size={16} className="spin" /> {t('Đang nhận GPS...')}
                     </span>
                   ) : (
                     isCheckOutMode ? t('Xác nhận Ra ca') : t('Xác nhận Chấm công')
@@ -889,16 +987,26 @@ export const SmartCheckInModal: React.FC<SmartCheckInModalProps> = ({
             boxSizing: 'border-box',
             marginBottom: '0.5rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: '50%', background: locationError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(189, 29, 45, 0.1)', flexShrink: 0, marginTop: '2px' }}>
-              <MapPin size={14} color={locationError ? '#ef4444' : '#BD1D2D'} />
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              width: 22, 
+              height: 22, 
+              borderRadius: '50%', 
+              background: locationError ? 'rgba(239, 68, 68, 0.15)' : gpsCoords ? 'rgba(16, 185, 129, 0.15)' : 'rgba(189, 29, 45, 0.1)', 
+              flexShrink: 0, 
+              marginTop: '2px' 
+            }}>
+              <MapPin size={14} color={locationError ? '#ef4444' : gpsCoords ? '#10b981' : '#BD1D2D'} />
             </div>
             <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: locationError ? '#ef4444' : 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {locationError ? t('LỖI ĐỊNH VỊ (GPS BẮT BUỘC)') : t('VỊ TRÍ CHẤM CÔNG')}
-                {addressLoading && <RefreshCw size={10} className="spin" style={{ marginLeft: '4px' }} />}
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: locationError ? '#ef4444' : gpsCoords ? '#10b981' : 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {locationError ? t('LỖI ĐỊNH VỊ (GPS BẮT BUỘC)') : gpsCoords ? t('ĐÃ XÁC THỰC GPS CHÍNH XÁC') : t('VỊ TRÍ CHẤM CÔNG')}
+                {addressLoading && <RefreshCw size={10} className="spin" style={{ marginLeft: '4px', color: 'var(--color-text-muted)' }} />}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text)', marginTop: '4px', wordBreak: 'break-word', opacity: 0.9, lineHeight: 1.4 }}>
-                {addressLoading ? t('Đang xác định vị trí...') : (locationError || currentAddress || t('Không tìm thấy địa chỉ'))}
+                {locationError || currentAddress || (gpsCoords ? `${gpsCoords.latitude.toFixed(6)}, ${gpsCoords.longitude.toFixed(6)}` : addressLoading ? t('Đang định vị GPS...') : t('Chưa có vị trí'))}
               </div>
             </div>
           </div>

@@ -525,6 +525,24 @@ class ActivityController {
             }
         }
 
+        if (!empty($b['body'])) {
+            $createdBodyData = json_decode($b['body'], true);
+            if (!empty($createdBodyData['erp_task']['checklist']) && is_array($createdBodyData['erp_task']['checklist'])) {
+                foreach ($createdBodyData['erp_task']['checklist'] as $subItem) {
+                    if (!empty($subItem['assignee_id']) && (int)$subItem['assignee_id'] !== (int)$auth['user_id'] && (int)$subItem['assignee_id'] !== (int)$targetUserId) {
+                        $this->notifyUser(
+                            (int)$subItem['assignee_id'],
+                            'Bạn được giao công việc con mới',
+                            ($auth['full_name'] ?? 'Hệ thống') . ' đã giao việc con "' . ($subItem['title'] ?? 'Công việc con') . '" cho bạn trong nhiệm vụ "' . ($b['subject'] ?? '') . '".' . (!empty($subItem['due_date']) && strtotime($subItem['due_date']) ? " (Hạn: " . date('d/m/Y', strtotime($subItem['due_date'])) . ")" : ""),
+                            'task_assignment',
+                            "/activities/{$actId}?subtask_id=" . ($subItem['id'] ?? ''),
+                            $actId
+                        );
+                    }
+                }
+            }
+        }
+
         if (!empty($b['auto_trigger'])) {
             $this->triggerAutomationWorkflow($auth, $b);
         }
@@ -930,8 +948,33 @@ class ActivityController {
                     } elseif ($oldDone && !$newDone) {
                         logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'INCOMPLETE_SUBTASK', 'activity', $id, json_encode(['title' => $newItem['title'] ?? 'Công việc con']));
                     }
+
+                    // Check if subtask assignee changed
+                    $oldSubAssignee = !empty($oldItem['assignee_id']) ? (int)$oldItem['assignee_id'] : null;
+                    $newSubAssignee = !empty($newItem['assignee_id']) ? (int)$newItem['assignee_id'] : null;
+                    if ($newSubAssignee && $newSubAssignee !== $oldSubAssignee && $newSubAssignee !== (int)$auth['user_id']) {
+                        $this->notifyUser(
+                            $newSubAssignee,
+                            'Bạn được giao công việc con mới',
+                            ($auth['full_name'] ?? 'Hệ thống') . ' đã giao việc con "' . ($newItem['title'] ?? 'Công việc con') . '" cho bạn trong nhiệm vụ "' . ($activity['subject'] ?? '') . '".' . (!empty($newItem['due_date']) && strtotime($newItem['due_date']) ? " (Hạn: " . date('d/m/Y', strtotime($newItem['due_date'])) . ")" : ""),
+                            'task_assignment',
+                            "/activities/{$id}?subtask_id={$idKey}",
+                            $id
+                        );
+                    }
                 } else {
                     logActivity($this->db, $auth['tenant_id'], $auth['user_id'], 'ADD_SUBTASK', 'activity', $id, json_encode(['title' => $newItem['title'] ?? 'Công việc con']));
+                    // Notify new subtask assignee
+                    if (!empty($newItem['assignee_id']) && (int)$newItem['assignee_id'] !== (int)$auth['user_id']) {
+                        $this->notifyUser(
+                            (int)$newItem['assignee_id'],
+                            'Bạn được giao công việc con mới',
+                            ($auth['full_name'] ?? 'Hệ thống') . ' đã giao việc con "' . ($newItem['title'] ?? 'Công việc con') . '" cho bạn trong nhiệm vụ "' . ($activity['subject'] ?? '') . '".' . (!empty($newItem['due_date']) && strtotime($newItem['due_date']) ? " (Hạn: " . date('d/m/Y', strtotime($newItem['due_date'])) . ")" : ""),
+                            'task_assignment',
+                            "/activities/{$id}?subtask_id={$idKey}",
+                            $id
+                        );
+                    }
                 }
             }
 

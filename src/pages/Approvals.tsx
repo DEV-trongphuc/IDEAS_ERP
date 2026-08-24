@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { fetchAPI } from '../utils/api';
 import api from '../api/axios';
@@ -348,6 +349,8 @@ export default function Approvals() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { showConfirm } = useUIStore();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 1024 : false);
 
   useEffect(() => {
@@ -781,7 +784,7 @@ export default function Approvals() {
         await api.post('/check-ins/bulk-request', {
           month_period: bulkMonth,
           details: suggestedDays,
-          approver_id: finalApproverId,
+          approver_id: appVal1 || finalApproverId,
           related_user_ids: relatedUserIds
         });
       } else if (formType === 'leave') {
@@ -1104,10 +1107,12 @@ export default function Approvals() {
       const leader = users.find(u => Number(u.id) === Number(myTeam.leader_id));
       if (leader) return leader;
     }
-    // Fallback: If user is leader themselves or team has no leader, pick Director or Admin
+    // Fallback: If user is leader themselves or team has no leader, pick Truong phong / Manager
+    const manager = users.find(u => ['manager', 'truongphong', 'quanly', 'head_of_department', 'leader'].includes(String(u.role).toLowerCase()) && Number(u.id) !== Number(p.id));
+    if (manager) return manager;
     const director = users.find(u => ['director', 'superadmin', 'super_admin'].includes(String(u.role).toLowerCase()) && Number(u.id) !== Number(p.id));
     if (director) return director;
-    return users.find(u => ['manager', 'admin', 'director'].includes(String(u.role).toLowerCase()) && Number(u.id) !== Number(p.id)) || null;
+    return users.find(u => ['admin'].includes(String(u.role).toLowerCase()) && Number(u.id) !== Number(p.id)) || null;
   };
 
   const defaultApp1 = useMemo(() => getDefaultManagerApprover(proposerUser || user), [teams, users, proposerUser, user]);
@@ -1147,7 +1152,8 @@ export default function Approvals() {
       setShowStepDirector(false);
       setStationeryItem('');
       setStationeryQty('');
-    } else if (formType === 'leave' || formType === 'late_early' || formType === 'overtime' || formType === 'remote_work') {
+    } else if (formType === 'leave' || formType === 'late_early' || formType === 'overtime' || formType === 'remote_work' || formType === 'attendance_bulk') {
+      // Đề xuất cập nhật công gộp: Người lập là Tôi, Phê duyệt là Trưởng phòng (1 cấp duy nhất)
       setShowStepManager(true);
       setShowStepAccountant(false);
       setShowStepDirector(false);
@@ -1163,6 +1169,61 @@ export default function Approvals() {
     }
   }, [formType, selectedWorkflowDef]);
 
+  // Helper to find default HR Leader / Trưởng phòng HR
+  const getDefaultHrLeader = () => {
+    if (!users || users.length === 0) return null;
+
+    // 1. Check HR team in teams list first for its designated leader
+    const hrTeam = teams.find(t => {
+      const name = String(t.name || '').toLowerCase();
+      return name.includes('nhân sự') || name.includes('hr') || name.includes('hành chính nhân sự') || name.includes('hcns') || name.includes('human resources');
+    });
+    if (hrTeam && hrTeam.leader_id) {
+      const leader = users.find(u => Number(u.id) === Number(hrTeam.leader_id));
+      if (leader) return leader;
+    }
+
+    // 2. Specific known HR Lead (e.g. Nguyễn Thị Duy Phương)
+    const duyPhuong = users.find(u => {
+      const fn = String(u.full_name || u.name || '').toLowerCase();
+      return fn.includes('duy phương') || fn.includes('nguyễn thị duy phương');
+    });
+    if (duyPhuong) return duyPhuong;
+
+    // 3. User with HR Manager / Leader / Head job title
+    const hrLeaderByTitle = users.find(u => {
+      const jt = String(u.job_title || '').toLowerCase();
+      const r = String(u.role || '').toLowerCase();
+      const isHrDept = jt.includes('nhân sự') || jt.includes('hr') || jt.includes('hcns') || r === 'hr';
+      const isLead = jt.includes('trưởng') || jt.includes('lead') || jt.includes('manager') || jt.includes('quản lý') || r === 'manager';
+      return isHrDept && isLead;
+    });
+    if (hrLeaderByTitle) return hrLeaderByTitle;
+
+    // 4. Any HR team manager/leader
+    if (hrTeam) {
+      const teamManager = users.find(u => Number(u.team_id) === Number(hrTeam.id) && ['manager', 'leader', 'admin'].includes(String(u.role).toLowerCase()));
+      if (teamManager) return teamManager;
+      const anyHrTeamMember = users.find(u => Number(u.team_id) === Number(hrTeam.id));
+      if (anyHrTeamMember) return anyHrTeamMember;
+    }
+
+    // 5. Fallback: Any HR role
+    return users.find(u => String(u.role || '').toLowerCase() === 'hr') || null;
+  };
+
+  // Mặc định tự động chọn Leader / Trưởng phòng HR vào danh sách Người liên quan (theo dõi) cho đề xuất cập nhật công gộp
+  useEffect(() => {
+    if (formType === 'attendance_bulk' && users.length > 0) {
+      if (relatedUserIds.length === 0) {
+        const hrLeader = getDefaultHrLeader();
+        if (hrLeader) {
+          setRelatedUserIds([Number(hrLeader.id)]);
+        }
+      }
+    }
+  }, [formType, users, teams, relatedUserIds.length]);
+
   useEffect(() => {
     fetchAPI('users?all=1').then(res => {
       setUsers(res?.data || []);
@@ -1170,7 +1231,7 @@ export default function Approvals() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search || window.location.search);
     const openId = params.get('open_id');
     const openType = params.get('open_type');
     const openStatus = params.get('open_status');
@@ -1196,7 +1257,7 @@ export default function Approvals() {
       });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [location.search]);
 
   useEffect(() => {
     loadData();
@@ -2944,7 +3005,28 @@ export default function Approvals() {
                               </span>
                             </div>
 
-                            {suggestedDays.length > 0 ? (
+                            {suggestedLoading ? (
+                              <div style={{
+                                padding: '2.5rem 1.5rem',
+                                textAlign: 'center',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '12px',
+                                background: 'var(--color-bg-secondary)',
+                                border: '1px dashed var(--color-border)',
+                                borderRadius: '12px'
+                              }}>
+                                <Loader2 size={32} className="spin" style={{ color: 'var(--color-primary)' }} />
+                                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                                  {t('Đang quét và tính toán dữ liệu ngày thiếu công...')}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                  {t('Hệ thống đang tự động đối soát dữ liệu chấm công trong tháng')}
+                                </div>
+                              </div>
+                            ) : suggestedDays.length > 0 ? (
                               <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
                                   <thead>

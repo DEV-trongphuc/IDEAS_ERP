@@ -410,6 +410,9 @@ class CheckInController {
             $coLat = trim($b['latitude'] ?? $b['checkout_latitude'] ?? '');
             $coLng = trim($b['longitude'] ?? $b['checkout_longitude'] ?? '');
             $coAddr = trim($b['location_address'] ?? $b['checkout_location_address'] ?? '');
+            if (empty($coAddr) && !empty($coLat) && !empty($coLng)) {
+                $coAddr = $coLat . ', ' . $coLng;
+            }
 
             $updateOut = $this->db->prepare("UPDATE check_ins SET check_out_time = ?, early_minutes = ?, check_out_status = ?, checkout_latitude = ?, checkout_longitude = ?, checkout_location_address = ? WHERE id = ?");
             $updateOut->execute([$outTimeStr, $earlyMinutes, $checkOutStatus, $coLat ?: null, $coLng ?: null, $coAddr ?: null, $existingRow['id']]);
@@ -550,6 +553,9 @@ class CheckInController {
         $inTimeStr = $today . ' ' . $currentTime;
 
         $addr = trim($b['location_address'] ?? '');
+        if (empty($addr) && !empty($lat) && !empty($lng)) {
+            $addr = $lat . ', ' . $lng;
+        }
 
         // Insert check-in log with self-healing schema check
         try {

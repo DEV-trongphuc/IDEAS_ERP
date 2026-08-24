@@ -39,6 +39,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Avatar } from '../components/ui/Avatar';
+import { prewarmSmartCheckInGPS } from '../components/ui/SmartCheckInModal';
 
 const getRoleDisplayName = (user: any) => {
   if (!user) return '';
@@ -637,6 +638,8 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   const [wsRelatedType, setWsRelatedType] = useState('');
   const [teamsList, setTeamsList] = useState<any[]>([]);
   const [checklist, setChecklist] = useState<Array<{ text: string; checked: boolean }>>([]);
+  const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<any | null>(null);
+  const [portalTasks, setPortalTasks] = useState<any[]>([]);
   const [wsTasksPage, setWsTasksPage] = useState(1);
   const [wsTasksPageSize, setWsTasksPageSize] = useState(20);
 
@@ -1030,6 +1033,71 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     setSelectedTaskForDetails(parsedTask);
   };
 
+  // Deep-linking URL listener for task_id / open_task_id & global event 'open-task-drawer'
+  useEffect(() => {
+    const params = new URLSearchParams(loc?.search || window.location.search);
+    const targetTaskId = params.get('task_id') || params.get('open_task_id') || params.get('highlight_activity_id');
+    
+    if (targetTaskId && targetTaskId !== 'new') {
+      const numId = Number(targetTaskId);
+      if (numId) {
+        // If already selected, do not refetch
+        if (selectedTaskForDetails && Number(selectedTaskForDetails.id) === numId) {
+          return;
+        }
+        
+        // 1. Try finding in existing wsTasks or portalTasks in memory
+        const foundInWs = (wsTasks || []).find((t: any) => Number(t.id) === numId);
+        const foundInPortal = (portalTasks || []).find((t: any) => Number(t.id) === numId);
+        const found = foundInWs || foundInPortal;
+        
+        if (found) {
+          handleSelectTask(found);
+          if (activeTab !== 'workspace') {
+            setActiveTab('workspace');
+          }
+        } else {
+          // 2. Fetch directly from backend API
+          api.get(`/activities/${numId}`)
+            .then(res => {
+              if (res.data && res.data.success && res.data.data) {
+                handleSelectTask(res.data.data);
+                if (activeTab !== 'workspace') {
+                  setActiveTab('workspace');
+                }
+              }
+            })
+            .catch(err => {
+              console.error("Error fetching task details from URL parameter:", err);
+            });
+        }
+      }
+    }
+
+    const handleOpenTaskEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const detail = customEvent.detail;
+      if (detail?.task) {
+        handleSelectTask(detail.task);
+        if (activeTab !== 'workspace') setActiveTab('workspace');
+      } else if (detail?.taskId) {
+        api.get(`/activities/${detail.taskId}`)
+          .then(res => {
+            if (res.data && res.data.success && res.data.data) {
+              handleSelectTask(res.data.data);
+              if (activeTab !== 'workspace') setActiveTab('workspace');
+            }
+          })
+          .catch(err => console.error("Error opening task via event:", err));
+      }
+    };
+
+    window.addEventListener('open-task-drawer', handleOpenTaskEvent);
+    return () => {
+      window.removeEventListener('open-task-drawer', handleOpenTaskEvent);
+    };
+  }, [loc?.search, wsTasks, portalTasks, activeTab, selectedTaskForDetails]);
+
   const serializeDescriptionAndChecklist = (pureDesc: string, items: Array<{ text: string; checked: boolean }>) => {
     let result = pureDesc.trim();
     if (items.length > 0) {
@@ -1311,7 +1379,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
   };
 
   // Task details modal states inside SalePortal
-  const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<any>(null);
   const [taskComments, setTaskComments] = useState<any[]>([]);
   const [loadingTaskComments, setLoadingTaskComments] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: number; userName: string } | null>(null);
@@ -2066,7 +2133,6 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
     return () => clearInterval(intervalId);
   }, [user, theme]);
 
-  const [portalTasks, setPortalTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
 
   const [pendingCoopSlips, setPendingCoopSlips] = useState<any[]>([]);
@@ -8136,15 +8202,61 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
 
           {/* Right section: Quick Actions */}
           <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'nowrap', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'stretch' : 'flex-end' }}>
-            {isCheckInLoaded && !isAdmin && !isOvertime && (!todayCheckIn || todayCheckIn.status === 'rejected') && (
-              <button 
-                onClick={() => window.dispatchEvent(new CustomEvent('trigger-checkin-modal'))}
-                className="welcome-action-btn primary-btn"
-              >
-                <Camera size={14} />
-                {t('Chấm công')}
-              </button>
-            )}
+            {isCheckInLoaded && !isAdmin && (() => {
+              const requireCheckout = sysSettings?.require_checkout === '1' || sysSettings?.require_checkout === 1;
+              return (
+                <button 
+                  onMouseEnter={prewarmSmartCheckInGPS}
+                  onTouchStart={prewarmSmartCheckInGPS}
+                  onClick={() => {
+                    if (!todayCheckIn || todayCheckIn.status === 'rejected' || (requireCheckout && !todayCheckIn.check_out_time)) {
+                      prewarmSmartCheckInGPS();
+                      window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
+                    } else {
+                      setActiveTab('attendance-portal');
+                    }
+                  }}
+                  className="welcome-action-btn primary-btn"
+                  style={{
+                    background: (!todayCheckIn || todayCheckIn.status === 'rejected')
+                      ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                      : (requireCheckout && !todayCheckIn.check_out_time)
+                        ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                        : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                  title={
+                    (!todayCheckIn || todayCheckIn.status === 'rejected')
+                      ? t('Chưa chấm công - Click để chấm công ngay')
+                      : (requireCheckout && !todayCheckIn.check_out_time)
+                        ? t('Đã vào ca - Click để chấm công ra về')
+                        : t('Đã chấm công hôm nay - Click để xem bảng chấm công cá nhân')
+                  }
+                >
+                  {(!todayCheckIn || todayCheckIn.status === 'rejected') ? (
+                    <>
+                      <Camera size={14} />
+                      {t('Chấm công')}
+                    </>
+                  ) : (requireCheckout && !todayCheckIn.check_out_time) ? (
+                    <>
+                      <Clock size={14} />
+                      {t('Ra ca')}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={14} />
+                      {t('Đã chấm công')}
+                    </>
+                  )}
+                </button>
+              );
+            })()}
 
           </div>
         </div>
@@ -15649,9 +15761,14 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                           'rgba(239, 68, 68, 0.35)',
                         backdropFilter: 'blur(8px)',
                       }}
+                      onMouseEnter={prewarmSmartCheckInGPS}
+                      onTouchStart={prewarmSmartCheckInGPS}
                       onClick={() => {
+                        prewarmSmartCheckInGPS();
                         if (todayCheckIn.status === 'rejected' || (requireCheckout && !todayCheckIn.check_out_time)) {
                           window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
+                        } else {
+                          setActiveTab('attendance-portal');
                         }
                       }}
                       title={
@@ -15693,7 +15810,12 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
                         height: 'auto',
                         backgroundColor: '#BD1D2D',
                       }}
-                      onClick={() => window.dispatchEvent(new CustomEvent('trigger-checkin-modal'))}
+                      onMouseEnter={prewarmSmartCheckInGPS}
+                      onTouchStart={prewarmSmartCheckInGPS}
+                      onClick={() => {
+                        prewarmSmartCheckInGPS();
+                        window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
+                      }}
                     >
                       <Camera size={14} />
                       {t('Chấm công')}
@@ -18869,6 +18991,16 @@ const SalePortalInner = ({ location, activeTabProp, embedMode = false }: SalePor
             onClose={() => {
               setSelectedTaskForDetails(null);
               setIsFocusSessionActive(false);
+              const params = new URLSearchParams(window.location.search);
+              if (params.has('task_id') || params.has('open_task_id') || params.has('highlight_activity_id')) {
+                params.delete('task_id');
+                params.delete('open_task_id');
+                params.delete('highlight_activity_id');
+                params.delete('highlight_comment_id');
+                params.delete('comment_id');
+                params.delete('subtask_id');
+                navigate(`${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`, { replace: true });
+              }
             }}
             task={selectedTaskForDetails}
             onUpdate={() => {

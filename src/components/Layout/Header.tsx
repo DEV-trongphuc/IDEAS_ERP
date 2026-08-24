@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { CustomModal } from '../ui/CustomModal';
 import { NotificationSettingsModal } from '../ui/NotificationSettingsModal';
 import { fetchAPI } from '../../utils/api';
+import { prewarmSmartCheckInGPS } from '../ui/SmartCheckInModal';
 import vnFlag from '../../assets/vn.svg';
 import usFlag from '../../assets/us.svg';
 import jpFlag from '../../assets/jp.svg';
@@ -452,15 +453,19 @@ export const Header = ({
             const act = res.data;
             const actUrlObj = new URL(targetLink, window.location.origin);
             const commentId = actUrlObj.searchParams.get('comment_id') || actUrlObj.searchParams.get('highlight_comment_id');
-            const commentQuery = commentId ? `&highlight_comment_id=${commentId}` : '';
+            const subtaskId = actUrlObj.searchParams.get('subtask_id');
+            let extraQuery = '';
+            if (commentId) extraQuery += `&highlight_comment_id=${encodeURIComponent(commentId)}`;
+            if (subtaskId) extraQuery += `&subtask_id=${encodeURIComponent(subtaskId)}`;
+
             if (act.contact_id) {
-              targetLink = `/contacts?open_contact_id=${act.contact_id}&tab=timeline&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
+              targetLink = `/contacts?open_contact_id=${act.contact_id}&tab=timeline&highlight_activity_id=${activityMatch[1]}${extraQuery}`;
             } else if (act.related_type === 'contact') {
-              targetLink = `/contacts?open_contact_id=${act.related_id}&tab=timeline&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
+              targetLink = `/contacts?open_contact_id=${act.related_id}&tab=timeline&highlight_activity_id=${activityMatch[1]}${extraQuery}`;
             } else if (act.related_type === 'deal') {
-              targetLink = `/deals?id=${act.related_id}&highlight_activity_id=${activityMatch[1]}${commentQuery}`;
+              targetLink = `/deals?id=${act.related_id}&highlight_activity_id=${activityMatch[1]}${extraQuery}`;
             } else {
-              targetLink = `/workspace?task_id=${activityMatch[1]}${commentQuery}`;
+              targetLink = `/workspace?task_id=${activityMatch[1]}${extraQuery}`;
             }
           }
         } catch (e) {
@@ -1042,9 +1047,14 @@ export const Header = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px', marginRight: isMobile ? '2px' : '8px' }}>
             {headerCheckIn && headerCheckIn.status === 'approved' && (
               <div 
+                onMouseEnter={prewarmSmartCheckInGPS}
+                onTouchStart={prewarmSmartCheckInGPS}
                 onClick={() => {
+                  prewarmSmartCheckInGPS();
                   if (requireCheckout && !headerCheckIn.check_out_time) {
                     window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
+                  } else {
+                    navigate('/attendance');
                   }
                 }}
                 style={{ 
@@ -1060,9 +1070,9 @@ export const Header = ({
                   fontSize: '0.72rem', 
                   fontWeight: 700, 
                   whiteSpace: 'nowrap',
-                  cursor: (requireCheckout && !headerCheckIn.check_out_time) ? 'pointer' : 'default'
+                  cursor: 'pointer'
                 }}
-                title={requireCheckout && !headerCheckIn.check_out_time ? t('Click để Chấm công Ra ca') : undefined}
+                title={requireCheckout && !headerCheckIn.check_out_time ? t('Click để Chấm công Ra ca') : t('Click để Xem bảng chấm công cá nhân')}
               >
                 <CheckCircle2 size={12} color={headerCheckIn.check_out_time ? '#2563eb' : undefined} />
                 <span>
@@ -1074,7 +1084,11 @@ export const Header = ({
               </div>
             )}
             {headerCheckIn && headerCheckIn.status === 'pending_approval' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--color-warning)', borderRadius: '8px', padding: isMobile ? '4px 6px' : '4px 10px', height: isMobile ? '30px' : '36px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              <div 
+                onClick={() => navigate('/attendance')}
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', color: 'var(--color-warning)', borderRadius: '8px', padding: isMobile ? '4px 6px' : '4px 10px', height: isMobile ? '30px' : '36px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'pointer' }}
+                title={t('Click để Xem bảng chấm công cá nhân')}
+              >
                 <Clock size={12} />
                 <span>{isMobile ? 'Chờ duyệt' : `${t('Chờ duyệt trễ')} (${headerCheckIn.check_in_time.substring(0, 5)})`}</span>
               </div>
@@ -2439,7 +2453,8 @@ export const Header = ({
         `}</style>
       </CustomModal>
 
-       {isSales && !isOvertime && (!headerCheckIn || headerCheckIn.status === 'rejected' || (requireCheckout && !headerCheckIn.check_out_time)) && (
+      {/* Nút Chấm Công ở Gốc (Floating Check-in Button) - Luôn hiển thị: Chưa chấm -> mở modal, Đã chấm -> nhảy sang trang chấm công cá nhân */}
+      {user && user.role !== 'viewer' && (
         <>
           <style>{`
             @media (max-width: 768px) {
@@ -2448,41 +2463,90 @@ export const Header = ({
                 right: 16px !important;
               }
             }
+            @keyframes pulse-ring {
+              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+              70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+            }
+            .floating-checkin-uncompleted {
+              animation: pulse-ring 2.5s infinite;
+            }
           `}</style>
-          <button
-            className="floating-checkin-btn"
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
-            }}
-            style={{
-              position: 'fixed',
-              bottom: 88,
-              right: 24,
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              background: headerCheckIn && headerCheckIn.status === 'approved' 
-                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
-                : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              color: 'white',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: headerCheckIn && headerCheckIn.status === 'approved'
-                ? '0 10px 25px rgba(245, 158, 11, 0.4)'
-                : '0 10px 25px rgba(239, 68, 68, 0.4)',
-              zIndex: 90,
-              transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-              outline: 'none'
-            }}
-            title={headerCheckIn && headerCheckIn.status === 'approved' ? t('Chấm công ra về') : t('Chấm công ngay')}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <Fingerprint size={24} />
-          </button>
+          {(() => {
+            const isNotCheckedIn = !headerCheckIn || headerCheckIn.status === 'rejected';
+            const isPendingApproval = headerCheckIn && headerCheckIn.status === 'pending_approval';
+            const isApprovedCheckIn = headerCheckIn && headerCheckIn.status === 'approved';
+            const needsCheckOut = requireCheckout && isApprovedCheckIn && !headerCheckIn.check_out_time;
+            const isCompletedCheckIn = isApprovedCheckIn && (!requireCheckout || Boolean(headerCheckIn.check_out_time));
+
+            const handleClick = () => {
+              if (isNotCheckedIn || needsCheckOut) {
+                prewarmSmartCheckInGPS();
+                window.dispatchEvent(new CustomEvent('trigger-checkin-modal'));
+              } else {
+                navigate('/attendance');
+              }
+            };
+
+            const btnBg = isNotCheckedIn 
+              ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+              : needsCheckOut || isPendingApproval
+                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+            const btnShadow = isNotCheckedIn
+              ? '0 10px 25px rgba(239, 68, 68, 0.45)'
+              : needsCheckOut || isPendingApproval
+                ? '0 10px 25px rgba(245, 158, 11, 0.45)'
+                : '0 10px 25px rgba(16, 185, 129, 0.4)';
+
+            const btnTitle = isNotCheckedIn
+              ? t('Chưa chấm công - Click để chấm công ngay')
+              : needsCheckOut
+                ? t('Đã vào ca - Click để chấm công ra về')
+                : isPendingApproval
+                  ? t('Chấm công đang chờ duyệt - Click để xem bảng chấm công cá nhân')
+                  : t('Đã chấm công hôm nay - Click để xem bảng chấm công cá nhân');
+
+            return (
+              <button
+                className={`floating-checkin-btn ${isNotCheckedIn ? 'floating-checkin-uncompleted' : ''}`}
+                onTouchStart={prewarmSmartCheckInGPS}
+                onClick={handleClick}
+                style={{
+                  position: 'fixed',
+                  bottom: 88,
+                  right: 24,
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  background: btnBg,
+                  color: 'white',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: btnShadow,
+                  zIndex: 90,
+                  transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  outline: 'none'
+                }}
+                title={btnTitle}
+                onMouseEnter={e => {
+                  prewarmSmartCheckInGPS();
+                  e.currentTarget.style.transform = 'scale(1.08)';
+                }}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                {isCompletedCheckIn ? (
+                  <CheckCircle2 size={24} />
+                ) : (
+                  <Fingerprint size={24} />
+                )}
+              </button>
+            );
+          })()}
         </>
       )}
 

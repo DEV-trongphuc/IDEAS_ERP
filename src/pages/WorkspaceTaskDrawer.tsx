@@ -1403,6 +1403,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     setNewSubPriority('medium');
     setShowAddChecklist(false);
     toast.success(t('Đã thêm việc con'));
+
+    if (formData.due_date && newSubDeadline && newSubDeadline > formData.due_date) {
+      toast(t('Lưu ý: Hạn chót việc con đang trễ hơn hạn chót của nhiệm vụ chính'), { icon: '⚠️' });
+    }
   };
 
   const handleToggleChecklist = (itemId: string) => {
@@ -1452,6 +1456,10 @@ export const WorkspaceTaskDrawer: React.FC<WorkspaceTaskDrawerProps> = ({
     const updatedMeta = { ...erpMeta, checklist: updatedChecklist };
     handleSaveMeta(updatedMeta);
     toast.success(t('Đã cập nhật công việc con'));
+
+    if (formData.due_date && newDeadline && newDeadline > formData.due_date) {
+      toast(t('Lưu ý: Hạn chót việc con đang trễ hơn hạn chót của nhiệm vụ chính'), { icon: '⚠️' });
+    }
   };
 
   const handleUpdateChecklistItemAssignee = (itemId: string, newAssigneeId: string) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { withRouterFreezer } from '../components/RouterFreezer';
 import { fetchAPI } from '../utils/api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -12,7 +12,7 @@ import { TableRowSkeleton } from '../components/ui/Skeleton';
 import { CustomSelect } from '../components/ui/CustomSelect';
 const CustomerProfileDrawer = lazy(() => import('./CustomerProfileDrawer').then(module => ({ default: module.CustomerProfileDrawer })));
 import api from '../api/axios';
-import { Clock, Calendar, Check, X, Trash2, Eye, ShieldAlert, AlertCircle, CheckCircle, Info, Download, Lightbulb, Upload, ChevronLeft, ChevronRight, Camera, Image, FileText, Zap, RefreshCw, Moon, MapPin, CheckSquare, Users, Plus, Home, ArrowLeft, UserPlus, Search } from 'lucide-react';
+import { Clock, Calendar, Check, X, Trash2, Eye, ShieldAlert, AlertCircle, CheckCircle, Info, Download, Lightbulb, Upload, ChevronLeft, ChevronRight, Camera, Image, FileText, Zap, RefreshCw, Moon, MapPin, CheckSquare, Users, Plus, Home, ArrowLeft, UserPlus, Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PeriodFilter, getDateRange } from '../components/ui/PeriodFilter';
 import { useUIStore } from '../store/uiStore';
@@ -51,6 +51,8 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
   const { user } = useAuth();
   const { showConfirm } = useUIStore();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isOpeningBulkModal, setIsOpeningBulkModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [sysSettings, setSysSettings] = useState<any>(null);
   const managerBehaviorMode = user?.manager_behavior_mode || 'combined';
@@ -1116,8 +1118,10 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             <button
               type="button"
               onClick={() => {
-                window.location.href = '/approvals?create=attendance_bulk';
+                setIsOpeningBulkModal(true);
+                navigate('/approvals?create=attendance_bulk');
               }}
+              disabled={isOpeningBulkModal}
               className="btn outline hover-lift"
               style={{
                 borderRadius: 'var(--radius-md)',
@@ -1127,16 +1131,22 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 fontSize: isMobile ? '0.75rem' : '0.8125rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '6px',
                 flexShrink: 0,
                 whiteSpace: 'nowrap',
                 backgroundColor: 'var(--color-primary-light)',
                 borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)'
+                color: 'var(--color-primary)',
+                cursor: isOpeningBulkModal ? 'wait' : 'pointer',
+                opacity: isOpeningBulkModal ? 0.75 : 1
               }}
             >
-              <CheckSquare size={13} />
-              {isMobile ? t('C.nhật công') : t('Cập nhật công gộp')}
+              {isOpeningBulkModal ? (
+                <Loader2 size={13} className="spin" />
+              ) : (
+                <CheckSquare size={13} />
+              )}
+              {isOpeningBulkModal ? t('Đang mở...') : (isMobile ? t('C.nhật công') : t('Cập nhật công gộp'))}
             </button>
 
             {/* View Mode Icon Switcher */}
@@ -3561,8 +3571,10 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
             <button
               type="button"
               onClick={() => {
-                window.location.href = '/approvals?create=attendance_bulk';
+                setIsOpeningBulkModal(true);
+                navigate('/approvals?create=attendance_bulk');
               }}
+              disabled={isOpeningBulkModal}
               className="btn outline hover-lift"
               style={{
                 borderRadius: 'var(--radius-md)',
@@ -3572,16 +3584,22 @@ export const AttendancePageInner = ({ embedMode = false }: { embedMode?: boolean
                 fontSize: isMobile ? '0.75rem' : '0.8125rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '6px',
                 flexShrink: 0,
                 whiteSpace: 'nowrap',
                 backgroundColor: 'var(--color-primary-light)',
                 borderColor: 'var(--color-primary)',
-                color: 'var(--color-primary)'
+                color: 'var(--color-primary)',
+                cursor: isOpeningBulkModal ? 'wait' : 'pointer',
+                opacity: isOpeningBulkModal ? 0.75 : 1
               }}
             >
-              <CheckSquare size={13} />
-              {isMobile ? t('C.nhật công') : t('Cập nhật công gộp')}
+              {isOpeningBulkModal ? (
+                <Loader2 size={13} className="spin" />
+              ) : (
+                <CheckSquare size={13} />
+              )}
+              {isOpeningBulkModal ? t('Đang mở...') : (isMobile ? t('C.nhật công') : t('Cập nhật công gộp'))}
             </button>
 
             {/* View Mode Icon Switcher */}

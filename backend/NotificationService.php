@@ -130,13 +130,19 @@ class NotificationService {
                         require_once __DIR__ . '/zalo_bot.php';
 
                         $zaloChatIds = [];
+                        // 1. Group Admin Zalo: Gửi các sự kiện quản trị / broadcast tới group admin bình thường
                         if (!empty($zaloGroupChatId) && $isAdminBroadcastEvent) {
                             $zaloChatIds[] = $zaloGroupChatId;
                         }
-                        if (!$zaloOnlyGroup || !$isAdminBroadcastEvent) {
+
+                        // 2. Personal Zalo: Hiện tại CHỈ gửi cho Sale khi có Lead tới / Giao Lead (không gửi Zalo cá nhân cho các sự kiện ngoài Lead)
+                        $isLeadEvent = in_array($eventType, ['LEAD_ASSIGNMENT', 'LEAD_NEW', 'NEW_LEAD', 'LEAD_REASSIGN'], true);
+                        if ($isLeadEvent && (!$zaloOnlyGroup || !$isAdminBroadcastEvent)) {
                             foreach ($recipients as $rec) {
                                 $rId = (int)($rec['id'] ?? 0);
-                                if (!empty($rec['zalo_chat_id']) && $isChannelEnabled($rId, 'zalo')) {
+                                $role = strtolower((string)($rec['role'] ?? ''));
+                                $isSale = in_array($role, ['sale', 'sales'], true) || !empty($rec['is_consultant']);
+                                if ($isSale && !empty($rec['zalo_chat_id']) && $isChannelEnabled($rId, 'zalo')) {
                                     $zaloChatIds[] = trim($rec['zalo_chat_id']);
                                 }
                             }
@@ -1204,7 +1210,7 @@ class NotificationService {
     private static function getRecipientById(PDO $db, int $userId): array {
         if ($userId <= 0) return [];
         $stmt = $db->prepare("
-            SELECT u.id, u.email, 
+            SELECT u.id, u.email, u.role,
                    COALESCE(
                      NULLIF(NULLIF(TRIM(u.zalo_chat_id), 'chưa liên kết'), 'Chưa liên kết'), 
                      NULLIF(NULLIF(TRIM(c.zalo_chat_id), 'chưa liên kết'), 'Chưa liên kết')
@@ -1213,7 +1219,8 @@ class NotificationService {
                      NULLIF(NULLIF(TRIM(u.telegram_chat_id), 'chưa liên kết'), 'Chưa liên kết'), 
                      NULLIF(NULLIF(TRIM(c.telegram_chat_id), 'chưa liên kết'), 'Chưa liên kết')
                    ) AS telegram_chat_id,
-                   u.full_name 
+                   u.full_name,
+                   c.id AS is_consultant
             FROM users u
             LEFT JOIN consultants c ON (u.email = c.email OR u.id = c.id)
             WHERE u.id = ? OR c.id = ?
@@ -1226,7 +1233,7 @@ class NotificationService {
 
     private static function getAllUsers(PDO $db, int $tenantId): array {
         $stmt = $db->prepare("
-            SELECT u.id, u.email, 
+            SELECT u.id, u.email, u.role,
                    COALESCE(
                      NULLIF(NULLIF(TRIM(u.zalo_chat_id), 'chưa liên kết'), 'Chưa liên kết'), 
                      NULLIF(NULLIF(TRIM(c.zalo_chat_id), 'chưa liên kết'), 'Chưa liên kết')
@@ -1235,7 +1242,8 @@ class NotificationService {
                      NULLIF(NULLIF(TRIM(u.telegram_chat_id), 'chưa liên kết'), 'Chưa liên kết'), 
                      NULLIF(NULLIF(TRIM(c.telegram_chat_id), 'chưa liên kết'), 'Chưa liên kết')
                    ) AS telegram_chat_id,
-                   u.full_name 
+                   u.full_name,
+                   c.id AS is_consultant
             FROM users u
             LEFT JOIN consultants c ON (u.email = c.email OR u.id = c.id)
             WHERE u.tenant_id = ? AND u.is_active = 1
@@ -1249,7 +1257,7 @@ class NotificationService {
      */
     private static function getAdminsAndManagers(PDO $db, int $tenantId, $teamId = null): array {
         $sql = "
-            SELECT u.id, u.email, 
+            SELECT u.id, u.email, u.role,
                    COALESCE(
                      NULLIF(NULLIF(TRIM(u.zalo_chat_id), 'chưa liên kết'), 'Chưa liên kết'), 
                      NULLIF(NULLIF(TRIM(c.zalo_chat_id), 'chưa liên kết'), 'Chưa liên kết')
@@ -1258,7 +1266,8 @@ class NotificationService {
                      NULLIF(NULLIF(TRIM(u.telegram_chat_id), 'chưa liên kết'), 'Chưa liên kết'), 
                      NULLIF(NULLIF(TRIM(c.telegram_chat_id), 'chưa liên kết'), 'Chưa liên kết')
                    ) AS telegram_chat_id,
-                   u.full_name
+                   u.full_name,
+                   c.id AS is_consultant
             FROM users u
             LEFT JOIN consultants c ON (u.email = c.email OR u.id = c.id)
             WHERE u.tenant_id = ? 
