@@ -1116,24 +1116,13 @@ class CheckInController {
                 ");
                 $stmtUpdate->execute([$adminNote, $id]);
             } else {
-                // If role is manager, status goes to 'pending_hr' (unless they are also admin/hr)
-                $nextStatus = 'approved';
-                if ($auth['role'] === 'manager') {
-                    $nextStatus = 'pending_hr';
-                    $stmtUpdate = $this->db->prepare("
-                        UPDATE attendance_bulk_requests 
-                        SET status = ?, manager_id = ?, admin_note = ? 
-                        WHERE id = ?
-                    ");
-                    $stmtUpdate->execute([$nextStatus, $auth['user_id'], $adminNote, $id]);
-                } else {
-                    $stmtUpdate = $this->db->prepare("
-                        UPDATE attendance_bulk_requests 
-                        SET status = 'approved', hr_id = ?, admin_note = ? 
-                        WHERE id = ?
-                    ");
-                    $stmtUpdate->execute([$auth['user_id'], $adminNote, $id]);
-                }
+                // Quy trình 1 cấp duyệt: Khi Trưởng phòng hoặc Admin duyệt, phiếu chuyển ngay sang 'approved'
+                $stmtUpdate = $this->db->prepare("
+                    UPDATE attendance_bulk_requests 
+                    SET status = 'approved', manager_id = COALESCE(manager_id, ?), admin_note = ? 
+                    WHERE id = ?
+                ");
+                $stmtUpdate->execute([$auth['user_id'], $adminNote, $id]);
 
                 // If approved/pending_hr, update approved flag in details
                 if (!empty($approvedDetailIds)) {
@@ -1148,43 +1137,41 @@ class CheckInController {
                     $stmtApproveDetails->execute(array_merge([$id], $approvedDetailIds));
                 }
 
-                // If the nextStatus is 'approved' (meaning final HR/Admin approved), update the check_ins table!
-                if ($nextStatus === 'approved') {
-                    // Fetch all approved details
-                    $stmtDetails = $this->db->prepare("
-                        SELECT * FROM attendance_bulk_request_details 
-                        WHERE request_id = ? AND approved = 1
-                    ");
-                    $stmtDetails->execute([$id]);
-                    $details = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
+                // Cập nhật các bản ghi công hợp lệ vào bảng check_ins
+                // Fetch all approved details
+                $stmtDetails = $this->db->prepare("
+                    SELECT * FROM attendance_bulk_request_details 
+                    WHERE request_id = ? AND approved = 1
+                ");
+                $stmtDetails->execute([$id]);
+                $details = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
 
-                    $stmtUpsert = $this->db->prepare("
-                        INSERT INTO check_ins (user_id, check_in_date, check_in_time, check_out_time, status, reason, admin_note, late_minutes, early_minutes)
-                        VALUES (?, ?, ?, ?, 'approved', ?, ?, 0, 0)
-                        ON DUPLICATE KEY UPDATE 
-                          check_in_time = VALUES(check_in_time),
-                          check_out_time = VALUES(check_out_time),
-                          status = 'approved',
-                          reason = VALUES(reason),
-                          admin_note = VALUES(admin_note),
-                          late_minutes = 0,
-                          early_minutes = 0
-                    ");
+                $stmtUpsert = $this->db->prepare("
+                    INSERT INTO check_ins (user_id, check_in_date, check_in_time, check_out_time, status, reason, admin_note, late_minutes, early_minutes)
+                    VALUES (?, ?, ?, ?, 'approved', ?, ?, 0, 0)
+                    ON DUPLICATE KEY UPDATE 
+                      check_in_time = VALUES(check_in_time),
+                      check_out_time = VALUES(check_out_time),
+                      status = 'approved',
+                      reason = VALUES(reason),
+                      admin_note = VALUES(admin_note),
+                      late_minutes = 0,
+                      early_minutes = 0
+                ");
 
-                    foreach ($details as $d) {
-                        $date = $d['check_in_date'];
-                        $inTime = $d['suggested_check_in'] ?: '08:30:00';
-                        $outTime = $d['suggested_check_out'] ? "$date " . $d['suggested_check_out'] : null;
+                foreach ($details as $d) {
+                    $date = $d['check_in_date'];
+                    $inTime = $d['suggested_check_in'] ? "$date " . $d['suggested_check_in'] . ":00" : "$date 08:30:00";
+                    $outTime = $d['suggested_check_out'] ? "$date " . $d['suggested_check_out'] . ":00" : "$date 17:30:00";
 
-                        $stmtUpsert->execute([
-                            $req['user_id'],
-                            $date,
-                            $inTime,
-                            $outTime,
-                            $d['reason'],
-                            $adminNote ?: 'Duyệt bổ sung công tổng hợp'
-                        ]);
-                    }
+                    $stmtUpsert->execute([
+                        $req['user_id'],
+                        $date,
+                        $inTime,
+                        $outTime,
+                        $d['reason'],
+                        $adminNote ?: 'Duyệt bổ sung công tổng hợp'
+                    ]);
                 }
             }
 
@@ -1193,9 +1180,6 @@ class CheckInController {
             // Send notification to employee
             try {
                 $statusText = $status === 'approved' ? 'chấp thuận' : 'từ chối';
-                if ($status === 'approved' && $auth['role'] === 'manager') {
-                    $statusText = 'chấp thuận bởi Quản lý (chờ HR duyệt)';
-                }
                 NotificationService::send($this->db, 1, 'ATTENDANCE_APPROVAL_RESULT', [
                     'user_id' => $req['user_id'],
                     'user_name' => $req['full_name'],
