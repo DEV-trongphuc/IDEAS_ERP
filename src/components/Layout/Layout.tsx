@@ -2176,8 +2176,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           );
         })}
       </div>
-
-      <AIChatbot />
+      {/* Tạm thời tắt AI Chat theo yêu cầu */}
+      {/* <AIChatbot /> */}
 
 
 

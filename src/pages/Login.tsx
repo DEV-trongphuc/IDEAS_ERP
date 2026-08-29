@@ -53,7 +53,7 @@ export const Login = () => {
       });
       const json = await res.json();
       if (json.success) {
-        login(json.token, json.user);
+        login(json.token, json.user, json.refresh_token);
         navigate('/');
       } else {
         setError(t(json.message) || t('Đăng nhập Google thất bại'));
@@ -149,7 +149,7 @@ export const Login = () => {
           setOtpCode('');
           setShow2FAModal(true);
         } else {
-          login(res.data.access_token, res.data.user);
+          login(res.data.access_token, res.data.user, res.data.refresh_token);
           navigate('/');
         }
       } else {
@@ -177,7 +177,7 @@ export const Login = () => {
         })
       });
       if (res.success && res.data) {
-        login(res.data.access_token, res.data.user);
+        login(res.data.access_token, res.data.user, res.data.refresh_token);
         setShow2FAModal(false);
         navigate('/');
       } else {

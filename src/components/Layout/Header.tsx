@@ -2459,7 +2459,7 @@ export const Header = ({
           <style>{`
             @media (max-width: 768px) {
               .floating-checkin-btn {
-                bottom: 144px !important;
+                bottom: 80px !important;
                 right: 16px !important;
               }
             }
@@ -2515,7 +2515,7 @@ export const Header = ({
                 onClick={handleClick}
                 style={{
                   position: 'fixed',
-                  bottom: 88,
+                  bottom: 24,
                   right: 24,
                   width: 52,
                   height: 52,

@@ -1,4 +1,4 @@
-﻿const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const BASE_URL = isLocal ? '/backend/api.php' : (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api.php` : '/backend/api.php');
 
 

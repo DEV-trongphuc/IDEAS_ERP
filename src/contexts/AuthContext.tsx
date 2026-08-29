@@ -24,7 +24,7 @@ type User = {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, user: User) => void;
+  login: (token: string, user: User, refreshToken?: string) => void;
   logout: () => void;
   updateUser: (updatedUser: Partial<User>) => void;
 }
@@ -61,18 +61,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('Ideas_token');
   });
 
-  const login = useCallback((newToken: string, newUser: User) => {
+  const login = useCallback((newToken: string, newUser: User, refreshToken?: string) => {
     const normalized = normalizeUser(newUser);
     setToken(newToken);
     setUser(normalized);
     localStorage.setItem('Ideas_token', newToken);
+    localStorage.setItem('access_token', newToken);
     localStorage.setItem('Ideas_user', JSON.stringify(normalized));
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
   }, []);
 
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('Ideas_token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('Ideas_user');
     localStorage.removeItem('IDEAS_DEMO_MODE');
   }, []);
